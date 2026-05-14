@@ -1,0 +1,9 @@
+export { BiteplanerCard } from './BiteplanerCard/BiteplanerCard';
+export { Contato } from './Contato/Contato';
+export { Depoimentos } from './Depoimentos/Depoimentos';
+export { FullBleedBanner } from './FullBleedBanner/FullBleedBanner';
+export { Hero } from './Hero/Hero';
+export { Legal } from './Legal/Legal';
+export { ParceirosTeaserSection } from './ParceirosTeaserSection/ParceirosTeaserSection';
+export { Produtos } from './Produtos/Produtos';
+export { QuemSomos } from './QuemSomos/QuemSomos';

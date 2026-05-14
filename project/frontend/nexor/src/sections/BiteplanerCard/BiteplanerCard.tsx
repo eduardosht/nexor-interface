@@ -1,0 +1,38 @@
+import biteplanerLogo from '../../assets/biteplaner-logo-white.png';
+import * as S from './styles';
+
+const FEATURES = [
+  'Avaliação odontológica completa com profissionais licenciados',
+  'Produção laboratorial personalizada baseada em moldagem individual',
+  'Acompanhamento profissional durante todo o ciclo de uso',
+];
+
+export function BiteplanerCard() {
+  return (
+    <S.Card to="/biteplaner" aria-label="Conhecer Biteplaner">
+      <S.CardHero>
+        <S.AccentLine />
+        <S.Logo src={biteplanerLogo} alt="Biteplaner" />
+        <S.Tagline>
+          Protetor bucal personalizado desenvolvido com avaliação odontológica profissional e produção laboratorial de precisão.
+        </S.Tagline>
+      </S.CardHero>
+
+      <S.CardBody>
+        <S.Features>
+          {FEATURES.map((f) => (
+            <S.Feature key={f}>{f}</S.Feature>
+          ))}
+        </S.Features>
+
+        <S.CardFooter>
+          <S.Badges>
+            <S.Badge>Premium</S.Badge>
+            <S.Badge>Biteplaner · 2026</S.Badge>
+          </S.Badges>
+          <S.Cta>Saiba mais → </S.Cta>
+        </S.CardFooter>
+      </S.CardBody>
+    </S.Card>
+  );
+}

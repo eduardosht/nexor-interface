@@ -1,0 +1,13 @@
+export { BiteplanerPage } from './BiteplanerPage';
+export { Cadastro } from './Cadastro';
+export { Conta } from './Conta';
+export { Cookies } from './Cookies';
+export { Home } from './Home';
+export { Login } from './Login';
+export { Parceiros } from './Parceiros';
+export { Privacidade } from './Privacidade';
+export { RecuperarSenha } from './RecuperarSenha';
+export { Sobre } from './Sobre';
+export { Termos } from './Termos';
+export { PasswordInput } from './auth-shared';
+export * from './painel';

@@ -1,0 +1,24 @@
+{
+  "name": "nexor-project",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "storybook": "npm --prefix ./packages/design-system run storybook",
+    "storybook:build": "npm --prefix ./packages/design-system run storybook:build"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "styled-components": "^6.1.13"
+  },
+  "devDependencies": {
+    "@storybook/addon-a11y": "^8.6.14",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/blocks": "^8.6.14",
+    "@storybook/react-vite": "^8.6.14",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "storybook": "^8.6.14"
+  }
+}

@@ -1,0 +1,14 @@
+export { Avaliacoes } from './Avaliacoes';
+export { BiteplanerHub } from './BiteplanerHub';
+export { CadastroPerfilBiteplaner } from './CadastroPerfilBiteplaner';
+export { Compra } from './Compra';
+export { ConsultaInicial } from './ConsultaInicial';
+export { Jornada } from './Jornada';
+export { MinhaConta } from './MinhaConta';
+export { PainelHome } from './PainelHome';
+export { PartnerReferralPage } from './PartnerReferralPage';
+export { PreRequisito } from './PreRequisito';
+export { ProducaoDentista } from './ProducaoDentista';
+export * from './admin';
+export * from './biteplanerReviewForms/index';
+export * from './components';

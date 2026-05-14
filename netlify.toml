@@ -1,0 +1,9 @@
+[build]
+  base = "project/frontend/nexor"
+  command = "npm install --prefix ../../packages/design-system && npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
