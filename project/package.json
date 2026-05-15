@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm --prefix ./nexor run build",
+    "build": "npm --prefix ./nexor ci && npm --prefix ./nexor run build",
     "preview": "npm --prefix ./nexor run preview",
     "storybook": "npm --prefix ./packages/design-system run storybook",
     "storybook:build": "npm --prefix ./packages/design-system run storybook:build"
