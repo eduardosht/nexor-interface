@@ -1,6 +1,6 @@
 # Biteplaner Foundations
 
-Baseado no frontend atual em `project/frontend/biteplaner/`.
+Baseado no frontend atual em `project/nexor/`.
 
 ## Linguagem visual
 

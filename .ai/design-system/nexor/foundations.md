@@ -1,6 +1,6 @@
 # Nexor Foundations
 
-Baseado no frontend institucional atual em `project/frontend/nexor/`.
+Baseado no frontend institucional atual em `project/nexor/`.
 
 ## Linguagem visual
 

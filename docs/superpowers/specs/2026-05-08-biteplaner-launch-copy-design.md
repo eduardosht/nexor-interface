@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Revisar e fortalecer o conteúdo institucional do frontend `project/frontend/nexor/` para o lançamento do Biteplaner, priorizando:
+Revisar e fortalecer o conteúdo institucional do frontend `project/nexor/` para o lançamento do Biteplaner, priorizando:
 
 - clareza total do fluxo do produto para o público final
 - confiança e credibilidade em cada etapa da jornada
