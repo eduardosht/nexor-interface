@@ -4,6 +4,7 @@ import { authHandlers } from './handlers/auth';
 import { productHandlers } from './handlers/products';
 import { orderHandlers } from './handlers/orders';
 import { partnerHandlers } from './handlers/partner';
+import { contactHandlers } from './handlers/contact';
 import { cepHandlers } from './handlers/cep';
 import { resetDemoState } from './demoState';
 
@@ -27,6 +28,7 @@ export function startMockServer() {
       productHandlers(this);
       orderHandlers(this);
       partnerHandlers(this);
+      contactHandlers(this);
       cepHandlers(this);
 
       this.passthrough('https://*.supabase.co/**');

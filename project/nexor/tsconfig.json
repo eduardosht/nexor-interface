@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@nexor/design-system": ["../../packages/design-system/src/index.ts"]
+      "@nexor/design-system": ["../packages/design-system/src/index.ts"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom", "node"]
   },

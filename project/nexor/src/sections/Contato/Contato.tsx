@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { Button, Field, Select, sanitizePersonName } from '@nexor/design-system';
 import { env } from '../../config/env';
+import { api } from '../../lib/api';
 import { fadeUp, staggerContainer } from '../../styles/motion';
 import * as S from './styles';
 
@@ -27,19 +28,36 @@ export function Contato() {
   const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '' });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.name === 'nome' ? sanitizePersonName(e.target.value) : e.target.value;
+    setSubmitError('');
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValid || submitting) {
+      return;
+    }
+
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    setSubmitError('');
+
+    try {
+      await api.post('/v1/contact', {
+        nome: form.nome.trim(),
+        email: form.email.trim(),
+        assunto: form.assunto,
+        mensagem: form.mensagem.trim(),
+      });
       setSent(true);
-    }, 900);
+    } catch {
+      setSubmitError('Não foi possível enviar sua mensagem agora. Tente novamente em instantes.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isValid = form.nome.trim() && form.email.trim() && form.assunto && form.mensagem.trim();
@@ -120,6 +138,7 @@ export function Contato() {
                 value={form.assunto}
                 placeholder="Selecione um assunto"
                 onChange={(value) => {
+                  setSubmitError('');
                   setForm((prev) => ({ ...prev, assunto: value }));
                 }}
                 options={ASSUNTOS}
@@ -135,6 +154,8 @@ export function Contato() {
                 onChange={handleChange}
                 required
               />
+
+              {submitError && <S.ErrorBanner role="alert">{submitError}</S.ErrorBanner>}
 
               <Button type="submit" disabled={!isValid || submitting}>
                 {submitting ? 'Enviando…' : 'Enviar mensagem →'}

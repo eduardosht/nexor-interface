@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const designSystemPath = fileURLToPath(new URL('../../packages/design-system/src/index.ts', import.meta.url));
+const designSystemPath = fileURLToPath(new URL('../packages/design-system/src/index.ts', import.meta.url));
 const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({

@@ -101,3 +101,10 @@ export const SuccessBanner = styled(Surface)`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
 `;
+
+export const ErrorBanner = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.error};
+  font-size: 13px;
+  line-height: 1.5;
+`;
