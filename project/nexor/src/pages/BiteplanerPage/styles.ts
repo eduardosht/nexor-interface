@@ -19,7 +19,7 @@ const commentsMarquee = keyframes`
   }
 `;
 
-export const Page = styled.div`
+export const Page = styled.main`
   background: #ffffff;
   color: #172033;
 `;

@@ -1,14 +1,6 @@
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-
-export const MobilePublicNavigationSpace = createGlobalStyle`
-  @media (max-width: 768px) {
-    body {
-      padding-bottom: calc(72px + env(safe-area-inset-bottom));
-    }
-  }
-`;
 
 export const Nav = styled(motion.nav)`
   position: fixed;
@@ -16,7 +8,7 @@ export const Nav = styled(motion.nav)`
   left: 0;
   right: 0;
   z-index: 100;
-  height: auto;
+  height: var(--public-header-height);
   display: flex;
   align-items: center;
   gap: 0;
@@ -40,11 +32,17 @@ export const Brand = styled.button`
   padding: 0;
   cursor: pointer;
   flex-shrink: 0;
+
+  &:focus-visible {
+    outline: 3px solid #2f6df6;
+    outline-offset: 4px;
+  }
 `;
 
 export const LogoImg = styled.img`
   height: auto;
   width: 200px;
+  display: block;
 `;
 
 export const Links = styled.ul`
@@ -88,6 +86,10 @@ export const NavLink = styled.button`
     color: ${({ theme }) => theme.colors.textPrimary};
     &::after { width: 100%; }
   }
+
+  &:focus-visible {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
 `;
 
 export const EnterButton = styled(Link)`
@@ -110,6 +112,11 @@ export const EnterButton = styled(Link)`
     opacity: 0.85;
   }
 
+  &:focus-visible {
+    outline: 3px solid #2f6df6;
+    outline-offset: 4px;
+  }
+
   @media (max-width: 768px) {
     font-size: 12px;
     padding: 8px 16px;
@@ -125,7 +132,7 @@ export const MobileBottomNav = styled.nav`
   display: none;
   align-items: center;
   justify-content: space-around;
-  min-height: calc(64px + env(safe-area-inset-bottom));
+  height: var(--public-mobile-nav-height);
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
   background: rgba(250, 250, 250, 0.94);
@@ -163,7 +170,6 @@ export const MobileBottomNavButton = styled.button`
   &:focus-visible {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.bgInset};
-    outline: none;
   }
 
   span {

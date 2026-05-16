@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "generate:favicons": "node scripts/generate-favicons.mjs",
     "optimize:images": "node scripts/optimize-public-images.mjs",
     "verify:images": "node scripts/check-optimized-images.mjs",
     "prepush": "npm run verify:images && npm run typecheck && npm run test:run && npm run build",

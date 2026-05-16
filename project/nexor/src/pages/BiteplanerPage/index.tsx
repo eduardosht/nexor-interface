@@ -206,7 +206,7 @@ const FAQ = [
 
 export function BiteplanerPage() {
   return (
-    <S.Page>
+    <S.Page id="main-content" tabIndex={-1}>
       <S.HeroSection>
         <S.HeroCopy>
           <S.ProductLabel>Biteplaner</S.ProductLabel>

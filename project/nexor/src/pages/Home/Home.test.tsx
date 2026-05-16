@@ -25,7 +25,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe('Home', () => {
   it('renderiza o main com todas as seções', () => {
     render(<Home />, { wrapper: Wrapper });
-    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
     expect(screen.getByText('Hero')).toBeInTheDocument();
     expect(screen.getByText('Produtos')).toBeInTheDocument();
   });

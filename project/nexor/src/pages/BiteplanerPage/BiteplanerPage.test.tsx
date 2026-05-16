@@ -16,6 +16,11 @@ function renderPage() {
 }
 
 describe('BiteplanerPage', () => {
+  it('uses the shared main-content landmark for skip navigation', () => {
+    renderPage();
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
+  });
+
   it('renders the Biteplaner logo in the hero', () => {
     renderPage();
     expect(screen.getAllByRole('img', { name: /biteplaner/i }).length).toBeGreaterThan(0);
