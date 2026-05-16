@@ -97,6 +97,19 @@ export function AdminSystemSettings() {
     }
   }
 
+  function handleMobileStepChange(stepId: string) {
+    const nextIndex = MOBILE_STEPS.findIndex((step) => step.id === stepId);
+
+    if (nextIndex > activeMobileStepIndex) {
+      goToNextMobileStep();
+      return;
+    }
+
+    if (nextIndex >= 0) {
+      setMobileStep(stepId as MobileSystemStep);
+    }
+  }
+
   function renderMobileStep(step: MobileStepDefinition) {
     if (step.id === 'purchase') {
       return (
@@ -301,7 +314,7 @@ export function AdminSystemSettings() {
             <MobileStepFlow
               steps={MOBILE_STEPS}
               activeStepId={mobileStep}
-              onStepChange={(stepId) => { setMobileStep(stepId as MobileSystemStep); }}
+              onStepChange={handleMobileStepChange}
               renderStep={renderMobileStep}
             />
             <StickyActionBar

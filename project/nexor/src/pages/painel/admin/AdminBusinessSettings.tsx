@@ -100,6 +100,19 @@ export function AdminBusinessSettings() {
     }
   }
 
+  function handleMobileStepChange(stepId: string) {
+    const nextIndex = MOBILE_STEPS.findIndex((step) => step.id === stepId);
+
+    if (nextIndex > activeMobileStepIndex) {
+      goToNextMobileStep();
+      return;
+    }
+
+    if (nextIndex >= 0) {
+      setMobileStep(stepId as MobileBusinessStep);
+    }
+  }
+
   function renderMobileStep(step: MobileStepDefinition) {
     if (step.id === 'credentialing') {
       return (
@@ -298,7 +311,7 @@ export function AdminBusinessSettings() {
             <MobileStepFlow
               steps={MOBILE_STEPS}
               activeStepId={mobileStep}
-              onStepChange={(stepId) => { setMobileStep(stepId as MobileBusinessStep); }}
+              onStepChange={handleMobileStepChange}
               renderStep={renderMobileStep}
             />
             <StickyActionBar

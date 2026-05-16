@@ -46,6 +46,7 @@ describe('AdminSystemSettings mobile flow', () => {
 
     expect(screen.getByText('2/3')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /controle de compras/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/mensagem "manutencao preventiva agendada" preparada/i)).toBeInTheDocument();
   });
 
   it('uses a sticky save action in the mobile flow', () => {

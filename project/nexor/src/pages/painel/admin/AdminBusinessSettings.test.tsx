@@ -46,6 +46,7 @@ describe('AdminBusinessSettings mobile flow', () => {
 
     expect(screen.getByText('2/4')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /regras de credenciamento/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/última ação local salva nesta tela: pagamento/i)).toBeInTheDocument();
   });
 
   it('uses a sticky save action in the mobile flow', () => {
