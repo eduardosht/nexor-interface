@@ -100,19 +100,6 @@ export function AdminBusinessSettings() {
     }
   }
 
-  function handleMobileStepChange(stepId: string) {
-    const nextIndex = MOBILE_STEPS.findIndex((step) => step.id === stepId);
-
-    if (nextIndex > activeMobileStepIndex) {
-      goToNextMobileStep();
-      return;
-    }
-
-    if (nextIndex >= 0) {
-      setMobileStep(stepId as MobileBusinessStep);
-    }
-  }
-
   function renderMobileStep(step: MobileStepDefinition) {
     if (step.id === 'credentialing') {
       return (
@@ -311,9 +298,15 @@ export function AdminBusinessSettings() {
             <MobileStepFlow
               steps={MOBILE_STEPS}
               activeStepId={mobileStep}
-              onStepChange={handleMobileStepChange}
+              onStepChange={(stepId) => { setMobileStep(stepId as MobileBusinessStep); }}
               renderStep={renderMobileStep}
+              showNavigation={false}
             />
+            {savedSection ? (
+              <SectionDescription>
+                Última ação local salva nesta tela: {savedSection}.
+              </SectionDescription>
+            ) : null}
             <StickyActionBar
               secondaryLabel="Voltar"
               secondaryDisabled={activeMobileStepIndex <= 0}
@@ -323,11 +316,13 @@ export function AdminBusinessSettings() {
             />
           </S.MobileSettingsWrap>
 
-          {savedSection ? (
-            <SectionDescription>
-              Última ação local salva nesta tela: {savedSection}.
-            </SectionDescription>
-          ) : null}
+          <S.DesktopNoticeWrap>
+            {savedSection ? (
+              <SectionDescription>
+                Última ação local salva nesta tela: {savedSection}.
+              </SectionDescription>
+            ) : null}
+          </S.DesktopNoticeWrap>
         </>
       ) : null}
     </PageStack>

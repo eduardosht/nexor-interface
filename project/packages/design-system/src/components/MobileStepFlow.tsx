@@ -15,6 +15,7 @@ export interface MobileStepFlowProps {
   activeStepId: string;
   onStepChange: (stepId: string) => void;
   renderStep: (step: MobileStepDefinition) => ReactNode;
+  showNavigation?: boolean;
 }
 
 const Wrap = styled.section<{ $tokens: BrandTokens }>`
@@ -69,6 +70,7 @@ export function MobileStepFlow({
   activeStepId,
   onStepChange,
   renderStep,
+  showNavigation = true,
 }: MobileStepFlowProps) {
   const { tokens } = useDesignSystem();
 
@@ -90,23 +92,25 @@ export function MobileStepFlow({
         {activeStep.summary ? <Summary $tokens={tokens}>{activeStep.summary}</Summary> : null}
       </Header>
       <Body>{renderStep(activeStep)}</Body>
-      <Nav>
-        {previousStep ? (
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() => onStepChange(previousStep.id)}
-          >
-            Voltar para {previousStep.title}
-          </Button>
-        ) : null}
-        {nextStep ? (
-          <Button type="button" fullWidth onClick={() => onStepChange(nextStep.id)}>
-            Avançar para {nextStep.title}
-          </Button>
-        ) : null}
-      </Nav>
+      {showNavigation ? (
+        <Nav>
+          {previousStep ? (
+            <Button
+              type="button"
+              variant="secondary"
+              fullWidth
+              onClick={() => onStepChange(previousStep.id)}
+            >
+              Voltar para {previousStep.title}
+            </Button>
+          ) : null}
+          {nextStep ? (
+            <Button type="button" fullWidth onClick={() => onStepChange(nextStep.id)}>
+              Avançar para {nextStep.title}
+            </Button>
+          ) : null}
+        </Nav>
+      ) : null}
     </Wrap>
   );
 }

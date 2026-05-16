@@ -42,11 +42,13 @@ describe('AdminSystemSettings mobile flow', () => {
     expect(screen.getByText('1/3')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /mensagem global/i }).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /avançar para controle de compras/i }));
+    expect(screen.queryByRole('button', { name: /avançar para controle de compras/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^salvar e avançar$/i }));
 
     expect(screen.getByText('2/3')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /controle de compras/i }).length).toBeGreaterThan(0);
-    expect(screen.getByText(/mensagem "manutencao preventiva agendada" preparada/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mensagem "manutencao preventiva agendada" preparada/i).length).toBeGreaterThan(0);
   });
 
   it('uses a sticky save action in the mobile flow', () => {
@@ -54,6 +56,6 @@ describe('AdminSystemSettings mobile flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^salvar e avançar$/i }));
 
-    expect(screen.getByText(/mensagem "manutencao preventiva agendada" preparada/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/mensagem "manutencao preventiva agendada" preparada/i).length).toBeGreaterThan(0);
   });
 });

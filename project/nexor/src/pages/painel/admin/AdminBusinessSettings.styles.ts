@@ -14,6 +14,12 @@ export const DesktopSettingsWrap = styled.div`
   }
 `;
 
+export const DesktopNoticeWrap = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
 export const MobileSettingsWrap = styled.section`
   @media (min-width: 769px) {
     display: none;

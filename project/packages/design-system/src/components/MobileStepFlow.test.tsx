@@ -36,4 +36,20 @@ describe('MobileStepFlow', () => {
     fireEvent.click(screen.getByRole('button', { name: /avançar para revisão/i }));
     expect(onStepChange).toHaveBeenCalledWith('review');
   });
+
+  it('can hide inline navigation when sticky page actions own the flow', () => {
+    render(
+      <DesignSystemRoot>
+        <MobileStepFlow
+          steps={steps}
+          activeStepId="main"
+          onStepChange={() => undefined}
+          renderStep={(step) => <p>Conteúdo de {step.title}</p>}
+          showNavigation={false}
+        />
+      </DesignSystemRoot>
+    );
+
+    expect(screen.queryByRole('button', { name: /avançar para licença e documentos/i })).not.toBeInTheDocument();
+  });
 });

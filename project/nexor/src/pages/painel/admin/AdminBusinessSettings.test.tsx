@@ -42,11 +42,13 @@ describe('AdminBusinessSettings mobile flow', () => {
     expect(screen.getByText('1/4')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /processo e pagamento/i }).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /avançar para regras de credenciamento/i }));
+    expect(screen.queryByRole('button', { name: /avançar para regras de credenciamento/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^salvar e avançar$/i }));
 
     expect(screen.getByText('2/4')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /regras de credenciamento/i }).length).toBeGreaterThan(0);
-    expect(screen.getByText(/última ação local salva nesta tela: pagamento/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/última ação local salva nesta tela: pagamento/i).length).toBeGreaterThan(0);
   });
 
   it('uses a sticky save action in the mobile flow', () => {
@@ -54,6 +56,6 @@ describe('AdminBusinessSettings mobile flow', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /^salvar e avançar$/i }));
 
-    expect(screen.getByText(/última ação local salva nesta tela: pagamento/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/última ação local salva nesta tela: pagamento/i).length).toBeGreaterThan(0);
   });
 });
