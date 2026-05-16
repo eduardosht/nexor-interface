@@ -9,7 +9,7 @@ export function Hero() {
   return (
     <S.SectionWrapper aria-label="Apresentação Nexor">
       <S.VideoBackground autoPlay muted loop playsInline preload="metadata" poster={publicOptimizedImages.home.heroPoster.webp}>
-        <source src={plexusBg} type="video/webm" media="(min-width: 769px)" />
+        <source src={plexusBg} type="video/mp4" />
       </S.VideoBackground>
       <S.VideoOverlay />
       <S.Section>

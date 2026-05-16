@@ -22,4 +22,12 @@ describe('Hero', () => {
     render(<Hero />, { wrapper: Wrapper });
     expect(screen.getByRole('region', { name: /apresentação nexor/i })).toBeInTheDocument();
   });
+
+  it('mantém o vídeo mp4 disponível também no mobile', () => {
+    const { container } = render(<Hero />, { wrapper: Wrapper });
+    const source = container.querySelector('video source');
+
+    expect(source).toHaveAttribute('type', 'video/mp4');
+    expect(source).not.toHaveAttribute('media');
+  });
 });

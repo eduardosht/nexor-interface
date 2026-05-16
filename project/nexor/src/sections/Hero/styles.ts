@@ -24,10 +24,6 @@ export const VideoBackground = styled.video`
   @media (prefers-reduced-motion: reduce) {
     display: none;
   }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
 `;
 
 export const VideoOverlay = styled.div`
