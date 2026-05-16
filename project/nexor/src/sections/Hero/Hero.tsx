@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Button } from '@nexor/design-system';
 import { fadeUp, staggerContainer } from '../../styles/motion';
-import plexusBg from '../../assets/backgrounds/plexus_background.webm';
+import plexusBg from '../../assets/backgrounds/plexus_background.mp4';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
