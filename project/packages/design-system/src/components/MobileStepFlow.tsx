@@ -20,7 +20,7 @@ export interface MobileStepFlowProps {
 
 const Wrap = styled.section<{ $tokens: BrandTokens }>`
   display: grid;
-  gap: 16px;
+  gap: 14px;
 
   @media (min-width: 769px) {
     display: none;
@@ -34,26 +34,27 @@ const Header = styled.header`
 
 const Progress = styled.span<{ $tokens: BrandTokens }>`
   width: fit-content;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
   color: ${({ $tokens }) => $tokens.colors.textMuted};
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 650;
 `;
 
 const Title = styled.h2<{ $tokens: BrandTokens }>`
   margin: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
-  font-size: 20px;
-  line-height: 1.2;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.22;
 `;
 
 const Summary = styled.p<{ $tokens: BrandTokens }>`
   margin: 0;
   color: ${({ $tokens }) => $tokens.colors.textMuted};
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.45;
 `;
 
 const Body = styled.div`

@@ -53,17 +53,17 @@ export const FilterChip = styled.span`
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.bgInset};
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 650;
 `;
 
 export const OrderCard = styled.article`
   min-width: 0;
   display: grid;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 10px;
+  border-radius: 8px;
   background: ${({ theme }) => theme.colors.bgBase};
 `;
 
@@ -77,13 +77,14 @@ export const OrderCardHeader = styled.div`
 export const OrderCardTitle = styled.strong`
   display: block;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 650;
   line-height: 1.35;
 `;
 
 export const OrderCardMeta = styled.span`
   display: block;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.4;
 `;

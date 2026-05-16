@@ -30,12 +30,13 @@ const MobileOnly = styled.div`
 `;
 
 const Empty = styled.div<{ $tokens: BrandTokens }>`
-  padding: 18px 14px;
+  padding: 14px 12px;
   border: 1px solid ${({ $tokens }) => $tokens.colors.border};
   border-radius: ${({ $tokens }) => $tokens.radius.lg};
   color: ${({ $tokens }) => $tokens.colors.textMuted};
   background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.45;
 `;
 
 export function ResponsiveDataList<T>({

@@ -565,8 +565,8 @@ export const MobileDrawerHeader = styled.div`
 `;
 
 export const MobileDrawerTitle = styled.strong`
-  font-size: 14px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -581,12 +581,12 @@ export const MobileDrawerLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 12px;
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 550;
   text-decoration: none;
 
   &:hover,
@@ -619,8 +619,8 @@ export const Topbar = styled.div`
 `;
 
 export const TopbarGreeting = styled.span`
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 550;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -692,8 +692,8 @@ export const NotificationsPanelHeader = styled.div`
 `;
 
 export const NotificationsPanelTitle = styled.strong`
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -739,8 +739,8 @@ export const NotificationItemHeader = styled.div`
 
 export const NotificationTitle = styled.strong`
   min-width: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 650;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -768,8 +768,8 @@ export const NotificationDate = styled.span`
 export const NotificationPreview = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -790,8 +790,8 @@ export const NotificationModalDate = styled.span`
 export const NotificationModalMessage = styled.p`
   margin: 0;
   color: #404040;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.55;
 `;
 
 export const Avatar = styled.div`
@@ -833,12 +833,12 @@ export const ContentInner = styled(motion.main)`
   }
 
   @media (max-width: 768px) {
-    padding: 28px 20px calc(76px + env(safe-area-inset-bottom));
+    padding: 24px 18px calc(76px + env(safe-area-inset-bottom));
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 
   @media (max-width: 640px) {
-    padding: 20px 14px calc(76px + env(safe-area-inset-bottom));
+    padding: 18px 12px calc(76px + env(safe-area-inset-bottom));
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }
 `;
@@ -874,8 +874,8 @@ export const MobileBottomNavLink = styled(NavLink)`
   gap: 4px;
   border-radius: 8px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 9px;
+  font-weight: 650;
   line-height: 1.2;
   text-align: center;
   text-decoration: none;

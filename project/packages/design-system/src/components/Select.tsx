@@ -50,9 +50,9 @@ const Wrapper = styled.div<{ $tokens: BrandTokens }>`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 `;
 
@@ -149,7 +149,7 @@ const OptionButton = styled.button<{ $tokens: BrandTokens; $selected: boolean }>
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
+  padding: 10px 11px;
   border: none;
   border-radius: ${({ $tokens }) => $tokens.radius.md};
   background: ${({ $tokens, $selected }) =>
@@ -157,7 +157,7 @@ const OptionButton = styled.button<{ $tokens: BrandTokens; $selected: boolean }>
   color: ${({ $tokens, $selected }) =>
     $selected ? $tokens.colors.accentStrong : $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 14px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition:
@@ -189,7 +189,7 @@ const OptionLabel = styled.span`
 `;
 
 const OptionDescription = styled.span<{ $tokens: BrandTokens }>`
-  font-size: 12px;
+  font-size: 11px;
   color: ${({ $tokens }) => $tokens.colors.textSoft};
   line-height: 1.4;
 `;
@@ -211,7 +211,7 @@ const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
   color: ${({ $tokens, $tone }) =>
     $tone === 'error' ? $tokens.colors.danger : $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.4;
 `;
 

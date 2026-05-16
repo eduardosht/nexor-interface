@@ -22,17 +22,17 @@ const sizeStyles: Record<ButtonSize, ReturnType<typeof css>> = {
   sm: css`
     min-height: 36px;
     padding: 8px 14px;
-    font-size: 12px;
+    font-size: 11px;
   `,
   md: css`
     min-height: 44px;
-    padding: 12px 20px;
-    font-size: 14px;
+    padding: 11px 18px;
+    font-size: 13px;
   `,
   lg: css`
     min-height: 50px;
-    padding: 14px 24px;
-    font-size: 15px;
+    padding: 13px 22px;
+    font-size: 14px;
   `,
 };
 
@@ -192,7 +192,7 @@ const StyledButton = styled.button<{
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   font-family: ${({ $tokens }) => $tokens.fonts.display};
   font-weight: 400;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   cursor: pointer;
   transition:

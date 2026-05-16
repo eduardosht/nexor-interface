@@ -30,9 +30,9 @@ const Sheet = styled.div<{ $tokens: BrandTokens }>`
   width: 100%;
   max-height: min(82vh, 680px);
   display: grid;
-  gap: 16px;
+  gap: 14px;
   overflow: auto;
-  padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+  padding: 16px 14px calc(14px + env(safe-area-inset-bottom));
   border-radius: 16px 16px 0 0;
   background: ${({ $tokens }) => $tokens.colors.surface};
 `;
@@ -47,8 +47,9 @@ const Header = styled.div`
 const Title = styled.h2<{ $tokens: BrandTokens }>`
   margin: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
-  font-size: 18px;
-  line-height: 1.2;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.22;
 `;
 
 const IconButton = styled.button<{ $tokens: BrandTokens }>`
@@ -66,7 +67,7 @@ const IconButton = styled.button<{ $tokens: BrandTokens }>`
 
 const Actions = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 8px;
 `;
 
 const FOCUSABLE_SELECTOR = [
