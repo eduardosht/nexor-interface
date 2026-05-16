@@ -13,12 +13,12 @@ import { validatePartnerInviteToken } from '../../features/demo/biteplanerFlow';
 import {
   Alert,
   AuthBackLink,
+  AuthVisualBrandLogo,
   AuthVisualTagline,
   Description,
   Success,
   Title
 } from '../auth-shared';
-import logoWhite from '../../assets/logo-nexor-white.png';
 import {
   Actions,
   Button,
@@ -38,7 +38,6 @@ import {
   StepSectionDesc,
   StepSectionTitle,
   VisualContent,
-  VisualLogoImage,
   VisualSide
 } from './Cadastro.styles';
 
@@ -438,7 +437,7 @@ export function Cadastro() {
       </FormSide>
       <VisualSide>
         <VisualContent>
-          <VisualLogoImage src={logoWhite} alt="Nexor" />
+          <AuthVisualBrandLogo />
           <AuthVisualTagline>Uma conta central para todo o ecossistema de performance.</AuthVisualTagline>
         </VisualContent>
       </VisualSide>

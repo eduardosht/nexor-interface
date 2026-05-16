@@ -5,12 +5,12 @@ import { redirectToExternal, resolvePostLoginPath } from '../../lib/navigation';
 import {
   Alert,
   AuthBackLink,
+  AuthVisualBrandLogo,
   AuthCard,
   AuthFormSide,
   AuthPage,
   AuthVisualContent,
   AuthVisualDivider,
-  AuthVisualLogo,
   AuthVisualSide,
   AuthVisualTagline,
   Button,
@@ -198,7 +198,7 @@ export function Login() {
       </AuthFormSide>
       <AuthVisualSide>
         <AuthVisualContent>
-          <AuthVisualLogo>Nexor</AuthVisualLogo>
+          <AuthVisualBrandLogo />
           <AuthVisualDivider />
           <AuthVisualTagline>Sua conta central para o ecossistema de performance.</AuthVisualTagline>
         </AuthVisualContent>

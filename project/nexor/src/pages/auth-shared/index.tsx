@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from 'lucide-react';
 import { useState, type InputHTMLAttributes } from 'react';
+import logoWhite from '../../assets/logo-nexor-white.png';
 import * as S from './styles';
 export * from './styles';
 
@@ -43,6 +44,13 @@ export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>,
   );
 }
 
+export function AuthVisualBrandLogo() {
+  return (
+    <S.AuthVisualLogo>
+      <S.AuthVisualLogoImage src={logoWhite} alt="Nexor" />
+    </S.AuthVisualLogo>
+  );
+}
 
 
 

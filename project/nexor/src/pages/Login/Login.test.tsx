@@ -104,6 +104,12 @@ describe('Login', () => {
     expect(sessionStorage.getItem('nexor_referral_ref')).toBe('EXISTING');
   });
 
+  it('shows the Nexor logo image on the visual side', () => {
+    renderLogin('?next=%2F');
+
+    expect(screen.getByAltText('Nexor')).toHaveAttribute('src', expect.stringContaining('logo-nexor-white'));
+  });
+
   it('redirects admin users to local admin panel after login', async () => {
     vi.mocked(useAuth).mockReturnValue(createAuthMock({
       session: { access_token: 'tok', user: { id: '1', email: 'admin@nexor.com' } },

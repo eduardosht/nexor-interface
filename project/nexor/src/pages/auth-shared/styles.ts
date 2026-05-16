@@ -59,65 +59,6 @@ export const AuthVisualSide = styled.div`
   overflow: hidden;
   background: ${({ theme }) => theme.colors.textPrimary};
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.04),
-      inset 0 0 36px rgba(255, 255, 255, 0.035);
-    pointer-events: none;
-    transform: translate(-50%, -50%) scale(0.65);
-    opacity: 0;
-    animation: auth-visual-ripple 5.6s ease-out infinite;
-  }
-
-  &::after {
-    animation-delay: 2.8s;
-  }
-
-  @keyframes auth-visual-ripple {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.62);
-    }
-
-    18% {
-      opacity: 0.44;
-    }
-
-    62% {
-      opacity: 0.16;
-    }
-
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(2.7);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &::before,
-    &::after {
-      animation: none;
-      opacity: 0.18;
-    }
-
-    &::before {
-      transform: translate(-50%, -50%) scale(1.1);
-    }
-
-    &::after {
-      transform: translate(-50%, -50%) scale(1.7);
-    }
-  }
-
   @media (max-width: 900px) {
     display: none;
   }
@@ -136,11 +77,82 @@ export const AuthVisualContent = styled.div`
 `;
 
 export const AuthVisualLogo = styled.div`
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: clamp(2rem, 3.5vw, 3rem);
   font-weight: 700;
   letter-spacing: -0.04em;
   color: #fff;
+  isolation: isolate;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: calc(50% + 2.5px);
+    top: 50%;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      inset 0 0 36px rgba(255, 255, 255, 0.035);
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.72);
+    opacity: 0;
+    animation: auth-logo-ripple 5.4s ease-out infinite;
+    z-index: -1;
+  }
+
+  &::after {
+    animation-delay: 2.7s;
+  }
+
+  @keyframes auth-logo-ripple {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.68);
+    }
+
+    18% {
+      opacity: 0.44;
+    }
+
+    68% {
+      opacity: 0.16;
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(2.45);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::before,
+    &::after {
+      animation: none;
+      opacity: 0.18;
+    }
+
+    &::before {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    &::after {
+      transform: translate(-50%, -50%) scale(1.7);
+    }
+  }
+`;
+
+export const AuthVisualLogoImage = styled.img`
+  width: min(260px, 64%);
+  height: auto;
+  display: block;
 `;
 
 export const AuthVisualTagline = styled.p`
