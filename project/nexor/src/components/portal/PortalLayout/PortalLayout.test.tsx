@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
@@ -14,6 +14,7 @@ const { mockUseAuth, mockNavigate, mockApiGet, mockApiPatch } = vi.hoisted(() =>
 }));
 
 const mockElementScrollTo = vi.fn();
+const mockMediaQueryListeners = new Map<string, (event: MediaQueryListEvent) => void>();
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: mockUseAuth,
@@ -119,6 +120,24 @@ describe('PortalLayout navigation', () => {
       configurable: true,
       value: mockElementScrollTo,
     });
+    mockMediaQueryListeners.clear();
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn((event: string, listener: (event: MediaQueryListEvent) => void) => {
+          if (event === 'change') mockMediaQueryListeners.set(query, listener);
+        }),
+        removeEventListener: vi.fn((event: string) => {
+          if (event === 'change') mockMediaQueryListeners.delete(query);
+        }),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
     window.localStorage.clear();
   });
 
@@ -162,6 +181,55 @@ describe('PortalLayout navigation', () => {
     expect(within(drawer).getByRole('link', { name: /parceiros/i })).toHaveAttribute('href', '/painel/admin/parceiros');
     expect(within(drawer).getByRole('link', { name: /dentistas/i })).toHaveAttribute('href', '/painel/admin/dentistas');
     expect(within(drawer).getByRole('link', { name: /laboratórios/i })).toHaveAttribute('href', '/painel/admin/laboratorios');
+  });
+
+  it('closes the mobile drawer when the current route link is selected', () => {
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu mobile/i }));
+    const drawer = screen.getByRole('dialog', { name: /menu administrativo/i });
+
+    fireEvent.click(within(drawer).getByRole('link', { name: /dashboard/i }));
+
+    expect(screen.queryByRole('dialog', { name: /menu administrativo/i })).not.toBeInTheDocument();
+  });
+
+  it('closes the mobile drawer with Escape and restores focus to the trigger', () => {
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    const trigger = screen.getByRole('button', { name: /abrir menu mobile/i });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    const drawer = screen.getByRole('dialog', { name: /menu administrativo/i });
+    expect(screen.getByRole('button', { name: /fechar menu mobile/i })).toHaveFocus();
+
+    fireEvent.keyDown(drawer, { key: 'Escape' });
+
+    expect(screen.queryByRole('dialog', { name: /menu administrativo/i })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('closes the mobile drawer when the viewport returns to desktop', () => {
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu mobile/i }));
+    expect(screen.getByRole('dialog', { name: /menu administrativo/i })).toBeInTheDocument();
+
+    act(() => {
+      mockMediaQueryListeners.get('(min-width: 769px)')?.({ matches: true } as MediaQueryListEvent);
+    });
+
+    expect(screen.queryByRole('dialog', { name: /menu administrativo/i })).not.toBeInTheDocument();
   });
 
   it('lets the right-side content use the full available width', () => {
