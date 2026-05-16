@@ -43,4 +43,34 @@ describe('FilterSheet', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('moves focus into the modal, closes with Escape and traps Tab navigation', () => {
+    const onClose = vi.fn();
+
+    render(
+      <DesignSystemRoot>
+        <button type="button">Before sheet</button>
+        <FilterSheet open title="Filtros de ordens" onClose={onClose} onClear={vi.fn()} onApply={vi.fn()}>
+          <input aria-label="Busca" />
+        </FilterSheet>
+        <button type="button">After sheet</button>
+      </DesignSystemRoot>
+    );
+
+    const closeButton = screen.getByRole('button', { name: /fechar filtros/i });
+    const applyButton = screen.getByRole('button', { name: /aplicar filtros/i });
+
+    expect(closeButton).toHaveFocus();
+
+    applyButton.focus();
+    fireEvent.keyDown(screen.getByRole('dialog', { name: /filtros de ordens/i }), {
+      key: 'Tab',
+    });
+    expect(closeButton).toHaveFocus();
+
+    fireEvent.keyDown(screen.getByRole('dialog', { name: /filtros de ordens/i }), {
+      key: 'Escape',
+    });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

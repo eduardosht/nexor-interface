@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode } from 'react';
+import { useEffect, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { useDesignSystem } from '../provider';
 import type { BrandTokens } from '../tokens';
@@ -69,6 +69,15 @@ const Actions = styled.div`
   gap: 10px;
 `;
 
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
 export function FilterSheet({
   open,
   title,
@@ -78,6 +87,20 @@ export function FilterSheet({
   onApply,
 }: FilterSheetProps) {
   const { tokens } = useDesignSystem();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -85,12 +108,59 @@ export function FilterSheet({
     if (event.target === event.currentTarget) onClose();
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      sheetRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []
+    ).filter((element) => !element.hasAttribute('disabled'));
+
+    if (focusable.length === 0) {
+      event.preventDefault();
+      sheetRef.current?.focus();
+      return;
+    }
+
+    const firstElement = focusable[0];
+    const lastElement = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+
   return (
     <Overlay role="presentation" onClick={handleOverlayClick}>
-      <Sheet $tokens={tokens} role="dialog" aria-modal="true" aria-label={title}>
+      <Sheet
+        ref={sheetRef}
+        $tokens={tokens}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+      >
         <Header>
           <Title $tokens={tokens}>{title}</Title>
-          <IconButton $tokens={tokens} type="button" aria-label="Fechar filtros" onClick={onClose}>
+          <IconButton
+            ref={closeButtonRef}
+            $tokens={tokens}
+            type="button"
+            aria-label="Fechar filtros"
+            onClick={onClose}
+          >
             <span aria-hidden="true">X</span>
           </IconButton>
         </Header>
