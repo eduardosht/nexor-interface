@@ -9,6 +9,7 @@ export interface ResponsiveDataListProps<T> {
   keyExtractor: (row: T) => string;
   renderCard: (row: T) => ReactNode;
   emptyMessage: ReactNode;
+  mobileTestId?: string;
 }
 
 const DesktopOnly = styled.div`
@@ -43,13 +44,14 @@ export function ResponsiveDataList<T>({
   keyExtractor,
   renderCard,
   emptyMessage,
+  mobileTestId = 'responsive-data-list-mobile',
 }: ResponsiveDataListProps<T>) {
   const { tokens } = useDesignSystem();
 
   return (
     <>
       <DesktopOnly data-testid="responsive-data-list-desktop">{desktop}</DesktopOnly>
-      <MobileOnly data-testid="responsive-data-list-mobile">
+      <MobileOnly data-testid={mobileTestId}>
         {data.length === 0 ? (
           <Empty $tokens={tokens}>{emptyMessage}</Empty>
         ) : (

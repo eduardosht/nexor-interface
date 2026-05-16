@@ -97,7 +97,7 @@ describe('AdminOrders', () => {
 
     await waitFor(() => expect(screen.getByTestId('admin-orders-table')).toBeInTheDocument());
     expect(screen.getAllByText(/aguardando preenchimento dentista/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/escaneamento 3d intraoral pendente/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/escaneamento 3d intraoral pendente/i).length).toBeGreaterThan(0);
     const pendingLabStat = screen.getByText(/aguardando liberação ao lab/i).closest('div');
     expect(pendingLabStat).not.toBeNull();
     expect(within(pendingLabStat as HTMLElement).getByText('1')).toBeInTheDocument();
@@ -144,12 +144,81 @@ describe('AdminOrders', () => {
     fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
 
     expect(within(statusFilter).getByRole('button', { name: /remover em processo - laboratório/i })).toBeInTheDocument();
-    expect(screen.queryByText('BP-DEMO-004')).not.toBeInTheDocument();
-    expect(screen.getByText('BP-DEMO-005')).toBeInTheDocument();
+    const table = screen.getByTestId('admin-orders-table');
+    expect(within(table).queryByText('BP-DEMO-004')).not.toBeInTheDocument();
+    expect(within(table).getByText('BP-DEMO-005')).toBeInTheDocument();
 
     fireEvent.click(within(statusFilter).getByRole('button', { name: /remover em processo - laboratório/i }));
 
-    expect(screen.getByText('BP-DEMO-004')).toBeInTheDocument();
-    expect(screen.getByText('BP-DEMO-005')).toBeInTheDocument();
+    expect(within(table).getByText('BP-DEMO-004')).toBeInTheDocument();
+    expect(within(table).getByText('BP-DEMO-005')).toBeInTheDocument();
+  });
+
+  it('renders mobile order cards with prioritized operational content', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: 'BP-DEMO-004',
+          status: 'awaiting_dentist_forms',
+          statusLabel: 'Aguardando preenchimento dentista',
+          stage: 'awaiting_dentist_forms',
+          created_at: '2026-05-02T12:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          operationalReadiness: {
+            preLabReady: false,
+            pendingItems: [],
+            summary: 'Pendências antes da liberação.',
+          },
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('admin-orders-mobile-list')).toBeInTheDocument();
+    const card = screen.getByTestId('admin-order-card-BP-DEMO-004');
+    expect(within(card).getByText('BP-DEMO-004')).toBeInTheDocument();
+    expect(within(card).getByText('Joao Demo')).toBeInTheDocument();
+    expect(within(card).getByText(/pendências antes da liberação/i)).toBeInTheDocument();
+  });
+
+  it('opens mobile filters in a sheet and shows active filter chips', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: 'BP-DEMO-004',
+          status: 'awaiting_dentist_forms',
+          statusLabel: 'Aguardando preenchimento dentista',
+          stage: 'awaiting_dentist_forms',
+          created_at: '2026-05-02T12:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          operationalReadiness: { preLabReady: false, pendingItems: [], summary: 'Pendente.' },
+        },
+        {
+          id: 'BP-DEMO-005',
+          status: 'lab_processing',
+          statusLabel: 'Em processo - Laboratório',
+          stage: 'lab_production',
+          created_at: '2026-05-03T08:00:00.000Z',
+          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
+          operationalReadiness: { preLabReady: true, pendingItems: [], summary: 'Pronta.' },
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByText(/abrir filtros de ordens/i));
+    expect(screen.getByRole('dialog', { name: /filtros de ordens/i })).toBeInTheDocument();
+
+    const statusFilter = screen.getByTestId('admin-orders-mobile-filter-status');
+    fireEvent.click(within(statusFilter).getByRole('button', { name: /todos os status/i }));
+    fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
+    fireEvent.click(screen.getByRole('button', { name: /aplicar filtros/i }));
+
+    expect(screen.getByText(/status: em processo - laboratório/i)).toBeInTheDocument();
+    const mobileList = screen.getByTestId('admin-orders-mobile-list');
+    expect(within(mobileList).queryByText('BP-DEMO-004')).not.toBeInTheDocument();
+    expect(within(mobileList).getByText('BP-DEMO-005')).toBeInTheDocument();
   });
 });
