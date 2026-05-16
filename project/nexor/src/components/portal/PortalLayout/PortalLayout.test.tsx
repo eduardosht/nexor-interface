@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
@@ -129,8 +129,39 @@ describe('PortalLayout navigation', () => {
     });
 
     expect(screen.getByText('Biteplaner')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
+    expect(screen.getAllByRole('link', { name: /ordens/i }).at(0)).toHaveAttribute('href', '/painel/admin/ordens');
     expect(screen.queryByRole('dialog', { name: /selecionar acesso ao biteplaner/i })).not.toBeInTheDocument();
+  });
+
+  it('renders app-like admin mobile navigation destinations', () => {
+    renderLayout('/painel/admin/ordens', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    const mobileNavigation = screen.getByRole('navigation', { name: /navegação principal mobile/i });
+
+    expect(mobileNavigation).toBeInTheDocument();
+    expect(within(mobileNavigation).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/admin/home');
+    expect(within(mobileNavigation).getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
+    expect(within(mobileNavigation).getByRole('link', { name: /usuários/i })).toHaveAttribute('href', '/painel/admin/usuarios');
+    expect(within(mobileNavigation).getByRole('link', { name: /configurações/i })).toHaveAttribute('href', '/painel/admin/configuracoes/negocio');
+  });
+
+  it('opens mobile admin drawer with secondary admin destinations', () => {
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu mobile/i }));
+
+    const drawer = screen.getByRole('dialog', { name: /menu administrativo/i });
+
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: /parceiros/i })).toHaveAttribute('href', '/painel/admin/parceiros');
+    expect(within(drawer).getByRole('link', { name: /dentistas/i })).toHaveAttribute('href', '/painel/admin/dentistas');
+    expect(within(drawer).getByRole('link', { name: /laboratórios/i })).toHaveAttribute('href', '/painel/admin/laboratorios');
   });
 
   it('lets the right-side content use the full available width', () => {
@@ -311,6 +342,14 @@ describe('PortalLayout navigation', () => {
 
     expect(source).toContain('grid-template-columns: repeat(5, minmax(0, 1fr))');
     expect(source).toContain('@media (max-width: 1120px)');
+  });
+
+  it('contains responsive CSS that removes desktop sidebar from mobile flow', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+
+    expect(source).toContain('@media (max-width: 768px)');
+    expect(source).toContain('display: none');
+    expect(source).toContain('padding-bottom: calc(76px + env(safe-area-inset-bottom))');
   });
 
   it('shows pending access modes without allowing selection', async () => {

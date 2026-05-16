@@ -234,6 +234,10 @@ export const Sidebar = styled.nav<{ $collapsed: boolean }>`
   overflow: hidden;
   position: sticky;
   top: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const SidebarTop = styled.div<{ $collapsed: boolean }>`
@@ -495,6 +499,105 @@ export const ContentArea = styled.div`
   overflow: hidden;
 `;
 
+export const MobileMenuBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgInset};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+export const MobileDrawerOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: rgba(0, 0, 0, 0.42);
+  animation: ${fadeIn} 160ms ease;
+`;
+
+export const MobileDrawer = styled.aside`
+  width: min(320px, 86vw);
+  height: 100%;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  box-shadow: 18px 0 48px rgba(23, 23, 23, 0.18);
+  display: flex;
+  flex-direction: column;
+  animation: ${slideUp} 180ms ease;
+`;
+
+export const MobileDrawerHeader = styled.div`
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+
+  ${MobileMenuBtn} {
+    width: 36px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    padding: 0;
+    overflow: visible;
+    pointer-events: auto;
+    visibility: visible;
+  }
+`;
+
+export const MobileDrawerTitle = styled.strong`
+  font-size: 14px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const MobileDrawerNav = styled.nav`
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px;
+  overflow-y: auto;
+`;
+
+export const MobileDrawerLink = styled(NavLink)`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover,
+  &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+`;
+
 export const Topbar = styled.div`
   height: 64px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
@@ -505,6 +608,10 @@ export const Topbar = styled.div`
   padding: 0 32px;
   flex-shrink: 0;
   gap: 16px;
+
+  @media (max-width: 768px) {
+    padding: 0 16px;
+  }
 
   @media (max-width: 640px) {
     padding: 0 16px;
@@ -723,5 +830,67 @@ export const ContentInner = styled(motion.main)`
 
   @media (max-width: 640px) {
     padding: 20px 14px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 28px 20px calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 640px) {
+    padding: 20px 14px calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+`;
+
+export const MobileBottomNav = styled.nav`
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  min-height: calc(64px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 -10px 30px rgba(23, 23, 23, 0.08);
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+export const MobileBottomNavLink = styled(NavLink)`
+  min-width: 0;
+  flex: 1;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+
+  &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+
+  span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;

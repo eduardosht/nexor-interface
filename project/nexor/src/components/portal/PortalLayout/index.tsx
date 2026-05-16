@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2 } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import logoNexor from '../../../assets/logo-nexor.png';
@@ -272,6 +272,13 @@ const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/configuracoes/sistema', label: 'Config. Sistema', Icon: Settings2 },
 ];
 
+const ADMIN_MOBILE_PRIMARY_NAV_ITEMS = [
+  { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
+  { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/usuarios', label: 'Usuários', Icon: UserRound },
+  { to: '/painel/admin/configuracoes/negocio', label: 'Configurações', Icon: Settings2 },
+];
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Bom dia';
@@ -289,6 +296,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<MockNotification[]>(MOCK_NOTIFICATIONS);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<MockNotification | null>(null);
+  const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
 
   const email = backendUser?.email ?? '';
   const displayName = email.split('@')[0];
@@ -328,6 +336,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     contentScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    setMobileAdminMenuOpen(false);
+  }, [location.pathname]);
 
   function toggle() {
     const next = !collapsed;
@@ -405,6 +417,42 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             <S.NotificationModalMessage>{selectedNotification.message}</S.NotificationModalMessage>
           </S.NotificationModalBox>
         </S.Overlay>
+      ) : null}
+
+      {isAdmin && mobileAdminMenuOpen ? (
+        <S.MobileDrawerOverlay
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setMobileAdminMenuOpen(false);
+            }
+          }}
+        >
+          <S.MobileDrawer
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu administrativo"
+          >
+            <S.MobileDrawerHeader>
+              <S.MobileDrawerTitle>Menu administrativo</S.MobileDrawerTitle>
+              <S.MobileMenuBtn
+                type="button"
+                onClick={() => setMobileAdminMenuOpen(false)}
+                aria-label="Fechar menu mobile"
+              >
+                <X size={18} aria-hidden />
+              </S.MobileMenuBtn>
+            </S.MobileDrawerHeader>
+            <S.MobileDrawerNav>
+              {ADMIN_NAV_ITEMS.map(({ to, label, Icon }) => (
+                <S.MobileDrawerLink key={to} to={to}>
+                  <Icon size={17} aria-hidden />
+                  {label}
+                </S.MobileDrawerLink>
+              ))}
+            </S.MobileDrawerNav>
+          </S.MobileDrawer>
+        </S.MobileDrawerOverlay>
       ) : null}
 
       <S.Sidebar $collapsed={collapsed}>
@@ -550,6 +598,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
       <S.ContentArea>
         <S.Topbar>
+          {isAdmin ? (
+            <S.MobileMenuBtn
+              type="button"
+              onClick={() => setMobileAdminMenuOpen(true)}
+              aria-label="Abrir menu mobile"
+            >
+              <Menu size={18} aria-hidden />
+            </S.MobileMenuBtn>
+          ) : null}
           <S.TopbarGreeting>{getGreeting()}, {displayName}.</S.TopbarGreeting>
           <S.TopbarRight>
             <S.NotificationArea>
@@ -605,6 +662,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             {children}
           </S.ContentInner>
         </S.ContentScroll>
+        {isAdmin ? (
+          <S.MobileBottomNav aria-label="Navegação principal mobile">
+            {ADMIN_MOBILE_PRIMARY_NAV_ITEMS.map(({ to, label, Icon }) => (
+              <S.MobileBottomNavLink key={to} to={to}>
+                <Icon size={18} aria-hidden />
+                <span>{label}</span>
+              </S.MobileBottomNavLink>
+            ))}
+          </S.MobileBottomNav>
+        ) : null}
       </S.ContentArea>
     </S.Shell>
   );
