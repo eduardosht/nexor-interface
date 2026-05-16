@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
-import logoNexor from '../../../assets/logo-nexor.png';
+import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const STORAGE_KEY = 'nexor-sidebar-collapsed';
@@ -540,7 +540,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
       <S.Sidebar $collapsed={collapsed}>
         <S.SidebarTop $collapsed={collapsed}>
-          <S.Logo src={logoNexor} alt="Nexor" $collapsed={collapsed} />
+          <S.Logo src={publicOptimizedImages.shared.nexorLogo.webp} alt="Nexor" width={260} height={83} $collapsed={collapsed} />
           <S.ToggleBtn onClick={toggle} aria-label={collapsed ? 'Expandir menu' : 'Colapsar menu'}>
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </S.ToggleBtn>

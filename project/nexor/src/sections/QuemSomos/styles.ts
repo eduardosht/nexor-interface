@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import labImage from '../../assets/backgrounds/banner-2.png';
+import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import { fullBleedSection } from '../../styles/layout';
 
 export const Section = styled.section`
@@ -21,8 +21,14 @@ export const BackgroundImage = styled.div`
   inset: 0;
   background:
     linear-gradient(180deg, rgba(10, 10, 10, 0.86) 0%, rgba(10, 10, 10, 0.92) 52%, rgba(10, 10, 10, 0.4) 100%),
-    url(${labImage}) center center / cover no-repeat;
+    ${imageSet(publicOptimizedImages.home.lab.desktop)} center center / cover no-repeat;
   transform: scale(1.02);
+
+  @media (max-width: 768px) {
+    background-image:
+      linear-gradient(180deg, rgba(10, 10, 10, 0.86) 0%, rgba(10, 10, 10, 0.92) 52%, rgba(10, 10, 10, 0.4) 100%),
+      ${imageSet(publicOptimizedImages.home.lab.mobile)};
+  }
 `;
 
 export const BackgroundMesh = styled.div`
@@ -140,4 +146,3 @@ export const PillarDesc = styled.p`
   color: rgba(250, 250, 250, 0.78);
   margin: 0;
 `;
-

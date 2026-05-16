@@ -1,6 +1,14 @@
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+
+export const MobilePublicNavigationSpace = createGlobalStyle`
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+  }
+`;
 
 export const Nav = styled(motion.nav)`
   position: fixed;
@@ -105,5 +113,63 @@ export const EnterButton = styled(Link)`
   @media (max-width: 768px) {
     font-size: 12px;
     padding: 8px 16px;
+  }
+`;
+
+export const MobileBottomNav = styled.nav`
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 105;
+  display: none;
+  align-items: center;
+  justify-content: space-around;
+  min-height: calc(64px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 -10px 28px rgba(23, 23, 23, 0.08);
+
+  @media (max-width: 768px) {
+    display: flex;
+  }
+`;
+
+export const MobileBottomNavButton = styled.button`
+  min-width: 0;
+  flex: 1;
+  min-height: 52px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  font-family: ${({ theme }) => theme.fonts.body};
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+    outline: none;
+  }
+
+  span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;

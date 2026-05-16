@@ -27,11 +27,12 @@ describe('painel page structure', () => {
     expect(existsSync(resolve(painelRoot, 'CadastroPerfilBiteplaner', 'index.test.tsx'))).toBe(true);
   });
 
-  it('routes import painel pages through the painel barrel', () => {
+  it('routes lazy-load painel pages without static painel imports in the public entry', () => {
     const source = readFileSync(routesFile, 'utf8');
 
-    expect(source).not.toMatch(/from '\.\.\/pages\/painel\/[A-Z]/);
-    expect(source).toMatch(/from '\.\.\/pages\/painel'/);
+    expect(source).not.toMatch(/from '\.\.\/pages\/painel/);
+    expect(source).toMatch(/lazy\(\(\) => import\('\.\.\/pages\/painel\/PainelHome'\)/);
+    expect(source).toMatch(/lazy\(\(\) => import\('\.\.\/pages\/painel\/admin\/AdminHome'\)/);
   });
 
   it('uses explicit index imports for moved shared painel modules', () => {
