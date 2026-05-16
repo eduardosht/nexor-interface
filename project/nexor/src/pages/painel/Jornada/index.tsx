@@ -14,12 +14,11 @@ import {
   type DemoTimelineEvent,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
-import { OrderStepHeader, type OrderStepKey } from '../components/OrderStepHeader';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import type { StepTone } from './styles';
 import * as S from './styles';
 
-type JourneyStepKey = OrderStepKey;
+type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
 
 type JourneyStep = {
   key: JourneyStepKey;
@@ -223,7 +222,6 @@ export function Jornada() {
     [orders, primaryOrder, selectedFormsOrderId]
   );
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
-  const currentStep = selectedFormsOrder ? JOURNEY_STEPS[currentStepIndex]?.key ?? 'prerequisite' : 'prerequisite';
   const journeyAction = getJourneyAction(selectedFormsOrder);
   const workflowFormsByStep = useMemo(() => {
     const grouped = new Map<JourneyStepKey, DemoWorkflowForm[]>();
@@ -273,21 +271,13 @@ export function Jornada() {
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title="Jornada compartilhada do atleta"
-        description="Esta leitura mostra como o mesmo conjunto de pedidos vai mudando conforme outras personas interagem com a demo."
-        currentStep={currentStep}
-        order={selectedFormsOrder}
-        orderHelpText="Este pedido está selecionado para exibir a jornada, os formulários e os feedbacks vinculados ao fluxo."
-      />
-
       {loading ? <S.Banner>Carregando jornada...</S.Banner> : null}
       {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
       {selectedFormsOrder ? (
         <S.StepFlow ref={stepFlowRef} data-testid="athlete-journey-steps">
           <S.SectionHeader>
-            <S.SectionTitle>Fluxo visual da jornada</S.SectionTitle>
+            <S.SectionTitle as="h1">Fluxo visual da jornada</S.SectionTitle>
             <S.Description>
               Os passos abaixo mostram em que ponto o pedido {selectedFormsOrder.id} está e quais formulários ou feedbacks fazem parte de cada etapa.
             </S.Description>

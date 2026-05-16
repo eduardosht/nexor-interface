@@ -7,13 +7,35 @@ export const Page = styled.div`
   gap: 24px;
 `;
 
-export const Hero = styled.section`
+export const Hero = styled.section<{ $showcase?: boolean }>`
   display: grid;
-  gap: 10px;
-  padding: 24px;
-  border-radius: 16px;
+  grid-template-columns: ${({ $showcase }) => ($showcase ? 'minmax(0, 1fr) minmax(320px, 0.9fr)' : '1fr')};
+  align-items: ${({ $showcase }) => ($showcase ? 'center' : 'stretch')};
+  gap: ${({ $showcase }) => ($showcase ? '28px' : '10px')};
+  min-height: ${({ $showcase }) => ($showcase ? '260px' : 'auto')};
+  padding: ${({ $showcase }) => ($showcase ? '38px 46px' : '24px')};
+  border-radius: ${({ $showcase }) => ($showcase ? '18px' : '16px')};
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
+  background: ${({ $showcase, theme }) =>
+    $showcase
+      ? `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
+    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
+    ${theme.colors.bgElevated}`
+      : theme.colors.bgElevated};
+  box-shadow: ${({ $showcase }) => ($showcase ? '0 18px 48px rgba(15, 23, 42, 0.07)' : 'none')};
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding: ${({ $showcase }) => ($showcase ? '28px' : '24px')};
+  }
+`;
+
+export const HeroCopy = styled.div`
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 `;
 
 export const Eyebrow = styled.span`
@@ -24,20 +46,155 @@ export const Eyebrow = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const Title = styled.h1`
+export const Title = styled.h1<{ $showcase?: boolean }>`
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-size: ${({ $showcase }) => ($showcase ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(1.8rem, 3vw, 2.4rem)')};
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
+  line-height: ${({ $showcase }) => ($showcase ? '0.98' : '1.1')};
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const Description = styled.p`
+export const Description = styled.p<{ $showcase?: boolean }>`
   margin: 0;
   max-width: 760px;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: ${({ $showcase }) => ($showcase ? 'clamp(1rem, 1.4vw, 1.18rem)' : '14px')};
+  line-height: ${({ $showcase }) => ($showcase ? '1.75' : '1.6')};
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const HeroVisual = styled.div`
+  position: relative;
+  min-height: 190px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+export const HeroBrowser = styled.div`
+  position: absolute;
+  inset: 0 0 0 24px;
+  border-radius: 16px 16px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 22px 42px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+`;
+
+export const HeroBrowserChrome = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #f59e0b;
+  }
+
+  span:nth-child(2) {
+    background: #fbbf24;
+  }
+
+  span:nth-child(3) {
+    background: #d1d5db;
+  }
+`;
+
+export const HeroBrowserBody = styled.div`
+  position: relative;
+  height: calc(100% - 34px);
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px) 0 0 / 33.3% 100%,
+    linear-gradient(180deg, rgba(15, 23, 42, 0.04), transparent 44%);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 12%;
+    width: 72px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+  }
+
+  &::before {
+    top: 20px;
+  }
+
+  &::after {
+    top: 46px;
+    width: 48px;
+  }
+`;
+
+export const HeroChartLine = styled.span`
+  position: absolute;
+  left: 13%;
+  right: 8%;
+  top: 48%;
+  height: 54px;
+  border-top: 2px solid rgba(15, 23, 42, 0.32);
+  transform: skewY(-16deg);
+`;
+
+export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean }>`
+  position: absolute;
+  left: ${({ $left }) => $left};
+  top: ${({ $top }) => $top};
+  width: ${({ $active }) => ($active ? '34px' : '10px')};
+  height: ${({ $active }) => ($active ? '34px' : '10px')};
+  border-radius: 999px;
+  border: ${({ $active }) => ($active ? '8px solid rgba(245, 158, 11, 0.56)' : '2px solid rgba(15, 23, 42, 0.66)')};
+  background: ${({ $active }) => ($active ? '#f59e0b' : '#fff')};
+  transform: translate(-50%, -50%);
+  box-shadow: ${({ $active }) => ($active ? '0 0 0 4px rgba(245, 158, 11, 0.2)' : 'none')};
+`;
+
+export const HeroFloatingCard = styled.div`
+  position: absolute;
+  left: -8px;
+  top: 62px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 230px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  span {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
+export const HeroFloatingIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #16a34a;
 `;
 
 export const Banner = styled.div`
@@ -107,6 +264,68 @@ export const StatsGrid = styled.section`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+`;
+
+type AthleteTone = 'blue' | 'amber' | 'green';
+
+const athleteTone = {
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(59, 130, 246, 0.06))',
+    color: '#2563eb',
+    halo: 'rgba(59, 130, 246, 0.12)'
+  },
+  amber: {
+    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06))',
+    color: '#d18a00',
+    halo: 'rgba(245, 158, 11, 0.14)'
+  },
+  green: {
+    bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))',
+    color: '#16a34a',
+    halo: 'rgba(34, 197, 94, 0.12)'
+  }
+} satisfies Record<AthleteTone, { bg: string; color: string; halo: string }>;
+
+export const AthleteStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const AthleteStatCard = styled.article<{ $tone: AthleteTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 136px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const AthleteStatIcon = styled.span<{ $tone: AthleteTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: ${({ $tone }) => athleteTone[$tone].bg};
+  color: ${({ $tone }) => athleteTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => athleteTone[$tone].halo};
+`;
+
+export const AthleteStatContent = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 `;
 
 export const PartnerDashboardGrid = styled.section`
@@ -357,6 +576,28 @@ export const PanelText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const AthleteCasePanel = styled.section`
+  display: grid;
+  gap: 24px;
+  padding: 28px 30px;
+  border-radius: 18px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+
+  ${PanelTitle} {
+    font-size: clamp(1.5rem, 2vw, 1.85rem);
+  }
+
+  ${PanelText} {
+    font-size: 15px;
+  }
+
+  @media (max-width: 720px) {
+    padding: 22px;
+  }
+`;
+
 export const ActionRow = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -367,6 +608,7 @@ export const PrimaryLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 36px;
   padding: 0 14px;
   border-radius: 8px;
@@ -381,6 +623,7 @@ export const SecondaryLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 36px;
   padding: 0 14px;
   border-radius: 8px;
@@ -494,6 +737,56 @@ export const OrderText = styled.p`
   font-size: 13px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const AthleteOrderHighlight = styled.article`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 22px;
+  padding: 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.12), transparent 32%),
+    linear-gradient(135deg, rgba(255, 251, 235, 0.72), rgba(255, 255, 255, 0.94));
+
+  ${OrderText} {
+    font-size: 14px;
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const AthleteOrderAvatar = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 18px;
+  font-weight: 800;
+`;
+
+export const AthleteOrderMain = styled.div`
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+`;
+
+export const AthleteOrderHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+  }
 `;
 
 export const EmptyState = styled.div`

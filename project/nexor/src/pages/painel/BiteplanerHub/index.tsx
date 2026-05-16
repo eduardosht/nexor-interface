@@ -1,6 +1,23 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, Check, Copy, Download, Eye, FileText, Mail, MessageCircle, PartyPopper, Stethoscope, X, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  ChevronRight,
+  Clock3,
+  Copy,
+  Download,
+  ExternalLink,
+  Eye,
+  FileText,
+  Flag,
+  Mail,
+  MessageCircle,
+  PartyPopper,
+  Stethoscope,
+  X,
+  XCircle
+} from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   DataTable,
@@ -692,22 +709,36 @@ export function BiteplanerHub() {
 
   const currentCopy = selectedMode ? MODE_COPY[selectedMode] : null;
   const athleteOrder = getAthletePrimaryOrder(orders);
+  const athleteNextPath = athleteOrder ? getAthleteNextPath(athleteOrder) : '#';
+  const athleteNextStepLabel = athleteOrder
+    ? athleteNextPath === '/painel/pre-requisito'
+      ? 'concluir o pre-requisito'
+      : athleteNextPath === '/painel/compra'
+        ? 'confirmar a compra mock'
+        : 'acompanhar a jornada completa'
+    : 'aguardar o próximo caso';
 
   const athleteStats = [
     {
-      label: 'Pedidos visiveis',
+      label: 'Pedidos visíveis',
       value: String(orders.length),
-      hint: 'Todos os casos do atleta que fazem parte da narrativa da demo.'
+      hint: 'Todos os casos do atleta que fazem parte da narrativa da demo.',
+      icon: <FileText size={22} aria-hidden />,
+      tone: 'blue' as const
     },
     {
       label: 'Status principal',
       value: athleteOrder?.statusLabel ?? 'Sem jornada',
-      hint: athleteOrder ? `Caso ativo ${athleteOrder.id}.` : 'Nenhum caso principal identificado.'
+      hint: athleteOrder ? `Caso ativo ${athleteOrder.id}.` : 'Nenhum caso principal identificado.',
+      icon: <Clock3 size={22} aria-hidden />,
+      tone: 'amber' as const
     },
     {
       label: 'Próximo passo',
       value: athleteOrder ? getStageLabel(athleteOrder) : 'Aguardando',
-      hint: 'A jornada sempre deixa claro qual a próxima etapa operacional.'
+      hint: 'A jornada sempre deixa claro qual a próxima etapa operacional.',
+      icon: <Flag size={22} aria-hidden />,
+      tone: 'green' as const
     }
   ];
 
@@ -1432,14 +1463,44 @@ export function BiteplanerHub() {
           </S.DentistStatusItem>
         </S.DentistStatusBar>
       ) : (
-        <S.Hero>
-          <S.Eyebrow>Biteplaner</S.Eyebrow>
-          <S.Title>{currentCopy?.title ?? 'Biteplaner'}</S.Title>
-          <S.Description>
-            {selectedMode === 'admin'
-              ? 'A narrativa transversal do produto continua no painel administrativo, com filtros e pipeline completo.'
-              : currentCopy?.description ?? 'Selecione um modo para visualizar o fluxo compartilhado da demo.'}
-          </S.Description>
+        <S.Hero $showcase={selectedMode === 'user'}>
+          <S.HeroCopy>
+            <S.Eyebrow>Biteplaner</S.Eyebrow>
+            <S.Title $showcase={selectedMode === 'user'}>{currentCopy?.title ?? 'Biteplaner'}</S.Title>
+            <S.Description $showcase={selectedMode === 'user'}>
+              {selectedMode === 'admin'
+                ? 'A narrativa transversal do produto continua no painel administrativo, com filtros e pipeline completo.'
+                : currentCopy?.description ?? 'Selecione um modo para visualizar o fluxo compartilhado da demo.'}
+            </S.Description>
+          </S.HeroCopy>
+          {selectedMode === 'user' ? (
+            <S.HeroVisual aria-hidden="true" data-testid="athlete-hero-visual">
+              <S.HeroBrowser>
+                <S.HeroBrowserChrome>
+                  <span />
+                  <span />
+                  <span />
+                </S.HeroBrowserChrome>
+                <S.HeroBrowserBody>
+                  <S.HeroChartLine />
+                  <S.HeroChartPoint $left="18%" $top="58%" />
+                  <S.HeroChartPoint $left="36%" $top="50%" />
+                  <S.HeroChartPoint $left="52%" $top="42%" />
+                  <S.HeroChartPoint $left="72%" $top="42%" />
+                  <S.HeroChartPoint $left="88%" $top="38%" $active />
+                </S.HeroBrowserBody>
+              </S.HeroBrowser>
+              <S.HeroFloatingCard>
+                <S.HeroFloatingIcon>
+                  <Check size={20} aria-hidden />
+                </S.HeroFloatingIcon>
+                <span>
+                  Jornada ativa
+                  <strong>{athleteOrder?.id ?? 'BP-DEMO-005'}</strong>
+                </span>
+              </S.HeroFloatingCard>
+            </S.HeroVisual>
+          ) : null}
         </S.Hero>
       )}
 
@@ -1534,17 +1595,21 @@ export function BiteplanerHub() {
 
       {!loading && selectedMode === 'user' ? (
         <>
-          <S.StatsGrid>
+          <S.AthleteStatsGrid>
             {athleteStats.map((stat) => (
-              <S.StatCard key={stat.label}>
-                <S.StatLabel>{stat.label}</S.StatLabel>
-                <S.StatValue>{stat.value}</S.StatValue>
-                <S.StatHint>{stat.hint}</S.StatHint>
-              </S.StatCard>
+              <S.AthleteStatCard key={stat.label} $tone={stat.tone}>
+                <S.AthleteStatIcon $tone={stat.tone}>{stat.icon}</S.AthleteStatIcon>
+                <S.AthleteStatContent>
+                  <S.StatLabel>{stat.label}</S.StatLabel>
+                  <S.StatValue>{stat.value}</S.StatValue>
+                  <S.StatHint>{stat.hint}</S.StatHint>
+                </S.AthleteStatContent>
+                <ChevronRight size={22} aria-hidden />
+              </S.AthleteStatCard>
             ))}
-          </S.StatsGrid>
+          </S.AthleteStatsGrid>
 
-          <S.Panel>
+          <S.AthleteCasePanel data-testid="athlete-primary-case">
             <S.PanelHeader>
               <S.PanelTitle>Caso principal do atleta</S.PanelTitle>
               <S.PanelText>
@@ -1553,35 +1618,35 @@ export function BiteplanerHub() {
             </S.PanelHeader>
 
             {athleteOrder ? (
-              <S.OrderCard>
-                <S.OrderHeader>
-                  <div>
+              <S.AthleteOrderHighlight data-testid="athlete-primary-order">
+                <S.AthleteOrderAvatar aria-hidden="true">BP</S.AthleteOrderAvatar>
+                <S.AthleteOrderMain>
+                  <S.AthleteOrderHeader>
+                    <div>
                     <S.OrderTitle>{athleteOrder.id}</S.OrderTitle>
                     <S.OrderText>
                       {athleteOrder.customer?.full_name ?? 'Atleta demo'} - etapa {getStageLabel(athleteOrder)}.
                     </S.OrderText>
-                  </div>
-                  <S.OrderMeta>
+                    </div>
                     <Chip tone={getStatusTone(athleteOrder.status)} data-testid="athlete-order-status">
                       <StatusIndicator
                         color={getOrderStatusPresentation(athleteOrder).color}
                         label={getOrderStatusPresentation(athleteOrder).label}
                       />
                     </Chip>
-                  </S.OrderMeta>
-                </S.OrderHeader>
-                <S.OrderText>
-                  Próximo passo visível: {getAthleteNextPath(athleteOrder) === '/painel/pre-requisito'
-                    ? 'concluir o pre-requisito'
-                    : getAthleteNextPath(athleteOrder) === '/painel/compra'
-                    ? 'confirmar a compra mock'
-                    : 'acompanhar a jornada completa'}
-                  .
-                </S.OrderText>
-                <S.ActionRow>
-                  <S.PrimaryLink to={getAthleteNextPath(athleteOrder)}>Continuar fluxo</S.PrimaryLink>
-                  <S.SecondaryLink to="/painel/biteplaner/jornada">Abrir jornada</S.SecondaryLink>
-                </S.ActionRow>
+                  </S.AthleteOrderHeader>
+                  <S.OrderText>Próximo passo visível: {athleteNextStepLabel}.</S.OrderText>
+                  <S.ActionRow>
+                    <S.PrimaryLink to={athleteNextPath}>
+                      Continuar fluxo
+                      <ChevronRight size={16} aria-hidden />
+                    </S.PrimaryLink>
+                    <S.SecondaryLink to="/painel/biteplaner/jornada">
+                      Abrir jornada
+                      <ExternalLink size={15} aria-hidden />
+                    </S.SecondaryLink>
+                  </S.ActionRow>
+                </S.AthleteOrderMain>
                 {athleteOrder.status === 'in_progress' && athleteAppointment ? (
                   <S.ActionRow>
                     {!athleteAppointment.user_confirmed_at ? (
@@ -1606,11 +1671,11 @@ export function BiteplanerHub() {
                 {athleteOrder.status === 'appointment_confirmed' ? (
                   <S.OrderText>Consulta confirmada por paciente e dentista.</S.OrderText>
                 ) : null}
-              </S.OrderCard>
+              </S.AthleteOrderHighlight>
             ) : (
               <S.EmptyState>Nenhum caso do atleta apareceu neste momento da demo.</S.EmptyState>
             )}
-          </S.Panel>
+          </S.AthleteCasePanel>
         </>
       ) : null}
 

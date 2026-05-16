@@ -3,20 +3,9 @@ import { Link } from 'react-router-dom';
 
 export type StepTone = 'complete' | 'current' | 'upcoming';
 
-const stepCardStyles = `
-  display: grid;
-  gap: 10px;
-  height: 100%;
-  padding: 16px;
-  border-radius: 14px;
-  border-width: 1px;
-  border-style: solid;
-  text-decoration: none;
-`;
-
 export const Page = styled.div`
   display: grid;
-  gap: 24px;
+  gap: 28px;
 `;
 
 export const Description = styled.p`
@@ -38,11 +27,7 @@ export const Banner = styled.div`
 
 export const StepFlow = styled.section`
   display: grid;
-  gap: 18px;
-  padding: 22px;
-  border-radius: 16px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
+  gap: 26px;
 `;
 
 export const SectionHeader = styled.div`
@@ -52,7 +37,7 @@ export const SectionHeader = styled.div`
 
 export const SectionTitle = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
@@ -63,14 +48,14 @@ export const StepList = styled.ol`
   padding: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  gap: 28px;
   min-width: 1040px;
 `;
 
 export const StepScroll = styled.div`
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 6px;
+  padding: 16px 8px 10px;
 `;
 
 export const StepFormsSection = styled.div`
@@ -81,7 +66,7 @@ export const StepFormsSection = styled.div`
 export const StepFormsHeader = styled.div`
   display: grid;
   gap: 4px;
-  padding-top: 4px;
+  padding-top: 26px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
 `;
 
@@ -93,47 +78,44 @@ export const StepFormsGrid = styled.div`
 export const StepFormsGroup = styled.div`
   display: grid;
   gap: 12px;
-  padding: 16px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.bgBase};
 `;
 
 export const StepItem = styled.li<{ $tone: StepTone }>`
   position: relative;
+  min-width: 0;
+  text-align: center;
+
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 28px;
-    left: calc(100% + 6px);
-    width: 12px;
-    height: 2px;
-    background: ${({ $tone, theme }) =>
-      $tone === 'upcoming' ? theme.colors.borderDefault : theme.colors.textPrimary};
+    top: 24px;
+    left: calc(50% + 52px);
+    width: calc(100% - 76px);
+    height: 1px;
+    background: ${({ theme }) => theme.colors.borderDefault};
   }
 `;
 
 export const StepLink = styled(Link)<{ $tone: StepTone }>`
-  ${stepCardStyles}
-  border-color: ${({ $tone, theme }) =>
-    $tone === 'complete'
-      ? '#bbf7d0'
-      : $tone === 'current'
-        ? theme.colors.textPrimary
-        : theme.colors.borderDefault};
-  background: ${({ $tone, theme }) =>
-    $tone === 'complete' ? '#f0fdf4' : $tone === 'current' ? theme.colors.bgBase : theme.colors.bgElevated};
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 14px;
+  min-height: 250px;
   color: inherit;
+  text-decoration: none;
 
   &:hover {
-    border-color: ${({ $tone, theme }) => ($tone === 'complete' ? '#86efac' : theme.colors.textPrimary)};
+    color: inherit;
   }
 `;
 
 export const StepPanel = styled.div<{ $tone: StepTone }>`
-  ${stepCardStyles}
-  border-color: ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 14px;
+  min-height: 250px;
   opacity: ${({ $tone }) => ($tone === 'upcoming' ? 0.48 : 1)};
 `;
 
@@ -141,41 +123,45 @@ export const StepBadge = styled.span<{ $tone: StepTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
   background: ${({ $tone, theme }) =>
-    $tone === 'complete' ? '#15803d' : $tone === 'current' ? theme.colors.textPrimary : theme.colors.bgElevated};
+    $tone === 'current' || $tone === 'complete' ? theme.colors.textPrimary : theme.colors.bgInset};
   color: ${({ $tone, theme }) =>
     $tone === 'complete' || $tone === 'current' ? theme.colors.bgBase : theme.colors.textPrimary};
-  font-size: 14px;
+  box-shadow: ${({ $tone }) => ($tone === 'current' ? '0 8px 18px rgba(0, 0, 0, 0.18)' : 'none')};
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0;
 `;
 
 export const StepName = styled.h3`
   margin: 0;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export const StepCopy = styled.p`
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  max-width: 190px;
+  font-size: 14px;
+  line-height: 1.55;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const StepStatus = styled.span<{ $tone: StepTone }>`
   width: fit-content;
-  padding: 4px 8px;
-  border-radius: 6px;
+  justify-self: center;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: ${({ $tone, theme }) => ($tone === 'current' ? `1px solid ${theme.colors.borderDefault}` : '0')};
   background: ${({ $tone, theme }) =>
-    $tone === 'complete' ? '#dcfce7' : $tone === 'current' ? theme.colors.bgElevated : theme.colors.bgInset};
+    $tone === 'complete' ? theme.colors.bgInset : $tone === 'current' ? theme.colors.bgBase : theme.colors.bgInset};
   color: ${({ $tone, theme }) =>
-    $tone === 'complete' ? '#166534' : $tone === 'current' ? theme.colors.textPrimary : theme.colors.textSecondary};
-  font-size: 11px;
+    $tone === 'current' ? theme.colors.textPrimary : theme.colors.textSecondary};
+  font-size: 12px;
   font-weight: 800;
 `;
 
@@ -192,10 +178,8 @@ export const SummaryGrid = styled.div`
 export const SummaryCard = styled.section`
   display: grid;
   gap: 12px;
-  padding: 22px;
-  border-radius: 16px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
+  padding-top: 18px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
 `;
 
 export const SummaryList = styled.dl`

@@ -55,7 +55,7 @@ describe('Jornada', () => {
     mockApiPost.mockReset();
   });
 
-  it('renders the current shared athlete order status', async () => {
+  it('starts directly with the flat visual journey for the current athlete order', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -74,13 +74,10 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/pedido/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/bp-demo-006/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/em acompanhamento/i);
+    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { level: 1, name: /fluxo visual da jornada/i })).toBeInTheDocument();
+    expect(screen.getByText(/pedido bp-demo-006/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
   });
 
   it('shows the next-step CTA based on the active order', async () => {
@@ -154,8 +151,8 @@ describe('Jornada', () => {
     expect(screen.getByTestId('journey-step-prerequisite')).toHaveAttribute('href', '/painel/pre-requisito');
     expect(screen.getByTestId('journey-step-consultation')).toHaveAttribute('href', '/painel/consulta-inicial');
     expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/concluído com sucesso/i);
-    expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).borderTopColor).toBe('rgb(187, 247, 208)');
-    expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).backgroundColor).toBe('rgb(240, 253, 244)');
+    expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).borderTopStyle).toBe('');
     expect(screen.getByText(/^2$/)).toBeInTheDocument();
     expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
   });
@@ -257,6 +254,8 @@ describe('Jornada', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument());
+    expect(getComputedStyle(screen.getByTestId('journey-step-forms-consultation')).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(screen.getByTestId('journey-step-forms-consultation')).borderTopStyle).toBe('');
     expect(screen.getByLabelText(/nome completo/i)).toHaveValue('Joao Demo');
     fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '11999999999' } });
     expect(screen.getByLabelText(/telefone/i)).toHaveValue('(11) 99999-9999');
