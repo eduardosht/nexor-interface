@@ -9,3 +9,15 @@ export const FlowHeader = styled.div`
   align-items: center;
   flex-wrap: wrap;
 `;
+
+export const DesktopSettingsWrap = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+export const MobileSettingsWrap = styled.section`
+  @media (max-width: 768px) {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+`;
