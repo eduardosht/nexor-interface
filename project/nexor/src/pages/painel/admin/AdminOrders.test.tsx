@@ -221,4 +221,42 @@ describe('AdminOrders', () => {
     expect(within(mobileList).queryByText('BP-DEMO-004')).not.toBeInTheDocument();
     expect(within(mobileList).getByText('BP-DEMO-005')).toBeInTheDocument();
   });
+
+  it('discards draft mobile filters when the sheet closes without applying', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: 'BP-DEMO-004',
+          status: 'awaiting_dentist_forms',
+          statusLabel: 'Aguardando preenchimento dentista',
+          stage: 'awaiting_dentist_forms',
+          created_at: '2026-05-02T12:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          operationalReadiness: { preLabReady: false, pendingItems: [], summary: 'Pendente.' },
+        },
+        {
+          id: 'BP-DEMO-005',
+          status: 'lab_processing',
+          statusLabel: 'Em processo - Laboratório',
+          stage: 'lab_production',
+          created_at: '2026-05-03T08:00:00.000Z',
+          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
+          operationalReadiness: { preLabReady: true, pendingItems: [], summary: 'Pronta.' },
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByText(/abrir filtros de ordens/i));
+    const statusFilter = screen.getByTestId('admin-orders-mobile-filter-status');
+    fireEvent.click(within(statusFilter).getByRole('button', { name: /todos os status/i }));
+    fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
+    fireEvent.click(screen.getByRole('button', { name: /fechar filtros/i }));
+
+    expect(screen.queryByText(/status: em processo - laboratório/i)).not.toBeInTheDocument();
+    const mobileList = screen.getByTestId('admin-orders-mobile-list');
+    expect(within(mobileList).getByText('BP-DEMO-004')).toBeInTheDocument();
+    expect(within(mobileList).getByText('BP-DEMO-005')).toBeInTheDocument();
+  });
 });

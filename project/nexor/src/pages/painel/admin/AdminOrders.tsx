@@ -61,6 +61,8 @@ export function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [stageFilter, setStageFilter] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
+  const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
 
   useEffect(() => {
     if (!selectedProduct || !token) {
@@ -195,6 +197,29 @@ export function AdminOrders() {
     { key: 'date', label: 'Atualizado em', render: (row) => formatDate(row.created_at) },
   ];
 
+  function openMobileFilters() {
+    setDraftStatusFilter(statusFilter);
+    setDraftStageFilter(stageFilter);
+    setMobileFiltersOpen(true);
+  }
+
+  function closeMobileFilters() {
+    setDraftStatusFilter(statusFilter);
+    setDraftStageFilter(stageFilter);
+    setMobileFiltersOpen(false);
+  }
+
+  function clearDraftMobileFilters() {
+    setDraftStatusFilter([]);
+    setDraftStageFilter([]);
+  }
+
+  function applyMobileFilters() {
+    setStatusFilter(draftStatusFilter);
+    setStageFilter(draftStageFilter);
+    setMobileFiltersOpen(false);
+  }
+
   return (
     <PageStack>
       <PageHeader>
@@ -262,7 +287,7 @@ export function AdminOrders() {
                   setSearch(event.target.value);
                 }}
               />
-              <Button type="button" variant="secondary" onClick={() => setMobileFiltersOpen(true)}>
+              <Button type="button" variant="secondary" onClick={openMobileFilters}>
                 Abrir filtros de ordens
               </Button>
             </S.MobileFilterTriggerRow>
@@ -316,19 +341,16 @@ export function AdminOrders() {
             <FilterSheet
               open={mobileFiltersOpen}
               title="Filtros de ordens"
-              onClose={() => setMobileFiltersOpen(false)}
-              onClear={() => {
-                setStatusFilter([]);
-                setStageFilter([]);
-              }}
-              onApply={() => setMobileFiltersOpen(false)}
+              onClose={closeMobileFilters}
+              onClear={clearDraftMobileFilters}
+              onApply={applyMobileFilters}
             >
               <S.FilterSheetGrid>
                 <div data-testid="admin-orders-mobile-filter-status">
                   <MultiSelect
                     options={STATUS_OPTIONS}
-                    value={statusFilter}
-                    onChange={setStatusFilter}
+                    value={draftStatusFilter}
+                    onChange={setDraftStatusFilter}
                     placeholder="Todos os status"
                     label="Status"
                   />
@@ -337,8 +359,8 @@ export function AdminOrders() {
                 <div data-testid="admin-orders-mobile-filter-stage">
                   <MultiSelect
                     options={stageOptions}
-                    value={stageFilter}
-                    onChange={setStageFilter}
+                    value={draftStageFilter}
+                    onChange={setDraftStageFilter}
                     placeholder="Todas as etapas"
                     label="Etapa"
                   />
