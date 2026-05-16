@@ -96,14 +96,12 @@ describe('Compra', () => {
       ],
     });
     mockApiPost.mockResolvedValueOnce({
-      order: {
-        id: 'BP-DEMO-003',
+      id: 'BP-DEMO-003',
         status: 'payment_confirmed',
         statusLabel: 'Pronto para laboratório',
         stage: 'ready_for_lab',
         created_at: '2026-05-01T10:00:00.000Z',
         customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-      },
     });
 
     renderPage();
@@ -112,7 +110,11 @@ describe('Compra', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirmar compra mock/i }));
 
     await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith('/v1/orders/BP-DEMO-003/payment-confirmed', {}, 'tok')
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/admin/orders/BP-DEMO-003/payment-confirmation',
+        {},
+        'tok'
+      )
     );
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pronto para laboratório/i);
   });

@@ -126,6 +126,24 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/practice-location-selection', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+
+    return new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        {
+          type: 'schedule-initial-consultation',
+          practiceLocationId:
+            typeof body.practiceLocationId === 'string' ? body.practiceLocationId : ''
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
+
   server.post('/v1/orders/:orderId/initial-consultation-accepted', withDemoErrors((_schema, request) =>
     new Response(
       200,
@@ -273,6 +291,18 @@ export function orderHandlers(server: Server) {
           { requestHeaders: request.requestHeaders }
         )
       }
+    )
+  ));
+
+  server.post('/v1/admin/orders/:orderId/payment-confirmation', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        { type: 'confirm-payment' },
+        { requestHeaders: request.requestHeaders }
+      )
     )
   ));
 

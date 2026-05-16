@@ -3,7 +3,10 @@ import { env } from '../config/env';
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
+    public readonly code?: string,
+    public readonly requestId?: string,
+    public readonly details?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -25,7 +28,21 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new ApiError('Não foi possível concluir esta operação agora.', response.status);
+    const fallbackMessage = 'Não foi possível concluir esta operação agora.';
+    const errorBody = await response.json().catch(() => null) as {
+      error?: unknown;
+      message?: unknown;
+      requestId?: unknown;
+      details?: unknown;
+    } | null;
+
+    throw new ApiError(
+      typeof errorBody?.message === 'string' ? errorBody.message : fallbackMessage,
+      response.status,
+      typeof errorBody?.error === 'string' ? errorBody.error : undefined,
+      typeof errorBody?.requestId === 'string' ? errorBody.requestId : undefined,
+      errorBody?.details
+    );
   }
 
   return (await response.json()) as T;
