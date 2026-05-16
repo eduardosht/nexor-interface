@@ -9,3 +9,25 @@ export const FlowHeader = styled.div`
   align-items: center;
   flex-wrap: wrap;
 `;
+
+export const DesktopSettingsWrap = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+export const DesktopNoticeWrap = styled.div`
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+export const MobileSettingsWrap = styled.section`
+  @media (min-width: 769px) {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+`;

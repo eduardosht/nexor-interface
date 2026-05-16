@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { depoimentos } from '../../data/depoimentos';
 import { fadeUp, staggerContainer } from '../../styles/motion';
-import biteplanerLogoWhite from '../../assets/biteplaner-logo-white.png';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 export function Depoimentos() {
@@ -27,7 +27,14 @@ export function Depoimentos() {
           {depoimentos.map((d) => (
             <S.Card key={d.nome}>
               <S.ProductBadge>
-                <img src={biteplanerLogoWhite} alt="Biteplaner" />
+                <img
+                  src={publicOptimizedImages.shared.biteplanerLogoWhite.webp}
+                  alt="Biteplaner"
+                  width={320}
+                  height={73}
+                  loading="lazy"
+                  decoding="async"
+                />
               </S.ProductBadge>
               <S.QuoteMark>"</S.QuoteMark>
               <S.QuoteText>{d.texto}</S.QuoteText>

@@ -1,4 +1,4 @@
-import biteplanerLogo from '../../assets/biteplaner-logo-white.png';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const FEATURES = [
@@ -12,7 +12,14 @@ export function BiteplanerCard() {
     <S.Card to="/biteplaner" aria-label="Conhecer Biteplaner">
       <S.CardHero>
         <S.AccentLine />
-        <S.Logo src={biteplanerLogo} alt="Biteplaner" />
+        <S.Logo
+          src={publicOptimizedImages.shared.biteplanerLogoWhite.webp}
+          alt="Biteplaner"
+          width={320}
+          height={73}
+          loading="lazy"
+          decoding="async"
+        />
         <S.Tagline>
           Protetor bucal personalizado desenvolvido com avaliação odontológica profissional e produção laboratorial de precisão.
         </S.Tagline>

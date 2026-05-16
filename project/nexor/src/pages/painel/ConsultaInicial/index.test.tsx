@@ -120,13 +120,11 @@ describe('ConsultaInicial', () => {
   it('lets the athlete confirm a scheduled consultation and link the order to the licensed dentist', async () => {
     mockApiGet.mockResolvedValueOnce({ orders: [scheduledOrder()] });
     mockApiPost.mockResolvedValueOnce({
-      order: {
-        ...scheduledOrder(),
+      ...scheduledOrder(),
         status: 'awaiting_dentist_acceptance',
         statusLabel: 'Aguardando aceite do dentista',
         stage: 'dentist_acceptance_pending',
         practice_location: { id: 'practice-demo-003', name: 'Instituto Paulistano de Odontologia Esportiva' },
-      },
     });
 
     renderPage();
@@ -148,7 +146,7 @@ describe('ConsultaInicial', () => {
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-002/initial-consultation-scheduled',
+        '/v1/orders/BP-DEMO-002/practice-location-selection',
         { practiceLocationId: 'practice-demo-003' },
         'tok'
       )

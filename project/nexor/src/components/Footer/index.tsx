@@ -1,5 +1,5 @@
 import { Button } from '@nexor/design-system';
-import logoDark from '../../assets/logo-nexor.png';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 
@@ -28,7 +28,14 @@ export function Footer({ onManageCookies }: FooterProps) {
       <S.Main>
         <S.Brand>
           <S.LogoLink href="#top" aria-label="Nexor — início">
-            <S.LogoImg src={logoDark} alt="Nexor" />
+            <S.LogoImg
+              src={publicOptimizedImages.shared.nexorLogo.webp}
+              alt="Nexor"
+              width={260}
+              height={83}
+              loading="lazy"
+              decoding="async"
+            />
           </S.LogoLink>
           <S.Tagline>
             Pesquisa, criação e tecnologia para atletas que exigem o máximo com segurança e resultado.

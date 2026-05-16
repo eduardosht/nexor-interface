@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "optimize:images": "node scripts/optimize-public-images.mjs",
+    "verify:images": "node scripts/check-optimized-images.mjs",
+    "prepush": "npm run verify:images && npm run typecheck && npm run test:run && npm run build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --max-warnings 0",
     "typecheck": "tsc --noEmit",
@@ -39,6 +42,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^25.0.1",
     "miragejs": "^0.1.48",
+    "sharp": "^0.34.5",
     "typescript": "~5.7.2",
     "vite": "^6.0.5",
     "vitest": "^4.1.6"

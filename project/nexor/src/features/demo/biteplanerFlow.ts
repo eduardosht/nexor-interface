@@ -653,7 +653,12 @@ export async function completePrerequisite(
 }
 
 export async function confirmPayment(orderId: string, token?: string) {
-  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/payment-confirmed`, {}, token);
+  const order = await api.post<DemoOrderSummary>(
+    `/v1/admin/orders/${orderId}/payment-confirmation`,
+    {},
+    token
+  );
+  return { order };
 }
 
 export async function scheduleInitialConsultation(
@@ -661,11 +666,12 @@ export async function scheduleInitialConsultation(
   practiceLocationId: string,
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/initial-consultation-scheduled`,
+  const order = await api.post<DemoOrderSummary>(
+    `/v1/orders/${orderId}/practice-location-selection`,
     { practiceLocationId },
     token
   );
+  return { order };
 }
 
 export async function acceptInitialConsultation(orderId: string, token?: string) {
@@ -681,11 +687,12 @@ export async function selectPracticeLocation(
   practiceLocationId: string,
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/select-practice-location`,
+  const order = await api.post<DemoOrderSummary>(
+    `/v1/orders/${orderId}/practice-location-selection`,
     { practiceLocationId },
     token
   );
+  return { order };
 }
 
 export async function registerClinicalDecision(

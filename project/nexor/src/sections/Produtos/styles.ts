@@ -41,16 +41,26 @@ export const ProductGrid = styled.div`
   }
 `;
 
-export const ImageCol = styled.div<{ $src: string }>`
-  background-image: url(${({ $src }) => $src});
-  background-size: cover;
-  background-position: center;
+export const ImageCol = styled.picture`
+  display: block;
   min-height: 420px;
   border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
 
   @media (max-width: 900px) {
     border-right: none;
     border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    min-height: 280px;
+  }
+`;
+
+export const ProductImage = styled.img`
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: cover;
+  display: block;
+
+  @media (max-width: 900px) {
     min-height: 280px;
   }
 `;
@@ -179,4 +189,3 @@ export const CtaLink = styled(Link)`
 
   &:hover { gap: 10px; }
 `;
-

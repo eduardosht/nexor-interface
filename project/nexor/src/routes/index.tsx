@@ -1,48 +1,51 @@
-import { Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RequireAdmin, RequireAuth, RequireNonAdmin } from '../features/auth/guards';
 import { Layout } from '../Layout';
-import { Home } from '../pages/Home';
-import { Privacidade } from '../pages/Privacidade';
-import { Termos } from '../pages/Termos';
-import { Cookies } from '../pages/Cookies';
-import { Login } from '../pages/Login';
-import { Cadastro } from '../pages/Cadastro';
-import { RecuperarSenha } from '../pages/RecuperarSenha';
-import { Sobre } from '../pages/Sobre';
-import { BiteplanerPage } from '../pages/BiteplanerPage';
-import { Parceiros } from '../pages/Parceiros';
-import {
-  BiteplanerHub,
-  Avaliacoes,
-  CadastroPerfilBiteplaner,
-  Compra,
-  ConsultaInicial,
-  Jornada,
-  MinhaConta,
-  PainelHome,
-  PartnerReferralPage,
-  PreRequisito,
-  ProducaoDentista,
-} from '../pages/painel';
 import { PortalLayout } from '../components/portal/PortalLayout';
 import { AdminPortalProvider } from '../features/admin/portal';
-import { AdminHome } from '../pages/painel/admin/AdminHome';
-import { AdminOrders } from '../pages/painel/admin/AdminOrders';
-import { AdminDentistLicensing } from '../pages/painel/admin/AdminDentistLicensing';
-import { AdminLabLicensing } from '../pages/painel/admin/AdminLabLicensing';
-import { AdminPartnerLicensing } from '../pages/painel/admin/AdminPartnerLicensing';
-import { AdminUsers } from '../pages/painel/admin/AdminUsers';
-import { AdminBusinessSettings } from '../pages/painel/admin/AdminBusinessSettings';
-import { AdminSystemSettings } from '../pages/painel/admin/AdminSystemSettings';
 import { useAuth } from '../hooks/useAuth';
+
+const Home = lazy(() => import('../pages/Home').then(({ Home }) => ({ default: Home })));
+const Privacidade = lazy(() => import('../pages/Privacidade').then(({ Privacidade }) => ({ default: Privacidade })));
+const Termos = lazy(() => import('../pages/Termos').then(({ Termos }) => ({ default: Termos })));
+const Cookies = lazy(() => import('../pages/Cookies').then(({ Cookies }) => ({ default: Cookies })));
+const Login = lazy(() => import('../pages/Login').then(({ Login }) => ({ default: Login })));
+const Cadastro = lazy(() => import('../pages/Cadastro').then(({ Cadastro }) => ({ default: Cadastro })));
+const RecuperarSenha = lazy(() => import('../pages/RecuperarSenha').then(({ RecuperarSenha }) => ({ default: RecuperarSenha })));
+const Sobre = lazy(() => import('../pages/Sobre').then(({ Sobre }) => ({ default: Sobre })));
+const BiteplanerPage = lazy(() => import('../pages/BiteplanerPage').then(({ BiteplanerPage }) => ({ default: BiteplanerPage })));
+const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) => ({ default: Parceiros })));
+const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
+const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
+const MinhaConta = lazy(() => import('../pages/painel/MinhaConta').then(({ MinhaConta }) => ({ default: MinhaConta })));
+const PreRequisito = lazy(() => import('../pages/painel/PreRequisito').then(({ PreRequisito }) => ({ default: PreRequisito })));
+const ConsultaInicial = lazy(() => import('../pages/painel/ConsultaInicial').then(({ ConsultaInicial }) => ({ default: ConsultaInicial })));
+const Compra = lazy(() => import('../pages/painel/Compra').then(({ Compra }) => ({ default: Compra })));
+const BiteplanerHub = lazy(() => import('../pages/painel/BiteplanerHub').then(({ BiteplanerHub }) => ({ default: BiteplanerHub })));
+const PartnerReferralPage = lazy(() => import('../pages/painel/PartnerReferralPage').then(({ PartnerReferralPage }) => ({ default: PartnerReferralPage })));
+const Avaliacoes = lazy(() => import('../pages/painel/Avaliacoes').then(({ Avaliacoes }) => ({ default: Avaliacoes })));
+const Jornada = lazy(() => import('../pages/painel/Jornada').then(({ Jornada }) => ({ default: Jornada })));
+const ProducaoDentista = lazy(() => import('../pages/painel/ProducaoDentista').then(({ ProducaoDentista }) => ({ default: ProducaoDentista })));
+const AdminHome = lazy(() => import('../pages/painel/admin/AdminHome').then(({ AdminHome }) => ({ default: AdminHome })));
+const AdminOrders = lazy(() => import('../pages/painel/admin/AdminOrders').then(({ AdminOrders }) => ({ default: AdminOrders })));
+const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
+const AdminLabLicensing = lazy(() => import('../pages/painel/admin/AdminLabLicensing').then(({ AdminLabLicensing }) => ({ default: AdminLabLicensing })));
+const AdminPartnerLicensing = lazy(() => import('../pages/painel/admin/AdminPartnerLicensing').then(({ AdminPartnerLicensing }) => ({ default: AdminPartnerLicensing })));
+const AdminUsers = lazy(() => import('../pages/painel/admin/AdminUsers').then(({ AdminUsers }) => ({ default: AdminUsers })));
+const AdminBusinessSettings = lazy(() => import('../pages/painel/admin/AdminBusinessSettings').then(({ AdminBusinessSettings }) => ({ default: AdminBusinessSettings })));
+const AdminSystemSettings = lazy(() => import('../pages/painel/admin/AdminSystemSettings').then(({ AdminSystemSettings }) => ({ default: AdminSystemSettings })));
+
+function LazyRoute({ children }: { children: ReactNode }) {
+  return <Suspense fallback={null}>{children}</Suspense>;
+}
 
 function PainelRoute({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       <RequireNonAdmin>
         <PortalLayout>
-          <Suspense fallback={null}>{children}</Suspense>
+          <LazyRoute>{children}</LazyRoute>
         </PortalLayout>
       </RequireNonAdmin>
     </RequireAuth>
@@ -55,7 +58,7 @@ function AdminPainelRoute({ children }: { children: ReactNode }) {
       <RequireAdmin>
         <AdminPortalProvider>
           <PortalLayout>
-            <Suspense fallback={null}>{children}</Suspense>
+            <LazyRoute>{children}</LazyRoute>
           </PortalLayout>
         </AdminPortalProvider>
       </RequireAdmin>
@@ -103,18 +106,18 @@ export const router = createBrowserRouter([
   {
     element: <Layout />,
     children: [
-      { path: '/', element: <Home /> },
-      { path: '/sobre', element: <Sobre /> },
-      { path: '/biteplaner', element: <BiteplanerPage /> },
-      { path: '/parceiros', element: <Parceiros /> },
-      { path: '/privacidade', element: <Privacidade /> },
-      { path: '/termos', element: <Termos /> },
-      { path: '/cookies', element: <Cookies /> },
+      { path: '/', element: <LazyRoute><Home /></LazyRoute> },
+      { path: '/sobre', element: <LazyRoute><Sobre /></LazyRoute> },
+      { path: '/biteplaner', element: <LazyRoute><BiteplanerPage /></LazyRoute> },
+      { path: '/parceiros', element: <LazyRoute><Parceiros /></LazyRoute> },
+      { path: '/privacidade', element: <LazyRoute><Privacidade /></LazyRoute> },
+      { path: '/termos', element: <LazyRoute><Termos /></LazyRoute> },
+      { path: '/cookies', element: <LazyRoute><Cookies /></LazyRoute> },
     ],
   },
-  { path: '/entrar', element: <Login /> },
-  { path: '/cadastro', element: <Cadastro /> },
-  { path: '/recuperar-senha', element: <RecuperarSenha /> },
+  { path: '/entrar', element: <LazyRoute><Login /></LazyRoute> },
+  { path: '/cadastro', element: <LazyRoute><Cadastro /></LazyRoute> },
+  { path: '/recuperar-senha', element: <LazyRoute><RecuperarSenha /></LazyRoute> },
   { path: '/conta', element: <ProtectedRedirect><AccountRedirect /></ProtectedRedirect> },
   { path: '/painel', element: <ProtectedRedirect><PortalRootRedirect /></ProtectedRedirect> },
   { path: '/painel/home', element: <PainelRoute><PainelHome /></PainelRoute> },

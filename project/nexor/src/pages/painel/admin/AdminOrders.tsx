@@ -1,4 +1,13 @@
-import { DataTable, Field, MultiSelect, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
+import {
+  Button,
+  DataTable,
+  Field,
+  FilterSheet,
+  MultiSelect,
+  ResponsiveDataList,
+  StatusIndicator,
+  type DataTableColumn,
+} from '@nexor/design-system';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { AdminProductGate } from './AdminProductGate';
@@ -51,6 +60,9 @@ export function AdminOrders() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [stageFilter, setStageFilter] = useState<string[]>([]);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
+  const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
 
   useEffect(() => {
     if (!selectedProduct || !token) {
@@ -107,6 +119,19 @@ export function AdminOrders() {
       return matchesSearch && matchesStatus && matchesStage;
     });
   }, [orders, search, stageFilter, statusFilter]);
+
+  const activeFilterLabels = useMemo(() => {
+    const statusLabels = statusFilter
+      .map((value) => STATUS_OPTIONS.find((option) => option.value === value)?.label)
+      .filter((label): label is string => Boolean(label))
+      .map((label) => `Status: ${label}`);
+    const stageLabels = stageFilter
+      .map((value) => stageOptions.find((option) => option.value === value)?.label)
+      .filter((label): label is string => Boolean(label))
+      .map((label) => `Etapa: ${label}`);
+
+    return [...statusLabels, ...stageLabels];
+  }, [stageFilter, stageOptions, statusFilter]);
 
   const stats = useMemo(
     () => [
@@ -172,6 +197,29 @@ export function AdminOrders() {
     { key: 'date', label: 'Atualizado em', render: (row) => formatDate(row.created_at) },
   ];
 
+  function openMobileFilters() {
+    setDraftStatusFilter(statusFilter);
+    setDraftStageFilter(stageFilter);
+    setMobileFiltersOpen(true);
+  }
+
+  function closeMobileFilters() {
+    setDraftStatusFilter(statusFilter);
+    setDraftStageFilter(stageFilter);
+    setMobileFiltersOpen(false);
+  }
+
+  function clearDraftMobileFilters() {
+    setDraftStatusFilter([]);
+    setDraftStageFilter([]);
+  }
+
+  function applyMobileFilters() {
+    setStatusFilter(draftStatusFilter);
+    setStageFilter(draftStageFilter);
+    setMobileFiltersOpen(false);
+  }
+
   return (
     <PageStack>
       <PageHeader>
@@ -195,47 +243,130 @@ export function AdminOrders() {
           </StatGrid>
 
           <TableSection padding="lg">
-            <FilterBar>
+            <S.DesktopFilters>
+              <FilterBar>
+                <Field
+                  as="input"
+                  label="Buscar"
+                  placeholder="Buscar por pedido, cliente ou e-mail..."
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                  }}
+                />
+
+                <div data-testid="admin-orders-filter-status">
+                  <MultiSelect
+                    options={STATUS_OPTIONS}
+                    value={statusFilter}
+                    onChange={setStatusFilter}
+                    placeholder="Todos os status"
+                    label="Status"
+                  />
+                </div>
+
+                <div data-testid="admin-orders-filter-stage">
+                  <MultiSelect
+                    options={stageOptions}
+                    value={stageFilter}
+                    onChange={setStageFilter}
+                    placeholder="Todas as etapas"
+                    label="Etapa"
+                  />
+                </div>
+              </FilterBar>
+            </S.DesktopFilters>
+
+            <S.MobileFilterTriggerRow>
               <Field
                 as="input"
                 label="Buscar"
-                placeholder="Buscar por pedido, cliente ou e-mail..."
+                placeholder="Pedido, cliente ou e-mail"
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
                 }}
               />
+              <Button type="button" variant="secondary" onClick={openMobileFilters}>
+                Abrir filtros de ordens
+              </Button>
+            </S.MobileFilterTriggerRow>
 
-              <div data-testid="admin-orders-filter-status">
-                <MultiSelect
-                  options={STATUS_OPTIONS}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  placeholder="Todos os status"
-                  label="Status"
-                />
-              </div>
+            {activeFilterLabels.length > 0 ? (
+              <S.FilterChipRow aria-label="Filtros ativos">
+                {activeFilterLabels.map((label) => (
+                  <S.FilterChip key={label}>{label}</S.FilterChip>
+                ))}
+              </S.FilterChipRow>
+            ) : null}
 
-              <div data-testid="admin-orders-filter-stage">
-                <MultiSelect
-                  options={stageOptions}
-                  value={stageFilter}
-                  onChange={setStageFilter}
-                  placeholder="Todas as etapas"
-                  label="Etapa"
-                />
-              </div>
-            </FilterBar>
+            <ResponsiveDataList
+              desktop={
+                <div data-testid="admin-orders-table">
+                  <DataTable
+                    data={filteredOrders}
+                    columns={columns}
+                    keyExtractor={(row) => row.id}
+                    pageSize={6}
+                    emptyMessage={loading ? 'Carregando ordens...' : 'Nenhuma ordem encontrada para os filtros aplicados.'}
+                  />
+                </div>
+              }
+              data={filteredOrders}
+              keyExtractor={(row) => row.id}
+              emptyMessage={loading ? 'Carregando ordens...' : 'Nenhuma ordem encontrada para os filtros aplicados.'}
+              renderCard={(row) => {
+                const presentation = getOrderStatusPresentation(row);
 
-            <div data-testid="admin-orders-table">
-              <DataTable
-                data={filteredOrders}
-                columns={columns}
-                keyExtractor={(row) => row.id}
-                pageSize={6}
-                emptyMessage={loading ? 'Carregando ordens...' : 'Nenhuma ordem encontrada para os filtros aplicados.'}
-              />
-            </div>
+                return (
+                  <S.OrderCard data-testid={`admin-order-card-${row.id}`}>
+                    <S.OrderCardHeader>
+                      <div>
+                        <S.OrderCardTitle>{row.id}</S.OrderCardTitle>
+                        <S.OrderCardMeta>{row.customer?.full_name ?? 'Não identificado'}</S.OrderCardMeta>
+                      </div>
+                      <StatusIndicator color={presentation.color} label={presentation.label} />
+                    </S.OrderCardHeader>
+                    <S.OrderCardMeta>Etapa: {getStageLabel(row)}</S.OrderCardMeta>
+                    <S.ReadinessText>
+                      {row.operationalReadiness?.summary ?? 'Sem pendência operacional registrada.'}
+                    </S.ReadinessText>
+                    <S.OrderCardMeta>Atualizado em {formatDate(row.created_at)}</S.OrderCardMeta>
+                  </S.OrderCard>
+                );
+              }}
+              mobileTestId="admin-orders-mobile-list"
+            />
+
+            <FilterSheet
+              open={mobileFiltersOpen}
+              title="Filtros de ordens"
+              onClose={closeMobileFilters}
+              onClear={clearDraftMobileFilters}
+              onApply={applyMobileFilters}
+            >
+              <S.FilterSheetGrid>
+                <div data-testid="admin-orders-mobile-filter-status">
+                  <MultiSelect
+                    options={STATUS_OPTIONS}
+                    value={draftStatusFilter}
+                    onChange={setDraftStatusFilter}
+                    placeholder="Todos os status"
+                    label="Status"
+                  />
+                </div>
+
+                <div data-testid="admin-orders-mobile-filter-stage">
+                  <MultiSelect
+                    options={stageOptions}
+                    value={draftStageFilter}
+                    onChange={setDraftStageFilter}
+                    placeholder="Todas as etapas"
+                    label="Etapa"
+                  />
+                </div>
+              </S.FilterSheetGrid>
+            </FilterSheet>
           </TableSection>
         </>
       ) : null}

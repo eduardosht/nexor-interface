@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
-import biteplanerFaqProduct from '../../assets/biteplaner-transparent-2.png';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const cardVariants: Variants = {
@@ -396,14 +396,21 @@ export function BiteplanerPage() {
           <S.SectionTitle>Perguntas frequentes</S.SectionTitle>
         </S.FaqMedia>
         <S.FaqProductWrap>
-          <S.FaqProduct
-            src={biteplanerFaqProduct}
-            alt="Biteplaner"
-            variants={productVariants}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.35 }}
-          />
+          <picture>
+            <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
+            <S.FaqProduct
+              src={publicOptimizedImages.biteplaner.faqProduct.webp}
+              alt="Biteplaner"
+              width={675}
+              height={369}
+              loading="lazy"
+              decoding="async"
+              variants={productVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, amount: 0.35 }}
+            />
+          </picture>
         </S.FaqProductWrap>
         <S.FaqContent>
           <S.FaqList>

@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { getBrandTokens } from '@nexor/design-system';
 import { fullBleedSection } from '../../styles/layout';
-import heroImage from '../../assets/backgrounds/hero-section-1.png';
-import processImage from '../../assets/backgrounds/banner-3.png';
-import finalCtaImage from '../../assets/backgrounds/biteplaner-banner-horizontal.png';
+import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
 
 const bp = getBrandTokens('nexor').biteplanerContext;
 const MotionLink = motion.create(Link);
@@ -34,7 +32,7 @@ export const HeroSection = styled.section`
   display: grid;
   align-items: center;
   padding: 116px max(60px, calc((100vw - ${({ theme }) => theme.maxWidth}) / 2)) 118px;
-  background: url(${heroImage}) center right / cover no-repeat;
+  background: ${imageSet(publicOptimizedImages.biteplaner.hero.desktop)} center right / cover no-repeat;
 
   &::after {
     content: '';
@@ -57,7 +55,7 @@ export const HeroSection = styled.section`
     padding: 112px 24px 280px;
     background:
       linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.92) 50%, rgba(255, 255, 255, 0.2) 100%),
-      url(${heroImage}) center bottom / cover no-repeat;
+      ${imageSet(publicOptimizedImages.biteplaner.hero.mobile)} center bottom / cover no-repeat;
   }
 `;
 
@@ -318,7 +316,14 @@ export const ProcessOuter = styled.div`
   background:
     linear-gradient(100deg, rgba(2, 12, 17, 0.62) 0%, rgba(4, 31, 29, 0.46) 50%, rgba(3, 14, 19, 0.56) 100%),
     radial-gradient(circle at 10% 30%, rgba(41, 169, 151, 0.14), transparent 34%),
-    url(${processImage}) center / cover no-repeat;
+    ${imageSet(publicOptimizedImages.biteplaner.process.desktop)} center / cover no-repeat;
+
+  @media (max-width: 768px) {
+    background-image:
+      linear-gradient(100deg, rgba(2, 12, 17, 0.62) 0%, rgba(4, 31, 29, 0.46) 50%, rgba(3, 14, 19, 0.56) 100%),
+      radial-gradient(circle at 10% 30%, rgba(41, 169, 151, 0.14), transparent 34%),
+      ${imageSet(publicOptimizedImages.biteplaner.process.mobile)};
+  }
 
   ${SectionLabel} {
     color: #92e4bf;
@@ -813,7 +818,7 @@ export const FinalCtaOuter = styled.section`
   align-items: center;
   background:
     linear-gradient(90deg, rgba(2, 12, 16, 0.3) 0%, rgba(3, 29, 26, 0.78) 42%, rgba(0, 0, 0, 0.92) 100%),
-    url(${finalCtaImage}) 24% center / cover no-repeat;
+    ${imageSet(publicOptimizedImages.biteplaner.finalCta.desktop)} 24% center / cover no-repeat;
   color: #ffffff;
 
   &::before {
@@ -828,6 +833,9 @@ export const FinalCtaOuter = styled.section`
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
+    background-image:
+      linear-gradient(90deg, rgba(2, 12, 16, 0.3) 0%, rgba(3, 29, 26, 0.78) 42%, rgba(0, 0, 0, 0.92) 100%),
+      ${imageSet(publicOptimizedImages.biteplaner.finalCta.mobile)};
   }
 `;
 

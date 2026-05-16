@@ -1,10 +1,16 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
 
 export const SectionWrapper = styled.section`
   min-height: 100vh;
   position: relative;
   overflow: hidden;
+  background: ${imageSet(publicOptimizedImages.home.heroPoster.desktop)} center / cover no-repeat;
+
+  @media (max-width: 768px) {
+    background-image: ${imageSet(publicOptimizedImages.home.heroPoster.mobile)};
+  }
 `;
 
 export const VideoBackground = styled.video`
@@ -14,6 +20,14 @@ export const VideoBackground = styled.video`
   height: 100%;
   object-fit: cover;
   z-index: 0;
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const VideoOverlay = styled.div`

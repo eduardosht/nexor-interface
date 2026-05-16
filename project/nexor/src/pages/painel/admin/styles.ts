@@ -10,6 +10,10 @@ export const PageStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  @media (max-width: 768px) {
+    gap: 18px;
+  }
 `;
 
 export const PageHeader = styled.header`
@@ -26,6 +30,13 @@ export const PageTitle = styled.h1`
   font-weight: 800;
   letter-spacing: -0.03em;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 768px) {
+    font-size: clamp(1.5rem, 7vw, 1.75rem);
+    font-weight: 700;
+    letter-spacing: 0;
+    line-height: 1.15;
+  }
 `;
 
 export const PageSubtitle = styled.p`
@@ -34,6 +45,11 @@ export const PageSubtitle = styled.p`
   font-size: 14px;
   line-height: 1.65;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    line-height: 1.5;
+  }
 `;
 
 export const StatGrid = styled.div`
@@ -56,17 +72,32 @@ export const StatCard = styled(Surface)`
   justify-content: center;
   gap: 10px;
   box-shadow: none;
+
+  @media (max-width: 768px) {
+    min-height: 88px;
+    gap: 8px;
+  }
 `;
 
 export const StatValue = styled.strong`
   font-size: 2rem;
   line-height: 1;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
 `;
 
 export const StatLabel = styled.span`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.35;
+  }
 `;
 
 export const TableSection = styled(Surface)`
@@ -77,6 +108,10 @@ export const TableSection = styled(Surface)`
   flex-direction: column;
   gap: 18px;
   box-shadow: none;
+
+  @media (max-width: 768px) {
+    gap: 14px;
+  }
 `;
 
 export const FilterBar = styled.div`
@@ -112,6 +147,10 @@ export const FormSection = styled(Surface)`
   flex-direction: column;
   gap: 20px;
   box-shadow: none;
+
+  @media (max-width: 768px) {
+    gap: 14px;
+  }
 `;
 
 export const SectionTitle = styled.h2`
@@ -119,6 +158,12 @@ export const SectionTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 768px) {
+    font-size: 1.0625rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
 `;
 
 export const SectionDescription = styled.p`
@@ -126,6 +171,11 @@ export const SectionDescription = styled.p`
   font-size: 13px;
   line-height: 1.65;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.5;
+  }
 `;
 
 export const FieldsGrid = styled.div`
@@ -153,6 +203,7 @@ export const CompactFieldsGrid = styled.div`
 
   @media (max-width: 680px) {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 `;
 
@@ -188,6 +239,10 @@ export const SectionCardGrid = styled.div`
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
   }
+
+  @media (max-width: 768px) {
+    gap: 14px;
+  }
 `;
 
 export const ContractList = styled.div`
@@ -216,6 +271,8 @@ export const ContractCard = styled.div`
   @media (max-width: 640px) {
     flex-direction: column;
     align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
   }
 `;
 
@@ -224,6 +281,11 @@ export const ContractTitle = styled.h3`
   font-size: 14px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    font-weight: 650;
+  }
 `;
 
 export const ContractDescription = styled.p`
@@ -252,6 +314,10 @@ export const ProductCard = styled(Surface)<{ $selected?: boolean; $available?: b
   box-shadow: none;
   border-color: ${({ $selected, theme }) => ($selected ? theme.colors.textPrimary : theme.colors.borderDefault)};
   opacity: ${({ $available = true }) => ($available ? 1 : 0.72)};
+
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
 `;
 
 export const ProductCardTitle = styled.h2`
@@ -260,6 +326,12 @@ export const ProductCardTitle = styled.h2`
   font-weight: 800;
   letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 768px) {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
 `;
 
 export const ProductCardText = styled.p`
@@ -267,6 +339,11 @@ export const ProductCardText = styled.p`
   font-size: 14px;
   line-height: 1.65;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.5;
+  }
 `;
 
 export const InlineActions = styled.div`
@@ -299,6 +376,10 @@ export const ChartPanel = styled(Surface)`
   flex-direction: column;
   gap: 20px;
   box-shadow: none;
+
+  @media (max-width: 768px) {
+    gap: 14px;
+  }
 `;
 
 export const ChartHeader = styled.div`
@@ -324,6 +405,11 @@ export const HighlightList = styled.ul`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.5;
+  }
 `;
 
 export const EmptyStateWrap = styled(Surface)`
@@ -356,5 +442,9 @@ export const EmptyStateLink = styled(Link)`
   &:hover {
     opacity: 0.88;
   }
-`;
 
+  @media (max-width: 768px) {
+    font-size: 12px;
+    font-weight: 600;
+  }
+`;

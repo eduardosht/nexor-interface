@@ -1,8 +1,7 @@
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { fadeUp, staggerContainer } from '../../styles/motion';
-import biteplanerProduct from '../../assets/biteplaner-moldera.png';
-import biteplanerLogo from '../../assets/biteplaner-logo.png';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const FEATURES = [
@@ -46,11 +45,48 @@ export function Produtos() {
 
           <motion.div variants={fadeUp}>
             <S.ProductGrid>
-              <S.ImageCol $src={biteplanerProduct} />
+              <S.ImageCol>
+                <source
+                  media="(max-width: 900px)"
+                  srcSet={publicOptimizedImages.home.product.mobile.avif}
+                  type="image/avif"
+                />
+                <source
+                  media="(max-width: 900px)"
+                  srcSet={publicOptimizedImages.home.product.mobile.webp}
+                  type="image/webp"
+                />
+                <source
+                  srcSet={publicOptimizedImages.home.product.desktop.avif}
+                  type="image/avif"
+                />
+                <source
+                  srcSet={publicOptimizedImages.home.product.desktop.webp}
+                  type="image/webp"
+                />
+                <S.ProductImage
+                  src={publicOptimizedImages.home.product.desktop.webp}
+                  alt=""
+                  width={759}
+                  height={502}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </S.ImageCol>
 
               <S.InfoCol>
                 <div>
-                  <S.ProductLogo src={biteplanerLogo} alt="Biteplaner" />
+                  <picture>
+                    <source srcSet={publicOptimizedImages.shared.biteplanerLogo.avif} type="image/avif" />
+                    <S.ProductLogo
+                      src={publicOptimizedImages.shared.biteplanerLogo.webp}
+                      alt="Biteplaner"
+                      width={320}
+                      height={73}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </picture>
                 </div>
 
                 <S.ProductDesc>

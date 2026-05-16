@@ -1,12 +1,21 @@
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2 } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
-import logoNexor from '../../../assets/logo-nexor.png';
+import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const STORAGE_KEY = 'nexor-sidebar-collapsed';
+const DESKTOP_MEDIA_QUERY = '(min-width: 769px)';
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 /* ─── Access Mode Modal ─── */
 
@@ -272,6 +281,13 @@ const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/configuracoes/sistema', label: 'Config. Sistema', Icon: Settings2 },
 ];
 
+const ADMIN_MOBILE_PRIMARY_NAV_ITEMS = [
+  { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
+  { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/usuarios', label: 'Usuários', Icon: UserRound },
+  { to: '/painel/admin/configuracoes/negocio', label: 'Configurações', Icon: Settings2 },
+];
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Bom dia';
@@ -284,11 +300,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const { signOut, backendUser, session } = useAuth();
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  const mobileDrawerRef = useRef<HTMLElement>(null);
+  const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousMobileFocusRef = useRef<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === 'true');
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [notifications, setNotifications] = useState<MockNotification[]>(MOCK_NOTIFICATIONS);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<MockNotification | null>(null);
+  const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
 
   const email = backendUser?.email ?? '';
   const displayName = email.split('@')[0];
@@ -328,6 +348,45 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     contentScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    setMobileAdminMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileAdminMenuOpen) return undefined;
+
+    previousMobileFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    mobileDrawerRef.current
+      ?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+      ?.focus();
+
+    return () => {
+      previousMobileFocusRef.current?.focus();
+    };
+  }, [mobileAdminMenuOpen]);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return undefined;
+
+    const mediaQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setMobileAdminMenuOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+
+    if (mediaQuery.matches) {
+      setMobileAdminMenuOpen(false);
+    }
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
 
   function toggle() {
     const next = !collapsed;
@@ -377,6 +436,39 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       });
   }
 
+  function handleMobileDrawerKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      setMobileAdminMenuOpen(false);
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(
+      mobileDrawerRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR) ?? []
+    ).filter((element) => !element.hasAttribute('disabled'));
+
+    if (focusable.length === 0) {
+      event.preventDefault();
+      mobileDrawerRef.current?.focus();
+      return;
+    }
+
+    const firstElement = focusable[0];
+    const lastElement = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+
   return (
     <S.Shell>
       {showAccessModal && (
@@ -407,9 +499,48 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         </S.Overlay>
       ) : null}
 
+      {isAdmin && mobileAdminMenuOpen ? (
+        <S.MobileDrawerOverlay
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setMobileAdminMenuOpen(false);
+            }
+          }}
+        >
+          <S.MobileDrawer
+            ref={mobileDrawerRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu administrativo"
+            tabIndex={-1}
+            onKeyDown={handleMobileDrawerKeyDown}
+          >
+            <S.MobileDrawerHeader>
+              <S.MobileDrawerTitle>Menu administrativo</S.MobileDrawerTitle>
+              <S.MobileMenuBtn
+                type="button"
+                onClick={() => setMobileAdminMenuOpen(false)}
+                aria-label="Fechar menu mobile"
+              >
+                <X size={18} aria-hidden />
+              </S.MobileMenuBtn>
+            </S.MobileDrawerHeader>
+            <S.MobileDrawerNav>
+              {ADMIN_NAV_ITEMS.map(({ to, label, Icon }) => (
+                <S.MobileDrawerLink key={to} to={to} onClick={() => setMobileAdminMenuOpen(false)}>
+                  <Icon size={17} aria-hidden />
+                  {label}
+                </S.MobileDrawerLink>
+              ))}
+            </S.MobileDrawerNav>
+          </S.MobileDrawer>
+        </S.MobileDrawerOverlay>
+      ) : null}
+
       <S.Sidebar $collapsed={collapsed}>
         <S.SidebarTop $collapsed={collapsed}>
-          <S.Logo src={logoNexor} alt="Nexor" $collapsed={collapsed} />
+          <S.Logo src={publicOptimizedImages.shared.nexorLogo.webp} alt="Nexor" width={260} height={83} $collapsed={collapsed} />
           <S.ToggleBtn onClick={toggle} aria-label={collapsed ? 'Expandir menu' : 'Colapsar menu'}>
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </S.ToggleBtn>
@@ -550,6 +681,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
       <S.ContentArea>
         <S.Topbar>
+          {isAdmin ? (
+            <S.MobileMenuBtn
+              ref={mobileMenuTriggerRef}
+              type="button"
+              onClick={() => setMobileAdminMenuOpen(true)}
+              aria-label="Abrir menu mobile"
+            >
+              <Menu size={18} aria-hidden />
+            </S.MobileMenuBtn>
+          ) : null}
           <S.TopbarGreeting>{getGreeting()}, {displayName}.</S.TopbarGreeting>
           <S.TopbarRight>
             <S.NotificationArea>
@@ -605,6 +746,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             {children}
           </S.ContentInner>
         </S.ContentScroll>
+        {isAdmin ? (
+          <S.MobileBottomNav aria-label="Navegação principal mobile">
+            {ADMIN_MOBILE_PRIMARY_NAV_ITEMS.map(({ to, label, Icon }) => (
+              <S.MobileBottomNavLink key={to} to={to}>
+                <Icon size={18} aria-hidden />
+                <span>{label}</span>
+              </S.MobileBottomNavLink>
+            ))}
+          </S.MobileBottomNav>
+        ) : null}
       </S.ContentArea>
     </S.Shell>
   );

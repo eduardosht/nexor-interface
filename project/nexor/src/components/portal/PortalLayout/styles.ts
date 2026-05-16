@@ -234,6 +234,10 @@ export const Sidebar = styled.nav<{ $collapsed: boolean }>`
   overflow: hidden;
   position: sticky;
   top: 0;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 `;
 
 export const SidebarTop = styled.div<{ $collapsed: boolean }>`
@@ -495,6 +499,105 @@ export const ContentArea = styled.div`
   overflow: hidden;
 `;
 
+export const MobileMenuBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgInset};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+export const MobileDrawerOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: rgba(0, 0, 0, 0.42);
+  animation: ${fadeIn} 160ms ease;
+`;
+
+export const MobileDrawer = styled.aside`
+  width: min(320px, 86vw);
+  height: 100%;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  box-shadow: 18px 0 48px rgba(23, 23, 23, 0.18);
+  display: flex;
+  flex-direction: column;
+  animation: ${slideUp} 180ms ease;
+`;
+
+export const MobileDrawerHeader = styled.div`
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+
+  ${MobileMenuBtn} {
+    width: 36px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    padding: 0;
+    overflow: visible;
+    pointer-events: auto;
+    visibility: visible;
+  }
+`;
+
+export const MobileDrawerTitle = styled.strong`
+  font-size: 13px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const MobileDrawerNav = styled.nav`
+  display: grid;
+  gap: 2px;
+  padding: 10px 8px;
+  overflow-y: auto;
+`;
+
+export const MobileDrawerLink = styled(NavLink)`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 550;
+  text-decoration: none;
+
+  &:hover,
+  &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+`;
+
 export const Topbar = styled.div`
   height: 64px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
@@ -506,14 +609,18 @@ export const Topbar = styled.div`
   flex-shrink: 0;
   gap: 16px;
 
+  @media (max-width: 768px) {
+    padding: 0 16px;
+  }
+
   @media (max-width: 640px) {
     padding: 0 16px;
   }
 `;
 
 export const TopbarGreeting = styled.span`
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 550;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -585,8 +692,8 @@ export const NotificationsPanelHeader = styled.div`
 `;
 
 export const NotificationsPanelTitle = styled.strong`
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -632,8 +739,8 @@ export const NotificationItemHeader = styled.div`
 
 export const NotificationTitle = styled.strong`
   min-width: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 650;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -661,8 +768,8 @@ export const NotificationDate = styled.span`
 export const NotificationPreview = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -683,8 +790,8 @@ export const NotificationModalDate = styled.span`
 export const NotificationModalMessage = styled.p`
   margin: 0;
   color: #404040;
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.55;
 `;
 
 export const Avatar = styled.div`
@@ -723,5 +830,67 @@ export const ContentInner = styled(motion.main)`
 
   @media (max-width: 640px) {
     padding: 20px 14px;
+  }
+
+  @media (max-width: 768px) {
+    padding: 24px 18px calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  @media (max-width: 640px) {
+    padding: 18px 12px calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+`;
+
+export const MobileBottomNav = styled.nav`
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  min-height: calc(64px + env(safe-area-inset-bottom));
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 -10px 30px rgba(23, 23, 23, 0.08);
+
+  @media (min-width: 769px) {
+    display: none;
+  }
+`;
+
+export const MobileBottomNavLink = styled(NavLink)`
+  min-width: 0;
+  flex: 1;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+
+  &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+
+  span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
