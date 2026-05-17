@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   UserRound,
 } from 'lucide-react';
+import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { DEMO_PERSONA_LABELS } from '../../../features/demo/persona';
@@ -298,6 +299,9 @@ export function PainelHome() {
 
       <S.Section>
         <S.SectionTitle>Ações rápidas</S.SectionTitle>
+        {loadingRoles ? (
+          <SkeletonGrid cards={4} minCardWidth="220px" />
+        ) : (
         <S.RoleActionsGrid aria-label="Perfis Biteplaner">
           {ROLE_ACTIONS.map((action) => {
             const currentRole = rolesByKey.get(action.role);
@@ -370,6 +374,7 @@ export function PainelHome() {
             );
           })}
         </S.RoleActionsGrid>
+        )}
       </S.Section>
 
       <S.SecurityBanner>

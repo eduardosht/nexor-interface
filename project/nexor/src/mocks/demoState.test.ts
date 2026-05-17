@@ -166,6 +166,28 @@ describe('shared Biteplaner demo state', () => {
     expect(adminOrders.orders.length).toBe(getDemoStateSnapshot().orders.length);
   });
 
+  it('exposes one customer order per stage-specific demo persona', () => {
+    const scenarios = [
+      ['athletePrerequisite', 'BP-DEMO-001'],
+      ['athleteScheduling', 'BP-DEMO-002'],
+      ['athleteClinicalDecision', 'BP-DEMO-003'],
+      ['athleteDentistForms', 'BP-DEMO-004'],
+      ['athletePayment', 'BP-DEMO-005'],
+      ['athleteTreatmentRequired', 'BP-DEMO-006'],
+      ['athleteLabProduction', 'BP-DEMO-007'],
+      ['athleteAdaptation', 'BP-DEMO-008'],
+      ['athleteFollowUp', 'BP-DEMO-009'],
+      ['athleteIneligible', 'BP-DEMO-010'],
+      ['athleteCancelled', 'BP-DEMO-011']
+    ] as const;
+
+    scenarios.forEach(([persona, expectedOrderId]) => {
+      const response = listOrders({ requestHeaders: { 'x-demo-persona': persona } }, 'user');
+
+      expect(response.orders.map((order) => order.id)).toEqual([expectedOrderId]);
+    });
+  });
+
   it('exposes operational client order scenarios to the licensed dentist demo persona', () => {
     const licensedDentistOrders = listOrders(
       { requestHeaders: { 'x-demo-persona': 'dentistLicensed' } },

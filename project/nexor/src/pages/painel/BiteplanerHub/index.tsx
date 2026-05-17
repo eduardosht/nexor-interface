@@ -19,6 +19,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { SkeletonPage } from '../../../components/Skeleton';
 import {
   DataTable,
   Field,
@@ -130,7 +131,7 @@ import {
 const MODE_COPY: Record<AccessMode, { title: string; description: string }> = {
   user: {
     title: 'Workspace do atleta',
-    description: 'Acompanhe sua jornada, os pedidos compartilhados e o próximo passo visível da demo.'
+    description: 'Acompanhe sua jornada Biteplaner, o status atual e o próximo passo visível da demo.'
   },
   partner: {
     title: 'Workspace do parceiro',
@@ -720,16 +721,18 @@ export function BiteplanerHub() {
 
   const athleteStats = [
     {
-      label: 'Pedidos visíveis',
-      value: String(orders.length),
-      hint: 'Todos os casos do atleta que fazem parte da narrativa da demo.',
+      label: 'Jornada Biteplaner',
+      value: athleteOrder ? 'Ativa' : 'Não iniciada',
+      hint: athleteOrder
+        ? `Jornada do atleta ${athleteOrder.id}.`
+        : 'O cliente inicia uma única jornada Biteplaner neste momento.',
       icon: <FileText size={22} aria-hidden />,
       tone: 'blue' as const
     },
     {
       label: 'Status principal',
       value: athleteOrder?.statusLabel ?? 'Sem jornada',
-      hint: athleteOrder ? `Caso ativo ${athleteOrder.id}.` : 'Nenhum caso principal identificado.',
+      hint: athleteOrder ? `Status atual da jornada ${athleteOrder.id}.` : 'Nenhuma jornada ativa identificada.',
       icon: <Clock3 size={22} aria-hidden />,
       tone: 'amber' as const
     },
@@ -1556,9 +1559,7 @@ export function BiteplanerHub() {
         </S.Panel>
       ) : null}
 
-      {loading && selectedMode !== 'admin' && selectedMode !== 'dentist' ? (
-        <S.Banner>Carregando workspace compartilhado...</S.Banner>
-      ) : null}
+      {loading && selectedMode !== 'admin' && selectedMode !== 'dentist' && !isLicensingActorMode ? <SkeletonPage /> : null}
 
       {dentistWorkspaceLoading ? (
         <S.DentistWorkspaceSkeleton aria-label={`Carregando painel do ${licenseeNoun}`}>
@@ -1611,9 +1612,9 @@ export function BiteplanerHub() {
 
           <S.AthleteCasePanel data-testid="athlete-primary-case">
             <S.PanelHeader>
-              <S.PanelTitle>Caso principal do atleta</S.PanelTitle>
+              <S.PanelTitle>Jornada do atleta</S.PanelTitle>
               <S.PanelText>
-                O mesmo pedido evolui entre parceiro, dentista, laboratório e admin. Aqui você ve o recorte do atleta.
+                O cliente acompanha uma única jornada Biteplaner neste primeiro momento. O backend continua preparado para múltiplas ordens, mas a interface foca na jornada ativa do atleta.
               </S.PanelText>
             </S.PanelHeader>
 
@@ -1673,7 +1674,7 @@ export function BiteplanerHub() {
                 ) : null}
               </S.AthleteOrderHighlight>
             ) : (
-              <S.EmptyState>Nenhum caso do atleta apareceu neste momento da demo.</S.EmptyState>
+              <S.EmptyState>Nenhuma jornada do atleta apareceu neste momento da demo.</S.EmptyState>
             )}
           </S.AthleteCasePanel>
         </>

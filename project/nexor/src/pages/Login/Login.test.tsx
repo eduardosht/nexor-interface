@@ -193,6 +193,10 @@ describe('Login', () => {
 
     expect(screen.getByRole('tab', { name: /cliente/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('demo-login-athlete')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-prerequisite')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-payment')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-lab-production')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-cancelled')).toBeInTheDocument();
     expect(screen.queryByTestId('demo-login-partner')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /parceiros/i }));

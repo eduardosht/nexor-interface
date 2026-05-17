@@ -319,6 +319,17 @@ export const STAGE_LABELS: Record<string, string> = {
 
 export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athlete: 'user',
+  athletePrerequisite: 'user',
+  athleteScheduling: 'user',
+  athleteClinicalDecision: 'user',
+  athleteDentistForms: 'user',
+  athletePayment: 'user',
+  athleteTreatmentRequired: 'user',
+  athleteLabProduction: 'user',
+  athleteAdaptation: 'user',
+  athleteFollowUp: 'user',
+  athleteIneligible: 'user',
+  athleteCancelled: 'user',
   partner: 'partner',
   dentist: 'dentist',
   dentistApproved: 'dentist',

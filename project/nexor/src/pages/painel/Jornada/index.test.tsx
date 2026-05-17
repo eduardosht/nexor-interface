@@ -21,6 +21,23 @@ vi.mock('../../../lib/api', () => ({
   },
 }));
 
+vi.mock('react-leaflet', () => ({
+  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="consultation-map">{children}</div>,
+  TileLayer: () => <div data-testid="consultation-tiles" />,
+  Marker: ({
+    children,
+    eventHandlers,
+  }: {
+    children?: React.ReactNode;
+    eventHandlers?: { click?: () => void };
+  }) => (
+    <button type="button" data-testid="consultation-marker" onClick={() => eventHandlers?.click?.()}>
+      {children}
+    </button>
+  ),
+  Popup: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
+}));
+
 import { Jornada } from './index';
 
 function renderPage() {
@@ -69,18 +86,17 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({ events: [] })
       .mockResolvedValueOnce({ forms: [] });
 
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
     expect(screen.getByRole('heading', { level: 1, name: /fluxo visual da jornada/i })).toBeInTheDocument();
-    expect(screen.getByText(/pedido bp-demo-006/i)).toBeInTheDocument();
+    expect(screen.getByText(/jornada bp-demo-006/i)).toBeInTheDocument();
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
   });
 
-  it('shows the next-step CTA based on the active order', async () => {
+  it('keeps the prerequisite step inside the journey before the intake is submitted', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -94,28 +110,17 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-1',
-            orderId: 'BP-DEMO-001',
-            fromStatus: null,
-            toStatus: 'registration_started',
-            reason: 'Cadastro iniciado na demo.',
-            createdAt: '2026-05-01T10:00:00.000Z',
-          },
-        ],
-      })
       .mockResolvedValueOnce({ forms: [] });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: /abrir pre-requisito/i })).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /abrir pre-requisito/i })).toHaveAttribute('href', '/painel/pre-requisito');
-    expect(screen.getAllByText(/cadastro iniciado na demo/i).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i);
+    expect(screen.queryByRole('link', { name: /abrir pre-requisito/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/resumo da jornada/i)).not.toBeInTheDocument();
   });
 
-  it('routes the consultation step to the dedicated consultation screen and uses numeric step badges', async () => {
+  it('keeps journey steps informational and renders consultation content directly', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -130,26 +135,16 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-1',
-            orderId: 'BP-DEMO-002',
-            fromStatus: 'registration_started',
-            toStatus: 'awaiting_scheduling',
-            reason: 'Pre-requisito concluído e aguardando escolha do consultório.',
-            createdAt: '2026-05-01T10:15:00.000Z',
-          },
-        ],
-      })
       .mockResolvedValueOnce({ forms: [] });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('link', { name: /abrir consulta inicial/i })).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /abrir consulta inicial/i })).toHaveAttribute('href', '/painel/consulta-inicial');
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveAttribute('href', '/painel/pre-requisito');
-    expect(screen.getByTestId('journey-step-consultation')).toHaveAttribute('href', '/painel/consulta-inicial');
+    await waitFor(() => expect(screen.getByTestId('journey-consultation-content')).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /abrir consulta inicial/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('consultation-map')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /consulta agendada/i })).toBeInTheDocument();
+    expect(screen.getByTestId('journey-step-prerequisite').closest('a')).toBeNull();
+    expect(screen.getByTestId('journey-step-consultation').closest('a')).toBeNull();
     expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/concluído com sucesso/i);
     expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).backgroundColor).toBe('rgba(0, 0, 0, 0)');
     expect(getComputedStyle(screen.getByTestId('journey-step-prerequisite')).borderTopStyle).toBe('');
@@ -157,7 +152,7 @@ describe('Jornada', () => {
     expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
   });
 
-  it('renders a connected step flow with explicit mock purchase and case summary', async () => {
+  it('renders purchase content directly in the journey', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -172,63 +167,42 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({
-        events: [
-          {
-            id: 'event-1',
-            orderId: 'BP-DEMO-004',
-            fromStatus: 'in_progress',
-            toStatus: 'awaiting_payment',
-            reason: 'Apto na avaliação clínica e aguardando pagamento.',
-            createdAt: '2026-05-03T11:00:00.000Z',
-          },
-          {
-            id: 'event-2',
-            orderId: 'BP-DEMO-004',
-            fromStatus: 'awaiting_scheduling',
-            toStatus: 'in_progress',
-            reason: 'Consulta inicial vinculada ao dentista selecionado.',
-            createdAt: '2026-05-03T10:30:00.000Z',
-          },
-        ],
-      })
       .mockResolvedValueOnce({ forms: [] });
 
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
     expect(screen.getByText(/^4$/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /compra/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /abrir compra mock/i })).toHaveAttribute('href', '/painel/compra');
-    expect(screen.getAllByText(/dentista selecionado/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/clínica sorrisó centro/i)).toBeInTheDocument();
-    expect(screen.getByText(/histórico resumido/i)).toBeInTheDocument();
-    expect(screen.getByText(/apto na avaliação clínica/i)).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: /compra/i }).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('journey-purchase-content')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /abrir compra mock/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmar compra mock/i })).toBeInTheDocument();
+    expect(screen.getByText(/biteplaner personalizado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/dentista selecionado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/histórico resumido/i)).not.toBeInTheDocument();
   });
 
-  it('renders mapped workflow forms in the journey and submits the pending intake', async () => {
+  it('renders the intake in the prerequisite step and advances to initial consultation after submit', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
           {
-            id: 'BP-DEMO-003',
-            status: 'in_progress',
-            statusLabel: 'Consulta vinculada',
-            stage: 'consultation_linked',
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-            practice_location: { id: 'clinic-1', name: 'Clínica Sorrisó Centro' },
           },
         ],
       })
-      .mockResolvedValueOnce({ events: [] })
       .mockResolvedValueOnce({
         forms: [
           {
-            id: 'BP-WF-003-INTAKE',
-            orderId: 'BP-DEMO-003',
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
             templateKey: 'customer_pre_consultation_intake',
-            stepKey: 'initial_consultation_preparation',
+            stepKey: 'pre_requisite_pending',
             status: 'pending',
             canViewPayload: true,
             summary: null,
@@ -237,12 +211,12 @@ describe('Jornada', () => {
             payload: null,
           },
         ],
-      });
+    });
     mockApiPost.mockResolvedValueOnce({
-      id: 'BP-WF-003-INTAKE',
-      orderId: 'BP-DEMO-003',
+      id: 'BP-WF-001-INTAKE',
+      orderId: 'BP-DEMO-001',
       templateKey: 'customer_pre_consultation_intake',
-      stepKey: 'initial_consultation_preparation',
+      stepKey: 'pre_requisite_pending',
       status: 'submitted',
       canViewPayload: true,
       summary: { scoreAverage: null, hasComment: true, responseCount: 1, submittedAt: '2026-05-02T10:20:00.000Z' },
@@ -254,8 +228,13 @@ describe('Jornada', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument());
-    expect(getComputedStyle(screen.getByTestId('journey-step-forms-consultation')).backgroundColor).toBe('rgba(0, 0, 0, 0)');
-    expect(getComputedStyle(screen.getByTestId('journey-step-forms-consultation')).borderTopStyle).toBe('');
+    expect(screen.getByTestId('journey-step-forms-prerequisite')).toBeInTheDocument();
+    expect(screen.queryByText(/formulários e feedbacks da etapa atual/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/pré-requisito/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/avalia.*inicial compartilhada/i)).toHaveLength(1);
+    expect(screen.queryByText(/intake pré-consulta preenchido pelo cliente/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i);
+    expect(screen.queryByRole('link', { name: /abrir consulta inicial/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/nome completo/i)).toHaveValue('Joao Demo');
     fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '11999999999' } });
     expect(screen.getByLabelText(/telefone/i)).toHaveValue('(11) 99999-9999');
@@ -272,7 +251,7 @@ describe('Jornada', () => {
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-003/workflow-forms/BP-WF-003-INTAKE/submit',
+        '/v1/orders/BP-DEMO-001/workflow-forms/BP-WF-001-INTAKE/submit',
         {
           payload: expect.objectContaining({
             customer: expect.objectContaining({
@@ -288,10 +267,14 @@ describe('Jornada', () => {
         'tok'
       )
     );
-    expect((await screen.findAllByText(/formulário enviado/i)).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i));
+    expect(screen.queryByRole('link', { name: /abrir consulta inicial/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('journey-consultation-content')).toBeInTheDocument();
+    expect(screen.getByTestId('consultation-map')).toBeInTheDocument();
+    expect(screen.queryByTestId('journey-step-forms-prerequisite')).not.toBeInTheDocument();
   });
 
-  it('lets the athlete select another visible order to load its workflow forms', async () => {
+  it('keeps the athlete journey focused on a single primary order even when the backend returns more orders', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -314,14 +297,11 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({ events: [] })
-      .mockResolvedValueOnce({ events: [] })
-      .mockResolvedValueOnce({ forms: [] })
       .mockResolvedValueOnce({
         forms: [
           {
-            id: 'BP-WF-003-INTAKE',
-            orderId: 'BP-DEMO-003',
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
             templateKey: 'customer_pre_consultation_intake',
             stepKey: 'initial_consultation_preparation',
             status: 'pending',
@@ -336,15 +316,11 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/bp-demo-003/i)).toBeInTheDocument());
-    expect(screen.queryByText(/avalia.*inicial compartilhada biteplaner/i)).not.toBeInTheDocument();
-
-    const orderCard = screen.getByText('BP-DEMO-003').closest('article');
-    expect(orderCard).not.toBeNull();
-    fireEvent.click(within(orderCard as HTMLElement).getByRole('button', { name: /ver formulários/i }));
-
-    expect(await screen.findByText(/formulários e feedbacks da jornada/i)).toBeInTheDocument();
-    expect(screen.getByText(/os passos abaixo mostram em que ponto o pedido bp-demo-003 está/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/bp-demo-001/i).length).toBeGreaterThan(0));
+    expect(screen.queryByText(/bp-demo-003/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver formulários/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/formulários e feedbacks da etapa atual/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/os passos abaixo mostram em que ponto a jornada bp-demo-001 está/i)).toBeInTheDocument();
     expect(await screen.findByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument();
   });
 
@@ -363,7 +339,6 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({ events: [] })
       .mockResolvedValueOnce({
         forms: [
           {

@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
-import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const cardVariants: Variants = {
@@ -29,17 +28,6 @@ const cardVariants: Variants = {
       ease: [0.16, 1, 0.3, 1],
     },
   }),
-};
-
-const productVariants: Variants = {
-  hidden: { opacity: 0, x: 42, scale: 0.95, rotate: -2 },
-  show: {
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    rotate: 0,
-    transition: { duration: 1.14, ease: [0.16, 1, 0.3, 1] },
-  },
 };
 
 const HERO_PROOFS = [
@@ -395,23 +383,6 @@ export function BiteplanerPage() {
           <S.SectionLabel>Dúvidas</S.SectionLabel>
           <S.SectionTitle>Perguntas frequentes</S.SectionTitle>
         </S.FaqMedia>
-        <S.FaqProductWrap>
-          <picture>
-            <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
-            <S.FaqProduct
-              src={publicOptimizedImages.biteplaner.faqProduct.webp}
-              alt="Biteplaner"
-              width={675}
-              height={369}
-              loading="lazy"
-              decoding="async"
-              variants={productVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.35 }}
-            />
-          </picture>
-        </S.FaqProductWrap>
         <S.FaqContent>
           <S.FaqList>
             {FAQ.map((item, index) => (

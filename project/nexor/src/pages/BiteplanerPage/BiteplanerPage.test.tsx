@@ -21,9 +21,10 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
   });
 
-  it('renders the Biteplaner logo in the hero', () => {
+  it('renders the Biteplaner hero without the FAQ product image', () => {
     renderPage();
-    expect(screen.getAllByRole('img', { name: /biteplaner/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Biteplaner').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('img', { name: /biteplaner/i })).not.toBeInTheDocument();
   });
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {

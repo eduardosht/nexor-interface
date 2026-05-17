@@ -13,6 +13,7 @@ import {
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
    completeProductionRequest,
@@ -440,7 +441,12 @@ export function ProducaoDentista() {
         orderHelpText="Este pedido está com o dentista para completar a solicitação produtiva e liberar o envio ao laboratório."
       />
 
-      {loading ? <S.Banner>Carregando solicitação de produção...</S.Banner> : null}
+      {loading ? (
+        <S.LoadingStack aria-label="Carregando solicitação de produção">
+          <SkeletonGrid cards={2} minCardWidth="260px" />
+          <SkeletonCard lines={5} blockHeight="140px" />
+        </S.LoadingStack>
+      ) : null}
       {formsError ? <S.Banner role="alert">{formsError}</S.Banner> : null}
       {error || notice || pdfNotice || pdfError ? (
         <SnackbarStack>

@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useAuth } from '../../../hooks/useAuth';
+import { SkeletonBlock, SkeletonGrid } from '../../../components/Skeleton';
 import { fetchOrders, getAuthToken, type DemoOrderSummary } from '../../../features/demo/biteplanerFlow';
 import { useAdminPortal } from '../../../features/admin/portal';
 import {
@@ -175,14 +176,18 @@ export function AdminHome() {
 
       {selectedProduct ? (
         <>
-          <StatGrid>
-            {stats.map((stat) => (
-              <StatCard key={stat.label} padding="lg">
-                <StatValue>{stat.value}</StatValue>
-                <StatLabel>{stat.label}</StatLabel>
-              </StatCard>
-            ))}
-          </StatGrid>
+          {loading ? (
+            <SkeletonGrid cards={4} minCardWidth="180px" />
+          ) : (
+            <StatGrid>
+              {stats.map((stat) => (
+                <StatCard key={stat.label} padding="lg">
+                  <StatValue>{stat.value}</StatValue>
+                  <StatLabel>{stat.label}</StatLabel>
+                </StatCard>
+              ))}
+            </StatGrid>
+          )}
 
           <ChartPanel padding="lg">
             <ChartHeader>
@@ -219,6 +224,9 @@ export function AdminHome() {
             </ChartHeader>
 
             <ChartWrap>
+              {loading ? (
+                <SkeletonBlock height="360px" />
+              ) : (
               <ResponsiveContainer width="100%" height={360}>
                 <LineChart data={weeklySeries} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
                   <CartesianGrid stroke="#E7E7E7" strokeDasharray="4 4" vertical={false} />
@@ -241,6 +249,7 @@ export function AdminHome() {
                   />
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </ChartWrap>
           </ChartPanel>
         </>

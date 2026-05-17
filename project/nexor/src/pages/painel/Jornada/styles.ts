@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
 
 export type StepTone = 'complete' | 'current' | 'upcoming';
 
@@ -96,20 +95,6 @@ export const StepItem = styled.li<{ $tone: StepTone }>`
   }
 `;
 
-export const StepLink = styled(Link)<{ $tone: StepTone }>`
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 14px;
-  min-height: 250px;
-  color: inherit;
-  text-decoration: none;
-
-  &:hover {
-    color: inherit;
-  }
-`;
-
 export const StepPanel = styled.div<{ $tone: StepTone }>`
   display: grid;
   justify-items: center;
@@ -165,59 +150,6 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   font-weight: 800;
 `;
 
-export const SummaryGrid = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-export const SummaryCard = styled.section`
-  display: grid;
-  gap: 12px;
-  padding-top: 18px;
-  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-`;
-
-export const SummaryList = styled.dl`
-  margin: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
-  gap: 10px 16px;
-`;
-
-export const SummaryTerm = styled.dt`
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-`;
-
-export const SummaryValue = styled.dd`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const TimelineList = styled.ul`
-  margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 10px;
-`;
-
-export const TimelineItem = styled.li`
-  font-size: 13px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
 export const OrderGrid = styled.div`
   display: grid;
   gap: 14px;
@@ -237,21 +169,6 @@ export const OrderTitle = styled.h2`
   font-size: 16px;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const ActionLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.textPrimary};
-  color: ${({ theme }) => theme.colors.bgBase};
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
 `;
 
 export const SecondaryActionButton = styled.button`

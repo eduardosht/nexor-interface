@@ -9,6 +9,7 @@ import {
   type DataTableColumn,
 } from '@nexor/design-system';
 import { useEffect, useMemo, useState } from 'react';
+import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { AdminProductGate } from './AdminProductGate';
 import {
@@ -300,7 +301,10 @@ export function AdminOrders() {
               </S.FilterChipRow>
             ) : null}
 
-            <ResponsiveDataList
+            {loading ? (
+              <SkeletonTable rows={6} columns={5} />
+            ) : (
+              <ResponsiveDataList
               desktop={
                 <div data-testid="admin-orders-table">
                   <DataTable
@@ -308,13 +312,13 @@ export function AdminOrders() {
                     columns={columns}
                     keyExtractor={(row) => row.id}
                     pageSize={6}
-                    emptyMessage={loading ? 'Carregando ordens...' : 'Nenhuma ordem encontrada para os filtros aplicados.'}
+                    emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
                   />
                 </div>
               }
               data={filteredOrders}
               keyExtractor={(row) => row.id}
-              emptyMessage={loading ? 'Carregando ordens...' : 'Nenhuma ordem encontrada para os filtros aplicados.'}
+              emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
               renderCard={(row) => {
                 const presentation = getOrderStatusPresentation(row);
 
@@ -336,7 +340,8 @@ export function AdminOrders() {
                 );
               }}
               mobileTestId="admin-orders-mobile-list"
-            />
+              />
+            )}
 
             <FilterSheet
               open={mobileFiltersOpen}

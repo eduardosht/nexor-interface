@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import * as S from './styles';
 import { Button, StatusIndicator } from '@nexor/design-system';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   confirmPayment,
@@ -18,16 +19,28 @@ const NEXT_STEPS = [
   'Retorno de adaptação e acompanhamento',
 ];
 
-export function Compra() {
+type CompraProps = {
+  embedded?: boolean;
+  initialOrder?: DemoOrderSummary | null;
+  onOrderChange?: (order: DemoOrderSummary) => void;
+};
+
+export function Compra({ embedded = false, initialOrder = null, onOrderChange }: CompraProps) {
   const { session } = useAuth();
   const token = getAuthToken(session);
-  const [order, setOrder] = useState<DemoOrderSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
+  const [loading, setLoading] = useState(!initialOrder);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (initialOrder) {
+      setOrder(initialOrder);
+      setLoading(false);
+      return;
+    }
+
     if (!token) {
       return;
     }
@@ -61,7 +74,7 @@ export function Compra() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [initialOrder, token]);
 
   const ctaDisabled = useMemo(
     () => submitting || !order || order.status !== 'awaiting_payment',
@@ -80,6 +93,7 @@ export function Compra() {
     try {
       const response = await confirmPayment(order.id, token);
       setOrder(response.order);
+      onOrderChange?.(response.order);
       setNotice(`${response.order.id} agora está com pagamento confirmado e pronto para o laboratório.`);
     } catch {
       setError('Não foi possível confirmar a compra mock agora.');
@@ -90,69 +104,79 @@ export function Compra() {
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title="Confirmação de compra da demo"
-        description="Está tela simula o momento em que um caso clinicamente aprovado avança para pagamento e liberação operacional."
-        currentStep="purchase"
-        order={order}
-        orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
-      />
-
-      {loading ? <S.Banner>Carregando etapa de compra...</S.Banner> : null}
-      {error ? <S.Banner role="alert">{error}</S.Banner> : null}
-      {notice ? <S.Banner role="status">{notice}</S.Banner> : null}
-
-      {!order ? (
-        <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento. Use o caso já aprovado como referência visual.</S.Banner>
+      {!embedded ? (
+        <OrderStepHeader
+          title="Confirmação de compra da demo"
+          description="Está tela simula o momento em que um caso clinicamente aprovado avança para pagamento e liberação operacional."
+          currentStep="purchase"
+          order={order}
+          orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
+        />
       ) : null}
 
-      <S.Layout>
-        <S.Card>
-          <S.CardTitle>Biteplaner personalizado</S.CardTitle>
-          <S.Description>
-            O pedido inclui avaliação odontológica, moldagem individual, etapa laboratorial e acompanhamento posterior.
-          </S.Description>
-          <S.List>
-            <S.ListItem>Consulta inicial e decisão clínica do dentista parceiro.</S.ListItem>
-            <S.ListItem>Preenchimento da ordem de produção com dados mockados.</S.ListItem>
-            <S.ListItem>Envio controlado ao laboratório e retorno por ajuste quando necessário.</S.ListItem>
-          </S.List>
+      {loading ? (
+        <S.Layout aria-label="Carregando etapa de compra">
+          <SkeletonCard lines={5} blockHeight="42px" />
+          <SkeletonGrid cards={1} minCardWidth="280px" />
+        </S.Layout>
+      ) : (
+        <>
+          {error ? <S.Banner role="alert">{error}</S.Banner> : null}
+          {notice ? <S.Banner role="status">{notice}</S.Banner> : null}
 
-          <S.CardTitle>Proximos passos observaveis</S.CardTitle>
-          <S.List>
-            {NEXT_STEPS.map((step) => (
-              <S.ListItem key={step}>{step}</S.ListItem>
-            ))}
-          </S.List>
-        </S.Card>
+          {!order ? (
+            <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento. Use o caso já aprovado como referência visual.</S.Banner>
+          ) : null}
 
-        <S.Card>
-          <S.CardTitle>Resumo do pedido</S.CardTitle>
-          <S.SummaryRow>
-            <span>Biteplaner</span>
-            <strong>R$ 400,00</strong>
-          </S.SummaryRow>
-          <S.SummaryRow>
-            <span>Situação da demo</span>
-            {order ? (
-              <StatusIndicator
-                color={getOrderStatusPresentation(order).color}
-                label={getOrderStatusPresentation(order).label}
-              />
-            ) : (
-              <span>Aguardando caso elegível</span>
-            )}
-          </S.SummaryRow>
-          <S.SummaryRow>
-            <span>Total</span>
-            <S.Total>R$ 400,00</S.Total>
-          </S.SummaryRow>
+          <S.Layout>
+            <S.Card>
+              <S.CardTitle>Biteplaner personalizado</S.CardTitle>
+              <S.Description>
+                O pedido inclui avaliação odontológica, moldagem individual, etapa laboratorial e acompanhamento posterior.
+              </S.Description>
+              <S.List>
+                <S.ListItem>Consulta inicial e decisão clínica do dentista parceiro.</S.ListItem>
+                <S.ListItem>Preenchimento da ordem de produção com dados mockados.</S.ListItem>
+                <S.ListItem>Envio controlado ao laboratório e retorno por ajuste quando necessário.</S.ListItem>
+              </S.List>
 
-          <Button onClick={handleConfirmPurchase} disabled={ctaDisabled}>
-            {submitting ? 'Confirmando...' : 'Confirmar compra mock'}
-          </Button>
-        </S.Card>
-      </S.Layout>
+              <S.CardTitle>Proximos passos observaveis</S.CardTitle>
+              <S.List>
+                {NEXT_STEPS.map((step) => (
+                  <S.ListItem key={step}>{step}</S.ListItem>
+                ))}
+              </S.List>
+            </S.Card>
+
+            <S.Card>
+              <S.CardTitle>Resumo do pedido</S.CardTitle>
+              <S.SummaryRow>
+                <span>Biteplaner</span>
+                <strong>R$ 400,00</strong>
+              </S.SummaryRow>
+              <S.SummaryRow>
+                <span>Situação da demo</span>
+                {order ? (
+                  <StatusIndicator
+                    color={getOrderStatusPresentation(order).color}
+                    label={getOrderStatusPresentation(order).label}
+                  />
+                ) : (
+                  <span>Aguardando caso elegível</span>
+                )}
+              </S.SummaryRow>
+              <S.SummaryRow>
+                <span>Total</span>
+                <S.Total>R$ 400,00</S.Total>
+              </S.SummaryRow>
+
+              <Button onClick={handleConfirmPurchase} disabled={ctaDisabled}>
+                {submitting ? 'Confirmando...' : 'Confirmar compra mock'}
+              </Button>
+            </S.Card>
+          </S.Layout>
+        </>
+      )}
     </S.Page>
   );
 }

@@ -34,13 +34,13 @@ export const FormGrid = styled.div`
   gap: 14px;
 `;
 
-export const FormCard = styled.article`
+export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
   display: grid;
   gap: 16px;
-  padding: 18px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.bgBase};
+  padding: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '18px')};
+  border: ${({ $presentation, theme }) => ($presentation === 'flat' ? '0' : `1px solid ${theme.colors.borderDefault}`)};
+  border-radius: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '12px')};
+  background: ${({ $presentation, theme }) => ($presentation === 'flat' ? 'transparent' : theme.colors.bgBase)};
 `;
 
 export const FormHeader = styled.div`

@@ -104,8 +104,11 @@ describe('ConsultaInicial', () => {
       maxWidth: '100%',
     });
     expect(screen.getByDisplayValue('04567-000')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/cep/i), { target: { value: 'abc12345678' } });
+    expect(screen.getByLabelText(/cep/i)).toHaveValue('12345-678');
     expect(screen.getByTestId('consultation-map')).toBeInTheDocument();
     expect(screen.getAllByTestId('consultation-marker').length).toBeGreaterThan(0);
+    expect(screen.getByText(/cep 12345-678/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getAllByTestId('consultation-marker')[1]);
 

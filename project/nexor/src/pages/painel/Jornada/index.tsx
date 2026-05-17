@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Chip, StatusIndicator } from '@nexor/design-system';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
-  fetchTimeline,
   fetchWorkflowForms,
-  formatDate,
   getAthletePrimaryOrder,
   getAuthToken,
-  getOrderStatusPresentation,
-  getStageLabel,
   type DemoOrderSummary,
-  type DemoTimelineEvent,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
+import { ConsultaInicial } from '../ConsultaInicial';
+import { Compra } from '../Compra';
 import type { StepTone } from './styles';
 import * as S from './styles';
 
@@ -24,45 +21,38 @@ type JourneyStep = {
   key: JourneyStepKey;
   title: string;
   description: string;
-  href: string;
 };
 
 const JOURNEY_STEPS: JourneyStep[] = [
   {
     key: 'prerequisite',
     title: 'Pre-requisito',
-    description: 'Completar a triagem inicial e liberar a continuidade da jornada.',
-    href: '/painel/pre-requisito'
+    description: 'Completar a triagem inicial e liberar a continuidade da jornada.'
   },
   {
     key: 'consultation',
     title: 'Consulta inicial',
-    description: 'Escolha o consultório para ser atendido e aguarde a confirmação.',
-    href: '/painel/consulta-inicial'
+    description: 'Escolha o consultório para ser atendido e aguarde a confirmação.'
   },
   {
     key: 'clinical_decision',
     title: 'Decisão clínica',
-    description: 'O dentista define se o atleta está apto, inapto ou precisa de tratamento prévio.',
-    href: '/painel/biteplaner/jornada'
+    description: 'O dentista define se o atleta está apto, inapto ou precisa de tratamento prévio.'
   },
   {
     key: 'purchase',
     title: 'Compra',
-    description: 'Pagamento mock confirmado apenas quando o caso está apto clínicamente.',
-    href: '/painel/compra'
+    description: 'Pagamento mock confirmado apenas quando o caso está apto clínicamente.'
   },
   {
     key: 'laboratory',
     title: 'Laboratório',
-    description: 'Ordem liberada para produção, retorno por ajuste ou conclusão laboratorial.',
-    href: '/painel/biteplaner/jornada'
+    description: 'Ordem liberada para produção, retorno por ajuste ou conclusão laboratorial.'
   },
   {
     key: 'follow_up',
     title: 'Adaptação e acompanhamento',
-    description: 'Entrega, encaixe e retornos periodicos após a produção.',
-    href: '/painel/biteplaner/jornada'
+    description: 'Entrega, encaixe e retornos periodicos após a produção.'
   }
 ];
 
@@ -110,33 +100,9 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
   return 0;
 }
 
-function getJourneyAction(order: DemoOrderSummary | null) {
-  if (!order) {
-    return { href: '/painel/biteplaner/jornada', label: 'Ver jornada compartilhada' };
-  }
-
-  if (order.status === 'registration_started') {
-    return { href: '/painel/pre-requisito', label: 'Abrir pre-requisito' };
-  }
-
-  if (order.status === 'awaiting_payment') {
-    return { href: '/painel/compra', label: 'Abrir compra mock' };
-  }
-
-  if (order.status === 'awaiting_scheduling') {
-    return { href: '/painel/consulta-inicial', label: 'Abrir consulta inicial' };
-  }
-
-  if (order.status === 'awaiting_adaptation' || order.status === 'follow_up') {
-    return { href: '/painel/biteplaner/jornada', label: 'Ver acompanhamento' };
-  }
-
-  return { href: '/painel/biteplaner/jornada', label: 'Ver resumo da jornada' };
-}
-
 function getWorkflowStepKey(form: DemoWorkflowForm): JourneyStepKey {
   if (form.templateKey === 'customer_pre_consultation_intake') {
-    return 'consultation';
+    return 'prerequisite';
   }
 
   if (form.templateKey === 'lab_review_by_dentist' || form.templateKey === 'dentist_review_by_lab') {
@@ -162,13 +128,20 @@ function getWorkflowStepKey(form: DemoWorkflowForm): JourneyStepKey {
   return 'clinical_decision';
 }
 
+function advancePrerequisiteOrder(order: DemoOrderSummary): DemoOrderSummary {
+  return {
+    ...order,
+    status: 'awaiting_scheduling',
+    statusLabel: 'Aguardando consulta inicial',
+    stage: 'awaiting_initial_consultation',
+  };
+}
+
 export function Jornada() {
   const { session } = useAuth();
   const token = getAuthToken(session);
   const stepFlowRef = useRef<HTMLElement | null>(null);
   const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
-  const [timeline, setTimeline] = useState<Record<string, DemoTimelineEvent[]>>({});
-  const [selectedFormsOrderId, setSelectedFormsOrderId] = useState<string | null>(null);
   const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
   const [workflowFormsLoading, setWorkflowFormsLoading] = useState(false);
   const [workflowFormsError, setWorkflowFormsError] = useState('');
@@ -185,19 +158,12 @@ export function Jornada() {
     async function loadJourney() {
       try {
         const response = await fetchOrders('user', token);
-        const timelineEntries = await Promise.all(
-          response.orders.map(async (order) => [
-            order.id,
-            (await fetchTimeline(order.id, token)).events
-          ] as const)
-        );
 
         if (!active) {
           return;
         }
 
         setOrders(response.orders);
-        setTimeline(Object.fromEntries(timelineEntries));
       } catch {
         if (active) {
           setError('Não foi possível carregar a jornada compartilhada agora.');
@@ -217,12 +183,9 @@ export function Jornada() {
   }, [token]);
 
   const primaryOrder = useMemo(() => getAthletePrimaryOrder(orders), [orders]);
-  const selectedFormsOrder = useMemo(
-    () => orders.find((order) => order.id === selectedFormsOrderId) ?? primaryOrder,
-    [orders, primaryOrder, selectedFormsOrderId]
-  );
+  const selectedFormsOrder = primaryOrder;
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
-  const journeyAction = getJourneyAction(selectedFormsOrder);
+  const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
   const workflowFormsByStep = useMemo(() => {
     const grouped = new Map<JourneyStepKey, DemoWorkflowForm[]>();
 
@@ -233,6 +196,10 @@ export function Jornada() {
 
     return grouped;
   }, [workflowForms]);
+  const currentStepForms = currentStep ? workflowFormsByStep.get(currentStep.key) ?? [] : [];
+  const isPrerequisiteStep = currentStep?.key === 'prerequisite';
+  const isConsultationStep = currentStep?.key === 'consultation';
+  const isPurchaseStep = currentStep?.key === 'purchase';
 
   useEffect(() => {
     if (!selectedFormsOrder?.id || !token) {
@@ -271,7 +238,13 @@ export function Jornada() {
 
   return (
     <S.Page>
-      {loading ? <S.Banner>Carregando jornada...</S.Banner> : null}
+      {loading ? (
+        <S.StepFlow aria-label="Carregando jornada">
+          <SkeletonCard lines={2} />
+          <SkeletonGrid cards={6} minCardWidth="160px" />
+          <SkeletonCard lines={4} blockHeight="90px" />
+        </S.StepFlow>
+      ) : null}
       {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
       {selectedFormsOrder ? (
@@ -279,7 +252,7 @@ export function Jornada() {
           <S.SectionHeader>
             <S.SectionTitle as="h1">Fluxo visual da jornada</S.SectionTitle>
             <S.Description>
-              Os passos abaixo mostram em que ponto o pedido {selectedFormsOrder.id} está e quais formulários ou feedbacks fazem parte de cada etapa.
+              Os passos abaixo mostram em que ponto a jornada {selectedFormsOrder.id} está. As etapas são apenas informativas e a visualização permanece na etapa atual.
             </S.Description>
           </S.SectionHeader>
           <S.StepScroll>
@@ -300,132 +273,104 @@ export function Jornada() {
 
                 return (
                   <S.StepItem key={step.key} $tone={tone}>
-                    {index <= currentStepIndex ? (
-                      <S.StepLink
-                        to={step.href}
-                        $tone={tone}
-                        data-testid={`journey-step-${step.key}`}
-                      >
-                        {content}
-                      </S.StepLink>
-                    ) : (
-                      <S.StepPanel $tone={tone} data-testid={`journey-step-${step.key}`}>
-                        {content}
-                      </S.StepPanel>
-                    )}
+                    <S.StepPanel $tone={tone} data-testid={`journey-step-${step.key}`}>
+                      {content}
+                    </S.StepPanel>
                   </S.StepItem>
                 );
               })}
             </S.StepList>
           </S.StepScroll>
-          {workflowFormsLoading ? <S.Description>Carregando formulários da jornada...</S.Description> : null}
+          {workflowFormsLoading ? <SkeletonCard lines={3} blockHeight="90px" /> : null}
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
-          {workflowForms.length > 0 ? (
+          {currentStep && currentStepForms.length > 0 ? (
             <S.StepFormsSection>
               <S.StepFormsHeader>
-                <S.SectionTitle>Formulários e feedbacks da jornada</S.SectionTitle>
+                <S.SectionTitle>
+                  {isPrerequisiteStep ? 'Pré-requisito: avaliação inicial compartilhada Biteplaner' : currentStep.title}
+                </S.SectionTitle>
                 <S.Description>
-                  Estes itens pertencem aos steps do pedido selecionado e podem bloquear ou complementar a continuidade operacional.
+                  {isPrerequisiteStep
+                    ? 'Preencha o intake pré-consulta do Biteplaner. Após o envio do cadastro e consentimentos, a jornada avança para a escolha da clínica na consulta inicial.'
+                    : currentStep.description}
                 </S.Description>
               </S.StepFormsHeader>
               <S.StepFormsGrid>
-                {JOURNEY_STEPS.map((step) => {
-                  const stepForms = workflowFormsByStep.get(step.key) ?? [];
+                <S.StepFormsGroup data-testid={`journey-step-forms-${currentStep.key}`}>
+                  <WorkflowFormsPanel
+                    orderId={selectedFormsOrder.id}
+                    token={token}
+                    forms={currentStepForms}
+                    defaultValues={{
+                      fullName: selectedFormsOrder.customer?.full_name ?? '',
+                    }}
+                    onFormsChange={(nextStepForms) => {
+                      setWorkflowForms((current) =>
+                        current.map((form) => nextStepForms.find((nextForm) => nextForm.id === form.id) ?? form)
+                      );
 
-                  if (stepForms.length === 0) {
-                    return null;
-                  }
-
-                  return (
-                    <S.StepFormsGroup key={step.key} data-testid={`journey-step-forms-${step.key}`}>
-                      <S.SectionHeader>
-                        <S.SectionTitle>{step.title}</S.SectionTitle>
-                        <S.Description>{step.description}</S.Description>
-                      </S.SectionHeader>
-                      <WorkflowFormsPanel
-                        orderId={selectedFormsOrder.id}
-                        token={token}
-                        forms={stepForms}
-                        defaultValues={{
-                          fullName: selectedFormsOrder.customer?.full_name ?? '',
-                        }}
-                        onFormsChange={(nextStepForms) =>
-                          setWorkflowForms((current) =>
-                            current.map((form) => nextStepForms.find((nextForm) => nextForm.id === form.id) ?? form)
+                      if (
+                        currentStep.key === 'prerequisite' &&
+                        selectedFormsOrder.status === 'registration_started' &&
+                        nextStepForms.length > 0 &&
+                        nextStepForms.every((form) => form.status === 'submitted')
+                      ) {
+                        setOrders((currentOrders) =>
+                          currentOrders.map((order) =>
+                            order.id === selectedFormsOrder.id ? advancePrerequisiteOrder(order) : order
                           )
-                        }
-                        variant="embedded"
-                      />
-                    </S.StepFormsGroup>
-                  );
-                })}
+                        );
+                      }
+                    }}
+                    variant="embedded"
+                    formPresentation={isPrerequisiteStep ? 'flat' : 'card'}
+                    showFormHeader={!isPrerequisiteStep}
+                  />
+                </S.StepFormsGroup>
               </S.StepFormsGrid>
             </S.StepFormsSection>
           ) : null}
-          <S.ActionLink to={journeyAction.href}>{journeyAction.label}</S.ActionLink>
+          {isConsultationStep ? (
+            <S.StepFormsSection data-testid="journey-consultation-content">
+              <S.StepFormsHeader>
+                <S.SectionTitle>Consulta inicial</S.SectionTitle>
+                <S.Description>
+                  Escolha uma clínica licenciada para seguir com a primeira consulta da jornada Biteplaner.
+                </S.Description>
+              </S.StepFormsHeader>
+              <ConsultaInicial
+                embedded
+                initialOrder={selectedFormsOrder}
+                onOrderChange={(nextOrder) =>
+                  setOrders((currentOrders) =>
+                    currentOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order))
+                  )
+                }
+              />
+            </S.StepFormsSection>
+          ) : null}
+          {isPurchaseStep ? (
+            <S.StepFormsSection data-testid="journey-purchase-content">
+              <S.StepFormsHeader>
+                <S.SectionTitle>Compra</S.SectionTitle>
+                <S.Description>
+                  Confirme a compra mock diretamente na jornada para liberar a continuidade operacional.
+                </S.Description>
+              </S.StepFormsHeader>
+              <Compra
+                embedded
+                initialOrder={selectedFormsOrder}
+                onOrderChange={(nextOrder) =>
+                  setOrders((currentOrders) =>
+                    currentOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order))
+                  )
+                }
+              />
+            </S.StepFormsSection>
+          ) : null}
         </S.StepFlow>
       ) : null}
 
-      {selectedFormsOrder ? (
-        <S.SummaryGrid>
-          <S.SummaryCard>
-            <S.SectionTitle>Resumo do caso</S.SectionTitle>
-            <S.SummaryList>
-              <S.SummaryTerm>Pedido</S.SummaryTerm>
-              <S.SummaryValue>{selectedFormsOrder.id}</S.SummaryValue>
-
-              <S.SummaryTerm>Etapa atual</S.SummaryTerm>
-              <S.SummaryValue>{getStageLabel(selectedFormsOrder)}</S.SummaryValue>
-
-              <S.SummaryTerm>Dentista selecionado</S.SummaryTerm>
-              <S.SummaryValue>{selectedFormsOrder.practice_location?.name ?? 'Aguardando definicao operacional'}</S.SummaryValue>
-
-              <S.SummaryTerm>Próximo passo</S.SummaryTerm>
-              <S.SummaryValue>{journeyAction.label}</S.SummaryValue>
-            </S.SummaryList>
-          </S.SummaryCard>
-
-          <S.SummaryCard>
-            <S.SectionTitle>Histórico resumido</S.SectionTitle>
-            <S.TimelineList>
-              {(timeline[selectedFormsOrder.id] ?? []).slice(0, 5).map((event) => (
-                <S.TimelineItem key={event.id}>
-                  {formatDate(event.createdAt)} - {event.reason ?? event.toStatus}
-                </S.TimelineItem>
-              ))}
-            </S.TimelineList>
-          </S.SummaryCard>
-        </S.SummaryGrid>
-      ) : null}
-
-      <S.OrderGrid>
-        {orders.map((order) => (
-          <S.OrderCard key={order.id} $active={selectedFormsOrder?.id === order.id}>
-            <S.OrderTitle>{order.id}</S.OrderTitle>
-            <S.Description>
-              Etapa atual: {getStageLabel(order)}.
-            </S.Description>
-            <Chip tone="neutral">
-              <StatusIndicator
-                color={getOrderStatusPresentation(order).color}
-                label={getOrderStatusPresentation(order).label}
-              />
-            </Chip>
-            <S.SecondaryActionButton
-              type="button"
-              onClick={() => {
-                setSelectedFormsOrderId(order.id);
-                window.requestAnimationFrame(() => {
-                  stepFlowRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-                  stepFlowRef.current?.focus({ preventScroll: true });
-                });
-              }}
-            >
-              Ver formulários
-            </S.SecondaryActionButton>
-          </S.OrderCard>
-        ))}
-      </S.OrderGrid>
     </S.Page>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button, DataTable, Field, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
 import { Eye, Link2, Mail, MessageCircle } from 'lucide-react';
+import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   createPartnerInviteLink,
@@ -221,13 +222,17 @@ export function PartnerReferralPage() {
             <S.SectionTitle>Links gerados</S.SectionTitle>
             <S.SectionDescription>Lista de links individuais criados pelo parceiro.</S.SectionDescription>
           </S.SectionHeading>
-          <DataTable
-            data={overview?.inviteLinks ?? []}
-            columns={linkColumns}
-            keyExtractor={(row) => row.id}
-            pageSize={6}
-            emptyMessage={loading ? 'Carregando links...' : 'Nenhum link individual gerado.'}
-          />
+          {loading ? (
+            <SkeletonTable rows={4} columns={5} />
+          ) : (
+            <DataTable
+              data={overview?.inviteLinks ?? []}
+              columns={linkColumns}
+              keyExtractor={(row) => row.id}
+              pageSize={6}
+              emptyMessage="Nenhum link individual gerado."
+            />
+          )}
         </S.SectionStack>
 
         <S.SectionStack>
@@ -235,13 +240,17 @@ export function PartnerReferralPage() {
             <S.SectionTitle>Indicações convertidas</S.SectionTitle>
             <S.SectionDescription>Clientes que entraram no funil por links do parceiro.</S.SectionDescription>
           </S.SectionHeading>
-          <DataTable
-            data={overview?.leads ?? []}
-            columns={leadColumns}
-            keyExtractor={(row) => row.id}
-            pageSize={6}
-            emptyMessage={loading ? 'Carregando indicações...' : 'Nenhuma indicação convertida.'}
-          />
+          {loading ? (
+            <SkeletonTable rows={4} columns={4} />
+          ) : (
+            <DataTable
+              data={overview?.leads ?? []}
+              columns={leadColumns}
+              keyExtractor={(row) => row.id}
+              pageSize={6}
+              emptyMessage="Nenhuma indicação convertida."
+            />
+          )}
         </S.SectionStack>
       </S.Panel>
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Snackbar, SnackbarStack } from '@nexor/design-system';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   completePrerequisite,
@@ -233,9 +234,19 @@ export function PreRequisito() {
         </S.GuidanceBanner>
       </OrderStepHeader>
 
-      {loading ? <S.Banner>Carregando pedido do pre-requisito...</S.Banner> : null}
+      {loading ? (
+        <S.Content aria-label="Carregando pedido do pre-requisito">
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={5} blockHeight="96px" />
+        </S.Content>
+      ) : null}
       {error ? <S.Banner role="alert">{error}</S.Banner> : null}
-      {formsLoading ? <S.Banner>Carregando avaliação inicial compartilhada...</S.Banner> : null}
+      {!loading && formsLoading ? (
+        <S.Content aria-label="Carregando avaliação inicial compartilhada">
+          <SkeletonGrid cards={2} minCardWidth="260px" />
+          <SkeletonCard lines={4} blockHeight="120px" />
+        </S.Content>
+      ) : null}
       {formsError ? <S.Banner role="alert">{formsError}</S.Banner> : null}
       {notice ? (
         <SnackbarStack>
@@ -250,7 +261,8 @@ export function PreRequisito() {
         </SnackbarStack>
       ) : null}
 
-      <S.Content>
+      {!loading && !formsLoading ? (
+        <S.Content>
         <WorkflowFormsPanel
           orderId={order?.id ?? null}
           token={token}
@@ -275,7 +287,8 @@ export function PreRequisito() {
             Envie a avaliação inicial compartilhada com os consentimentos obrigatórios para concluir o pre-requisito.
           </S.Banner>
         ) : null}
-      </S.Content>
+        </S.Content>
+      ) : null}
     </S.Page>
   );
 }

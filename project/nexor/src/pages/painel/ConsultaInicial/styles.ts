@@ -34,6 +34,16 @@ export const SearchBar = styled.section`
   }
 `;
 
+export const LoadingStack = styled.div`
+  display: grid;
+  gap: 24px;
+`;
+
+export const SkeletonGridList = styled.div`
+  display: grid;
+  gap: 10px;
+`;
+
 export const SearchButton = styled(Button)`
   width: max-content;
   max-width: 100%;
@@ -81,6 +91,8 @@ export const Layout = styled.div`
 `;
 
 export const MapCard = styled.section`
+  position: relative;
+  z-index: 0;
   display: grid;
   gap: 14px;
   padding: 18px;
@@ -107,6 +119,8 @@ export const SectionTitle = styled.h2`
 `;
 
 export const MapViewport = styled.div`
+  position: relative;
+  z-index: 0;
   height: 460px;
   overflow: hidden;
   border-radius: 14px;
@@ -115,6 +129,7 @@ export const MapViewport = styled.div`
   .leaflet-container {
     width: 100%;
     height: 100%;
+    z-index: 0;
   }
 `;
 
@@ -197,7 +212,7 @@ export const PositiveFeedback = styled.p`
 export const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 1000;
   display: grid;
   place-items: center;
   padding: 24px;

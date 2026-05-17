@@ -10,6 +10,11 @@ export const Banner = styled.div`
   line-height: 1.6;
 `;
 
+export const LoadingStack = styled.div`
+  display: grid;
+  gap: 16px;
+`;
+
 export const WizardShell = styled.section`
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);

@@ -336,8 +336,8 @@ describe('BiteplanerHub', () => {
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
     expect(screen.getByRole('heading', { name: /workspace do atleta/i })).toBeInTheDocument();
     expect(screen.getByTestId('athlete-hero-visual')).toBeInTheDocument();
-    expect(screen.getByText(/pedidos visíveis/i)).toBeInTheDocument();
-    expect(screen.getByText(/caso principal do atleta/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/jornada biteplaner/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/jornada do atleta/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/próximo passo visível/i);
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
     expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/pre-requisito');

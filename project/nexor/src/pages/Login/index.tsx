@@ -34,6 +34,17 @@ import * as S from './styles';
 const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
   { persona: 'partner', testId: 'demo-login-partner' },
   { persona: 'athlete', testId: 'demo-login-athlete' },
+  { persona: 'athletePrerequisite', testId: 'demo-login-athlete-prerequisite' },
+  { persona: 'athleteScheduling', testId: 'demo-login-athlete-scheduling' },
+  { persona: 'athleteClinicalDecision', testId: 'demo-login-athlete-clinical-decision' },
+  { persona: 'athleteDentistForms', testId: 'demo-login-athlete-dentist-forms' },
+  { persona: 'athletePayment', testId: 'demo-login-athlete-payment' },
+  { persona: 'athleteTreatmentRequired', testId: 'demo-login-athlete-treatment-required' },
+  { persona: 'athleteLabProduction', testId: 'demo-login-athlete-lab-production' },
+  { persona: 'athleteAdaptation', testId: 'demo-login-athlete-adaptation' },
+  { persona: 'athleteFollowUp', testId: 'demo-login-athlete-follow-up' },
+  { persona: 'athleteIneligible', testId: 'demo-login-athlete-ineligible' },
+  { persona: 'athleteCancelled', testId: 'demo-login-athlete-cancelled' },
   { persona: 'dentist', testId: 'demo-login-dentist' },
   { persona: 'dentistApproved', testId: 'demo-login-dentist-approved' },
   { persona: 'dentistProgress', testId: 'demo-login-dentist-progress' },
@@ -46,7 +57,24 @@ const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
 ];
 
 const DEMO_TABS = [
-  { key: 'cliente', label: 'Cliente', personas: ['athlete'] },
+  {
+    key: 'cliente',
+    label: 'Cliente',
+    personas: [
+      'athlete',
+      'athletePrerequisite',
+      'athleteScheduling',
+      'athleteClinicalDecision',
+      'athleteDentistForms',
+      'athletePayment',
+      'athleteTreatmentRequired',
+      'athleteLabProduction',
+      'athleteAdaptation',
+      'athleteFollowUp',
+      'athleteIneligible',
+      'athleteCancelled'
+    ]
+  },
   { key: 'parceiros', label: 'Parceiros', personas: ['partner'] },
   { key: 'dentista', label: 'Dentista', personas: ['dentist', 'dentistApproved', 'dentistProgress', 'dentistLicensed'] },
   { key: 'lab', label: 'Lab', personas: ['lab', 'labApproved', 'labProgress', 'labLicensed'] },

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button, DataTable, Field, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
 import { Eye, X } from 'lucide-react';
 import styled from 'styled-components';
+import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAdminPortal } from '../../../features/admin/portal';
 import {
@@ -165,14 +166,18 @@ export function AdminLabLicensing() {
 
       {selectedProduct ? (
         <>
-          <StatGrid>
-            {stats.map((stat) => (
-              <StatCard key={stat.label} padding="lg">
-                <StatValue>{stat.value}</StatValue>
-                <StatLabel>{stat.label}</StatLabel>
-              </StatCard>
-            ))}
-          </StatGrid>
+          {loading ? (
+            <SkeletonGrid cards={4} minCardWidth="180px" />
+          ) : (
+            <StatGrid>
+              {stats.map((stat) => (
+                <StatCard key={stat.label} padding="lg">
+                  <StatValue>{stat.value}</StatValue>
+                  <StatLabel>{stat.label}</StatLabel>
+                </StatCard>
+              ))}
+            </StatGrid>
+          )}
 
           <TableSection padding="lg">
             <FilterBar>
@@ -184,15 +189,19 @@ export function AdminLabLicensing() {
                 onChange={(event) => setSearch(event.target.value)}
               />
             </FilterBar>
-            <div data-testid="admin-lab-requests-table">
-              <DataTable
-                data={filteredRequests}
-                columns={columns}
-                keyExtractor={(row) => row.id}
-                pageSize={6}
-                emptyMessage={loading ? 'Carregando solicitações...' : 'Nenhuma solicitação encontrada.'}
-              />
-            </div>
+            {loading ? (
+              <SkeletonTable rows={6} columns={6} />
+            ) : (
+              <div data-testid="admin-lab-requests-table">
+                <DataTable
+                  data={filteredRequests}
+                  columns={columns}
+                  keyExtractor={(row) => row.id}
+                  pageSize={6}
+                  emptyMessage="Nenhuma solicitação encontrada."
+                />
+              </div>
+            )}
           </TableSection>
         </>
       ) : null}

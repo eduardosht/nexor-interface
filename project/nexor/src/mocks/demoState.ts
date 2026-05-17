@@ -4,6 +4,17 @@ export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
   | 'athlete'
+  | 'athletePrerequisite'
+  | 'athleteScheduling'
+  | 'athleteClinicalDecision'
+  | 'athleteDentistForms'
+  | 'athletePayment'
+  | 'athleteTreatmentRequired'
+  | 'athleteLabProduction'
+  | 'athleteAdaptation'
+  | 'athleteFollowUp'
+  | 'athleteIneligible'
+  | 'athleteCancelled'
   | 'partner'
   | 'dentist'
   | 'dentistApproved'
@@ -437,6 +448,17 @@ function getWorkflowPayloadSection(payload: Record<string, unknown> | null, key:
 
 const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athlete: 'user',
+  athletePrerequisite: 'user',
+  athleteScheduling: 'user',
+  athleteClinicalDecision: 'user',
+  athleteDentistForms: 'user',
+  athletePayment: 'user',
+  athleteTreatmentRequired: 'user',
+  athleteLabProduction: 'user',
+  athleteAdaptation: 'user',
+  athleteFollowUp: 'user',
+  athleteIneligible: 'user',
+  athleteCancelled: 'user',
   partner: 'partner',
   dentist: 'dentist',
   dentistApproved: 'dentist',
@@ -466,6 +488,88 @@ const MODE_DESCRIPTIONS: Record<AccessMode, string> = {
 };
 
 const DEFAULT_PERSONA: DemoPersona = 'athlete';
+
+const CUSTOMER_STAGE_PERSONAS: Array<{
+  persona: DemoPersona;
+  orderId: string;
+  fullName: string;
+  email: string;
+}> = [
+  {
+    persona: 'athletePrerequisite',
+    orderId: 'BP-DEMO-001',
+    fullName: 'Cliente Pre-requisito',
+    email: 'cliente.prerequisito@nexor.dev'
+  },
+  {
+    persona: 'athleteScheduling',
+    orderId: 'BP-DEMO-002',
+    fullName: 'Cliente Consulta Inicial',
+    email: 'cliente.consulta@nexor.dev'
+  },
+  {
+    persona: 'athleteClinicalDecision',
+    orderId: 'BP-DEMO-003',
+    fullName: 'Cliente Decisao Clinica',
+    email: 'cliente.decisao@nexor.dev'
+  },
+  {
+    persona: 'athleteDentistForms',
+    orderId: 'BP-DEMO-004',
+    fullName: 'Cliente Formularios Dentista',
+    email: 'cliente.formularios@nexor.dev'
+  },
+  {
+    persona: 'athletePayment',
+    orderId: 'BP-DEMO-005',
+    fullName: 'Cliente Pagamento',
+    email: 'cliente.pagamento@nexor.dev'
+  },
+  {
+    persona: 'athleteTreatmentRequired',
+    orderId: 'BP-DEMO-006',
+    fullName: 'Cliente Tratamento Previo',
+    email: 'cliente.tratamento@nexor.dev'
+  },
+  {
+    persona: 'athleteLabProduction',
+    orderId: 'BP-DEMO-007',
+    fullName: 'Cliente Laboratorio',
+    email: 'cliente.laboratorio@nexor.dev'
+  },
+  {
+    persona: 'athleteAdaptation',
+    orderId: 'BP-DEMO-008',
+    fullName: 'Cliente Adaptacao',
+    email: 'cliente.adaptacao@nexor.dev'
+  },
+  {
+    persona: 'athleteFollowUp',
+    orderId: 'BP-DEMO-009',
+    fullName: 'Cliente Acompanhamento',
+    email: 'cliente.acompanhamento@nexor.dev'
+  },
+  {
+    persona: 'athleteIneligible',
+    orderId: 'BP-DEMO-010',
+    fullName: 'Cliente Encerrado Inapto',
+    email: 'cliente.inapto@nexor.dev'
+  },
+  {
+    persona: 'athleteCancelled',
+    orderId: 'BP-DEMO-011',
+    fullName: 'Cliente Cancelado',
+    email: 'cliente.cancelado@nexor.dev'
+  }
+];
+
+const CUSTOMER_STAGE_ORDER_BY_PERSONA = CUSTOMER_STAGE_PERSONAS.reduce<Partial<Record<DemoPersona, string>>>(
+  (accumulator, item) => {
+    accumulator[item.persona] = item.orderId;
+    return accumulator;
+  },
+  {}
+);
 
 const DEMO_PRACTICE_LOCATION_CATALOG: Record<string, DemoPracticeLocation> = {
   'practice-demo-001': {
@@ -500,9 +604,44 @@ export class DemoStateError extends Error {
   }
 }
 
+function createCustomerStageSession(item: (typeof CUSTOMER_STAGE_PERSONAS)[number]): DemoSession {
+  return {
+    id: `demo-session-${item.persona}`,
+    persona: item.persona,
+    accessToken: `demo-${item.persona}-token`,
+    userId: `demo-user-${item.persona}`
+  };
+}
+
+function createCustomerStageUser(item: (typeof CUSTOMER_STAGE_PERSONAS)[number]): DemoUser {
+  return {
+    id: `demo-user-${item.persona}`,
+    authUserId: `demo-auth-${item.persona}`,
+    profileId: `demo-profile-${item.persona}`,
+    fullName: item.fullName,
+    email: item.email,
+    phone: '11999990100',
+    roles: ['customer'],
+    clinicIds: [],
+    dentistId: null,
+    partnerId: null,
+    labId: null,
+    persona: item.persona,
+    defaultMode: 'user',
+    allowedModes: ['user'],
+    enrollment: {
+      id: `demo-enrollment-${item.persona}`,
+      status: 'active',
+      source_type: 'internal_demo',
+      created_at: '2026-05-01T09:00:00.000Z'
+    }
+  };
+}
+
 const seedState = (): DemoState => ({
   sessions: [
     { id: 'demo-session-athlete', persona: 'athlete', accessToken: 'demo-athlete-token', userId: 'demo-user-athlete' },
+    ...CUSTOMER_STAGE_PERSONAS.map(createCustomerStageSession),
     { id: 'demo-session-partner', persona: 'partner', accessToken: 'demo-partner-token', userId: 'demo-user-partner' },
     { id: 'demo-session-dentist', persona: 'dentist', accessToken: 'demo-dentist-token', userId: 'demo-user-dentist' },
     { id: 'demo-session-dentist-approved', persona: 'dentistApproved', accessToken: 'demo-dentistApproved-token', userId: 'demo-user-dentist-approved' },
@@ -537,6 +676,7 @@ const seedState = (): DemoState => ({
         created_at: '2026-05-01T09:00:00.000Z'
       }
     },
+    ...CUSTOMER_STAGE_PERSONAS.map(createCustomerStageUser),
     {
       id: 'demo-user-partner',
       authUserId: 'demo-auth-partner',
@@ -2334,6 +2474,17 @@ function clone<T>(value: T): T {
 function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
     value === 'athlete' ||
+    value === 'athletePrerequisite' ||
+    value === 'athleteScheduling' ||
+    value === 'athleteClinicalDecision' ||
+    value === 'athleteDentistForms' ||
+    value === 'athletePayment' ||
+    value === 'athleteTreatmentRequired' ||
+    value === 'athleteLabProduction' ||
+    value === 'athleteAdaptation' ||
+    value === 'athleteFollowUp' ||
+    value === 'athleteIneligible' ||
+    value === 'athleteCancelled' ||
     value === 'partner' ||
     value === 'dentist' ||
     value === 'dentistApproved' ||
@@ -2423,7 +2574,17 @@ function isOperationalLabPersona(persona: DemoPersona) {
   return persona === 'lab' || persona === 'labLicensed';
 }
 
+function isCustomerPersona(persona: DemoPersona) {
+  return persona === 'athlete' || Boolean(CUSTOMER_STAGE_ORDER_BY_PERSONA[persona]);
+}
+
 function canPersonaReadOrder(order: DemoOrder, persona: DemoPersona) {
+  const scopedOrderId = CUSTOMER_STAGE_ORDER_BY_PERSONA[persona];
+
+  if (scopedOrderId) {
+    return order.id === scopedOrderId;
+  }
+
   return (
     order.visibleTo.includes(persona) ||
     (isOperationalDentistPersona(persona) && order.visibleTo.includes('dentist')) ||
@@ -2516,7 +2677,7 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
       : null,
     practice_location: clone(order.practice_location),
     prerequisiteSubmission:
-      activePersona === 'athlete' || activePersona === 'dentist'
+      isCustomerPersona(activePersona) || activePersona === 'dentist'
         ? clone(order.prerequisiteSubmission ?? null)
         : null,
     productionRequestDraft: canReadProductionRequestDraft ? clone(order.productionRequestDraft) : null,
@@ -2578,15 +2739,27 @@ function assertMutationAccess(orderId: string, action: DemoOrderAction, context?
     return order;
   }
 
+  const customerActions: DemoOrderAction['type'][] = [
+    'complete-prerequisite',
+    'schedule-initial-consultation',
+    'confirm-payment',
+    'user-confirmation',
+    'submit-workflow-form',
+    'revise-workflow-form'
+  ];
   const allowedByPersona: Record<DemoPersona, DemoOrderAction['type'][]> = {
-    athlete: [
-      'complete-prerequisite',
-      'schedule-initial-consultation',
-      'confirm-payment',
-      'user-confirmation',
-      'submit-workflow-form',
-      'revise-workflow-form'
-    ],
+    athlete: customerActions,
+    athletePrerequisite: customerActions,
+    athleteScheduling: customerActions,
+    athleteClinicalDecision: customerActions,
+    athleteDentistForms: customerActions,
+    athletePayment: customerActions,
+    athleteTreatmentRequired: customerActions,
+    athleteLabProduction: customerActions,
+    athleteAdaptation: customerActions,
+    athleteFollowUp: customerActions,
+    athleteIneligible: customerActions,
+    athleteCancelled: customerActions,
     partner: [],
     dentist: [
       'dentist-confirmation',
@@ -3689,7 +3862,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       const existingCustomerPayload = getWorkflowPayloadSection(workflowForm.payload, 'customer');
       const existingDentistPayload = getWorkflowPayloadSection(workflowForm.payload, 'dentist');
 
-      if (activePersona === 'athlete') {
+      if (isCustomerPersona(activePersona)) {
         if (workflowForm.dentistReviewStartedAt || workflowForm.roleState?.customer === 'locked') {
           throw new DemoStateError(
             409,
@@ -3728,6 +3901,19 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
               : 'Primeiro envio do intake do cliente na demo.',
           createdAt: nextSubmittedAt
         });
+
+        const order = getOrderOrThrow(orderId);
+        if (order.status === 'registration_started') {
+          order.flags.preRequisiteComplete = true;
+          order.nextActions = ['schedule-initial-consultation'];
+          updateOrderStatus(
+            orderId,
+            'awaiting_scheduling',
+            'Aguardando consulta inicial',
+            'awaiting_initial_consultation',
+            'Pre-requisito preenchido na jornada demo.'
+          );
+        }
 
         return clone(workflowForm);
       }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Star, X } from 'lucide-react';
+import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
   Button,
@@ -54,6 +55,8 @@ type WorkflowFormsPanelProps = {
   onFormsChange?: (forms: DemoWorkflowForm[]) => void;
   variant?: 'panel' | 'embedded';
   actorRole?: WorkflowFormActorRole;
+  formPresentation?: 'card' | 'flat';
+  showFormHeader?: boolean;
 };
 
 const INTAKE_DEFINITION: FormDefinition = {
@@ -423,12 +426,16 @@ function FormItem({
   defaultValues,
   onSubmitted,
   actorRole,
+  formPresentation,
+  showFormHeader,
 }: {
   form: DemoWorkflowForm;
   token?: string;
   defaultValues: Record<string, string>;
   onSubmitted: (form: DemoWorkflowForm) => void;
   actorRole: WorkflowFormActorRole;
+  formPresentation: 'card' | 'flat';
+  showFormHeader: boolean;
 }) {
   const definition = useMemo(() => getDefinition(form.templateKey), [form.templateKey]);
   const [payload, setPayload] = useState<Record<string, string>>(() =>
@@ -597,25 +604,27 @@ function FormItem({
   }
 
   return (
-    <S.FormCard>
-      <S.FormHeader>
-        <div>
-          <S.FormTitle>{definition.label}</S.FormTitle>
-          <S.Description>{definition.description}</S.Description>
-          {isSharedIntake && actorRole === 'user' && form.dentistReviewStartedAt ? (
-            <S.LockNotice>Formulário em revisão pelo dentista.</S.LockNotice>
-          ) : null}
-          {isSharedIntake && actorRole === 'user' && roleState.customer === 'locked' ? (
-            <S.Meta>Respostas do cliente bloqueadas para edição.</S.Meta>
-          ) : null}
-          <S.Meta>Liberado em {formatDate(form.releasedAt)}</S.Meta>
-          {form.submittedAt ? <S.Meta>Enviado em {formatDate(form.submittedAt)}</S.Meta> : null}
-          {form.summary?.scoreAverage !== null && form.summary?.scoreAverage !== undefined ? (
-            <S.Meta>Nota media: {form.summary.scoreAverage.toFixed(1)}</S.Meta>
-          ) : null}
-        </div>
-        <StatusIndicator color={presentation.color} label={presentation.label} />
-      </S.FormHeader>
+    <S.FormCard $presentation={formPresentation}>
+      {showFormHeader ? (
+        <S.FormHeader>
+          <div>
+            <S.FormTitle>{definition.label}</S.FormTitle>
+            <S.Description>{definition.description}</S.Description>
+            {isSharedIntake && actorRole === 'user' && form.dentistReviewStartedAt ? (
+              <S.LockNotice>Formulário em revisão pelo dentista.</S.LockNotice>
+            ) : null}
+            {isSharedIntake && actorRole === 'user' && roleState.customer === 'locked' ? (
+              <S.Meta>Respostas do cliente bloqueadas para edição.</S.Meta>
+            ) : null}
+            <S.Meta>Liberado em {formatDate(form.releasedAt)}</S.Meta>
+            {form.submittedAt ? <S.Meta>Enviado em {formatDate(form.submittedAt)}</S.Meta> : null}
+            {form.summary?.scoreAverage !== null && form.summary?.scoreAverage !== undefined ? (
+              <S.Meta>Nota media: {form.summary.scoreAverage.toFixed(1)}</S.Meta>
+            ) : null}
+          </div>
+          <StatusIndicator color={presentation.color} label={presentation.label} />
+        </S.FormHeader>
+      ) : null}
 
       {isSharedIntake ? (
         <>
@@ -1091,6 +1100,8 @@ export function WorkflowFormsPanel({
   onFormsChange,
   variant = 'panel',
   actorRole = 'user',
+  formPresentation = 'card',
+  showFormHeader = true,
 }: WorkflowFormsPanelProps) {
   const [loadedForms, setLoadedForms] = useState<DemoWorkflowForm[]>([]);
   const [loading, setLoading] = useState(false);
@@ -1165,7 +1176,7 @@ export function WorkflowFormsPanel({
           <S.Description>{description}</S.Description>
         </S.Header>
       ) : null}
-      {loading ? <S.Meta>Carregando formulários...</S.Meta> : null}
+      {loading ? <SkeletonCard lines={3} blockHeight="88px" /> : null}
       {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
       <S.FormGrid>
         {visibleForms.map((form) => (
@@ -1175,6 +1186,8 @@ export function WorkflowFormsPanel({
             token={token}
             defaultValues={defaultValues}
             actorRole={actorRole}
+            formPresentation={formPresentation}
+            showFormHeader={showFormHeader}
             onSubmitted={(nextForm) =>
               updateForms((current) => current.map((item) => (item.id === nextForm.id ? nextForm : item)))
             }

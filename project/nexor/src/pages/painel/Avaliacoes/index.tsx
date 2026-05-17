@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CheckCircle2, Star, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
@@ -435,7 +436,12 @@ export function Avaliacoes() {
           <S.Description>{copy.description}</S.Description>
         </S.Header>
 
-        {loading ? <S.Banner>Carregando avaliações...</S.Banner> : null}
+        {loading ? (
+          <>
+            <SkeletonGrid cards={3} minCardWidth="180px" />
+            <SkeletonCard lines={5} blockHeight="120px" />
+          </>
+        ) : null}
         {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
         {!loading && !error ? (

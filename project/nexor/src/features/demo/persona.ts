@@ -2,6 +2,17 @@ export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
   | 'athlete'
+  | 'athletePrerequisite'
+  | 'athleteScheduling'
+  | 'athleteClinicalDecision'
+  | 'athleteDentistForms'
+  | 'athletePayment'
+  | 'athleteTreatmentRequired'
+  | 'athleteLabProduction'
+  | 'athleteAdaptation'
+  | 'athleteFollowUp'
+  | 'athleteIneligible'
+  | 'athleteCancelled'
   | 'partner'
   | 'dentist'
   | 'dentistApproved'
@@ -15,6 +26,17 @@ export type DemoPersona =
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
   athlete: 'Atleta',
+  athletePrerequisite: 'Cliente - Pre-requisito',
+  athleteScheduling: 'Cliente - Consulta inicial',
+  athleteClinicalDecision: 'Cliente - Decisao clinica',
+  athleteDentistForms: 'Cliente - Formularios do dentista',
+  athletePayment: 'Cliente - Pagamento',
+  athleteTreatmentRequired: 'Cliente - Tratamento previo',
+  athleteLabProduction: 'Cliente - Laboratorio',
+  athleteAdaptation: 'Cliente - Adaptacao',
+  athleteFollowUp: 'Cliente - Acompanhamento',
+  athleteIneligible: 'Cliente - Encerrado inapto',
+  athleteCancelled: 'Cliente - Cancelado',
   partner: 'Parceiro',
   dentist: 'Dentista',
   dentistApproved: 'Dentista não licenciado - aprovado',
@@ -34,6 +56,17 @@ export function isMockModeEnabled() {
 export function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
     value === 'athlete' ||
+    value === 'athletePrerequisite' ||
+    value === 'athleteScheduling' ||
+    value === 'athleteClinicalDecision' ||
+    value === 'athleteDentistForms' ||
+    value === 'athletePayment' ||
+    value === 'athleteTreatmentRequired' ||
+    value === 'athleteLabProduction' ||
+    value === 'athleteAdaptation' ||
+    value === 'athleteFollowUp' ||
+    value === 'athleteIneligible' ||
+    value === 'athleteCancelled' ||
     value === 'partner' ||
     value === 'dentist' ||
     value === 'dentistApproved' ||

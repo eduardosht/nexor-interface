@@ -771,36 +771,6 @@ export const FaqContent = styled.div`
   }
 `;
 
-export const FaqProductWrap = styled.div`
-  width: clamp(260px, 26vw, 380px);
-  height: 0;
-  position: sticky;
-  z-index: 1;
-  top: 34vh;
-  margin: -18px 0 -18px;
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-start;
-  pointer-events: none;
-  transform: translateX(-30%);
-
-  @media (max-width: 900px) {
-    display: none;
-  }
-`;
-
-export const FaqProduct = styled(motion.img)`
-  width: 100%;
-  display: block;
-  border-radius: 12px;
-  opacity: 0.52;
-  filter: drop-shadow(0 24px 40px rgba(29, 48, 65, 0.16));
-
-  @media (prefers-reduced-motion: reduce) {
-    transform: none;
-  }
-`;
-
 export const FaqList = styled.div`
   display: flex;
   flex-direction: column;

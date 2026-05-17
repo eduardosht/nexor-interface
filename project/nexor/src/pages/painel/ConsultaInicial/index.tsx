@@ -3,6 +3,7 @@ import * as S from './styles';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { divIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { SkeletonBlock, SkeletonCard, SkeletonLine } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
@@ -12,6 +13,7 @@ import {
   type DemoPracticeLocationSelection,
 } from '../../../features/demo/biteplanerFlow';
 import {
+  getConsultationCepLocation,
   getConsultationLocation,
   listConsultationLocationsByCep,
 } from '../../../features/demo/consultationLocations';
@@ -35,7 +37,64 @@ const markerIcon = divIcon({
   popupAnchor: [0, -16],
 });
 
+const activeMarkerIcon = divIcon({
+  className: 'consultation-map-pin consultation-map-pin-active',
+  html: `
+    <div style="
+      width: 28px;
+      height: 28px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      background: #f59e0b;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.2), 0 14px 30px rgba(23, 23, 23, 0.26);
+    ">
+      <div style="
+        position: absolute;
+        inset: 7px;
+        border-radius: 999px;
+        background: #171717;
+      "></div>
+    </div>
+  `,
+  iconSize: [28, 28],
+  iconAnchor: [14, 28],
+  popupAnchor: [0, -26],
+});
+
+const cepMarkerIcon = divIcon({
+  className: 'consultation-map-pin consultation-map-pin-home',
+  html: `
+    <div style="
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #171717;
+      box-shadow: 0 12px 28px rgba(23, 23, 23, 0.22);
+      color: #171717;
+    ">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m3 11 9-8 9 8"></path>
+        <path d="M5 10v10h14V10"></path>
+        <path d="M9 20v-6h6v6"></path>
+      </svg>
+    </div>
+  `,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+  popupAnchor: [0, -18],
+});
+
 const DENTIST_PARTNER_PATH = '/parceiros#dentistas';
+
+type ConsultaInicialProps = {
+  embedded?: boolean;
+  initialOrder?: DemoOrderSummary | null;
+  onOrderChange?: (order: DemoOrderSummary) => void;
+};
 
 function getDentistPartnerUrl() {
   if (typeof window === 'undefined') {
@@ -45,24 +104,48 @@ function getDentistPartnerUrl() {
   return `${window.location.origin}${DENTIST_PARTNER_PATH}`;
 }
 
-export function ConsultaInicial() {
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 5) {
+    return digits;
+  }
+
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+export function ConsultaInicial({ embedded = false, initialOrder = null, onOrderChange }: ConsultaInicialProps) {
   const { session } = useAuth();
   const token = getAuthToken(session);
   const [cep, setCep] = useState('04567-000');
-  const [order, setOrder] = useState<DemoOrderSummary | null>(null);
+  const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
   const [visibleLocations, setVisibleLocations] = useState<DemoPracticeLocationSelection[]>(
     () => listConsultationLocationsByCep('04567-000')
   );
   const [activeLocation, setActiveLocation] = useState<DemoPracticeLocationSelection | null>(
     () => listConsultationLocationsByCep('04567-000')[0] ?? null
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialOrder);
   const [error, setError] = useState('');
   const [schedulingConsultation, setSchedulingConsultation] = useState(false);
   const [scheduleNotice, setScheduleNotice] = useState('');
   const [showScheduleConfirmation, setShowScheduleConfirmation] = useState(false);
 
   useEffect(() => {
+    if (initialOrder) {
+      setOrder(initialOrder);
+      setLoading(false);
+
+      if (initialOrder.practice_location?.id) {
+        const selectedLocation = getConsultationLocation(initialOrder.practice_location.id);
+        if (selectedLocation) {
+          setActiveLocation(selectedLocation);
+        }
+      }
+
+      return;
+    }
+
     if (!token) {
       return;
     }
@@ -106,7 +189,7 @@ export function ConsultaInicial() {
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [initialOrder, token]);
 
   const dentistPartnerUrl = getDentistPartnerUrl();
   const dentistReferralMessage = [
@@ -126,6 +209,10 @@ export function ConsultaInicial() {
     const fallback = visibleLocations[0];
     return fallback ? [fallback.coordinates.lat, fallback.coordinates.lng] : [-23.5923, -46.6843];
   }, [activeLocation, visibleLocations]);
+  const cepLocation = useMemo(
+    () => getConsultationCepLocation(cep, visibleLocations),
+    [cep, visibleLocations]
+  );
 
   function handleSearch() {
     const nextLocations = listConsultationLocationsByCep(cep);
@@ -146,6 +233,7 @@ export function ConsultaInicial() {
     try {
       const response = await scheduleInitialConsultation(order.id, activeLocation.id, token);
       setOrder(response.order);
+      onOrderChange?.(response.order);
       setScheduleNotice('Consulta informada com sucesso. Agora estámos aguardando o dentista aceitar a ordem via sistema.');
     } catch {
       setError('Não foi possível vincular a consulta agendada agora.');
@@ -156,23 +244,46 @@ export function ConsultaInicial() {
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title="Consulta inicial"
-        description="Escolha um consultório licenciado para visualizar a clínica, o dentista responsável e o contexto da primeira consulta."
-        currentStep="consultation"
-        order={order}
-        orderHelpText="Este pedido já passou pela triagem e agora precisa da escolha do consultório licenciado para a consulta inicial."
-      />
+      {!embedded ? (
+        <OrderStepHeader
+          title="Consulta inicial"
+          description="Escolha um consultório licenciado para visualizar a clínica, o dentista responsável e o contexto da primeira consulta."
+          currentStep="consultation"
+          order={order}
+          orderHelpText="Este pedido já passou pela triagem e agora precisa da escolha do consultório licenciado para a consulta inicial."
+        />
+      ) : null}
 
-      {loading ? <S.Banner>Carregando etapa de consulta inicial...</S.Banner> : null}
-      {error ? <S.Banner role="alert">{error}</S.Banner> : null}
-      {!loading ? (
+      {loading ? (
+        <S.LoadingStack aria-label="Carregando etapa de consulta inicial">
+          <S.SearchBar>
+            <SkeletonLine width="320px" height="44px" />
+            <SkeletonLine width="130px" height="44px" />
+          </S.SearchBar>
+          <S.Layout>
+            <S.MapCard>
+              <SkeletonLine width="38%" />
+              <SkeletonLine width="72%" />
+              <SkeletonBlock height="460px" />
+              <S.SkeletonGridList>
+                <SkeletonCard lines={2} />
+                <SkeletonCard lines={2} />
+              </S.SkeletonGridList>
+            </S.MapCard>
+            <SkeletonCard lines={6} blockHeight="52px" />
+          </S.Layout>
+        </S.LoadingStack>
+      ) : (
         <>
+          {error ? <S.Banner role="alert">{error}</S.Banner> : null}
           <S.SearchBar>
             <S.CepField
               value={cep}
-              onChange={(event) => setCep(event.target.value)}
+              onChange={(event) => setCep(formatCep(event.target.value))}
               aria-label="CEP"
+              inputMode="numeric"
+              maxLength={9}
+              placeholder="00000-000"
             />
             <S.SearchButton type="button" onClick={handleSearch}>
               Buscar clínicas
@@ -191,20 +302,34 @@ export function ConsultaInicial() {
                     attribution='&copy; OpenStreetMap contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
-                  {visibleLocations.map((location) => (
+                  {visibleLocations.map((location) => {
+                    const selected = activeLocation?.id === location.id;
+
+                    return (
+                      <Marker
+                        key={location.id}
+                        position={[location.coordinates.lat, location.coordinates.lng]}
+                        icon={selected ? activeMarkerIcon : markerIcon}
+                        zIndexOffset={selected ? 1000 : 0}
+                        eventHandlers={{
+                          click: () => {
+                            setActiveLocation(location);
+                          },
+                        }}
+                      >
+                        <Popup>{location.name}</Popup>
+                      </Marker>
+                    );
+                  })}
+                  {cepLocation ? (
                     <Marker
-                      key={location.id}
-                      position={[location.coordinates.lat, location.coordinates.lng]}
-                      icon={markerIcon}
-                      eventHandlers={{
-                        click: () => {
-                          setActiveLocation(location);
-                        },
-                      }}
+                      position={[cepLocation.lat, cepLocation.lng]}
+                      icon={cepMarkerIcon}
+                      zIndexOffset={1500}
                     >
-                      <Popup>{location.name}</Popup>
+                      <Popup>{cepLocation.label}</Popup>
                     </Marker>
-                  ))}
+                  ) : null}
                 </MapContainer>
               </S.MapViewport>
               <S.ClinicList>
@@ -296,7 +421,7 @@ export function ConsultaInicial() {
             </S.ReferralActions>
           </S.ReferralCard>
         </>
-      ) : null}
+      )}
 
       {showScheduleConfirmation && activeLocation ? (
         <S.ModalOverlay role="presentation">

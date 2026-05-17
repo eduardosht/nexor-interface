@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { sanitizePersonName } from '@nexor/design-system';
+import { SkeletonCard } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import * as S from './styles';
@@ -73,6 +74,7 @@ export function MinhaConta() {
   const [passwordSending, setPasswordSending] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState('');
   const [passwordError, setPasswordError] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
   const email = backendUser?.email ?? session?.user.email ?? '—';
   const acquiredProducts = useMemo(() => getMockAcquiredProducts(email), [email]);
@@ -82,6 +84,7 @@ export function MinhaConta() {
     let active = true;
 
     async function load() {
+      setLoadingProfile(true);
       try {
         const resp = await api.get<MeResponse>('/v1/auth/me', session!.access_token);
         if (!active) {
@@ -95,6 +98,10 @@ export function MinhaConta() {
         }
       } catch {
         /* silently skip — name stays empty */
+      } finally {
+        if (active) {
+          setLoadingProfile(false);
+        }
       }
     }
 
@@ -170,6 +177,9 @@ export function MinhaConta() {
           animate="visible"
         >
           <S.SectionTitle>Dados da conta</S.SectionTitle>
+          {loadingProfile ? (
+            <SkeletonCard lines={4} blockHeight="44px" />
+          ) : (
           <S.Card as="form" onSubmit={handleSave}>
             <S.CardRow>
               <S.Field as="label">
@@ -200,6 +210,7 @@ export function MinhaConta() {
               )}
             </S.FormActions>
           </S.Card>
+          )}
         </S.Section>
 
         <S.Section
