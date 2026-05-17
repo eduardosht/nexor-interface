@@ -136,11 +136,16 @@ function AccessModeModal({ onClose, onConfirm }: AccessModeModalProps) {
   const { session } = useAuth();
   const [options, setOptions] = useState<AccessOption[]>([]);
   const [selected, setSelected] = useState<AccessMode | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(true);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      setLoadingOptions(false);
+      return;
+    }
     let active = true;
+    setLoadingOptions(true);
     api.get<AccessResponse>('/v1/products/biteplaner/access-options', session.access_token)
       .then((res) => {
         if (!active) return;
@@ -158,6 +163,10 @@ function AccessModeModal({ onClose, onConfirm }: AccessModeModalProps) {
           { key: 'lab', label: 'Laboratório', description: 'Sistema de gestão de produção e licenciamento laboratorial. Receba moldagens, gerencie fabricacao, controle de qualidade e rastreamento de envios.', allowed: false, reason: null },
         ]);
         setSelected('user');
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoadingOptions(false);
       });
     return () => { active = false; };
   }, [session]);
@@ -177,8 +186,17 @@ function AccessModeModal({ onClose, onConfirm }: AccessModeModalProps) {
         <S.ModalSubtitle>Selecione o tipo de acesso ao Biteplaner</S.ModalSubtitle>
         <S.CloseBtn onClick={onClose} aria-label="Fechar"><X size={16} /></S.CloseBtn>
 
-        <S.AccessCardsGrid>
-          {options.map((opt) => {
+        <S.AccessCardsGrid aria-busy={loadingOptions}>
+          {loadingOptions ? Array.from({ length: 5 }).map((_, index) => (
+            <S.AccessCardSkeleton key={index} data-testid="access-option-skeleton" aria-hidden="true">
+              <S.AccessSkeletonRadio />
+              <S.AccessSkeletonIcon />
+              <S.AccessSkeletonLine $width="72%" />
+              <S.AccessSkeletonLine $width="100%" />
+              <S.AccessSkeletonLine $width="88%" />
+              <S.AccessSkeletonLine $width="64%" />
+            </S.AccessCardSkeleton>
+          )) : options.map((opt) => {
             const Icon = MODE_ICONS[opt.key];
             const isSelected = selected === opt.key;
             return (
@@ -215,7 +233,7 @@ function AccessModeModal({ onClose, onConfirm }: AccessModeModalProps) {
 
         <S.ModalActions>
           <S.ModalBtnSecondary onClick={onClose}>Cancelar</S.ModalBtnSecondary>
-          <S.ModalBtnPrimary disabled={selected === null} onClick={() => { if (selected) onConfirm(selected); }}>
+          <S.ModalBtnPrimary disabled={loadingOptions || selected === null} onClick={() => { if (selected) onConfirm(selected); }}>
             Continuar
           </S.ModalBtnPrimary>
         </S.ModalActions>

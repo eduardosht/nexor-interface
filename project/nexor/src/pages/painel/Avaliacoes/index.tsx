@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { CheckCircle2, Star, X } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Clock3, Inbox, Star, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -432,8 +432,13 @@ export function Avaliacoes() {
     <S.Page>
       <S.Panel>
         <S.Header>
-          <S.Title>{copy.title}</S.Title>
-          <S.Description>{copy.description}</S.Description>
+          <S.HeaderIcon>
+            <Star size={28} aria-hidden />
+          </S.HeaderIcon>
+          <div>
+            <S.Title>{copy.title}</S.Title>
+            <S.Description>{copy.description}</S.Description>
+          </div>
         </S.Header>
 
         {loading ? (
@@ -467,12 +472,22 @@ export function Avaliacoes() {
 
               <S.StatStack>
                 <S.StatCard>
-                  <S.SmallText>Ordens analisadas</S.SmallText>
-                  <S.StatValue>{orders.length}</S.StatValue>
+                  <S.StatIcon>
+                    <ClipboardList size={22} aria-hidden />
+                  </S.StatIcon>
+                  <span>
+                    <S.SmallText>Ordens analisadas</S.SmallText>
+                    <S.StatValue>{orders.length}</S.StatValue>
+                  </span>
                 </S.StatCard>
                 <S.StatCard>
-                  <S.SmallText>Templates ativos</S.SmallText>
-                  <S.StatValue>{copy.templates.length}</S.StatValue>
+                  <S.StatIcon $tone="blue">
+                    <ClipboardList size={22} aria-hidden />
+                  </S.StatIcon>
+                  <span>
+                    <S.SmallText>Templates ativos</S.SmallText>
+                    <S.StatValue>{copy.templates.length}</S.StatValue>
+                  </span>
                 </S.StatCard>
               </S.StatStack>
             </S.SummaryGrid>
@@ -488,12 +503,17 @@ export function Avaliacoes() {
 
             <S.Section>
               <S.SectionHeader>
+                <S.SectionTitleGroup>
+                  <S.SectionIcon>
+                    <ClipboardList size={20} aria-hidden />
+                  </S.SectionIcon>
                 <div>
                   <S.SectionTitle>Surveys pendentes</S.SectionTitle>
                   <S.SectionDescription>
                     Formulários liberados para este perfil responder após os pontos de interação previstos no fluxo.
                   </S.SectionDescription>
                 </div>
+                </S.SectionTitleGroup>
                 <S.PendingCount>{pendingSurveys.length}</S.PendingCount>
               </S.SectionHeader>
               <S.PendingGrid>
@@ -513,18 +533,28 @@ export function Avaliacoes() {
                     </S.PendingCard>
                   );
                 })}
-                {pendingSurveys.length === 0 ? <S.Banner>Nenhum survey pendente para este perfil.</S.Banner> : null}
+                {pendingSurveys.length === 0 ? (
+                  <S.Banner>
+                    <Inbox size={16} aria-hidden />
+                    Nenhum survey pendente para este perfil.
+                  </S.Banner>
+                ) : null}
               </S.PendingGrid>
             </S.Section>
 
             <S.Section>
               <S.SectionHeader>
+                <S.SectionTitleGroup>
+                  <S.SectionIcon>
+                    <Clock3 size={20} aria-hidden />
+                  </S.SectionIcon>
                 <div>
                   <S.SectionTitle>Momentos dos surveys</S.SectionTitle>
                   <S.SectionDescription>
                     Pontos em que os modais devem aparecer para validar todos os feedbacks do MVP.
                   </S.SectionDescription>
                 </div>
+                </S.SectionTitleGroup>
               </S.SectionHeader>
               <S.TriggerList>
                 {SURVEY_MOMENTS.map((moment) => (

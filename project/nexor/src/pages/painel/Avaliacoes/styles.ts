@@ -7,25 +7,40 @@ export const Page = styled.div`
 
 export const Panel = styled.section`
   display: grid;
-  gap: 20px;
+  gap: 24px;
   padding: 22px;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.05);
 `;
 
 export const Header = styled.div`
-  display: grid;
-  gap: 6px;
-  padding-bottom: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 18px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const HeaderIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.06));
+  color: #7c3aed;
 `;
 
 export const Title = styled.h1`
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 850;
   color: ${({ theme }) => theme.colors.textPrimary};
+  line-height: 1.1;
 `;
 
 export const Description = styled.p`
@@ -38,7 +53,7 @@ export const Description = styled.p`
 
 export const SummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: minmax(150px, 0.28fr) minmax(260px, 1fr) minmax(150px, 0.2fr);
+  grid-template-columns: minmax(190px, 0.28fr) minmax(320px, 1fr) minmax(220px, 0.22fr);
   gap: 24px;
   align-items: center;
 
@@ -49,20 +64,24 @@ export const SummaryGrid = styled.div`
 
 export const ScoreBlock = styled.div`
   display: grid;
-  gap: 6px;
-  padding-right: 24px;
-  border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  justify-items: center;
+  gap: 10px;
+  padding: 28px 22px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.14);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(124, 58, 237, 0.12), transparent 40%),
+    linear-gradient(135deg, rgba(250, 245, 255, 0.92), rgba(255, 255, 255, 0.98));
 
   @media (max-width: 860px) {
-    padding-right: 0;
-    border-right: 0;
+    justify-items: start;
   }
 `;
 
 export const Score = styled.strong`
-  font-size: 46px;
+  font-size: clamp(3.8rem, 6vw, 5rem);
   line-height: 1;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: #7c3aed;
 `;
 
 export const Stars = styled.div`
@@ -78,22 +97,22 @@ export const SmallText = styled.span`
 
 export const Distribution = styled.div`
   display: grid;
-  gap: 8px;
+  gap: 12px;
 `;
 
 export const DistributionRow = styled.div`
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) 84px;
-  gap: 10px;
+  grid-template-columns: 32px minmax(0, 1fr) 100px;
+  gap: 14px;
   align-items: center;
-  font-size: 12px;
+  font-size: 13px;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const Track = styled.div`
-  height: 8px;
+  height: 10px;
   border-radius: 999px;
-  background: ${({ theme }) => theme.colors.bgBase};
+  background: #f4f4f5;
   overflow: hidden;
 `;
 
@@ -107,41 +126,69 @@ export const Fill = styled.span<{ $percent: number }>`
 
 export const StatStack = styled.div`
   display: grid;
-  gap: 8px;
+  gap: 12px;
 `;
 
 export const StatCard = styled.article`
   display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 70px;
+  padding: 14px;
+  border-radius: 10px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(250, 250, 250, 0.84));
+`;
+
+export const StatIcon = styled.span<{ $tone?: 'purple' | 'blue' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: ${({ $tone }) =>
+    $tone === 'blue'
+      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.06))'
+      : 'linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.06))'};
+  color: ${({ $tone }) => ($tone === 'blue' ? '#3b82f6' : '#7c3aed')};
 `;
 
 export const StatValue = styled.strong`
+  display: block;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 18px;
+  font-size: 20px;
+  line-height: 1.15;
 `;
 
 export const TemplateGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 `;
 
 export const TemplateCard = styled.article`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  border: 1px solid rgba(34, 197, 94, 0.14);
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.98));
 `;
 
 export const TemplateScore = styled.strong`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 197, 94, 0.16);
+  background: #f0fdf4;
   color: #15803d;
   font-size: 16px;
 `;
@@ -155,8 +202,8 @@ export const TemplateLabel = styled.span`
 
 export const Section = styled.section`
   display: grid;
-  gap: 12px;
-  padding-top: 18px;
+  gap: 14px;
+  padding-top: 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
 `;
 
@@ -165,6 +212,25 @@ export const SectionHeader = styled.div`
   justify-content: space-between;
   gap: 14px;
   align-items: flex-start;
+`;
+
+export const SectionTitleGroup = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+`;
+
+export const SectionIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.06));
+  color: #7c3aed;
 `;
 
 export const SectionTitle = styled.h2`
@@ -186,16 +252,17 @@ export const PendingCount = styled.strong`
   align-items: center;
   justify-content: center;
   min-width: 30px;
-  height: 30px;
+  height: 34px;
   border-radius: 8px;
-  background: ${({ theme }) => theme.colors.textPrimary};
+  background: linear-gradient(135deg, #111111, #242424);
   color: ${({ theme }) => theme.colors.bgBase};
   font-size: 13px;
+  box-shadow: 0 10px 20px rgba(23, 23, 23, 0.16);
 `;
 
 export const PendingGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 `;
 
@@ -224,12 +291,12 @@ export const TriggerList = styled.div`
 
 export const TriggerItem = styled.article`
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
 export const TriggerIcon = styled.span`
@@ -237,7 +304,8 @@ export const TriggerIcon = styled.span`
   align-items: center;
   justify-content: center;
   width: 28px;
-  height: 28px;
+  height: 42px;
+  width: 42px;
   border-radius: 8px;
   background: #ecfdf5;
   color: #15803d;
@@ -245,13 +313,18 @@ export const TriggerIcon = styled.span`
 
 export const ReviewList = styled.div`
   display: grid;
+  gap: 14px;
 `;
 
 export const ReviewCard = styled.article`
   display: grid;
-  gap: 10px;
-  padding: 18px 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  gap: 14px;
+  padding: 18px 22px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.16);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(124, 58, 237, 0.08), transparent 28%),
+    ${({ theme }) => theme.colors.bgElevated};
 `;
 
 export const ReviewHeader = styled.div`
@@ -271,12 +344,12 @@ export const Avatar = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.textPrimary};
-  color: ${({ theme }) => theme.colors.bgBase};
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
 `;
@@ -321,7 +394,7 @@ export const CriteriaPill = styled.span`
   padding: 6px 8px;
   border-radius: 6px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  background: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 11px;
 
@@ -331,10 +404,13 @@ export const CriteriaPill = styled.span`
 `;
 
 export const Banner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 14px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  background: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
 `;

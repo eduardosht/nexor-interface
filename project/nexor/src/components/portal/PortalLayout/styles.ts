@@ -1,10 +1,21 @@
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
 
 const slideUp = keyframes`from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); }`;
+
+const skeletonShimmer = keyframes`
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+`;
+
+const skeletonFill = css`
+  background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 37%, #F3F4F6 63%);
+  background-size: 240% 100%;
+  animation: ${skeletonShimmer} 1.25s ease-in-out infinite;
+`;
 
 export const Overlay = styled.div`
   position: fixed;
@@ -97,6 +108,49 @@ export const AccessCard = styled.button<{ $selected: boolean; $allowed: boolean 
   &:hover {
     border-color: ${({ $allowed, $selected }) => $allowed && !$selected ? '#A3A3A3' : undefined};
     box-shadow: ${({ $allowed }) => $allowed ? '0 4px 16px rgba(23,23,23,0.08)' : 'none'};
+  }
+`;
+
+export const AccessCardSkeleton = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  min-height: 190px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #E5E5E5;
+  background: #ffffff;
+  overflow: hidden;
+`;
+
+export const AccessSkeletonRadio = styled.span`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  ${skeletonFill}
+`;
+
+export const AccessSkeletonIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  ${skeletonFill}
+`;
+
+export const AccessSkeletonLine = styled.span<{ $width: string }>`
+  width: ${({ $width }) => $width};
+  height: 10px;
+  border-radius: 999px;
+  ${skeletonFill}
+
+  &:first-of-type {
+    height: 14px;
   }
 `;
 

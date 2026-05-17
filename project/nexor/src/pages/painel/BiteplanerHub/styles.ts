@@ -7,6 +7,48 @@ export const Page = styled.div`
   gap: 24px;
 `;
 
+export const RoleTabs = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  padding-bottom: 1px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  overflow-x: auto;
+`;
+
+export const RoleTabButton = styled.button<{ $active: boolean }>`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 0 14px;
+  border: 0;
+  background: transparent;
+  color: ${({ $active, theme }) => ($active ? '#6d3df5' : theme.colors.textSecondary)};
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: ${({ $active }) => ($active ? '#6d3df5' : 'transparent')};
+  }
+
+  &:hover {
+    color: ${({ $active, theme }) => ($active ? '#6d3df5' : theme.colors.textPrimary)};
+  }
+`;
+
 export const Hero = styled.section<{ $showcase?: boolean }>`
   display: grid;
   grid-template-columns: ${({ $showcase }) => ($showcase ? 'minmax(0, 1fr) minmax(320px, 0.9fr)' : '1fr')};
@@ -197,6 +239,272 @@ export const HeroFloatingIcon = styled.span`
   color: #16a34a;
 `;
 
+export const PartnerHeroVisual = styled.div`
+  position: relative;
+  min-height: 190px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+export const PartnerHeroBrowser = styled.div`
+  position: absolute;
+  top: 0;
+  right: 70px;
+  width: min(360px, 82%);
+  height: 192px;
+  border-radius: 16px 16px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+`;
+
+export const PartnerHeroBrowserBody = styled.div`
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  height: calc(100% - 34px);
+  padding: 28px 42px 0;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px) 0 0 / 50% 100%,
+    linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.94));
+`;
+
+export const PartnerHeroLine = styled.span<{ $width: string }>`
+  display: block;
+  width: ${({ $width }) => $width};
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+`;
+
+export const PartnerHeroSuccess = styled.span`
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #2ca36a;
+  color: #ffffff;
+  box-shadow: 0 0 0 8px rgba(44, 163, 106, 0.12);
+`;
+
+export const PartnerHeroLinkBadge = styled.span`
+  position: absolute;
+  left: 18px;
+  top: 76px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.86);
+  background: rgba(239, 246, 255, 0.94);
+  color: #3b82f6;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.14);
+`;
+
+export const PartnerHeroBars = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100px;
+  height: 82px;
+  padding: 18px 18px 12px;
+  border-radius: 24px 0 16px 0;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+
+  span {
+    display: block;
+    width: 14px;
+    border-radius: 5px 5px 2px 2px;
+    background: #cbd5e1;
+  }
+
+  span:nth-child(1) {
+    height: 22px;
+  }
+
+  span:nth-child(2) {
+    height: 38px;
+  }
+
+  span:nth-child(3) {
+    height: 58px;
+    background: #2ca36a;
+  }
+`;
+
+export const PartnerHeroArrow = styled.span`
+  position: absolute;
+  right: 58px;
+  top: 70px;
+  width: 86px;
+  height: 42px;
+  border-top: 2px dashed rgba(71, 85, 105, 0.38);
+  border-radius: 80% 60% 0 0;
+  transform: rotate(-8deg);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    top: -5px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid rgba(71, 85, 105, 0.46);
+    border-right: 2px solid rgba(71, 85, 105, 0.46);
+    transform: rotate(28deg);
+  }
+`;
+
+export const ReferralHero = styled.section`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  align-items: center;
+  gap: 28px;
+  min-height: 188px;
+  padding: 32px 40px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background:
+    radial-gradient(circle at 90% 12%, rgba(59, 130, 246, 0.12), transparent 26%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 68%, rgba(255, 255, 255, 0.96) 100%),
+    ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding: 28px;
+  }
+`;
+
+export const ReferralHeroVisual = styled.div`
+  position: relative;
+  min-height: 150px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+export const ReferralHeroBrowser = styled.div`
+  position: absolute;
+  top: -12px;
+  right: 50px;
+  width: min(360px, 82%);
+  height: 164px;
+  border-radius: 14px 14px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+`;
+
+export const ReferralHeroBrowserBody = styled.div`
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  height: calc(100% - 34px);
+  padding: 24px 110px 0 28px;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.94));
+`;
+
+export const ReferralHeroLinkBadge = styled.span`
+  position: absolute;
+  left: 30px;
+  top: 56px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 231, 235, 0.86);
+  background: rgba(239, 246, 255, 0.96);
+  color: #3b82f6;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.14);
+`;
+
+export const ReferralHeroSuccess = styled.span`
+  position: absolute;
+  top: 36px;
+  right: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(240, 253, 244, 0.96);
+  color: #16a34a;
+  box-shadow: 0 16px 28px rgba(22, 163, 74, 0.12);
+
+  svg {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 999px;
+    background: #22c55e;
+    color: #ffffff;
+  }
+`;
+
+export const ReferralHeroBars = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  width: 98px;
+  height: 80px;
+  padding: 20px 18px 14px;
+  border-radius: 16px 0 14px 14px;
+  border: 1px solid rgba(229, 231, 235, 0.76);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+
+  span {
+    display: block;
+    width: 14px;
+    border-radius: 5px 5px 2px 2px;
+  }
+
+  span:nth-child(1) {
+    height: 22px;
+    background: #bbf7d0;
+  }
+
+  span:nth-child(2) {
+    height: 38px;
+    background: #7dd3fc;
+  }
+
+  span:nth-child(3) {
+    height: 56px;
+    background: #818cf8;
+  }
+`;
+
 export const Banner = styled.div`
   padding: 16px 18px;
   border-radius: 12px;
@@ -267,6 +575,8 @@ export const StatsGrid = styled.section`
 `;
 
 type AthleteTone = 'blue' | 'amber' | 'green';
+type PartnerTone = 'blue' | 'green' | 'purple';
+type OperationalTone = 'purple' | 'amber' | 'blue';
 
 const athleteTone = {
   blue: {
@@ -285,6 +595,42 @@ const athleteTone = {
     halo: 'rgba(34, 197, 94, 0.12)'
   }
 } satisfies Record<AthleteTone, { bg: string; color: string; halo: string }>;
+
+const partnerTone = {
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(79, 70, 229, 0.07))',
+    color: '#3b82f6',
+    halo: 'rgba(59, 130, 246, 0.08)'
+  },
+  green: {
+    bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.06))',
+    color: '#1f9d66',
+    halo: 'rgba(34, 197, 94, 0.08)'
+  },
+  purple: {
+    bg: 'linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.06))',
+    color: '#7c3aed',
+    halo: 'rgba(124, 58, 237, 0.08)'
+  }
+} satisfies Record<PartnerTone, { bg: string; color: string; halo: string }>;
+
+const operationalTone = {
+  purple: {
+    bg: 'linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06))',
+    color: '#6d3df5',
+    halo: 'rgba(109, 61, 245, 0.08)'
+  },
+  amber: {
+    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06))',
+    color: '#d18a00',
+    halo: 'rgba(245, 158, 11, 0.1)'
+  },
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.06))',
+    color: '#2784d6',
+    halo: 'rgba(59, 130, 246, 0.1)'
+  }
+} satisfies Record<OperationalTone, { bg: string; color: string; halo: string }>;
 
 export const AthleteStatsGrid = styled.section`
   display: grid;
@@ -328,14 +674,113 @@ export const AthleteStatContent = styled.div`
   min-width: 0;
 `;
 
+export const PartnerStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PartnerStatCard = styled.article<{ $tone: PartnerTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 136px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PartnerStatIcon = styled.span<{ $tone: PartnerTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: ${({ $tone }) => partnerTone[$tone].bg};
+  color: ${({ $tone }) => partnerTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => partnerTone[$tone].halo};
+`;
+
+export const PartnerStatContent = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const OperationalStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const OperationalStatCard = styled.article<{ $tone: OperationalTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  min-height: 150px;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const OperationalStatIcon = styled.span<{ $tone: OperationalTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 14px;
+  background: ${({ $tone }) => operationalTone[$tone].bg};
+  color: ${({ $tone }) => operationalTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => operationalTone[$tone].halo};
+`;
+
+export const OperationalStatContent = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+`;
+
 export const PartnerDashboardGrid = styled.section`
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
-  gap: 16px;
+  gap: 18px;
+  align-items: stretch;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: 1fr;
+  }
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
+`;
+
+export const PartnerChartPanel = styled.section`
+  display: grid;
+  gap: 22px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 `;
 
 export const PartnerChartHeader = styled.div`
@@ -344,6 +789,36 @@ export const PartnerChartHeader = styled.div`
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
+`;
+
+export const PartnerPanelTitleGroup = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  span {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const PartnerPanelIcon = styled.span<{ $tone: 'blue' | 'purple' | 'green' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex: 0 0 auto;
+  background: ${({ $tone }) =>
+    $tone === 'blue'
+      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.13), rgba(59, 130, 246, 0.05))'
+      : $tone === 'green'
+        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))'
+      : 'linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(124, 58, 237, 0.05))'};
+  color: ${({ $tone }) => ($tone === 'blue' ? '#3b82f6' : $tone === 'green' ? '#16a34a' : '#7c3aed')};
 `;
 
 export const PartnerPeriodControl = styled.div`
@@ -378,13 +853,7 @@ export const PartnerPeriodButton = styled.button<{ $active: boolean }>`
 export const PartnerBarChart = styled.div`
   display: grid;
   gap: 14px;
-  min-height: 348px;
-  padding: 16px 12px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 250, 250, 0.72) 100%),
-    ${({ theme }) => theme.colors.bgBase};
+  min-height: 380px;
 
   .recharts-wrapper,
   .recharts-surface {
@@ -425,6 +894,96 @@ export const PartnerChartLegendItem = styled.div`
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 14px;
     font-weight: 800;
+  }
+`;
+
+export const PartnerOperationPanel = styled.section`
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+`;
+
+export const PartnerActionCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+
+  @media (max-width: 1120px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PartnerActionCard = styled(Link)`
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 244px;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  > svg:last-child {
+    margin-top: auto;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  }
+`;
+
+export const PartnerActionCardPrimary = styled(PartnerActionCard)`
+  border-color: #171717;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 36%),
+    linear-gradient(135deg, #111111, #242424);
+  color: #ffffff;
+
+`;
+
+export const PartnerActionText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.55;
+
+  ${PartnerActionCardPrimary} & {
+    color: rgba(255, 255, 255, 0.84);
+  }
+`;
+
+export const PartnerActionIcon = styled.span<{ $dark?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  background: ${({ $dark }) => ($dark ? 'rgba(255, 255, 255, 0.12)' : '#f5f5f5')};
+  color: ${({ $dark, theme }) => ($dark ? '#ffffff' : theme.colors.textPrimary)};
+
+  svg {
+    margin: 0;
   }
 `;
 
@@ -544,6 +1103,157 @@ export const Panel = styled.section`
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const OperationalPanel = styled.section`
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+
+  @media (max-width: 720px) {
+    padding: 20px;
+  }
+`;
+
+export const OperationalPanelHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  > span:last-child {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const OperationalTableShell = styled.div`
+  min-width: 0;
+`;
+
+export const ReferralPanel = styled.section`
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+
+  @media (max-width: 720px) {
+    padding: 20px;
+  }
+`;
+
+export const ReferralPanelHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  > span:last-child {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const ReferralForm = styled.form`
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) minmax(140px, auto);
+  gap: 18px;
+  align-items: end;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ReferralField = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+
+  > span {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+
+  label {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    background: ${({ theme }) => theme.colors.bgElevated};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+
+    &:focus-within {
+      border-color: ${({ theme }) => theme.colors.textPrimary};
+      box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
+    }
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font: inherit;
+    font-size: 14px;
+
+    &::placeholder {
+      color: ${({ theme }) => theme.colors.textSecondary};
+    }
+  }
+`;
+
+export const ReferralSubmitButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid ${({ theme }) => theme.colors.textPrimary};
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 36%),
+    linear-gradient(135deg, #111111, #242424);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(23, 23, 23, 0.14);
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+    transform: none;
+  }
 `;
 
 export const PanelHeader = styled.div`
@@ -672,16 +1382,49 @@ export const TableActionRow = styled.div`
   gap: 8px;
 `;
 
-export const TableIconButton = styled.button`
+const tableButtonTone = {
+  neutral: {
+    bg: '#ffffff',
+    border: '#E0E0E0',
+    color: '#171717',
+    hover: '#f5f5f5'
+  },
+  success: {
+    bg: '#ecfdf5',
+    border: '#bbf7d0',
+    color: '#059669',
+    hover: '#d1fae5'
+  },
+  danger: {
+    bg: '#fef2f2',
+    border: '#fecaca',
+    color: '#dc2626',
+    hover: '#fee2e2'
+  },
+  warning: {
+    bg: '#fffbeb',
+    border: '#fde68a',
+    color: '#d18a00',
+    hover: '#fef3c7'
+  },
+  info: {
+    bg: '#ecfdf5',
+    border: '#d1fae5',
+    color: '#059669',
+    hover: '#d1fae5'
+  }
+} satisfies Record<string, { bg: string; border: string; color: string; hover: string }>;
+
+export const TableIconButton = styled.button<{ $tone?: keyof typeof tableButtonTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  border: 1px solid ${({ $tone = 'neutral' }) => tableButtonTone[$tone].border};
+  background: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].bg};
+  color: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].color};
   cursor: pointer;
   transition:
     background 180ms ease,
@@ -689,8 +1432,8 @@ export const TableIconButton = styled.button`
     color 180ms ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.bgElevated};
-    border-color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].hover};
+    border-color: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].color};
   }
 
   &:disabled {
@@ -701,6 +1444,22 @@ export const TableIconButton = styled.button`
     box-shadow: none;
     filter: saturate(0.72);
   }
+`;
+
+export const StagePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #e8f3ff;
+  color: #0f4b85;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 `;
 
 export const OrderCard = styled.article`
@@ -808,29 +1567,45 @@ export const SectionStack = styled.div`
 export const DentistStatusBar = styled.section`
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 10px;
+  gap: 28px;
+  padding: 28px 32px;
+  border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
+    padding: 22px;
   }
 `;
 
 export const DentistStatusItem = styled.div`
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
   min-width: 0;
 `;
 
-export const DentistStatusValue = styled.strong`
+export const DentistStatusIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06));
+  color: #6d3df5;
+`;
+
+export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' | 'neutral' }>`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 15px;
+  color: ${({ $tone, theme }) =>
+    $tone === 'success' ? '#059669' : $tone === 'warning' ? '#d18a00' : theme.colors.textPrimary};
+  font-size: 22px;
   font-weight: 800;
   line-height: 1.35;
   overflow-wrap: anywhere;

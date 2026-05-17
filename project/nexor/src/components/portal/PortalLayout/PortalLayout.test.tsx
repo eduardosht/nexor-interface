@@ -347,6 +347,24 @@ describe('PortalLayout navigation', () => {
     );
   });
 
+  it('shows skeleton cards while access options are loading', () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return new Promise<never>(() => {});
+      }
+
+      return Promise.resolve({ notifications: [], unreadCount: 0 });
+    });
+
+    renderLayout('/painel/home');
+
+    fireEvent.click(screen.getByRole('button', { name: /biteplaner/i }));
+
+    expect(screen.getByRole('dialog', { name: /selecionar acesso ao biteplaner/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId('access-option-skeleton')).toHaveLength(5);
+    expect(screen.getByRole('button', { name: /continuar/i })).toBeDisabled();
+  });
+
   it('shows the licensing submenu and hides Ordem for dentist access', () => {
     renderLayout('/painel/biteplaner?mode=dentist', {
       backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },

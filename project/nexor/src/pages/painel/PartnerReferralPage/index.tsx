@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Button, DataTable, Field, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
-import { Eye, Link2, Mail, MessageCircle } from 'lucide-react';
+import { Button, DataTable, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
+import { BarChart3, Check, Eye, Link2, Mail, MessageCircle, UserRound } from 'lucide-react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -179,49 +179,98 @@ export function PartnerReferralPage() {
 
   return (
     <S.Page>
-      <S.Hero>
-        <S.Eyebrow>Parceiro Biteplaner</S.Eyebrow>
-        <S.Title>Indicar</S.Title>
-        <S.Description>Gere links individuais, compartilhe por QR code ou URL e acompanhe as indicações já realizadas.</S.Description>
-      </S.Hero>
+      <S.ReferralHero>
+        <S.HeroCopy>
+          <S.Eyebrow>Parceiro Biteplaner</S.Eyebrow>
+          <S.Title $showcase>Indicar</S.Title>
+          <S.Description $showcase>Gere links individuais, compartilhe por QR code ou URL e acompanhe as indicações já realizadas.</S.Description>
+        </S.HeroCopy>
+        <S.ReferralHeroVisual aria-hidden="true">
+          <S.ReferralHeroLinkBadge>
+            <Link2 size={28} aria-hidden />
+          </S.ReferralHeroLinkBadge>
+          <S.ReferralHeroBrowser>
+            <S.HeroBrowserChrome>
+              <span />
+              <span />
+              <span />
+            </S.HeroBrowserChrome>
+            <S.ReferralHeroBrowserBody>
+              <S.PartnerHeroLine $width="82%" />
+              <S.PartnerHeroLine $width="62%" />
+              <S.PartnerHeroLine $width="48%" />
+              <S.PartnerHeroLine $width="38%" />
+              <S.PartnerHeroLine $width="54%" />
+              <S.ReferralHeroSuccess>
+                <Check size={18} aria-hidden />
+              </S.ReferralHeroSuccess>
+            </S.ReferralHeroBrowserBody>
+          </S.ReferralHeroBrowser>
+          <S.ReferralHeroBars>
+            <span />
+            <span />
+            <span />
+          </S.ReferralHeroBars>
+        </S.ReferralHeroVisual>
+      </S.ReferralHero>
 
       {notice ? <S.Banner>{notice}</S.Banner> : null}
       {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
-      <S.Panel>
-        <S.PanelHeader>
-          <S.PanelTitle>Novo link de indicação</S.PanelTitle>
-          <S.PanelText>Use um link por cliente qualificado para preservar atribuição comercial e conversão.</S.PanelText>
-        </S.PanelHeader>
+      <S.ReferralPanel>
+        <S.ReferralPanelHeader>
+          <S.PartnerPanelIcon $tone="blue">
+            <Link2 size={22} aria-hidden />
+          </S.PartnerPanelIcon>
+          <span>
+            <S.PanelTitle>Novo link de indicação</S.PanelTitle>
+            <S.PanelText>Use um link por cliente qualificado para preservar atribuição comercial e conversão.</S.PanelText>
+          </span>
+        </S.ReferralPanelHeader>
 
-        <S.InlineForm onSubmit={handleCreateLink}>
-          <Field
-            as="input"
-            label="Cliente qualificado"
-            placeholder="Nome da pessoa abordada"
-            value={qualifiedCustomerName}
-            onChange={(event) => setQualifiedCustomerName(event.target.value)}
-          />
-          <Field
-            as="input"
-            label="E-mail do contato"
-            placeholder="opcional@cliente.com"
-            value={qualifiedCustomerEmail}
-            onChange={(event) => setQualifiedCustomerEmail(event.target.value)}
-          />
-          <S.ActionButton type="submit" disabled={activeAction === 'partner:create-link'}>
+        <S.ReferralForm onSubmit={handleCreateLink}>
+          <S.ReferralField>
+            <span>Cliente qualificado</span>
+            <label>
+              <UserRound size={18} aria-hidden />
+              <input
+                aria-label="Cliente qualificado"
+                placeholder="Nome da pessoa abordada"
+                value={qualifiedCustomerName}
+                onChange={(event) => setQualifiedCustomerName(event.target.value)}
+              />
+            </label>
+          </S.ReferralField>
+          <S.ReferralField>
+            <span>E-mail do contato</span>
+            <label>
+              <Mail size={18} aria-hidden />
+              <input
+                aria-label="E-mail do contato"
+                placeholder="opcional@cliente.com"
+                value={qualifiedCustomerEmail}
+                onChange={(event) => setQualifiedCustomerEmail(event.target.value)}
+              />
+            </label>
+          </S.ReferralField>
+          <S.ReferralSubmitButton type="submit" disabled={activeAction === 'partner:create-link'}>
             <Link2 size={16} aria-hidden />
             {activeAction === 'partner:create-link' ? 'Gerando...' : 'Gerar link'}
-          </S.ActionButton>
-        </S.InlineForm>
-      </S.Panel>
+          </S.ReferralSubmitButton>
+        </S.ReferralForm>
+      </S.ReferralPanel>
 
-      <S.Panel>
+      <S.ReferralPanel>
         <S.SectionStack>
-          <S.SectionHeading>
-            <S.SectionTitle>Links gerados</S.SectionTitle>
-            <S.SectionDescription>Lista de links individuais criados pelo parceiro.</S.SectionDescription>
-          </S.SectionHeading>
+          <S.ReferralPanelHeader>
+            <S.PartnerPanelIcon $tone="blue">
+              <Link2 size={22} aria-hidden />
+            </S.PartnerPanelIcon>
+            <span>
+              <S.PanelTitle>Links gerados</S.PanelTitle>
+              <S.PanelText>Lista de links individuais criados pelo parceiro.</S.PanelText>
+            </span>
+          </S.ReferralPanelHeader>
           {loading ? (
             <SkeletonTable rows={4} columns={5} />
           ) : (
@@ -234,12 +283,19 @@ export function PartnerReferralPage() {
             />
           )}
         </S.SectionStack>
+      </S.ReferralPanel>
 
+      <S.ReferralPanel>
         <S.SectionStack>
-          <S.SectionHeading>
-            <S.SectionTitle>Indicações convertidas</S.SectionTitle>
-            <S.SectionDescription>Clientes que entraram no funil por links do parceiro.</S.SectionDescription>
-          </S.SectionHeading>
+          <S.ReferralPanelHeader>
+            <S.PartnerPanelIcon $tone="green">
+              <BarChart3 size={22} aria-hidden />
+            </S.PartnerPanelIcon>
+            <span>
+              <S.PanelTitle>Indicações convertidas</S.PanelTitle>
+              <S.PanelText>Clientes que entraram no funil por links do parceiro.</S.PanelText>
+            </span>
+          </S.ReferralPanelHeader>
           {loading ? (
             <SkeletonTable rows={4} columns={4} />
           ) : (
@@ -252,7 +308,7 @@ export function PartnerReferralPage() {
             />
           )}
         </S.SectionStack>
-      </S.Panel>
+      </S.ReferralPanel>
 
       {selectedInviteLink ? (
         <S.ModalOverlay role="dialog" aria-modal="true" aria-label="Visualizar link individual" onClick={(event) => {

@@ -2,8 +2,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Bell,
   Check,
   ChevronRight,
+  ClipboardList,
   Clock3,
   Copy,
   Download,
@@ -11,10 +15,17 @@ import {
   Eye,
   FileText,
   Flag,
+  FlaskConical,
+  Link2,
+  ListChecks,
   Mail,
   MessageCircle,
   PartyPopper,
+  QrCode,
+  RefreshCw,
   Stethoscope,
+  User,
+  UserRound,
   X,
   XCircle
 } from 'lucide-react';
@@ -26,9 +37,6 @@ import {
   Snackbar,
   SnackbarStack,
   StatusIndicator,
-  Tab,
-  TabList,
-  Tabs,
   Chip,
   type DataTableColumn,
 } from '@nexor/design-system';
@@ -149,6 +157,14 @@ const MODE_COPY: Record<AccessMode, { title: string; description: string }> = {
     title: 'Workspace admin',
     description: 'Use o painel administrativo para ver o pipeline transversal completo.'
   }
+};
+
+const MODE_TAB_ICONS: Record<AccessMode, typeof User> = {
+  user: User,
+  partner: Link2,
+  dentist: Stethoscope,
+  lab: FlaskConical,
+  admin: ClipboardList,
 };
 
 type PartnerDashboardPeriod = 'week' | 'month' | 'year' | 'all';
@@ -320,6 +336,7 @@ type QueueActionConfig = {
   ariaLabel: string;
   testId: string;
   icon: ReactNode;
+  tone?: 'neutral' | 'success' | 'danger' | 'warning' | 'info';
   confirmTitle: string;
   confirmDescription: string;
   actionKey: string;
@@ -750,17 +767,23 @@ export function BiteplanerHub() {
         {
           label: 'Leads captados',
           value: String(partnerOverview.summary.leadsCaptured),
-          hint: 'Indicados que entraram no funil por um link do parceiro.'
+          hint: 'Indicados que entraram no funil por um link do parceiro.',
+          icon: <Link2 size={24} aria-hidden />,
+          tone: 'blue' as const
         },
         {
           label: 'Contas criadas',
           value: String(partnerOverview.summary.convertedToAccount),
-          hint: 'Leads que efetivamente viraram conta na Nexor.'
+          hint: 'Leads que efetivamente viraram conta na Nexor.',
+          icon: <UserRound size={24} aria-hidden />,
+          tone: 'green' as const
         },
         {
           label: 'Pedidos ativos',
           value: String(partnerOverview.summary.activeOrders),
-          hint: 'Pedidos compartilhados que o parceiro pode acompanhar sem dados clínicos.'
+          hint: 'Pedidos compartilhados que o parceiro pode acompanhar sem dados clínicos.',
+          icon: <ClipboardList size={24} aria-hidden />,
+          tone: 'purple' as const
         }
       ]
     : [];
@@ -822,7 +845,9 @@ export function BiteplanerHub() {
     {
       label: 'Pedidos visiveis',
       value: String(orders.length),
-      hint: 'Fila compartilhada do modo atual.'
+      hint: 'Fila compartilhada do modo atual.',
+      icon: <ClipboardList size={28} aria-hidden />,
+      tone: 'purple' as const
     },
     {
       label: 'Pendencias ativas',
@@ -833,14 +858,18 @@ export function BiteplanerHub() {
             : ['awaiting_lab_start', 'lab_processing', 'awaiting_adaptation'].includes(order.status)
         ).length
       ),
-      hint: 'Itens que ainda dependem de uma ação do perfil atual.'
+      hint: 'Itens que ainda dependem de uma ação do perfil atual.',
+      icon: <Bell size={28} aria-hidden />,
+      tone: 'amber' as const
     },
     {
       label: 'Atualizados hoje',
       value: String(
         Object.values(timeline).reduce((count, events) => count + events.slice(0, 1).length, 0)
       ),
-      hint: 'Indicador simples para leitura rapida durante a apresentação.'
+      hint: 'Indicador simples para leitura rapida durante a apresentação.',
+      icon: <RefreshCw size={28} aria-hidden />,
+      tone: 'blue' as const
     }
   ];
 
@@ -983,7 +1012,7 @@ export function BiteplanerHub() {
     {
       key: 'stage',
       label: 'Etapa operacional',
-      render: (row) => (row.order ? getStageLabel(row.order) : 'Aguardando atualização')
+      render: (row) => (row.order ? renderStagePill(row.order) : <S.StagePill>Aguardando atualização</S.StagePill>)
     },
     { key: 'created', label: 'Originado em', render: (row) => formatDate(row.createdAt) }
   ];
@@ -992,6 +1021,10 @@ export function BiteplanerHub() {
     const presentation = getOrderStatusPresentation(order);
 
     return <StatusIndicator color={presentation.color} label={presentation.label} />;
+  }
+
+  function renderStagePill(order: DemoOrderSummary) {
+    return <S.StagePill>{getStageLabel(order)}</S.StagePill>;
   }
 
   function getDentistActionConfigs(order: DemoOrderSummary): QueueActionConfig[] {
@@ -1003,6 +1036,7 @@ export function BiteplanerHub() {
           ariaLabel: `Aceitar consulta agendada da ordem ${order.id}`,
           testId: 'dentist-order-action-accept-consultation',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Aceitar consulta agendada',
           confirmDescription: `Desejá aceitar a consulta agendada da ordem ${order.id}? A ordem só continua depois desse aceite do dentista.`,
           actionKey: `${order.id}:accept-initial-consultation`,
@@ -1026,6 +1060,7 @@ export function BiteplanerHub() {
           ariaLabel: `Confirmar consulta realizada da ordem ${order.id}`,
           testId: 'dentist-order-action-confirm-appointment',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Confirmar consulta realizada',
           confirmDescription: `Desejá confirmar que a consulta inicial da ordem ${order.id} foi realizada? A decisão clínica fica liberada quando paciente e dentista confirmarem o atendimento.`,
           actionKey: `${order.id}:dentist-confirmation`,
@@ -1043,6 +1078,7 @@ export function BiteplanerHub() {
           ariaLabel: `Registrar apto da ordem ${order.id}`,
           testId: 'dentist-order-action-approve',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Confirmar aptidão',
           confirmDescription: `Desejá registrar a ordem ${order.id} como apta para seguir na jornada?`,
           actionKey: `${order.id}:approve`,
@@ -1055,6 +1091,7 @@ export function BiteplanerHub() {
           ariaLabel: `Registrar inapto da ordem ${order.id}`,
           testId: 'dentist-order-action-ineligible',
           icon: <XCircle size={15} aria-hidden />,
+          tone: 'danger',
           confirmTitle: 'Confirmar inaptidão',
           confirmDescription: `Desejá encerrar a ordem ${order.id} como inapta?`,
           actionKey: `${order.id}:ineligible`,
@@ -1067,6 +1104,7 @@ export function BiteplanerHub() {
           ariaLabel: `Marcar tratamento prévio da ordem ${order.id}`,
           testId: 'dentist-order-action-prior-treatment',
           icon: <Stethoscope size={15} aria-hidden />,
+          tone: 'warning',
           confirmTitle: 'Confirmar tratamento prévio',
           confirmDescription: `Desejá mover a ordem ${order.id} para tratamento prévio pendente?`,
           actionKey: `${order.id}:treatment`,
@@ -1084,6 +1122,7 @@ export function BiteplanerHub() {
           ariaLabel: `Registrar apto da ordem ${order.id}`,
           testId: 'dentist-order-action-approve',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Confirmar aptidão',
           confirmDescription: `Desejá registrar a ordem ${order.id} como apta após o tratamento prévio?`,
           actionKey: `${order.id}:approve`,
@@ -1096,6 +1135,7 @@ export function BiteplanerHub() {
           ariaLabel: `Registrar inapto da ordem ${order.id}`,
           testId: 'dentist-order-action-ineligible',
           icon: <XCircle size={15} aria-hidden />,
+          tone: 'danger',
           confirmTitle: 'Confirmar inaptidão',
           confirmDescription: `Desejá encerrar a ordem ${order.id} como inapta após o tratamento prévio?`,
           actionKey: `${order.id}:ineligible`,
@@ -1113,6 +1153,7 @@ export function BiteplanerHub() {
           ariaLabel: `Abrir solicitação de produção da ordem ${order.id}`,
           testId: 'dentist-order-action-open-production-wizard',
           icon: <FileText size={15} aria-hidden />,
+          tone: 'neutral',
           confirmTitle: 'Abrir solicitação de produção',
           confirmDescription: `Desejá abrir a solicitação de produção da ordem ${order.id} para preencher os documentos obrigatórios?`,
           actionKey: `${order.id}:production-wizard`,
@@ -1130,6 +1171,7 @@ export function BiteplanerHub() {
           ariaLabel: `Confirmar recebimento do produto da ordem ${order.id}`,
           testId: 'dentist-order-action-confirm-product-received',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Confirmar recebimento',
           confirmDescription: `Deseja confirmar que o produto da ordem ${order.id} chegou ao dentista/local de atendimento?`,
           actionKey: `${order.id}:received`,
@@ -1149,6 +1191,7 @@ export function BiteplanerHub() {
       ariaLabel: `Verificar documentação da ordem ${order.id}`,
       testId: 'lab-order-action-documentation',
       icon: <FileText size={15} aria-hidden />,
+      tone: 'neutral',
       confirmTitle: 'Verificar documentação',
       confirmDescription: `Visualizar documentação de produção da ordem ${order.id}.`,
       actionKey: `${order.id}:documentation`,
@@ -1165,6 +1208,7 @@ export function BiteplanerHub() {
           ariaLabel: `Iniciar produção da ordem ${order.id}`,
           testId: 'lab-order-action-start',
           icon: <Check size={15} aria-hidden />,
+          tone: 'success',
           confirmTitle: 'Iniciar produção',
           confirmDescription: `Desejá iniciar formalmente a produção da ordem ${order.id}?`,
           actionKey: `${order.id}:start`,
@@ -1177,6 +1221,7 @@ export function BiteplanerHub() {
           ariaLabel: `Devolver ao dentista a ordem ${order.id}`,
           testId: 'lab-order-action-return',
           icon: <XCircle size={15} aria-hidden />,
+          tone: 'danger',
           confirmTitle: 'Devolver para o dentista',
           confirmDescription: `Desejá devolver a ordem ${order.id} para ajuste do dentista?`,
           actionKey: `${order.id}:return`,
@@ -1196,8 +1241,9 @@ export function BiteplanerHub() {
         id: `${order.id}:complete`,
         title: 'Concluir produção',
         ariaLabel: `Concluir produção da ordem ${order.id}`,
-        testId: 'lab-order-action-complete',
-        icon: <Check size={15} aria-hidden />,
+      testId: 'lab-order-action-complete',
+      icon: <Check size={15} aria-hidden />,
+      tone: 'success',
         confirmTitle: 'Concluir produção',
         confirmDescription: `Desejá concluir a etapa produtiva da ordem ${order.id}?`,
         actionKey: `${order.id}:complete`,
@@ -1267,7 +1313,7 @@ export function BiteplanerHub() {
       key: 'stage',
       label: 'Etapa',
       width: '16%',
-      render: (row) => getStageLabel(row)
+      render: (row) => renderStagePill(row)
     },
     {
       key: 'status',
@@ -1292,6 +1338,7 @@ export function BiteplanerHub() {
         timeline[row.id]?.length ? (
           <S.TableIconButton
             type="button"
+            $tone="info"
             aria-label={`Visualizar atualizacoes da ordem ${row.id}`}
             title="Visualizar atualizacoes"
             onClick={() => {
@@ -1321,6 +1368,7 @@ export function BiteplanerHub() {
               <S.TableIconButton
                 key={action.id}
                 type="button"
+                $tone={action.tone ?? 'neutral'}
                 data-testid={action.testId}
                 aria-label={action.ariaLabel}
                 title={action.title}
@@ -1361,7 +1409,7 @@ export function BiteplanerHub() {
       key: 'stage',
       label: 'Etapa',
       width: '16%',
-      render: (row) => getStageLabel(row)
+      render: (row) => renderStagePill(row)
     },
     {
       key: 'status',
@@ -1377,6 +1425,7 @@ export function BiteplanerHub() {
         timeline[row.id]?.length ? (
           <S.TableIconButton
             type="button"
+            $tone="info"
             aria-label={`Visualizar atualizacoes da ordem ${row.id}`}
             title="Visualizar atualizacoes"
             onClick={() => {
@@ -1406,6 +1455,7 @@ export function BiteplanerHub() {
               <S.TableIconButton
                 key={action.id}
                 type="button"
+                $tone={action.tone ?? 'neutral'}
                 data-testid={action.testId}
                 aria-label={action.ariaLabel}
                 title={action.title}
@@ -1449,28 +1499,35 @@ export function BiteplanerHub() {
       {isLicensingActorMode ? (
         <S.DentistStatusBar>
           <S.DentistStatusItem>
-            <S.StatLabel>E-mail</S.StatLabel>
-            <S.DentistStatusValue>{backendUser?.email ?? session?.user.email ?? '-'}</S.DentistStatusValue>
+            <S.DentistStatusIcon aria-hidden="true">
+              <Mail size={28} />
+            </S.DentistStatusIcon>
+            <span>
+              <S.StatLabel>E-mail</S.StatLabel>
+              <S.DentistStatusValue>{backendUser?.email ?? session?.user.email ?? '-'}</S.DentistStatusValue>
+            </span>
           </S.DentistStatusItem>
           <S.DentistStatusItem>
-            <S.StatLabel>Status do {licenseeNoun}</S.StatLabel>
-            <S.DentistStatusValue>
-              <S.DentistStatusDot
-                $tone={dentistStatusTone}
-                aria-hidden="true"
-                data-testid="dentist-status-dot"
-                data-tone={dentistStatusTone}
-              />
-              {dentistStatusLabel}
-            </S.DentistStatusValue>
+            <span>
+              <S.StatLabel>Status do {licenseeNoun}</S.StatLabel>
+              <S.DentistStatusValue $tone={dentistStatusTone}>
+                <S.DentistStatusDot
+                  $tone={dentistStatusTone}
+                  aria-hidden="true"
+                  data-testid="dentist-status-dot"
+                  data-tone={dentistStatusTone}
+                />
+                {dentistStatusLabel}
+              </S.DentistStatusValue>
+            </span>
           </S.DentistStatusItem>
         </S.DentistStatusBar>
       ) : (
-        <S.Hero $showcase={selectedMode === 'user'}>
+        <S.Hero $showcase={selectedMode === 'user' || selectedMode === 'partner'}>
           <S.HeroCopy>
             <S.Eyebrow>Biteplaner</S.Eyebrow>
-            <S.Title $showcase={selectedMode === 'user'}>{currentCopy?.title ?? 'Biteplaner'}</S.Title>
-            <S.Description $showcase={selectedMode === 'user'}>
+            <S.Title $showcase={selectedMode === 'user' || selectedMode === 'partner'}>{currentCopy?.title ?? 'Biteplaner'}</S.Title>
+            <S.Description $showcase={selectedMode === 'user' || selectedMode === 'partner'}>
               {selectedMode === 'admin'
                 ? 'A narrativa transversal do produto continua no painel administrativo, com filtros e pipeline completo.'
                 : currentCopy?.description ?? 'Selecione um modo para visualizar o fluxo compartilhado da demo.'}
@@ -1503,6 +1560,33 @@ export function BiteplanerHub() {
                 </span>
               </S.HeroFloatingCard>
             </S.HeroVisual>
+          ) : selectedMode === 'partner' ? (
+            <S.PartnerHeroVisual aria-hidden="true" data-testid="partner-hero-visual">
+              <S.PartnerHeroLinkBadge>
+                <Link2 size={28} aria-hidden />
+              </S.PartnerHeroLinkBadge>
+              <S.PartnerHeroBrowser>
+                <S.HeroBrowserChrome>
+                  <span />
+                  <span />
+                  <span />
+                </S.HeroBrowserChrome>
+                <S.PartnerHeroBrowserBody>
+                  <S.PartnerHeroLine $width="46%" />
+                  <S.PartnerHeroLine $width="32%" />
+                  <S.PartnerHeroLine $width="58%" />
+                  <S.PartnerHeroSuccess>
+                    <Check size={18} aria-hidden />
+                  </S.PartnerHeroSuccess>
+                </S.PartnerHeroBrowserBody>
+              </S.PartnerHeroBrowser>
+              <S.PartnerHeroBars>
+                <span />
+                <span />
+                <span />
+              </S.PartnerHeroBars>
+              <S.PartnerHeroArrow />
+            </S.PartnerHeroVisual>
           ) : null}
         </S.Hero>
       )}
@@ -1533,15 +1617,25 @@ export function BiteplanerHub() {
       ) : null}
 
       {access && showDentistLicensingTabs ? (
-        <Tabs value={selectedMode ?? access.defaultMode} onChange={(mode) => { setSearchParams({ mode }); }}>
-          <TabList>
-            {access.modes.filter((mode) => mode.allowed).map((mode) => (
-              <Tab key={mode.key} value={mode.key}>
+        <S.RoleTabs aria-label="Alternar modo de acesso Biteplaner">
+          {access.modes.filter((mode) => mode.allowed).map((mode) => {
+            const Icon = MODE_TAB_ICONS[mode.key] ?? User;
+            const isActive = (selectedMode ?? access.defaultMode) === mode.key;
+
+            return (
+              <S.RoleTabButton
+                key={mode.key}
+                type="button"
+                $active={isActive}
+                aria-pressed={isActive}
+                onClick={() => { setSearchParams({ mode: mode.key }); }}
+              >
+                <Icon size={20} aria-hidden />
                 {mode.label}
-              </Tab>
-            ))}
-          </TabList>
-        </Tabs>
+              </S.RoleTabButton>
+            );
+          })}
+        </S.RoleTabs>
       ) : null}
 
       {selectedMode === 'admin' ? (
@@ -1682,23 +1776,34 @@ export function BiteplanerHub() {
 
       {!loading && selectedMode === 'partner' ? (
         <>
-          <S.StatsGrid>
+          <S.PartnerStatsGrid>
             {partnerStats.map((stat) => (
-              <S.StatCard key={stat.label}>
-                <S.StatLabel>{stat.label}</S.StatLabel>
-                <S.StatValue>{stat.value}</S.StatValue>
-                <S.StatHint>{stat.hint}</S.StatHint>
-              </S.StatCard>
+              <S.PartnerStatCard key={stat.label} $tone={stat.tone}>
+                <S.PartnerStatIcon $tone={stat.tone}>{stat.icon}</S.PartnerStatIcon>
+                <S.PartnerStatContent>
+                  <S.StatLabel>{stat.label}</S.StatLabel>
+                  <S.StatValue>{stat.value}</S.StatValue>
+                  <S.StatHint>{stat.hint}</S.StatHint>
+                </S.PartnerStatContent>
+                <ChevronRight size={22} aria-hidden />
+              </S.PartnerStatCard>
             ))}
-          </S.StatsGrid>
+          </S.PartnerStatsGrid>
 
           <S.PartnerDashboardGrid>
-            <S.Panel>
+            <S.PartnerChartPanel>
               <S.PartnerChartHeader>
-                <S.PanelTitle>Resumo das indicações</S.PanelTitle>
-                <S.PanelText>
-                  Visão comercial do parceiro, separando links gerados, clientes que se cadastraram e indicações convertidas em compra.
-                </S.PanelText>
+                <S.PartnerPanelTitleGroup>
+                  <S.PartnerPanelIcon $tone="blue">
+                    <BarChart3 size={22} aria-hidden />
+                  </S.PartnerPanelIcon>
+                  <span>
+                    <S.PanelTitle>Resumo das indicações</S.PanelTitle>
+                    <S.PanelText>
+                      Visão comercial do parceiro, separando links gerados, clientes que se cadastraram e indicações convertidas em compra.
+                    </S.PanelText>
+                  </span>
+                </S.PartnerPanelTitleGroup>
                 <S.PartnerPeriodControl aria-label="Filtrar resumo das indicações">
                   {PARTNER_DASHBOARD_PERIODS.map((period) => (
                     <S.PartnerPeriodButton
@@ -1757,20 +1862,39 @@ export function BiteplanerHub() {
                   ))}
                 </S.PartnerChartLegend>
               </S.PartnerBarChart>
-            </S.Panel>
+            </S.PartnerChartPanel>
 
-            <S.Panel>
+            <S.PartnerOperationPanel>
               <S.PanelHeader>
-                <S.PanelTitle>Operação do parceiro</S.PanelTitle>
+                <S.PartnerPanelTitleGroup>
+                  <S.PartnerPanelIcon $tone="purple">
+                    <QrCode size={22} aria-hidden />
+                  </S.PartnerPanelIcon>
+                  <S.PanelTitle>Operação do parceiro</S.PanelTitle>
+                </S.PartnerPanelTitleGroup>
                 <S.PanelText>
                   A geração de QR code, URL individual e lista de indicações fica concentrada no submenu Indicar.
                 </S.PanelText>
               </S.PanelHeader>
-              <S.ActionRow>
-                <S.PrimaryLink to="/painel/biteplaner/indicar?mode=partner">Abrir Indicar</S.PrimaryLink>
-                <S.SecondaryLink to="/painel/biteplaner/avaliacoes?mode=partner">Ver avaliações</S.SecondaryLink>
-              </S.ActionRow>
-            </S.Panel>
+              <S.PartnerActionCards>
+                <S.PartnerActionCardPrimary to="/painel/biteplaner/indicar?mode=partner">
+                  <S.PartnerActionIcon $dark>
+                    <QrCode size={24} aria-hidden />
+                  </S.PartnerActionIcon>
+                  <strong>Abrir Indicar</strong>
+                  <S.PartnerActionText>Gere links, QR codes e acompanhe suas indicações.</S.PartnerActionText>
+                  <ArrowRight size={22} aria-hidden />
+                </S.PartnerActionCardPrimary>
+                <S.PartnerActionCard to="/painel/biteplaner/avaliacoes?mode=partner">
+                  <S.PartnerActionIcon>
+                    <BarChart3 size={24} aria-hidden />
+                  </S.PartnerActionIcon>
+                  <strong>Ver avaliações</strong>
+                  <S.PartnerActionText>Veja o desempenho das suas indicações e conversões.</S.PartnerActionText>
+                  <ArrowRight size={22} aria-hidden />
+                </S.PartnerActionCard>
+              </S.PartnerActionCards>
+            </S.PartnerOperationPanel>
           </S.PartnerDashboardGrid>
 
           {false ? (
@@ -2173,36 +2297,50 @@ export function BiteplanerHub() {
 
       {!loading && showOperationalPanel ? (
         <>
-          <S.StatsGrid>
+          <S.OperationalStatsGrid>
             {operationalStats.map((stat) => (
-              <S.StatCard key={stat.label}>
-                <S.StatLabel>{stat.label}</S.StatLabel>
-                <S.StatValue>{stat.value}</S.StatValue>
-                <S.StatHint>{stat.hint}</S.StatHint>
-              </S.StatCard>
+              <S.OperationalStatCard key={stat.label} $tone={stat.tone}>
+                <S.OperationalStatIcon $tone={stat.tone}>{stat.icon}</S.OperationalStatIcon>
+                <S.OperationalStatContent>
+                  <S.StatLabel>{stat.label}</S.StatLabel>
+                  <S.StatValue>{stat.value}</S.StatValue>
+                  <S.StatHint>{stat.hint}</S.StatHint>
+                </S.OperationalStatContent>
+                <ChevronRight size={22} aria-hidden />
+              </S.OperationalStatCard>
             ))}
-          </S.StatsGrid>
+          </S.OperationalStatsGrid>
 
-          <S.Panel>
+          <S.OperationalPanel>
             {selectedMode === 'dentist' ? (
-              <S.PanelHeader>
-                <S.PanelTitle>Fila operacional do dentista</S.PanelTitle>
-                <S.PanelText>
-                  Ordens com consulta agendada pelo cliente aparecem aqui já vinculadas ao dentista licenciado. A
-                  realização da consulta ainda precisa do match de confirmação entre paciente e dentista.
-                </S.PanelText>
-              </S.PanelHeader>
+              <S.OperationalPanelHeader>
+                <S.PartnerPanelIcon $tone="purple">
+                  <ListChecks size={22} aria-hidden />
+                </S.PartnerPanelIcon>
+                <span>
+                  <S.PanelTitle>Fila operacional do dentista</S.PanelTitle>
+                  <S.PanelText>
+                    Ordens com consulta agendada pelo cliente aparecem aqui já vinculadas ao dentista licenciado. A
+                    realização da consulta ainda precisa do match de confirmação entre paciente e dentista.
+                  </S.PanelText>
+                </span>
+              </S.OperationalPanelHeader>
             ) : (
-              <S.PanelHeader>
-                <S.PanelTitle>Fila operacional do laboratório</S.PanelTitle>
-                <S.PanelText>
-                  Cada ação abaixo modifica o mesmo conjunto de pedidos e deve refletir nas outras personas da demo.
-                </S.PanelText>
-              </S.PanelHeader>
+              <S.OperationalPanelHeader>
+                <S.PartnerPanelIcon $tone="purple">
+                  <ListChecks size={22} aria-hidden />
+                </S.PartnerPanelIcon>
+                <span>
+                  <S.PanelTitle>Fila operacional do laboratório</S.PanelTitle>
+                  <S.PanelText>
+                    Cada ação abaixo modifica o mesmo conjunto de pedidos e deve refletir nas outras personas da demo.
+                  </S.PanelText>
+                </span>
+              </S.OperationalPanelHeader>
             )}
 
             {selectedMode === 'dentist' ? (
-              <div data-testid="dentist-queue-table">
+              <S.OperationalTableShell data-testid="dentist-queue-table">
                 <DataTable
                   data={filteredDentistOrders}
                   columns={dentistColumns}
@@ -2213,9 +2351,9 @@ export function BiteplanerHub() {
                   pageSize={4}
                   emptyMessage="Nenhum pedido do dentista corresponde aos filtros atuais."
                 />
-              </div>
+              </S.OperationalTableShell>
             ) : (
-              <div data-testid="lab-queue-table">
+              <S.OperationalTableShell data-testid="lab-queue-table">
                 <DataTable
                   data={filteredLabOrders}
                   columns={labColumns}
@@ -2226,9 +2364,9 @@ export function BiteplanerHub() {
                   pageSize={4}
                   emptyMessage="Nenhuma ordem do laboratório nesta etapa da demo."
                 />
-              </div>
+              </S.OperationalTableShell>
             )}
-          </S.Panel>
+          </S.OperationalPanel>
         </>
       ) : null}
 
