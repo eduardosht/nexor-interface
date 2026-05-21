@@ -9,12 +9,44 @@ import {
   Star,
   Target,
   Trophy,
-  UsersRound,
+  Volleyball,
   Zap,
 } from 'lucide-react';
+import { useState, type SVGProps } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
 import * as S from './styles';
+
+type InlineIconProps = SVGProps<SVGSVGElement> & {
+  size?: number | string;
+  strokeWidth?: number | string;
+};
+
+function BoxingGloveIcon({ size = 24, strokeWidth = 2, ...props }: InlineIconProps) {
+  return (
+    <svg
+      {...props}
+      data-testid="biteplaner-combat-glove-icon"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M9.4 3.2h3.8c3.4 0 6.1 2.7 6.1 6.1v2.3c0 2.5-2 4.5-4.5 4.5h-4.7c-3.1 0-5.6-2.5-5.6-5.6V8.1c0-2.7 2.2-4.9 4.9-4.9Z" />
+      <path d="M9.5 3.3v7.5" />
+      <path d="M12.8 3.3v7.5" />
+      <path d="M16.1 4.6v6.2" />
+      <path d="M14.8 10.8h2.7c1 0 1.8.8 1.8 1.8" />
+      <path d="M8.7 16v3.2c0 .9.7 1.6 1.6 1.6h5.2c.9 0 1.6-.7 1.6-1.6V16" />
+      <path d="M8.9 18.6h8" />
+    </svg>
+  );
+}
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 34, scale: 0.98 },
@@ -38,17 +70,22 @@ const HERO_PROOFS = [
 
 const USE_CASES = [
   {
-    icon: Trophy,
+    icon: BoxingGloveIcon,
+    iconTestId: 'biteplaner-combat-glove-icon',
     title: 'Esportes de combate',
     body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
   },
   {
-    icon: Zap,
+    icon: Dumbbell,
+    iconTestId: 'biteplaner-strength-dumbbell-icon',
+    secondaryIcon: Zap,
+    secondaryIconTestId: 'biteplaner-strength-zap-icon',
     title: 'Força e alta intensidade',
     body: 'Para quem percebe apertamento, tensão mandibular ou dores mais previsíveis em treinos de carga e esforço.',
   },
   {
-    icon: UsersRound,
+    icon: Volleyball,
+    iconTestId: 'biteplaner-team-sport-icon',
     title: 'Esportes coletivos',
     body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
   },
@@ -99,11 +136,114 @@ const JOURNEY_STEPS = [
   },
 ];
 
+const INITIAL_COMPARISON_ROWS = 7;
+
 const COMPARISON = [
-  ['Avaliação', 'Sem avaliação profissional', 'Avaliação odontológica antes da compra'],
-  ['Ajuste', 'Tentativa padrão e adaptação limitada', 'Processo personalizado a partir da jornada profissional'],
-  ['Compra', 'Usuário decide sozinho', 'Pagamento após aptidão clínica declarada'],
-  ['Acompanhamento', 'Normalmente não incluído', 'Entrega, adaptação e retornos orientados'],
+  {
+    criterion: 'Adequação para Treinos e Competições de Lutas, esportes de contato e alto risco de colisão facial',
+    generic: 'Baixa',
+    traditional: 'Alta',
+    biteplaner: 'Alta',
+  },
+  {
+    criterion:
+      'Adequação para Treinos de força, Musculação, Alta intensidade, Cross training, Competições e Todos os esportes, atividades e cenários que ocorra Apertamento Mandibular',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'Total',
+  },
+  {
+    criterion: 'Proteção dental contra impactos',
+    generic: 'Parcial',
+    traditional: 'Sim',
+    biteplaner: 'Sim',
+  },
+  {
+    criterion: 'Proteção Articular (ATM)',
+    generic: 'Não',
+    traditional: 'Parcial e indireta',
+    biteplaner: 'Direta com redução de carga articular e controle do apertamento',
+  },
+  {
+    criterion: 'Prevenção de microtrauma repetitivo',
+    generic: 'Não',
+    traditional: 'Limitada',
+    biteplaner: 'Alta',
+  },
+  {
+    criterion: 'Efeito sobre dor cervicofacial crônica',
+    generic: 'Não',
+    traditional: 'Secundário',
+    biteplaner: 'Primário; projetado para reduzir dores relacionadas a DTM induzida por apertamento',
+  },
+  {
+    criterion: 'Conforto em uso prolongado',
+    generic: 'Não',
+    traditional: 'Parcial',
+    biteplaner: 'Projetado para maior conforto e adaptação individualizada',
+  },
+  {
+    criterion: 'Interferência na fala',
+    generic: 'Alta',
+    traditional: 'Moderada',
+    biteplaner: 'Geralmente menor',
+  },
+  {
+    criterion: 'Momento típico de uso no Esporte',
+    generic: 'Durante treinos com risco de impacto',
+    traditional: 'Durante competições/jogos e treinos com risco de impacto',
+    biteplaner:
+      'Durante competições/jogos e treinos com risco de impacto, treinos de alta intensidade com foco em performance e prevenção',
+  },
+  {
+    criterion: 'Personalização',
+    generic: 'Baixa (“Boil and bite”)',
+    traditional: 'Sob medida',
+    biteplaner:
+      'Totalmente Individualizado com ajustes tecnológicos precisos de acordo com os esportes, atividades e contexto do usuário',
+  },
+  {
+    criterion: 'Qualidade da Matéria-prima',
+    generic: 'Muito Baixa',
+    traditional: 'Moderada',
+    biteplaner: 'Alta',
+  },
+  {
+    criterion: 'Eficácia',
+    generic: 'Muito baixa',
+    traditional: 'Parcial',
+    biteplaner: 'Muito alta',
+  },
+  {
+    criterion: 'Relação custo-benefício em contato pleno',
+    generic: 'Ruim',
+    traditional: 'Muito favorável (redução de traumas graves)',
+    biteplaner: 'Altamente relevante nesse contexto, pois não se trata somente de dispositivo de impacto; protege ATM',
+  },
+  {
+    criterion: 'Relação custo-benefício em atividades de força/intensidade',
+    generic: 'Ruim',
+    traditional: 'Limitada, pois não ataca o principal problema (aperto mandibular)',
+    biteplaner: 'Elevada, por atuar diretamente sobre a causa biomecânica da sobrecarga',
+  },
+  {
+    criterion: 'Foco em performance a longo prazo',
+    generic: 'Baixo',
+    traditional: 'Indireto (preserva integridade dentária)',
+    biteplaner: 'Direto (reduz dor, melhora constância e longevidade de treino)',
+  },
+  {
+    criterion: 'Tecnologia e Aperfeiçoamento Científico Contínuo',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'O BITEPLANER encontra-se em processo contínuo de aperfeiçoamento, validação técnica e científica',
+  },
+  {
+    criterion: 'Integração com plataforma de Dados',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'Concebido como parte de uma plataforma de prevenção, dados e performance',
+  },
 ];
 
 const EDUCATION = [
@@ -188,6 +328,9 @@ const FAQ = [
 ];
 
 export function BiteplanerPage() {
+  const [comparisonExpanded, setComparisonExpanded] = useState(false);
+  const visibleComparisonRows = comparisonExpanded ? COMPARISON : COMPARISON.slice(0, INITIAL_COMPARISON_ROWS);
+
   return (
     <S.Page id="main-content" tabIndex={-1}>
       <S.HeroSection>
@@ -219,7 +362,7 @@ export function BiteplanerPage() {
       <S.SplitSection>
         <S.SectionIntro>
           <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-          <S.SectionTitle>Feito para a rotina real de treino e competições</S.SectionTitle>
+          <S.SectionTitle>Feito para a rotina real<br />de treino e competições</S.SectionTitle>
           <S.SectionLead>
             Durante esportes de combate, força e alta intensidade, esportes coletivos de treinos e
             competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem
@@ -227,7 +370,7 @@ export function BiteplanerPage() {
           </S.SectionLead>
         </S.SectionIntro>
         <S.CardGrid>
-          {USE_CASES.map(({ icon: Icon, title, body }, index) => (
+          {USE_CASES.map(({ icon: Icon, iconTestId, secondaryIcon: SecondaryIcon, secondaryIconTestId, title, body }, index) => (
             <S.FeatureCard
               key={title}
               custom={index}
@@ -236,7 +379,17 @@ export function BiteplanerPage() {
               whileInView="show"
               viewport={{ once: true, amount: 0.34 }}
             >
-              <S.CardIcon><Icon aria-hidden="true" size={48} strokeWidth={1.6} /></S.CardIcon>
+              <S.CardIcon>
+                <Icon aria-hidden="true" data-testid={iconTestId} size={48} strokeWidth={1.6} />
+                {SecondaryIcon ? (
+                  <SecondaryIcon
+                    aria-hidden="true"
+                    data-testid={secondaryIconTestId}
+                    size={48}
+                    strokeWidth={1.6}
+                  />
+                ) : null}
+              </S.CardIcon>
               <S.CardTitle>{title}</S.CardTitle>
               <S.CardBody>{body}</S.CardBody>
             </S.FeatureCard>
@@ -289,21 +442,28 @@ export function BiteplanerPage() {
         <S.ComparisonTable>
           <thead>
             <tr>
-              <th>Decisão</th>
-              <th>Protetor genérico</th>
-              <th>Biteplaner</th>
+              <th>Critério</th>
+              <th>Protetor Genérico</th>
+              <th>Protetor Tradicional</th>
+              <th>BITEPLANER</th>
             </tr>
           </thead>
           <tbody>
-            {COMPARISON.map(([label, common, biteplaner]) => (
-              <tr key={label}>
-                <td>{label}</td>
-                <td><S.Cross aria-hidden="true">×</S.Cross>{common}</td>
-                <td><S.Check aria-hidden="true">✓</S.Check>{biteplaner}</td>
+            {visibleComparisonRows.map((row) => (
+              <tr key={row.criterion}>
+                <td>{row.criterion}</td>
+                <td>{row.generic}</td>
+                <td>{row.traditional}</td>
+                <td>{row.biteplaner}</td>
               </tr>
             ))}
           </tbody>
         </S.ComparisonTable>
+        {!comparisonExpanded ? (
+          <S.ComparisonToggleButton type="button" onClick={() => setComparisonExpanded(true)}>
+            Mostrar comparação completa
+          </S.ComparisonToggleButton>
+        ) : null}
       </S.ComparisonSection>
 
       <S.TrustOuter>

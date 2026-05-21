@@ -34,21 +34,6 @@ export const HeroSection = styled.section`
   padding: 116px max(60px, calc((100vw - ${({ theme }) => theme.maxWidth}) / 2)) 118px;
   background: ${imageSet(publicOptimizedImages.biteplaner.hero.desktop)} center right / cover no-repeat;
 
-  &::after {
-    content: '';
-    position: absolute;
-    z-index: 1;
-    left: -190px;
-    top: 42px;
-    width: min(820px, 70vw);
-    height: 610px;
-    background: rgba(239, 249, 252, 0.74);
-    border-radius: 54% 46% 58% 42% / 46% 54% 40% 60%;
-    box-shadow: 0 0 70px rgba(255, 255, 255, 0.52);
-    transform: rotate(-8deg);
-    pointer-events: none;
-  }
-
   @media (max-width: 900px) {
     min-height: 100vh;
     min-height: 100svh;
@@ -508,7 +493,8 @@ export const ComparisonTable = styled.table`
     border-bottom: 1px solid #d7e2e3;
     font-size: 12px;
     line-height: 1.45;
-    text-align: left;
+    text-align: center;
+    vertical-align: middle;
   }
 
   th {
@@ -521,22 +507,23 @@ export const ComparisonTable = styled.table`
     text-transform: uppercase;
   }
 
-  th:last-child {
+  th:nth-child(4) {
     background: linear-gradient(135deg, #07845a 0%, #0f9b64 100%);
     color: #ffffff;
   }
 
   td:first-child {
-    width: 17%;
+    width: 30%;
     color: #172033;
     font-weight: 900;
   }
 
-  td:nth-child(2) {
+  td:nth-child(2),
+  td:nth-child(3) {
     color: #465164;
   }
 
-  td:nth-child(3) {
+  td:nth-child(4) {
     background: rgba(21, 128, 61, 0.08);
     color: ${bp.accentStrong};
     font-weight: 800;
@@ -545,6 +532,22 @@ export const ComparisonTable = styled.table`
   tr:last-child td {
     border-bottom: 0;
   }
+`;
+
+export const ComparisonToggleButton = styled.button`
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid ${bp.accentStrong};
+  background: ${bp.accentStrong};
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(7, 132, 90, 0.2);
 `;
 
 export const Cross = styled.span`

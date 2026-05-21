@@ -8,6 +8,7 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     cep: '04567-000',
     phone: '(11) 4000-1001',
     dentistName: 'Dr. Rafael Demo',
+    dentistReviewScore: 4,
     distanceKm: 1.2,
     coordinates: {
       lat: -23.5923,
@@ -21,6 +22,7 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     cep: '04567-120',
     phone: '(11) 4000-1003',
     dentistName: 'Dra. Camila Moura',
+    dentistReviewScore: 4,
     distanceKm: 2.1,
     coordinates: {
       lat: -23.5904,
@@ -34,6 +36,7 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     cep: '04567-210',
     phone: '(11) 4000-1004',
     dentistName: 'Dr. Felipe Andrade',
+    dentistReviewScore: 5,
     distanceKm: 3.4,
     coordinates: {
       lat: -23.5967,

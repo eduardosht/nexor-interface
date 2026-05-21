@@ -1590,6 +1590,12 @@ export const DentistStatusItem = styled.div`
   align-items: center;
   gap: 18px;
   min-width: 0;
+
+  > span:last-child {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
 `;
 
 export const DentistStatusContent = styled.div`

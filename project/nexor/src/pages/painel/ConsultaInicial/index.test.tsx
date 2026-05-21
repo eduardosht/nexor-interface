@@ -114,6 +114,8 @@ describe('ConsultaInicial', () => {
 
     expect(screen.getAllByText(/instituto paulistano de odontologia esportiva/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/dra\. camila moura/i)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/4\.0 de 5 avaliações do dentista/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/8 avaliações/i)).not.toBeInTheDocument();
     expect(screen.getByText(/confirme quando a consulta estiver agendada/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /consulta agendada/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /selecionar consultório/i })).not.toBeInTheDocument();

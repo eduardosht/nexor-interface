@@ -368,6 +368,63 @@ describe('Jornada', () => {
     expect(await screen.findByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument();
   });
 
+  it('shows a problem message and contact form when the dentist marks the order as ineligible', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-010',
+            status: 'ineligible_refund',
+            statusLabel: 'Inapto - Encerrado',
+            stage: 'closed_ineligible',
+            created_at: '2026-05-04T09:00:00.000Z',
+            customer: { full_name: 'Marina Lutadora', email: 'marina.demo@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage();
+
+    const problem = await screen.findByTestId('journey-order-problem');
+    expect(problem).toHaveTextContent(/atleta inapto para uso do produto/i);
+    expect(problem).toHaveTextContent(/decisão clínica/i);
+    expect(problem).toHaveTextContent(/o dentista responsável registrou/i);
+    await waitFor(() => expect(screen.getByLabelText(/nome/i)).toHaveValue('Marina Lutadora'));
+    expect(screen.getByLabelText(/e-mail/i)).toHaveValue('marina.demo@nexor.dev');
+    expect(screen.getByLabelText(/assunto/i)).toHaveValue('Erro ordem BP-DEMO-010 - ');
+    expect((screen.getByLabelText(/mensagem/i) as HTMLTextAreaElement).value).toContain('Decisão clínica');
+    expect(screen.getByRole('link', { name: /enviar e-mail para a nexor/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('mailto:contato@necoradvance.com.br')
+    );
+    expect(screen.queryByTestId('journey-purchase-content')).not.toBeInTheDocument();
+  });
+
+  it('shows a cancelled order problem with the cancellation stage and prefilled contact subject', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-011',
+            status: 'cancelled',
+            statusLabel: 'Cancelado',
+            stage: 'cancelled',
+            created_at: '2026-05-04T11:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage();
+
+    const problem = await screen.findByTestId('journey-order-problem');
+    expect(problem).toHaveTextContent(/ordem cancelada/i);
+    expect(problem).toHaveTextContent(/etapa cancelado/i);
+    await waitFor(() => expect(screen.getByLabelText(/assunto/i)).toHaveValue('Erro ordem BP-DEMO-011 - '));
+  });
+
   it('maps customer partner reviews to the follow-up step', async () => {
     mockApiGet
       .mockResolvedValueOnce({

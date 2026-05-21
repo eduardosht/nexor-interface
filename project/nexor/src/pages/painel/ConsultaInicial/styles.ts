@@ -164,6 +164,28 @@ export const ClinicMeta = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const ClinicFooter = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+export const RatingBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+`;
+
 export const DetailList = styled.dl`
   margin: 0;
   display: grid;
@@ -185,6 +207,13 @@ export const DetailValue = styled.dd`
   font-size: 14px;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const DetailValueStack = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 `;
 
 export const GuidanceCard = styled.div`

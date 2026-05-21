@@ -100,6 +100,7 @@ export type DemoPracticeLocationSelection = {
   cep: string;
   phone: string;
   dentistName: string;
+  dentistReviewScore: number;
   distanceKm: number;
   coordinates: {
     lat: number;
@@ -113,6 +114,7 @@ export type DemoLicensedLabSelection = {
   address: string;
   cep: string;
   phone: string;
+  reviewScore: number;
   distanceKm: number;
   coordinates: {
     lat: number;

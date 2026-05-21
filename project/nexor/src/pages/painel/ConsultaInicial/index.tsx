@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Mail, MessageCircle } from 'lucide-react';
+import { Mail, MessageCircle, Star } from 'lucide-react';
 import * as S from './styles';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { divIcon } from 'leaflet';
@@ -121,6 +121,23 @@ function getDefaultDentistReferralMessage(dentistPartnerUrl: string) {
     'A Nexor licencia dentistas para avaliação, acompanhamento e atendimento do processo.',
     `Caso tenha interesse, veja como funciona para dentistas em: ${dentistPartnerUrl}`,
   ].join('\n\n');
+}
+
+function RatingStars({ score, label }: { score: number; label: string }) {
+  const roundedScore = Math.round(score);
+
+  return (
+    <S.RatingBadge aria-label={`${score.toFixed(1)} de 5 ${label}`}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <Star
+          key={index}
+          size={14}
+          fill={index < roundedScore ? 'currentColor' : 'none'}
+          aria-hidden
+        />
+      ))}
+    </S.RatingBadge>
+  );
 }
 
 export function ConsultaInicial({ embedded = false, initialOrder = null, onOrderChange }: ConsultaInicialProps) {
@@ -349,7 +366,10 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                   >
                     <S.ClinicName>{location.name}</S.ClinicName>
                     <S.ClinicMeta>{location.address}</S.ClinicMeta>
-                    <S.ClinicMeta>{location.distanceKm.toFixed(1)} km do CEP informado</S.ClinicMeta>
+                    <S.ClinicFooter>
+                      <S.ClinicMeta>{location.distanceKm.toFixed(1)} km do CEP informado</S.ClinicMeta>
+                      <RatingStars score={location.dentistReviewScore} label="avaliações do dentista" />
+                    </S.ClinicFooter>
                   </S.ClinicButton>
                 ))}
               </S.ClinicList>
@@ -368,7 +388,15 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.DetailValue>{activeLocation.name}</S.DetailValue>
 
                     <S.DetailTerm>Dentista</S.DetailTerm>
-                    <S.DetailValue>{activeLocation.dentistName}</S.DetailValue>
+                    <S.DetailValue>
+                      <S.DetailValueStack>
+                        <span>{activeLocation.dentistName}</span>
+                        <RatingStars
+                          score={activeLocation.dentistReviewScore}
+                          label="avaliações do dentista selecionado"
+                        />
+                      </S.DetailValueStack>
+                    </S.DetailValue>
 
                     <S.DetailTerm>Endereço</S.DetailTerm>
                     <S.DetailValue>{activeLocation.address}</S.DetailValue>

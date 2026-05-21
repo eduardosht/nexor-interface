@@ -257,6 +257,10 @@ describe('ProducaoDentista', () => {
     expect(screen.getAllByText(/^3$/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^4$/).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+
+    await fillProductionRequestUntilLabSelection();
+    expect(screen.getAllByLabelText(/4\.0 de 5 avaliações do laboratório/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/2 avaliações/i)).not.toBeInTheDocument();
   });
 
   it('keeps the production steps as compact sticky top navigation at 1440px layouts', async () => {
@@ -401,6 +405,40 @@ describe('ProducaoDentista', () => {
     expect(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i)).toHaveValue(
       'Sem sinais impeditivos para seguir.'
     );
+  });
+
+  it('advances after saving the dentist complement when the response only includes the dentist payload', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    await screen.findByRole('heading', { name: /solicitação de produção/i });
+    await goToDentistComplement();
+    mockApiPost.mockResolvedValueOnce(
+      sharedIntake({
+        payload: {
+          customer: {
+            fullName: 'Carlos Demo',
+            hasRelevantMedicalDiagnosis: 'yes',
+            relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
+            averagePainLastWeek: 6,
+            sportRoutine: 'Musculação cinco vezes por semana.',
+          },
+          dentist: {
+            painlessMaxOpeningMm: 42,
+            initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
+          },
+        },
+      })
+    );
+
+    fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
+    fireEvent.change(screen.getByLabelText(/s.ntese da avalia/i), {
+      target: { value: 'Sem sinais impeditivos para seguir.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
+
+    expect(await screen.findByLabelText(/^solicita.*produ/i)).toBeInTheDocument();
   });
 
   it('submits the production request successfully when all required fields are filled', async () => {

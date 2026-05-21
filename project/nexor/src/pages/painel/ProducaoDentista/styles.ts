@@ -372,6 +372,28 @@ export const LabMeta = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const LabFooter = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+export const RatingBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+`;
+
 export const EmptyState = styled.div`
   padding: 18px;
   border-radius: 12px;

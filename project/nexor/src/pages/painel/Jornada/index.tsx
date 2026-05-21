@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, FileText, Lock, Mail, MessageCircleQuestion, Send, UserRound } from 'lucide-react';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -6,6 +7,7 @@ import {
   fetchWorkflowForms,
   getAthletePrimaryOrder,
   getAuthToken,
+  getStageLabel,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
@@ -137,8 +139,30 @@ function advancePrerequisiteOrder(order: DemoOrderSummary): DemoOrderSummary {
   };
 }
 
+function getOrderProblemContext(order: DemoOrderSummary) {
+  if (order.status === 'ineligible_refund') {
+    return {
+      title: 'Ordem encerrada: atleta inapto para uso do produto',
+      stageTitle: 'Decisão clínica',
+      reason:
+        'O dentista responsável registrou que o atleta está inapto para seguir com o Biteplaner neste momento. A jornada foi encerrada antes da etapa de compra.'
+    };
+  }
+
+  if (order.status === 'cancelled') {
+    return {
+      title: 'Ordem cancelada',
+      stageTitle: getStageLabel(order),
+      reason:
+        'A ordem foi cancelada antes da continuidade operacional. Entre em contato com a Nexor para entender o motivo e avaliar os próximos passos.'
+    };
+  }
+
+  return null;
+}
+
 export function Jornada() {
-  const { session } = useAuth();
+  const { session, backendUser } = useAuth();
   const token = getAuthToken(session);
   const stepFlowRef = useRef<HTMLElement | null>(null);
   const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
@@ -147,6 +171,10 @@ export function Jornada() {
   const [workflowFormsError, setWorkflowFormsError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -186,6 +214,11 @@ export function Jornada() {
   const selectedFormsOrder = primaryOrder;
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
+  const orderProblem = useMemo(
+    () => (selectedFormsOrder ? getOrderProblemContext(selectedFormsOrder) : null),
+    [selectedFormsOrder]
+  );
+  const hasOrderProblem = orderProblem !== null;
   const workflowFormsByStep = useMemo(() => {
     const grouped = new Map<JourneyStepKey, DemoWorkflowForm[]>();
 
@@ -200,6 +233,34 @@ export function Jornada() {
   const isPrerequisiteStep = currentStep?.key === 'prerequisite';
   const isConsultationStep = currentStep?.key === 'consultation';
   const isPurchaseStep = currentStep?.key === 'purchase';
+  const contactMailto = useMemo(() => {
+    const body = [
+      `Nome: ${contactName}`,
+      `E-mail: ${contactEmail}`,
+      selectedFormsOrder ? `Ordem: ${selectedFormsOrder.id}` : '',
+      orderProblem ? `Etapa do problema: ${orderProblem.stageTitle}` : '',
+      '',
+      contactMessage,
+    ].filter(Boolean).join('\n');
+
+    return `mailto:contato@necoradvance.com.br?subject=${encodeURIComponent(contactSubject)}&body=${encodeURIComponent(body)}`;
+  }, [contactEmail, contactMessage, contactName, contactSubject, orderProblem, selectedFormsOrder]);
+
+  useEffect(() => {
+    if (!selectedFormsOrder || !orderProblem) {
+      return;
+    }
+
+    const name = selectedFormsOrder.customer?.full_name ?? '';
+    const email = selectedFormsOrder.customer?.email ?? backendUser?.email ?? session?.user.email ?? '';
+
+    setContactName(name);
+    setContactEmail(email);
+    setContactSubject(`Erro ordem ${selectedFormsOrder.id} - `);
+    setContactMessage(
+      `Olá, equipe Nexor.\n\nMinha jornada apresentou um problema na etapa "${orderProblem.stageTitle}".\nMotivo exibido: ${orderProblem.reason}\n\nGostaria de entender o que aconteceu e quais são os próximos passos.`
+    );
+  }, [backendUser?.email, orderProblem, selectedFormsOrder, session?.user.email]);
 
   useEffect(() => {
     if (!selectedFormsOrder?.id || !token) {
@@ -283,7 +344,100 @@ export function Jornada() {
           </S.StepScroll>
           {workflowFormsLoading ? <SkeletonCard lines={3} blockHeight="90px" /> : null}
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
-          {currentStep && currentStepForms.length > 0 ? (
+          {orderProblem ? (
+            <S.OrderProblemSection role="alert" data-testid="journey-order-problem">
+              <S.OrderProblemHeader>
+                <S.OrderProblemIcon>
+                  <AlertTriangle size={34} aria-hidden />
+                </S.OrderProblemIcon>
+                <div>
+                  <S.SectionTitle>{orderProblem.title}</S.SectionTitle>
+                  <S.Description>
+                    O problema ocorreu na etapa <S.OrderProblemStage>{orderProblem.stageTitle}</S.OrderProblemStage> da jornada {selectedFormsOrder.id}.
+                  </S.Description>
+                </div>
+              </S.OrderProblemHeader>
+              <S.OrderProblemReason>
+                <MessageCircleQuestion size={34} aria-hidden />
+                <span>
+                  <strong>Motivo:</strong> {orderProblem.reason}
+                </span>
+              </S.OrderProblemReason>
+
+              <S.ContactPanel>
+                <S.ContactHeader>
+                  <S.ContactHeaderIcon>
+                    <Mail size={30} aria-hidden />
+                  </S.ContactHeaderIcon>
+                  <div>
+                    <S.SectionTitle>Falar com a Nexor</S.SectionTitle>
+                    <S.Description>
+                      Revise as informações abaixo e complete o assunto antes de enviar o e-mail para <S.ContactEmail>contato@necoradvance.com.br</S.ContactEmail>.
+                    </S.Description>
+                  </div>
+                </S.ContactHeader>
+                <S.ContactForm>
+                  <S.ContactField>
+                    <span>Nome</span>
+                    <label>
+                      <UserRound size={20} aria-hidden />
+                      <input
+                        aria-label="Nome"
+                        value={contactName}
+                        onChange={(event) => setContactName(event.target.value)}
+                      />
+                    </label>
+                  </S.ContactField>
+                  <S.ContactField>
+                    <span>E-mail</span>
+                    <label>
+                      <Mail size={20} aria-hidden />
+                      <input
+                        aria-label="E-mail"
+                        type="email"
+                        value={contactEmail}
+                        onChange={(event) => setContactEmail(event.target.value)}
+                      />
+                    </label>
+                  </S.ContactField>
+                  <S.ContactField $full>
+                    <span>Assunto</span>
+                    <label>
+                      <FileText size={20} aria-hidden />
+                      <input
+                        aria-label="Assunto"
+                        value={contactSubject}
+                        onChange={(event) => setContactSubject(event.target.value)}
+                      />
+                    </label>
+                  </S.ContactField>
+                  <S.ContactField $full>
+                    <span>Mensagem</span>
+                    <label>
+                      <MessageCircleQuestion size={22} aria-hidden />
+                      <textarea
+                        aria-label="Mensagem"
+                        rows={7}
+                        value={contactMessage}
+                        onChange={(event) => setContactMessage(event.target.value)}
+                      />
+                    </label>
+                  </S.ContactField>
+                  <S.ContactActions>
+                    <S.ContactSubmitLink href={contactMailto}>
+                      <Send size={18} aria-hidden />
+                      Enviar e-mail para a Nexor
+                    </S.ContactSubmitLink>
+                    <S.ContactPrivacyNote>
+                      <Lock size={14} aria-hidden />
+                      Seus dados estão protegidos
+                    </S.ContactPrivacyNote>
+                  </S.ContactActions>
+                </S.ContactForm>
+              </S.ContactPanel>
+            </S.OrderProblemSection>
+          ) : null}
+          {!hasOrderProblem && currentStep && currentStepForms.length > 0 ? (
             <S.StepFormsSection>
               <S.StepFormsHeader>
                 <S.SectionTitle>
@@ -330,7 +484,7 @@ export function Jornada() {
               </S.StepFormsGrid>
             </S.StepFormsSection>
           ) : null}
-          {isConsultationStep ? (
+          {!hasOrderProblem && isConsultationStep ? (
             <S.StepFormsSection data-testid="journey-consultation-content">
               <S.StepFormsHeader>
                 <S.SectionTitle>Consulta inicial</S.SectionTitle>
@@ -349,7 +503,7 @@ export function Jornada() {
               />
             </S.StepFormsSection>
           ) : null}
-          {isPurchaseStep ? (
+          {!hasOrderProblem && isPurchaseStep ? (
             <S.StepFormsSection data-testid="journey-purchase-content">
               <S.StepFormsHeader>
                 <S.SectionTitle>Compra</S.SectionTitle>

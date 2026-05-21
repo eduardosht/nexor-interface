@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -53,9 +53,38 @@ describe('BiteplanerPage', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /feito para a rotina real de treino e competições/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
+    const strengthDumbbellIcon = screen.getByTestId('biteplaner-strength-dumbbell-icon');
+    const strengthZapIcon = screen.getByTestId('biteplaner-strength-zap-icon');
+
+    expect(screen.getByTestId('biteplaner-combat-glove-icon')).toBeInTheDocument();
+    expect(strengthDumbbellIcon).toBeInTheDocument();
+    expect(strengthZapIcon).toBeInTheDocument();
+    expect(strengthDumbbellIcon).toHaveAttribute('width', '48');
+    expect(strengthDumbbellIcon).toHaveAttribute('height', '48');
+    expect(strengthZapIcon).toHaveAttribute('width', '48');
+    expect(strengthZapIcon).toHaveAttribute('height', '48');
+    expect(screen.getByTestId('biteplaner-team-sport-icon')).toBeInTheDocument();
+    expect(screen.queryByTestId('biteplaner-team-strength-energy-icon')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /genérico vs biteplaner/i })).toBeInTheDocument();
-    expect(screen.getByText(/sem avaliação profissional/i)).toBeInTheDocument();
-    expect(screen.getByText(/avaliação odontológica antes da compra/i)).toBeInTheDocument();
+    expect(screen.getByText(/adequação para treinos e competições de lutas/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^alta$/i).length).toBeGreaterThan(0);
+  });
+
+  it('renders the four-column comparison table with collapsed and expanded rows', () => {
+    renderPage();
+
+    expect(screen.getByRole('columnheader', { name: /^critério$/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /protetor genérico/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /protetor tradicional/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toBeInTheDocument();
+    expect(screen.getByText(/conforto em uso prolongado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/interferência na fala/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /mostrar comparação completa/i }));
+
+    expect(screen.getByText(/interferência na fala/i)).toBeInTheDocument();
+    expect(screen.getByText(/integração com plataforma de dados/i)).toBeInTheDocument();
+    expect(screen.getByText(/processo contínuo de aperfeiçoamento/i)).toBeInTheDocument();
   });
 
   it('renders educational and trust sections without absolute medical claims', () => {

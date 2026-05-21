@@ -7,6 +7,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Av. Paulista, 1200 - Bela Vista, São Paulo - SP',
     cep: '01310-100',
     phone: '(11) 4000-1000',
+    reviewScore: 4,
     distanceKm: 1.8,
     coordinates: {
       lat: -23.5618,
@@ -19,6 +20,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Rua Augusta, 450 - Consolacao, São Paulo - SP',
     cep: '01305-000',
     phone: '(11) 4000-2000',
+    reviewScore: 4,
     distanceKm: 2.6,
     coordinates: {
       lat: -23.5505,
@@ -31,6 +33,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Av. Brigadeiro Faria Lima, 2100 - Itaim Bibi, São Paulo - SP',
     cep: '01452-000',
     phone: '(11) 4000-3000',
+    reviewScore: 4,
     distanceKm: 4.1,
     coordinates: {
       lat: -23.5857,
@@ -43,6 +46,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Rua Funchal, 375 - Vila Olimpia, São Paulo - SP',
     cep: '04551-060',
     phone: '(11) 4000-4000',
+    reviewScore: 5,
     distanceKm: 4.8,
     coordinates: {
       lat: -23.5954,
@@ -55,6 +59,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Rua Haddock Lobo, 980 - Cerqueira Cesar, São Paulo - SP',
     cep: '01414-002',
     phone: '(11) 4000-5000',
+    reviewScore: 3,
     distanceKm: 2.9,
     coordinates: {
       lat: -23.5627,
@@ -67,6 +72,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Av. Reboucas, 1450 - Pinheiros, São Paulo - SP',
     cep: '05402-100',
     phone: '(11) 4000-6000',
+    reviewScore: 5,
     distanceKm: 5.4,
     coordinates: {
       lat: -23.5679,
@@ -79,6 +85,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Rua da Consolacao, 2100 - Consolacao, São Paulo - SP',
     cep: '01302-001',
     phone: '(11) 4000-7000',
+    reviewScore: 4,
     distanceKm: 3.1,
     coordinates: {
       lat: -23.5526,
@@ -91,6 +98,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
     address: 'Av. Cidade Jardim, 350 - Itaim Bibi, São Paulo - SP',
     cep: '01453-000',
     phone: '(11) 4000-8000',
+    reviewScore: 5,
     distanceKm: 3.7,
     coordinates: {
       lat: -23.5842,

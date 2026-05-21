@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Star } from 'lucide-react';
 import {
    Button,
   CheckboxField,
@@ -167,6 +168,46 @@ function getDentistSummaryFromIntake(form: DemoWorkflowForm | undefined) {
   return typeof summary === 'string' ? summary.trim() : '';
 }
 
+function hasDentistComplement(form: DemoWorkflowForm | undefined) {
+  if (!form) {
+    return false;
+  }
+
+  if (form.dentistSubmittedAt || form.roleState?.dentist === 'submitted') {
+    return true;
+  }
+
+  const payload =
+    form.payload && typeof form.payload === 'object' && !Array.isArray(form.payload)
+      ? form.payload
+      : null;
+  const dentistPayload = payload?.dentist;
+
+  return Boolean(
+    dentistPayload &&
+      typeof dentistPayload === 'object' &&
+      !Array.isArray(dentistPayload) &&
+      Object.keys(dentistPayload).length > 0
+  );
+}
+
+function RatingStars({ score, label }: { score: number; label: string }) {
+  const roundedScore = Math.round(score);
+
+  return (
+    <S.RatingBadge aria-label={`${score.toFixed(1)} de 5 ${label}`}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <Star
+          key={index}
+          size={14}
+          fill={index < roundedScore ? 'currentColor' : 'none'}
+          aria-hidden
+        />
+      ))}
+    </S.RatingBadge>
+  );
+}
+
 export function ProducaoDentista() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -255,9 +296,7 @@ export function ProducaoDentista() {
 
   const selectedLabId = draft.selectedLabId;
   const intakeForm = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
-  const dentistReviewCompleted = Boolean(
-    intakeForm?.dentistSubmittedAt || intakeForm?.roleState?.dentist === 'submitted'
-  );
+  const dentistReviewCompleted = hasDentistComplement(intakeForm);
   const anamnesisCompleted = dentistReviewCompleted && draft.anamnesisSummary.trim().length > 0;
   const productionRequestCompleted = draft.productionRequestSummary.trim().length > 0;
   const attachmentsCompleted =
@@ -293,9 +332,7 @@ export function ProducaoDentista() {
     setWorkflowForms(nextForms);
 
     const nextIntakeForm = nextForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
-    const nextDentistReviewCompleted = Boolean(
-      nextIntakeForm?.dentistSubmittedAt || nextIntakeForm?.roleState?.dentist === 'submitted'
-    );
+    const nextDentistReviewCompleted = hasDentistComplement(nextIntakeForm);
 
     if (!nextDentistReviewCompleted) {
       return;
@@ -709,7 +746,10 @@ export function ProducaoDentista() {
                           >
                             <S.LabName>{lab.name}</S.LabName>
                             <S.LabMeta>{lab.address}</S.LabMeta>
-                            <S.LabMeta>{lab.phone} - {lab.distanceKm.toFixed(1)} km</S.LabMeta>
+                            <S.LabFooter>
+                              <S.LabMeta>{lab.phone} - {lab.distanceKm.toFixed(1)} km</S.LabMeta>
+                              <RatingStars score={lab.reviewScore} label="avaliações do laboratório" />
+                            </S.LabFooter>
                           </S.LabButton>
                         ))}
                       </S.LabList>

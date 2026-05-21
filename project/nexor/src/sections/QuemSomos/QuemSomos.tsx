@@ -76,6 +76,9 @@ export function QuemSomos() {
               A Nexor nasce da convicção de que o alto desempenho começa com informação precisa, métodos científicos e soluções desenvolvidas para o atleta.
             </S.BodyText>
             <S.BodyText>
+              Estamos desenvolvendo uma nova abordagem para prevenção e performance biomecânica durante o treino.
+            </S.BodyText>
+            <S.BodyText>
               Unimos <S.EmphasisText>pesquisa científica, tecnologia de ponta</S.EmphasisText> e{' '}
               <S.EmphasisText>acompanhamento especializado</S.EmphasisText> para desenvolver produtos personalizados que elevam a performance com segurança, precisão e resultados reais.
             </S.BodyText>
