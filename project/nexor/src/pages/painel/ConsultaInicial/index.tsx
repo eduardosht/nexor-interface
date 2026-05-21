@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Mail, MessageCircle } from 'lucide-react';
 import * as S from './styles';
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import { divIcon } from 'leaflet';
@@ -114,11 +115,23 @@ function formatCep(value: string) {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 }
 
+function getDefaultDentistReferralMessage(dentistPartnerUrl: string) {
+  return [
+    'Olá! Estou usando o Biteplaner, uma solução da Nexor para protetor bucal personalizado para atletas.',
+    'A Nexor licencia dentistas para avaliação, acompanhamento e atendimento do processo.',
+    `Caso tenha interesse, veja como funciona para dentistas em: ${dentistPartnerUrl}`,
+  ].join('\n\n');
+}
+
 export function ConsultaInicial({ embedded = false, initialOrder = null, onOrderChange }: ConsultaInicialProps) {
   const { session } = useAuth();
   const token = getAuthToken(session);
+  const dentistPartnerUrl = getDentistPartnerUrl();
   const [cep, setCep] = useState('04567-000');
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
+  const [dentistReferralMessage, setDentistReferralMessage] = useState(() =>
+    getDefaultDentistReferralMessage(dentistPartnerUrl)
+  );
   const [visibleLocations, setVisibleLocations] = useState<DemoPracticeLocationSelection[]>(
     () => listConsultationLocationsByCep('04567-000')
   );
@@ -191,12 +204,6 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
     };
   }, [initialOrder, token]);
 
-  const dentistPartnerUrl = getDentistPartnerUrl();
-  const dentistReferralMessage = [
-    'Olá! Estou usando o Biteplaner, uma solução da Nexor para protetor bucal personalizado para atletas.',
-    'A Nexor licencia dentistas para avaliação, acompanhamento e atendimento do processo.',
-    `Caso tenha interesse, veja como funciona para dentistas em: ${dentistPartnerUrl}`,
-  ].join('\n\n');
   const dentistReferralSubject = 'Convite para conhecer o licenciamento Biteplaner para dentistas';
   const dentistReferralEmailHref = `mailto:?subject=${encodeURIComponent(dentistReferralSubject)}&body=${encodeURIComponent(dentistReferralMessage)}`;
   const dentistReferralWhatsappHref = `https://wa.me/?text=${encodeURIComponent(dentistReferralMessage)}`;
@@ -407,18 +414,26 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                 Caso deseje, você pode enviar uma mensagem pronta ao seu dentista para apresentar o processo de
                 licenciamento Biteplaner.
               </S.Description>
-              <S.MessagePreview>{dentistReferralMessage}</S.MessagePreview>
+              <S.MessageTextarea
+                aria-label="Mensagem para o dentista"
+                value={dentistReferralMessage}
+                onChange={(event) => setDentistReferralMessage(event.target.value)}
+              />
+              <S.ReferralActions>
+                <S.ActionHref href={dentistReferralWhatsappHref} target="_blank" rel="noreferrer">
+                  <MessageCircle size={16} aria-hidden data-testid="referral-whatsapp-icon" />
+                  Enviar por WhatsApp
+                </S.ActionHref>
+                <S.ActionHref href={dentistReferralEmailHref}>
+                  <Mail size={16} aria-hidden data-testid="referral-email-icon" />
+                  Enviar por e-mail
+                </S.ActionHref>
+              </S.ReferralActions>
               <S.ReferralNotice>
                 Essa indicação pode iniciar o contato com o dentista, mas para prosseguir com a ordem atual você
                 precisa selecionar uma clínica ja licenciada. O processo de licenciamento pode demorar.
               </S.ReferralNotice>
             </S.ReferralContent>
-            <S.ReferralActions>
-              <S.ActionHref href={dentistReferralWhatsappHref} target="_blank" rel="noreferrer">
-                Enviar por WhatsApp
-              </S.ActionHref>
-              <S.ActionHref href={dentistReferralEmailHref}>Enviar por e-mail</S.ActionHref>
-            </S.ReferralActions>
           </S.ReferralCard>
         </>
       )}

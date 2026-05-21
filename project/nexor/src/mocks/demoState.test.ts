@@ -209,6 +209,12 @@ describe('shared Biteplaner demo state', () => {
       'awaiting_dentist_forms',
       'awaiting_lab_start'
     ]));
+    expect(licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-013')?.statusLabel).toBe(
+      'Aguardando confirmação de consulta'
+    );
+    expect(licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-014')?.statusLabel).toBe(
+      'Aguardando decisão clínica'
+    );
     expect(
       licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-016')?.productionRequestDraft
     ).toEqual(expect.objectContaining({
@@ -225,6 +231,7 @@ describe('shared Biteplaner demo state', () => {
       throw new Error('Licensed dentist acceptance did not return an order summary.');
     }
     expect(acceptedOrder.status).toBe('in_progress');
+    expect(acceptedOrder.statusLabel).toBe('Aguardando confirmação de consulta');
     expect(getTimelineEvents('BP-DEMO-012', {
       requestHeaders: { 'x-demo-persona': 'dentistLicensed' }
     }).events.at(-1)?.toStatus).toBe('in_progress');
@@ -258,6 +265,11 @@ describe('shared Biteplaner demo state', () => {
         (order) => order.id === 'BP-DEMO-003'
       )?.status
     ).toBe('appointment_confirmed');
+    expect(
+      listOrders({ requestHeaders: { 'x-demo-persona': 'dentist' } }, 'dentist').orders.find(
+        (order) => order.id === 'BP-DEMO-003'
+      )?.statusLabel
+    ).toBe('Aguardando decisão clínica');
     expect(events.events.at(-1)?.toStatus).toBe('appointment_confirmed');
   });
 
@@ -348,7 +360,7 @@ describe('shared Biteplaner demo state', () => {
       throw new Error('Dentist acceptance did not return an order summary.');
     }
     expect(acceptedOrder.status).toBe('in_progress');
-    expect(acceptedOrder.statusLabel).toBe('Consulta vinculada');
+    expect(acceptedOrder.statusLabel).toBe('Aguardando confirmação de consulta');
     expect(acceptedOrder.stage).toBe('consultation_linked');
   });
 

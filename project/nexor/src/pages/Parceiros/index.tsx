@@ -41,7 +41,7 @@ const TRACKS = [
   {
     anchor: 'parceiros',
     label: 'Academias e Coaches',
-    title: 'Academia / Coach',
+    title: 'Academia / Coach Licenciado',
     desc: 'Programa de indicação para academias e coaches que recomendam o Biteplaner para seus alunos e atletas. Ganhe por cada conversão.',
     tipo: 'parceiro',
     steps: [
@@ -55,8 +55,8 @@ const TRACKS = [
   {
     anchor: 'laboratórios',
     label: 'Laboratórios',
-    title: 'Laboratório Certificado',
-    desc: 'Parceria para produção laboratorial das moldeiras personalizadas Biteplaner. Processos rigorosos, materiais premium e rastreabilidade total.',
+    title: 'Laboratório Licenciado',
+    desc: 'Licenciamento para produção laboratorial de alto padrão dos dispositivos personalizados Biteplaner. Processos rigorosos, materiais premium e rastreabilidade total.',
     tipo: 'laboratório',
     steps: [
       { title: 'Certificação', body: 'Auditoria e validação dos processos laboratoriais.' },

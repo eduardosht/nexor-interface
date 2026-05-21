@@ -16,8 +16,8 @@ export const depoimentos: Depoimento[] = [
     texto: 'A precisão de cada detalhe do produto reflete o que a Nexor entrega: ciência aplicada a resultado real.',
   },
   {
-    nome: 'Rafael T.',
-    contexto: 'Judoca — Faixa Preta',
-    texto: 'Confiança máxima em competição. Nenhum produto de proteção chegou perto do que o Biteplaner entrega.',
+    nome: 'Mariana L.',
+    contexto: 'Praticante de academia — Musculação',
+    texto: 'Nos treinos com muitas cargas, sinto mais segurança para manter a intensidade. O Biteplaner virou parte da minha rotina na musculação.',
   },
 ];

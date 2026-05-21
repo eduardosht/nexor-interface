@@ -65,7 +65,7 @@ export function QuemSomos() {
         >
           <div>
             <S.Headline as={motion.h2} variants={fadeUp}>
-              Ciência. Tecnologia.
+              Proteção. Tecnologia.
               <br />
               Performance<S.Dot>.</S.Dot>
             </S.Headline>

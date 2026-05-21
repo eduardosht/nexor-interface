@@ -104,7 +104,7 @@ export function Produtos() {
 
                 <S.ProtocolBadge>
                   <S.ProtocolIconWrap><ProtocolSvg /></S.ProtocolIconWrap>
-                  <S.ProtocolText>Desenvolvido com protocolo científico proprietário</S.ProtocolText>
+                  <S.ProtocolText>Desenvolvido com protocolo científico</S.ProtocolText>
                 </S.ProtocolBadge>
 
                 <S.CardFooter>

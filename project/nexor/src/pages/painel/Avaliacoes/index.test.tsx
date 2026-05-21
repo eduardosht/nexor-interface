@@ -132,8 +132,8 @@ describe('Avaliações', () => {
           {
             id: 'BP-DEMO-014',
             status: 'appointment_confirmed',
-            statusLabel: 'Consulta confirmada',
-            stage: 'consultation_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
             created_at: '2026-05-05T11:30:00.000Z',
             customer: { full_name: 'Renata Crossfit', email: 'renata@nexor.dev', phone: null },
           },

@@ -183,38 +183,6 @@ export const ClinicTitle = styled.h4`
   letter-spacing: 0;
 `;
 
-export const RemoveClinicButton = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 9px 14px;
-  border: 1px solid #d94b4b;
-  border-radius: 6px;
-  background: #fff2f2;
-  color: #9f1d1d;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
-
-  &:hover {
-    background: #9f1d1d;
-    border-color: #9f1d1d;
-    color: #ffffff;
-    box-shadow: 0 8px 18px rgba(159, 29, 29, 0.18);
-  }
-
-  &:focus-visible {
-    outline: 2px solid #9f1d1d;
-    outline-offset: 2px;
-  }
-`;
-
 export const TermsLabel = styled.span`
   font-weight: 400;
 

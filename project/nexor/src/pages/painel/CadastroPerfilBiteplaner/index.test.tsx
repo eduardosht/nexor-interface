@@ -110,7 +110,7 @@ describe('CadastroPerfilBiteplaner', () => {
 
     const submit = screen.getByRole('button', { name: /enviar solicitação/i });
     expect(submit).toBeDisabled();
-    expect(screen.getByText(/cadastre uma ou mais clínicas/i)).toBeInTheDocument();
+    expect(screen.getByText(/cadastre a clínica de atendimento/i)).toBeInTheDocument();
     expect(screen.getByText(/a nexor irá verificar o cadastro do dentista/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/nome profissional/i), {
@@ -300,7 +300,7 @@ describe('CadastroPerfilBiteplaner', () => {
     });
   });
 
-  it('lets the dentist add and remove clinics before submitting the request', async () => {
+  it('keeps the dentist registration limited to a single clinic', async () => {
     mockCepLookup();
     mockApiPost.mockResolvedValueOnce({
       productRole: { productKey: 'biteplaner', role: 'dentist', status: 'pending' },
@@ -318,6 +318,9 @@ describe('CadastroPerfilBiteplaner', () => {
     });
 
     expect(screen.getByRole('heading', { name: /dados da clínica/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /\+ clínica/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /remover clínica/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/nome da clínica 2/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/nome da clínica \(\*\)/i), {
       target: { value: 'Clínica Centro' },
     });
@@ -329,33 +332,6 @@ describe('CadastroPerfilBiteplaner', () => {
       target: { value: '11987654321' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /\+ clínica/i }));
-    fireEvent.change(screen.getByLabelText(/nome da clínica 2/i), {
-      target: { value: 'Clínica Vila Olimpia' },
-    });
-    fireEvent.change(screen.getByLabelText(/cep da clínica 2/i), {
-      target: { value: '04567000' },
-    });
-    fireEvent.change(screen.getByLabelText(/cidade da clínica 2/i), {
-      target: { value: 'São Paulo' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /estado da clínica 2/i }));
-    fireEvent.click(screen.getByRole('option', { name: 'SP' }));
-    fireEvent.change(screen.getByLabelText(/endereço da clínica 2/i), {
-      target: { value: 'Rua Funchal, 500 - São Paulo - SP' },
-    });
-    fireEvent.change(screen.getByLabelText(/dia e horário de atendimento da clínica 2/i), {
-      target: { value: 'Terça e quinta, 10h as 17h' },
-    });
-    fireEvent.change(screen.getByLabelText(/telefone da clínica 2/i), {
-      target: { value: '1133334444' },
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /remover clínica 1/i }));
-
-    expect(screen.queryByDisplayValue('Clínica Centro')).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/nome da clínica \(\*\)/i)).toHaveValue('Clínica Vila Olimpia');
-
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -365,14 +341,14 @@ describe('CadastroPerfilBiteplaner', () => {
         '/v1/account/products/biteplaner/roles/dentist',
         expect.objectContaining({
           practiceLocation: expect.objectContaining({
-            name: 'Clínica Vila Olimpia',
-            cep: '04567-000',
+            name: 'Clínica Centro',
+            cep: '01001-000',
           }),
           practiceLocations: [
             expect.objectContaining({
-              name: 'Clínica Vila Olimpia',
-              address: 'Rua Funchal, 500 - São Paulo - SP',
-              serviceHours: 'Terça e quinta, 10h as 17h',
+              name: 'Clínica Centro',
+              address: 'Praça da Sé - Sé, São Paulo - SP',
+              serviceHours: 'Segunda a sexta, 8h as 18h',
             }),
           ],
         }),

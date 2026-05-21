@@ -372,8 +372,8 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-203',
             status: 'appointment_confirmed',
-            statusLabel: 'Consulta confirmada',
-            stage: 'consultation_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
             created_at: '2026-05-01T12:00:00.000Z',
             customer: { full_name: 'Carlos Demo', email: 'carlos@nexor.dev', phone: null },
           },
@@ -480,7 +480,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-002',
             status: 'in_progress',
-            statusLabel: 'Consulta vinculada',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: '11999990001' },
@@ -500,6 +500,88 @@ describe('BiteplanerHub', () => {
     expect(screen.queryByRole('button', { name: /vincular consulta/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: /vincular consulta/i })).not.toBeInTheDocument();
     expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
+  it('separates appointment confirmation from clinical decision actions for licensed dentists', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-CHECK',
+            status: 'in_progress',
+            statusLabel: 'Aguardando confirmação de consulta',
+            stage: 'consultation_linked',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Cliente Check', email: 'check@nexor.dev', phone: null },
+          },
+          {
+            id: 'BP-DEMO-CLINICAL',
+            status: 'appointment_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
+            created_at: '2026-05-01T11:00:00.000Z',
+            customer: { full_name: 'Cliente Clinico', email: 'clinico@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-check',
+            order_id: 'BP-DEMO-CHECK',
+            type: 'initial',
+            status: 'scheduled',
+            scheduled_at: '2026-05-07T10:00:00.000Z',
+            user_confirmed_at: '2026-05-07T11:00:00.000Z',
+            dentist_confirmed_at: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-clinical',
+            order_id: 'BP-DEMO-CLINICAL',
+            type: 'initial',
+            status: 'completed',
+            scheduled_at: '2026-05-07T12:00:00.000Z',
+            user_confirmed_at: '2026-05-07T13:00:00.000Z',
+            dentist_confirmed_at: '2026-05-07T13:05:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce(licensedDentistWorkflow());
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista.licenciada@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    const confirmationRow = screen.getByText('BP-DEMO-CHECK').closest('tr');
+    const clinicalRow = screen.getByText('BP-DEMO-CLINICAL').closest('tr');
+
+    if (!confirmationRow || !clinicalRow) {
+      throw new Error('Expected both licensed dentist scenario rows to render.');
+    }
+
+    expect(confirmationRow).toHaveTextContent(/aguardando confirmação de consulta/i);
+    expect(within(confirmationRow).getByRole('button', { name: /confirmar consulta realizada/i })).toBeInTheDocument();
+    expect(within(confirmationRow).queryByRole('button', { name: /registrar apto/i })).not.toBeInTheDocument();
+
+    expect(clinicalRow).toHaveTextContent(/aguardando decisão clínica/i);
+    expect(within(clinicalRow).getByRole('button', { name: /registrar apto/i })).toBeInTheDocument();
+    expect(within(clinicalRow).getByRole('button', { name: /registrar inapto/i })).toBeInTheDocument();
+    expect(within(clinicalRow).getByRole('button', { name: /marcar tratamento prévio/i })).toBeInTheDocument();
+    expect(within(clinicalRow).queryByRole('button', { name: /confirmar consulta realizada/i })).not.toBeInTheDocument();
   });
 
   it('locks the dentist home tab when the dentist is not licensed yet', async () => {
@@ -540,6 +622,80 @@ describe('BiteplanerHub', () => {
     );
     expect(screen.queryByTestId('dentist-queue-table')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /confirmar pagamento/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps top status card labels and values stacked for dentist mode', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] })
+      .mockResolvedValueOnce({
+        workflow: {
+          id: 'workflow-approved',
+          status: 'approved_pending_payment',
+          paymentStatus: 'not_started',
+          testAttempts: 0,
+          testPassed: false,
+          certificateIssuedAt: null,
+          metadata: { courseProgress: {} },
+        },
+        course: [],
+        notifications: [],
+      });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistApproved',
+      backendUser: { email: 'dentista.aprovada@nexor.dev', roles: ['dentist'] },
+    });
+
+    const emailLabel = await screen.findByText('E-mail');
+    const emailValue = screen.getByText('dentista.aprovada@nexor.dev');
+    await waitFor(() => expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'warning'));
+    const statusLabel = screen.getByText(/status do dentista/i);
+    const statusValue = statusLabel.parentElement?.querySelector('strong');
+
+    expect(emailLabel.parentElement).toBe(emailValue.parentElement);
+    expect(emailLabel.parentElement?.tagName).toBe('DIV');
+    if (!statusValue) {
+      throw new Error('Expected dentist status value in top status card.');
+    }
+    expect(statusValue).toHaveTextContent(/aguardando pagamento/i);
+    expect(statusLabel.parentElement).toBe(statusValue.parentElement);
+    expect(statusLabel.parentElement?.tagName).toBe('DIV');
+  });
+
+  it('keeps top status card labels and values stacked for laboratory mode', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'lab',
+        enrollment: null,
+        modes: [{ key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] });
+
+    renderPage('/painel/biteplaner?mode=lab', {
+      demoPersona: 'lab',
+      backendUser: { email: 'lab@nexor.dev', roles: ['lab'] },
+    });
+
+    const emailLabel = await screen.findByText('E-mail');
+    const emailValue = screen.getByText('lab@nexor.dev');
+    const statusLabel = screen.getByText(/status do laboratório/i);
+    const statusValue = statusLabel.parentElement?.querySelector('strong');
+
+    expect(emailLabel.parentElement).toBe(emailValue.parentElement);
+    expect(emailLabel.parentElement?.tagName).toBe('DIV');
+    if (!statusValue) {
+      throw new Error('Expected laboratory status value in top status card.');
+    }
+    expect(statusValue).toHaveTextContent(/sem processo de licenciamento/i);
+    expect(statusLabel.parentElement).toBe(statusValue.parentElement);
+    expect(statusLabel.parentElement?.tagName).toBe('DIV');
   });
 
   it('keeps the dentist home in skeleton state until licensing and orders finish loading', async () => {

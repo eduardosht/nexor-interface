@@ -9,12 +9,12 @@ const PARTNERS = [
     body: 'Credenciamento para avaliação, moldagem e acompanhamento dos pacientes Biteplaner.',
   },
   {
-    title: 'Academia / Coach',
+    title: 'Academia / Coach Licenciado',
     body: 'Programa de indicação com benefícios para parceiros que recomendam o Biteplaner.',
   },
   {
-    title: 'Laboratório Certificado',
-    body: 'Parceria para produção laboratorial de alto padrão das moldeiras personalizadas.',
+    title: 'Laboratório Licenciado',
+    body: 'Licenciamento para produção laboratorial de alto padrão dos dispositivos personalizados.',
   },
 ];
 
@@ -39,7 +39,7 @@ export function ParceirosTeaserSection() {
           </S.Grid>
 
           <S.CtaRow as={motion.div} variants={fadeUp}>
-            <S.CtaLink to="/parceiros">Ver como ser parceiro →</S.CtaLink>
+            <S.CtaLink to="/parceiros">Veja como ser licenciado</S.CtaLink>
           </S.CtaRow>
         </motion.div>
       </S.Section>

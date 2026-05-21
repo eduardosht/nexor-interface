@@ -152,6 +152,50 @@ describe('Jornada', () => {
     expect(screen.queryByText(/step 2/i)).not.toBeInTheDocument();
   });
 
+  it('keeps dentist referral links with icons below an editable message in the consultation step', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-002',
+            status: 'awaiting_scheduling',
+            statusLabel: 'Aguardando consulta inicial',
+            stage: 'awaiting_initial_consultation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+            practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('journey-consultation-content')).toBeInTheDocument());
+    const messageField = screen.getByRole('textbox', { name: /mensagem para o dentista/i });
+    const whatsappLink = screen.getByRole('link', { name: /enviar por whatsapp/i });
+    const emailLink = screen.getByRole('link', { name: /enviar por e-mail/i });
+
+    expect((messageField as HTMLTextAreaElement).value).toEqual(expect.stringContaining('Estou usando o Biteplaner'));
+    expect(within(whatsappLink).getByTestId('referral-whatsapp-icon')).toBeInTheDocument();
+    expect(within(emailLink).getByTestId('referral-email-icon')).toBeInTheDocument();
+    expect(messageField.compareDocumentPosition(whatsappLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(messageField.compareDocumentPosition(emailLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.change(messageField, {
+      target: { value: 'Oi, doutora. Quero te mostrar o Biteplaner.' },
+    });
+
+    expect(whatsappLink).toHaveAttribute(
+      'href',
+      expect.stringContaining(encodeURIComponent('Oi, doutora. Quero te mostrar o Biteplaner.'))
+    );
+    expect(emailLink).toHaveAttribute(
+      'href',
+      expect.stringContaining(encodeURIComponent('Oi, doutora. Quero te mostrar o Biteplaner.'))
+    );
+  });
+
   it('renders purchase content directly in the journey', async () => {
     mockApiGet
       .mockResolvedValueOnce({
@@ -289,7 +333,7 @@ describe('Jornada', () => {
           {
             id: 'BP-DEMO-003',
             status: 'in_progress',
-            statusLabel: 'Consulta vinculada',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },

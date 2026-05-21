@@ -29,7 +29,7 @@ describe('BiteplanerPage', () => {
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /proteção personalizada para atletas de impacto/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /proteção, conforto e performance/i })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
   });
@@ -37,7 +37,7 @@ describe('BiteplanerPage', () => {
   it('renders the approved journey with payment after clinical eligibility', () => {
     renderPage();
     expect(screen.getAllByText('Conta Nexor').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pre-check Biteplaner').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Pré-consulta').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Dentista licenciado').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pagamento após aptidão').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Produção personalizada').length).toBeGreaterThan(0);
@@ -51,8 +51,8 @@ describe('BiteplanerPage', () => {
 
   it('renders athlete storytelling, use cases, and comparison content', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /feito para a rotina real de treino/i })).toBeInTheDocument();
-    expect(screen.getByText(/esportes de combate/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /feito para a rotina real de treino e competições/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /genérico vs biteplaner/i })).toBeInTheDocument();
     expect(screen.getByText(/sem avaliação profissional/i)).toBeInTheDocument();
     expect(screen.getByText(/avaliação odontológica antes da compra/i)).toBeInTheDocument();
@@ -61,23 +61,23 @@ describe('BiteplanerPage', () => {
   it('renders educational and trust sections without absolute medical claims', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();
-    expect(screen.getByText(/pode auxiliar no conforto/i)).toBeInTheDocument();
+    expect(screen.getByText(/pode auxiliar no conforto e prevenção/i)).toBeInTheDocument();
     expect(screen.queryByText(/garante proteção/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/previne lesões/i)).not.toBeInTheDocument();
   });
 
   it('renders the automatic customer comments carousel', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /clientes que passaram pela jornada/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /clientes satisfeitos com o biteplaner/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/carrossel autom/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Marina Costa/i).length).toBeGreaterThan(1);
-    expect(screen.getAllByText(/avalia/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/o biteplaner ficou firme/i).length).toBeGreaterThan(0);
   });
 
   it('renders FAQ section', () => {
     renderPage();
     expect(screen.getByText(/perguntas frequentes/i)).toBeInTheDocument();
-    expect(screen.getByText(/visão do Biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByText(/o que é Biteplaner/i)).toBeInTheDocument();
     expect(screen.getByText(/e se eu não for considerado apto/i)).toBeInTheDocument();
   });
 });

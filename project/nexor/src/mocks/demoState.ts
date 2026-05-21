@@ -1223,8 +1223,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-DEMO-003',
       status: 'in_progress',
-      statusLabel: 'Aguardando decisão clínica',
-      stage: 'awaiting_clinical_decision',
+      statusLabel: 'Aguardando confirmação de consulta',
+      stage: 'consultation_linked',
       created_at: '2026-05-02T09:00:00.000Z',
       customer_profile_id: 'demo-profile-athlete',
       user_profile_id: 'demo-user-athlete',
@@ -1654,7 +1654,7 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-DEMO-013',
       status: 'in_progress',
-      statusLabel: 'Consulta vinculada',
+      statusLabel: 'Aguardando confirmação de consulta',
       stage: 'consultation_linked',
       created_at: '2026-05-05T10:00:00.000Z',
       customer_profile_id: 'demo-profile-larissa',
@@ -1692,8 +1692,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-DEMO-014',
       status: 'appointment_confirmed',
-      statusLabel: 'Consulta confirmada',
-      stage: 'consultation_confirmed',
+      statusLabel: 'Aguardando decisão clínica',
+      stage: 'awaiting_clinical_decision',
       created_at: '2026-05-05T11:30:00.000Z',
       customer_profile_id: 'demo-profile-renata',
       user_profile_id: 'demo-user-renata',
@@ -3789,8 +3789,8 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         updateOrderStatus(
           orderId,
           'appointment_confirmed',
-          'Consulta confirmada',
-          'appointment_confirmed',
+          'Aguardando decisão clínica',
+          'awaiting_clinical_decision',
           'Consulta confirmada por paciente e dentista na demo.'
         );
       }
@@ -3803,8 +3803,8 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         updateOrderStatus(
           orderId,
           'appointment_confirmed',
-          'Consulta confirmada',
-          'appointment_confirmed',
+          'Aguardando decisão clínica',
+          'awaiting_clinical_decision',
           'Consulta confirmada por paciente e dentista na demo.'
         );
       }
@@ -3822,8 +3822,8 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       updateOrderStatus(
         orderId,
         'appointment_confirmed',
-        'Consulta confirmada',
-        'appointment_confirmed',
+        'Aguardando decisão clínica',
+        'awaiting_clinical_decision',
         'Consulta confirmada pelas duas partes na demo.'
       );
       return clone(appointment);
@@ -4119,7 +4119,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     updateOrderStatus(
       orderId,
       'in_progress',
-      'Consulta vinculada',
+      'Aguardando confirmação de consulta',
       'consultation_linked',
       'Dentista aceitou a consulta agendada e vínculou a ordem para continuidade.'
     );

@@ -1077,6 +1077,7 @@ export const StatCard = styled.article`
 `;
 
 export const StatLabel = styled.span`
+  display: block;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1085,9 +1086,13 @@ export const StatLabel = styled.span`
 `;
 
 export const StatValue = styled.strong`
+  display: block;
+  min-width: 0;
   font-size: 26px;
   font-weight: 800;
+  line-height: 1.2;
   color: ${({ theme }) => theme.colors.textPrimary};
+  overflow-wrap: anywhere;
 `;
 
 export const StatHint = styled.span`
@@ -1587,6 +1592,13 @@ export const DentistStatusItem = styled.div`
   min-width: 0;
 `;
 
+export const DentistStatusContent = styled.div`
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 4px;
+  min-width: 0;
+`;
+
 export const DentistStatusIcon = styled.span`
   display: inline-flex;
   align-items: center;
@@ -1603,6 +1615,8 @@ export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' 
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  width: fit-content;
+  max-width: 100%;
   color: ${({ $tone, theme }) =>
     $tone === 'success' ? '#059669' : $tone === 'warning' ? '#d18a00' : theme.colors.textPrimary};
   font-size: 22px;

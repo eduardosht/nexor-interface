@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Trash2 } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Button, CheckboxField, Field, Select, Snackbar, SnackbarStack } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
@@ -386,21 +385,6 @@ export function CadastroPerfilBiteplaner() {
     };
   }
 
-  function addClinic() {
-    setClinics((current) => [...current, createEmptyClinic()]);
-  }
-
-  function removeClinic(clinicId: string) {
-    setClinics((current) =>
-      current.length > 1 ? current.filter((clinic) => clinic.id !== clinicId) : current
-    );
-    setCepLookupErrors((current) => {
-      const next = { ...current };
-      delete next[clinicId];
-      return next;
-    });
-  }
-
   function buildPayload() {
     if (config.apiRole === 'partner') {
       return {
@@ -537,7 +521,7 @@ export function CadastroPerfilBiteplaner() {
           </S.SectionIntro>
           {config.apiRole === 'dentist' ? (
             <S.SectionSubtitle>
-              Preencha os dados profissionais e cadastre uma ou mais clínicas para análise operacional.
+              Preencha os dados profissionais e cadastre a clínica de atendimento para análise operacional.
             </S.SectionSubtitle>
           ) : null}
           {config.apiRole === 'dentist' ? (
@@ -657,41 +641,25 @@ export function CadastroPerfilBiteplaner() {
                       <div>
                         <S.ClinicSectionTitle>Dados da clínica</S.ClinicSectionTitle>
                         <S.ClinicSectionIntro>
-                          Informe os locais de atendimento que poderão aparecer na seleção de clínicas.
+                          Informe a clínica de atendimento que poderá aparecer na seleção de clínicas.
                         </S.ClinicSectionIntro>
                       </div>
-                      <Button type="button" variant="secondary" onClick={addClinic}>
-                        + Clínica
-                      </Button>
                     </S.ClinicSectionHeader>
-                    {clinics.map((clinic, index) => {
-                      const clinicNumber = index + 1;
-                      const clinicSuffix = clinics.length > 1 ? ` ${clinicNumber}` : '';
-
+                    {clinics.map((clinic) => {
                       return (
                         <S.ClinicCard key={clinic.id}>
                           <S.ClinicCardHeader>
-                            <S.ClinicTitle>Clínica{clinicSuffix}</S.ClinicTitle>
-                            {clinics.length > 1 ? (
-                              <S.RemoveClinicButton
-                                type="button"
-                                aria-label={`Remover clínica ${clinicNumber}`}
-                                onClick={() => removeClinic(clinic.id)}
-                              >
-                                <Trash2 size={16} aria-hidden="true" />
-                                Remover clínica
-                              </S.RemoveClinicButton>
-                            ) : null}
+                            <S.ClinicTitle>Clínica</S.ClinicTitle>
                           </S.ClinicCardHeader>
                           <S.FieldsGrid>
                             <Field
-                              label={`Nome da clínica${clinicSuffix} (*)`}
+                              label="Nome da clínica (*)"
                               value={clinic.name}
                               required
                               onChange={updateClinicField(clinic.id, 'name')}
                             />
                             <Field
-                              label={`CEP da clínica${clinicSuffix} (*)`}
+                              label="CEP da clínica (*)"
                               value={clinic.cep}
                               required
                               inputMode="numeric"
@@ -704,13 +672,13 @@ export function CadastroPerfilBiteplaner() {
                               onBlur={() => lookupClinicCep(clinic.id)}
                             />
                             <Field
-                              label={`Cidade da clínica${clinicSuffix} (*)`}
+                              label="Cidade da clínica (*)"
                               value={clinic.city}
                               required
                               onChange={updateClinicField(clinic.id, 'city')}
                             />
                             <Select
-                              label={`Estado da clínica${clinicSuffix} (*)`}
+                              label="Estado da clínica (*)"
                               value={clinic.state}
                               placeholder="Selecione um estado"
                               onChange={(value) => {
@@ -724,7 +692,7 @@ export function CadastroPerfilBiteplaner() {
                             />
                             <S.FullField>
                               <Field
-                                label={`Endereço da clínica${clinicSuffix} (*)`}
+                                label="Endereço da clínica (*)"
                                 value={clinic.address}
                                 required
                                 hint="Use o endereço completo que será usado para posicionar a clínica no mapa."
@@ -732,19 +700,19 @@ export function CadastroPerfilBiteplaner() {
                               />
                             </S.FullField>
                             <Field
-                              label={`Complemento da clínica${clinicSuffix}`}
+                              label="Complemento da clínica"
                               value={clinic.complement}
                               hint="Opcional"
                               onChange={updateClinicField(clinic.id, 'complement')}
                             />
                             <Field
-                              label={`Dia e horário de atendimento da clínica${clinicSuffix} (*)`}
+                              label="Dia e horário de atendimento da clínica (*)"
                               value={clinic.serviceHours}
                               required
                               onChange={updateClinicField(clinic.id, 'serviceHours')}
                             />
                             <Field
-                              label={`Telefone da clínica${clinicSuffix} (*)`}
+                              label="Telefone da clínica (*)"
                               value={clinic.phone}
                               required
                               inputMode="tel"

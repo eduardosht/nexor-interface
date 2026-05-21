@@ -40,7 +40,8 @@ import {
 const STATUS_OPTIONS = [
   { value: 'registration_started', label: 'Pre-requisito pendente' },
   { value: 'awaiting_scheduling', label: 'Aguardando consulta inicial' },
-  { value: 'in_progress', label: 'Aguardando decisão clínica' },
+  { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
+  { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },
   { value: 'awaiting_payment', label: 'Aguardando pagamento' },
   { value: 'awaiting_dentist_forms', label: 'Aguardando preenchimento dentista' },
   { value: 'payment_confirmed', label: 'Pagamento confirmado' },

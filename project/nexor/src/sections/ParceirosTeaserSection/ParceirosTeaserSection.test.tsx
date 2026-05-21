@@ -19,13 +19,13 @@ describe('ParceirosTeaserSection', () => {
   it('renders three partner types', () => {
     renderSection();
     expect(screen.getByText('Dentista Licenciado')).toBeInTheDocument();
-    expect(screen.getByText('Academia / Coach')).toBeInTheDocument();
-    expect(screen.getByText('Laboratório Certificado')).toBeInTheDocument();
+    expect(screen.getByText('Academia / Coach Licenciado')).toBeInTheDocument();
+    expect(screen.getByText('Laboratório Licenciado')).toBeInTheDocument();
   });
 
   it('renders link to /parceiros', () => {
     renderSection();
-    const link = screen.getByText(/Ver como ser parceiro/i).closest('a');
+    const link = screen.getByText(/Veja como ser licenciado/i).closest('a');
     expect(link).toHaveAttribute('href', '/parceiros');
   });
 });

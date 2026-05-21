@@ -66,7 +66,7 @@ const JOURNEY_STEPS = [
     n: 2,
     icon: Trophy,
     label: 'Elegibilidade',
-    title: 'Pre-check Biteplaner',
+    title: 'Pré-consulta',
     body: 'Informe esporte, rotina, histórico e sintomas para entender uma clínica licenciada.',
   },
   {
@@ -74,14 +74,14 @@ const JOURNEY_STEPS = [
     icon: ShieldCheck,
     label: 'Avaliação',
     title: 'Dentista licenciado',
-    body: 'Um profissional avalia sua queixa, marca pontos odontológicos e conduz a etapa clínica inicial.',
+    body: 'Profissional avalia sua condição clínica e conduz até a produção do dispositivo.',
   },
   {
     n: 4,
     icon: Activity,
     label: 'Compra segura',
     title: 'Pagamento após aptidão',
-    body: 'O pagamento é realizado apenas quando houver declaração de aptidão para realização.',
+    body: 'Confirmada sua aptidão, o pagamento será realizado após a primeira consulta do dentista.',
   },
   {
     n: 5,
@@ -95,7 +95,7 @@ const JOURNEY_STEPS = [
     icon: BadgeCheck,
     label: 'Uso real',
     title: 'Adaptação e acompanhamento',
-    body: 'A entrega inclui orientação, retorno de adaptação e retornos periódicos para garantir uso consistente.',
+    body: 'A entrega será feito pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
   },
 ];
 
@@ -115,7 +115,7 @@ const EDUCATION = [
   {
     icon: Heart,
     title: 'Conforto e consistência',
-    body: 'Um produto que pode auxiliar no conforto traz clareza com mais segurança, sempre conforme avaliação profissional.',
+    body: 'Um produto que pode auxiliar no conforto e prevenção, trazendo mais segurança e longevidade.',
   },
   {
     icon: Target,
@@ -127,9 +127,8 @@ const EDUCATION = [
 const TRUST_POINTS = [
   { icon: ShieldCheck, title: 'Avaliação profissional antes da compra' },
   { icon: SlidersHorizontal, title: 'Plano com dentistas licenciados' },
-  { icon: Activity, title: 'Produção sob padrões operacionais' },
+  { icon: Activity, title: 'Produção sob padrões excelência' },
   { icon: Heart, title: 'Acompanhamento após recebimento' },
-  { icon: Target, title: 'Dados e experiências usados no desenho do produto' },
 ];
 
 const CUSTOMER_COMMENTS = [
@@ -137,58 +136,54 @@ const CUSTOMER_COMMENTS = [
     name: 'Marina Costa',
     context: 'Jiu-jitsu',
     quote:
-      'A jornada deixou claro o que eu precisava fazer antes da compra. Gostei de ter avaliação e acompanhamento no mesmo fluxo.',
+      'O Biteplaner ficou firme sem incomodar durante o rola. Senti mais confiança para treinar sem ficar ajustando o protetor o tempo todo.',
   },
   {
     name: 'Rafael Nunes',
     context: 'Boxe amador',
     quote:
-      'O processo foi mais organizado do que comprar um protetor comum. Entendi cada etapa, da elegibilidade até a adaptação.',
+      'A diferença para um protetor comum foi grande. O encaixe ficou melhor, a respiração fluiu bem e consegui manter foco no treino.',
   },
   {
     name: 'Bianca Torres',
     context: 'Cross training',
     quote:
-      'O que mais ajudou foi ter orientação profissional antes de avançar. A experiência passou segurança e reduziu dúvidas.',
+      'Nos treinos com carga alta, o Biteplaner trouxe conforto e estabilidade. Virou um item que eu uso junto com munhequeira e cinturão.',
   },
   {
     name: 'Lucas Almeida',
     context: 'MMA',
     quote:
-      'Consegui acompanhar o status da jornada e saber quando dependia de mim, do dentista ou da produção. Isso fez diferença.',
+      'O produto encaixou bem na rotina de sparring. Gostei porque protege sem dar aquela sensação volumosa que atrapalha a comunicação.',
   },
   {
     name: 'Camila Rocha',
     context: 'Handebol',
     quote:
-      'O retorno de adaptação foi importante para entender o uso correto. Não ficou parecendo uma compra solta, e sim um processo.',
+      'Depois dos ajustes com o dentista, o Biteplaner ficou confortável para jogo e treino. Senti segurança para usar sem pensar nele.',
   },
 ];
 
 const FAQ = [
   {
-    q: 'Qual a visão do Biteplaner?',
-    a: 'O Biteplaner é uma jornada de protetor bucal personalizado para atletas, com avaliação odontológica, produção sob protocolo e acompanhamento profissional.',
+    q: 'O que é Biteplaner?',
+    a: 'O Biteplaner é um dispositivo bucal personalizado para atletas, com avaliação odontológica, produção sob protocolo e acompanhamento profissional.',
   },
   {
     q: 'Por que preciso passar por avaliação odontológica?',
-    a: 'Porque a avaliação ajuda a confirmar se o produto é adequado para o seu caso, reduzindo decisões apressadas antes da compra.',
+    a: 'A avaliação é necessária para confirmar se o cliente está apto para o uso.',
   },
   {
     q: 'Eu pago antes da avaliação?',
-    a: 'Não. No fluxo aprovado, a primeira avaliação acontece antes da cobrança do produto. O pagamento só avança após aptidão clínica.',
+    a: 'Não. A compra do produto é feita após a primeira consulta do dentista, dado a aptidão clínica. Os valores da consulta odontológica serão feitos diretamente com o dentista.',
   },
   {
     q: 'E se eu não for considerado apto?',
-    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar tratamento prévio antes de uma nova decisão.',
+    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar tratamento necessário antes de aprovar a aptidão.',
   },
   {
     q: 'Para quais esportes o Biteplaner é indicado?',
-    a: 'A proposta atende atletas e praticantes expostos a contato, impacto repetido ou treinos intensos. A indicação final depende da avaliação profissional.',
-  },
-  {
-    q: 'O Biteplaner substitui acompanhamento odontológico?',
-    a: 'Não. O produto depende de avaliação, produção e acompanhamento conduzidos por profissionais licenciados dentro da jornada.',
+    a: 'O Biteplaner é indicado para TODOS esportes, principalmente para praticantes expostos a contato, impacto repetido ou treinos intensos.',
   },
 ];
 
@@ -198,11 +193,10 @@ export function BiteplanerPage() {
       <S.HeroSection>
         <S.HeroCopy>
           <S.ProductLabel>Biteplaner</S.ProductLabel>
-          <S.HeroTitle>Proteção personalizada para atletas de impacto</S.HeroTitle>
+          <S.HeroTitle>PROTEÇÃO, CONFORTO E PERFORMANCE</S.HeroTitle>
           <S.HeroSubtitle>
-            Um protetor bucal personalizado para atletas, construído por uma jornada com
-            avaliação odontológica, análise de áreas de contato, produção sob protocolo e
-            acompanhamento profissional.
+            Dispositivo bucal personalizado para atletas construído através de uma jornada com avaliação
+            odontológica, produção sob protocolo e acompanhamento profissional.
           </S.HeroSubtitle>
           <S.HeroActions>
             <S.PrimaryCta to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
@@ -225,11 +219,11 @@ export function BiteplanerPage() {
       <S.SplitSection>
         <S.SectionIntro>
           <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-          <S.SectionTitle>Feito para a rotina real de treino</S.SectionTitle>
+          <S.SectionTitle>Feito para a rotina real de treino e competições</S.SectionTitle>
           <S.SectionLead>
-            Durante sparring, levantamento pesado, disputas físicas e blocos intensos de treino,
-            muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber.
-            Biteplaner organiza essa decisão com protocolo, avaliação e acompanhamento.
+            Durante esportes de combate, força e alta intensidade, esportes coletivos de treinos e
+            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem
+            perceber. O Biteplaner modula as sobrecargas com protocolo, avaliação e acompanhamento.
           </S.SectionLead>
         </S.SectionIntro>
         <S.CardGrid>
@@ -348,9 +342,9 @@ export function BiteplanerPage() {
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
           <S.SectionLabel>Comentários</S.SectionLabel>
-          <S.SectionTitle id="biteplaner-comments-title">Clientes que passaram pela jornada</S.SectionTitle>
+          <S.SectionTitle id="biteplaner-comments-title">Clientes satisfeitos com o Biteplaner</S.SectionTitle>
           <S.SectionLead>
-            Relatos sobre clareza, acompanhamento e confiança durante o processo Biteplaner.
+            Relatos sobre conforto, adaptação e confiança no uso real do produto.
           </S.SectionLead>
         </S.SectionIntro>
         <S.CommentsViewport data-comments-viewport>

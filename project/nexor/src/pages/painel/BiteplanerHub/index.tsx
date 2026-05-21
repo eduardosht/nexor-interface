@@ -1338,7 +1338,7 @@ export function BiteplanerHub() {
         timeline[row.id]?.length ? (
           <S.TableIconButton
             type="button"
-            $tone="info"
+            $tone="neutral"
             aria-label={`Visualizar atualizacoes da ordem ${row.id}`}
             title="Visualizar atualizacoes"
             onClick={() => {
@@ -1425,7 +1425,7 @@ export function BiteplanerHub() {
         timeline[row.id]?.length ? (
           <S.TableIconButton
             type="button"
-            $tone="info"
+            $tone="neutral"
             aria-label={`Visualizar atualizacoes da ordem ${row.id}`}
             title="Visualizar atualizacoes"
             onClick={() => {
@@ -1502,13 +1502,13 @@ export function BiteplanerHub() {
             <S.DentistStatusIcon aria-hidden="true">
               <Mail size={28} />
             </S.DentistStatusIcon>
-            <span>
+            <S.DentistStatusContent>
               <S.StatLabel>E-mail</S.StatLabel>
               <S.DentistStatusValue>{backendUser?.email ?? session?.user.email ?? '-'}</S.DentistStatusValue>
-            </span>
+            </S.DentistStatusContent>
           </S.DentistStatusItem>
           <S.DentistStatusItem>
-            <span>
+            <S.DentistStatusContent>
               <S.StatLabel>Status do {licenseeNoun}</S.StatLabel>
               <S.DentistStatusValue $tone={dentistStatusTone}>
                 <S.DentistStatusDot
@@ -1519,7 +1519,7 @@ export function BiteplanerHub() {
                 />
                 {dentistStatusLabel}
               </S.DentistStatusValue>
-            </span>
+            </S.DentistStatusContent>
           </S.DentistStatusItem>
         </S.DentistStatusBar>
       ) : (

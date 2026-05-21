@@ -248,7 +248,6 @@ export const ModalActions = styled.div`
 
 export const ReferralCard = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
   gap: 18px;
   align-items: start;
   padding: 18px;
@@ -256,9 +255,6 @@ export const ReferralCard = styled.section`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
 
-  @media (max-width: 820px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 export const ReferralContent = styled.div`
@@ -266,13 +262,18 @@ export const ReferralContent = styled.div`
   gap: 12px;
 `;
 
-export const MessagePreview = styled.p`
+export const MessageTextarea = styled.textarea`
+  width: 100%;
+  min-height: 148px;
   margin: 0;
   padding: 14px 16px;
+  box-sizing: border-box;
+  resize: vertical;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgBase};
   color: ${({ theme }) => theme.colors.textPrimary};
+  font: inherit;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-line;
@@ -289,17 +290,14 @@ export const ReferralActions = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  justify-content: flex-end;
-
-  @media (max-width: 820px) {
-    justify-content: flex-start;
-  }
+  justify-content: flex-start;
 `;
 
 export const ActionHref = styled.a`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 40px;
   padding: 0 16px;
   border-radius: 8px;
