@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -90,6 +92,25 @@ describe('BiteplanerHub', () => {
         writeText: vi.fn().mockResolvedValue(undefined),
       },
     });
+  });
+
+  it('keeps dashboard stat icons compact on notebook and mobile breakpoints', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
+    const compactCardSource = source.slice(
+      source.indexOf('const compactStatCard'),
+      source.indexOf('const compactStatIcon')
+    );
+    const compactIconSource = source.slice(
+      source.indexOf('const compactStatIcon'),
+      source.indexOf('export const AthleteStatsGrid')
+    );
+
+    expect(source).toContain('@media (max-width: 1280px)');
+    expect(source).toContain('width: 32px');
+    expect(source).toContain('height: 32px');
+    expect(source).toContain('padding: 16px');
+    expect(compactCardSource).toContain('align-items: flex-start');
+    expect(compactIconSource).toContain('align-self: flex-start');
   });
 
   it('renders the partner lead table with shared funnel data', async () => {
@@ -445,6 +466,8 @@ describe('BiteplanerHub', () => {
     fireEvent.click(screen.getByRole('button', { name: /visualizar atualizacoes da ordem bp-demo-201/i }));
     expect(await screen.findByRole('dialog', { name: /atualizacoes da ordem/i })).toBeInTheDocument();
     expect(screen.getByText(/historico resumido da jornada operacional/i)).toBeInTheDocument();
+    expect(screen.getByText(/ordem criada/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^seeded$/i)).not.toBeInTheDocument();
     expect(screen.getByText(/evento 1/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /fechar modal das atualizacoes/i }));
     fireEvent.click(screen.getByRole('button', { name: /aceitar consulta agendada da ordem bp-demo-201/i }));

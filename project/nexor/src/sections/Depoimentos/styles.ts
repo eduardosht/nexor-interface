@@ -76,7 +76,7 @@ export const ProductBadge = styled.div`
   padding: 4px 8px;
 
   img {
-    height: 14px;
+    height: 24px;
     width: auto;
     display: block;
   }

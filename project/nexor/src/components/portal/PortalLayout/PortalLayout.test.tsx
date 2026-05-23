@@ -438,6 +438,15 @@ describe('PortalLayout navigation', () => {
     expect(source).toContain('padding-bottom: calc(76px + env(safe-area-inset-bottom))');
   });
 
+  it('defines compact dashboard density for notebook and mobile viewports', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+
+    expect(source).toContain('@media (max-width: 1280px)');
+    expect(source).toContain('--portal-panel-icon-size: 32px');
+    expect(source).toContain('--portal-panel-card-padding: 16px');
+    expect(source).toContain('max-width: var(--portal-panel-icon-size)');
+  });
+
   it('shows pending access modes without allowing selection', async () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/products/biteplaner/access-options') {

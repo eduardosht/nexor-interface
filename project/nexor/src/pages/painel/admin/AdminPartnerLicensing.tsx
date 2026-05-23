@@ -276,6 +276,10 @@ const ModalOverlay = styled.div`
   display: grid;
   place-items: center;
   padding: 24px;
+
+  @media (max-width: 1280px) {
+    padding: 16px;
+  }
 `;
 
 const ModalBox = styled.div`
@@ -287,12 +291,22 @@ const ModalBox = styled.div`
   padding: 24px;
   display: grid;
   gap: 18px;
+
+  @media (max-width: 1280px) {
+    max-height: calc(100vh - 32px);
+    gap: 12px;
+    padding: 16px;
+  }
 `;
 
 const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 const ModalTitle = styled.h2`

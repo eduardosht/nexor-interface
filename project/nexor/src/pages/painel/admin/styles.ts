@@ -14,6 +14,10 @@ export const PageStack = styled.div`
   @media (max-width: 768px) {
     gap: 18px;
   }
+
+  @media (max-width: 1280px) {
+    gap: 16px;
+  }
 `;
 
 export const PageHeader = styled.header`
@@ -59,6 +63,10 @@ export const StatGrid = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
 
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
+
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
   }
@@ -72,6 +80,11 @@ export const StatCard = styled(Surface)`
   justify-content: center;
   gap: 10px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    min-height: 88px;
+    gap: 8px;
+  }
 
   @media (max-width: 768px) {
     min-height: 88px;
@@ -108,6 +121,10 @@ export const TableSection = styled(Surface)`
   flex-direction: column;
   gap: 18px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
     gap: 14px;
@@ -148,6 +165,10 @@ export const FormSection = styled(Surface)`
   gap: 20px;
   box-shadow: none;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 768px) {
     gap: 14px;
   }
@@ -185,6 +206,10 @@ export const FieldsGrid = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 780px) {
     grid-template-columns: 1fr;
   }
@@ -196,6 +221,10 @@ export const CompactFieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 1080px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -213,6 +242,10 @@ export const SplitSectionGrid = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -235,6 +268,10 @@ export const SectionCardGrid = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -267,6 +304,12 @@ export const ContractCard = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+  }
 
   @media (max-width: 640px) {
     flex-direction: column;
@@ -301,6 +344,10 @@ export const ProductGrid = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
   }
@@ -314,6 +361,10 @@ export const ProductCard = styled(Surface)<{ $selected?: boolean; $available?: b
   box-shadow: none;
   border-color: ${({ $selected, theme }) => ($selected ? theme.colors.textPrimary : theme.colors.borderDefault)};
   opacity: ${({ $available = true }) => ($available ? 1 : 0.72)};
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
     gap: 12px;
@@ -363,6 +414,10 @@ export const HighlightPanel = styled(Surface)`
   gap: 20px;
   box-shadow: none;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
@@ -376,6 +431,10 @@ export const ChartPanel = styled(Surface)`
   flex-direction: column;
   gap: 20px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
     gap: 14px;
@@ -421,6 +480,10 @@ export const EmptyStateWrap = styled(Surface)`
   align-items: flex-start;
   gap: 14px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const EmptyStateLink = styled(Link)`

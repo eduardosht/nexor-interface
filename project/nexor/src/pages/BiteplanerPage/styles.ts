@@ -477,8 +477,26 @@ export const ComparisonSection = styled.section`
   }
 `;
 
+export const ComparisonTableViewport = styled.div`
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px;
+  border-radius: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-color: rgba(7, 132, 90, 0.5) rgba(215, 226, 227, 0.65);
+  scrollbar-width: thin;
+
+  &:focus-visible {
+    outline: 3px solid rgba(7, 132, 90, 0.35);
+    outline-offset: 4px;
+  }
+`;
+
 export const ComparisonTable = styled.table`
   width: 100%;
+  min-width: 760px;
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
@@ -531,6 +549,29 @@ export const ComparisonTable = styled.table`
 
   tr:last-child td {
     border-bottom: 0;
+  }
+
+  @media (max-width: 900px) {
+    min-width: 700px;
+
+    th,
+    td {
+      padding: 16px 18px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    min-width: 660px;
+
+    th,
+    td {
+      padding: 14px 16px;
+      font-size: 11px;
+    }
+
+    th {
+      font-size: 9px;
+    }
   }
 `;
 

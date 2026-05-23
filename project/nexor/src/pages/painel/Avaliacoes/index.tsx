@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { CheckCircle2, ClipboardList, Clock3, Inbox, Star, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { ChevronLeft, ChevronRight, ClipboardList, Clock3, Star, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -87,6 +87,10 @@ const SURVEY_MOMENTS = [
       'Quando o laboratório recebe/inicia a produção e consegue avaliar o arquivo 3D intraoral e a facilidade de contato.',
   },
 ];
+
+function getDefaultMomentKey(copy: (typeof MODE_COPY)[ReviewMode]) {
+  return SURVEY_MOMENTS.find((moment) => copy.templates.includes(moment.templateKey))?.templateKey ?? copy.templates[0];
+}
 
 function getMode(value: string | null): ReviewMode {
   if (value === 'user' || value === 'partner' || value === 'lab' || value === 'dentist') {
@@ -220,15 +224,17 @@ export function Avaliacoes() {
   const token = getAuthToken(session);
   const [searchParams] = useSearchParams();
   const mode = getMode(searchParams.get('mode'));
+  const copy = MODE_COPY[mode];
   const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
   const [forms, setForms] = useState<Array<{ order: DemoOrderSummary; form: DemoWorkflowForm }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedMomentKey, setSelectedMomentKey] = useState(getDefaultMomentKey(copy));
   const [selectedSurvey, setSelectedSurvey] = useState<{ order: DemoOrderSummary; form: DemoWorkflowForm } | null>(null);
   const [surveyPayload, setSurveyPayload] = useState<Record<string, string>>({});
   const [surveyError, setSurveyError] = useState('');
   const [surveySubmitting, setSurveySubmitting] = useState(false);
-  const copy = MODE_COPY[mode];
+  const pendingCarouselRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -273,6 +279,10 @@ export function Avaliacoes() {
       active = false;
     };
   }, [mode, token]);
+
+  useEffect(() => {
+    setSelectedMomentKey(getDefaultMomentKey(copy));
+  }, [copy.templates, mode]);
 
   const rows = useMemo<ReviewRow[]>(
     () =>
@@ -326,6 +336,11 @@ export function Avaliacoes() {
       score: average(templateRows.map((row) => row.score)),
     };
   });
+  const surveyMoments = SURVEY_MOMENTS.filter((moment) => copy.templates.includes(moment.templateKey));
+  const selectedMoment = surveyMoments.find((moment) => moment.templateKey === selectedMomentKey) ?? surveyMoments[0];
+  const selectedMomentRows = selectedMoment
+    ? rows.filter((row) => row.form.templateKey === selectedMoment.templateKey)
+    : [];
 
   const selectedTemplate = selectedSurvey ? getTemplate(selectedSurvey.form.templateKey) : null;
 
@@ -339,6 +354,19 @@ export function Avaliacoes() {
     setSelectedSurvey(entry);
     setSurveyPayload(getEmptyPayload(template));
     setSurveyError('');
+  }
+
+  function scrollPendingSurveys(direction: 'previous' | 'next') {
+    const carousel = pendingCarouselRef.current;
+
+    if (!carousel) {
+      return;
+    }
+
+    carousel.scrollBy({
+      left: direction === 'next' ? carousel.clientWidth : -carousel.clientWidth,
+      behavior: 'smooth',
+    });
   }
 
   function closeSurvey() {
@@ -420,6 +448,7 @@ export function Avaliacoes() {
             : entry
         )
       );
+      setSelectedMomentKey(updatedForm.templateKey);
       closeSurvey();
     } catch {
       setSurveyError('Não foi possível enviar o survey agora.');
@@ -516,30 +545,48 @@ export function Avaliacoes() {
                 </S.SectionTitleGroup>
                 <S.PendingCount>{pendingSurveys.length}</S.PendingCount>
               </S.SectionHeader>
-              <S.PendingGrid>
-                {pendingSurveys.map((entry) => {
-                  const template = getTemplate(entry.form.templateKey);
+              {pendingSurveys.length > 0 ? (
+                <S.PendingCarouselShell>
+                  {pendingSurveys.length > 1 ? (
+                    <S.PendingCarouselActions aria-label="Navegacao dos surveys pendentes">
+                      <S.PendingCarouselButton
+                        type="button"
+                        aria-label="Survey anterior"
+                        onClick={() => scrollPendingSurveys('previous')}
+                      >
+                        <ChevronLeft size={16} aria-hidden />
+                      </S.PendingCarouselButton>
+                      <S.PendingCarouselButton
+                        type="button"
+                        aria-label="Proximo survey"
+                        onClick={() => scrollPendingSurveys('next')}
+                      >
+                        <ChevronRight size={16} aria-hidden />
+                      </S.PendingCarouselButton>
+                    </S.PendingCarouselActions>
+                  ) : null}
+                  <S.PendingCarousel ref={pendingCarouselRef} aria-label="Surveys pendentes para responder">
+                    {pendingSurveys.map((entry) => {
+                      const template = getTemplate(entry.form.templateKey);
 
-                  return (
-                    <S.PendingCard key={entry.form.id}>
-                      <div>
-                        <S.PendingTitle>{template?.label ?? entry.form.templateKey}</S.PendingTitle>
-                        <S.ReviewMeta>{getPendingSurveyContext(entry.form, entry.order)}</S.ReviewMeta>
-                        <S.SmallText>Liberado em {formatDate(entry.form.releasedAt)}</S.SmallText>
-                      </div>
-                      <S.SecondaryButton type="button" onClick={() => openSurvey(entry)}>
-                        Responder
-                      </S.SecondaryButton>
-                    </S.PendingCard>
-                  );
-                })}
-                {pendingSurveys.length === 0 ? (
-                  <S.Banner>
-                    <Inbox size={16} aria-hidden />
-                    Nenhum survey pendente para este perfil.
-                  </S.Banner>
-                ) : null}
-              </S.PendingGrid>
+                      return (
+                        <S.PendingCard key={entry.form.id}>
+                          <div>
+                            <S.PendingTitle>{template?.label ?? entry.form.templateKey}</S.PendingTitle>
+                            <S.ReviewMeta>{getPendingSurveyContext(entry.form, entry.order)}</S.ReviewMeta>
+                            <S.SmallText>Liberado em {formatDate(entry.form.releasedAt)}</S.SmallText>
+                          </div>
+                          <S.SecondaryButton type="button" onClick={() => openSurvey(entry)}>
+                            Responder
+                          </S.SecondaryButton>
+                        </S.PendingCard>
+                      );
+                    })}
+                  </S.PendingCarousel>
+                </S.PendingCarouselShell>
+              ) : (
+                <S.Banner>Nenhum survey pendente para este perfil.</S.Banner>
+              )}
             </S.Section>
 
             <S.Section>
@@ -557,52 +604,70 @@ export function Avaliacoes() {
                 </S.SectionTitleGroup>
               </S.SectionHeader>
               <S.TriggerList>
-                {SURVEY_MOMENTS.map((moment) => (
-                  <S.TriggerItem key={moment.templateKey}>
-                    <S.TriggerIcon>
-                      <CheckCircle2 size={15} />
-                    </S.TriggerIcon>
-                    <div>
-                      <S.PendingTitle>{moment.title}</S.PendingTitle>
-                      <S.ReviewMeta>{moment.actor}</S.ReviewMeta>
-                      <S.Comment>{moment.moment}</S.Comment>
-                    </div>
-                  </S.TriggerItem>
-                ))}
+                <S.SurveyTabs role="tablist" aria-label="Momentos dos surveys">
+                  {surveyMoments.map((moment) => {
+                    const isSelected = selectedMoment?.templateKey === moment.templateKey;
+
+                    return (
+                      <S.SurveyTab
+                        key={moment.templateKey}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        aria-controls={`survey-moment-${moment.templateKey}`}
+                        id={`survey-tab-${moment.templateKey}`}
+                        $active={isSelected}
+                        onClick={() => setSelectedMomentKey(moment.templateKey)}
+                      >
+                        {moment.title}
+                      </S.SurveyTab>
+                    );
+                  })}
+                </S.SurveyTabs>
+                {selectedMoment ? (
+                  <S.MomentPanel
+                    role="tabpanel"
+                    id={`survey-moment-${selectedMoment.templateKey}`}
+                    aria-labelledby={`survey-tab-${selectedMoment.templateKey}`}
+                  >
+                    <S.ReviewList>
+                      {selectedMomentRows.map((row) => (
+                        <S.ReviewCard key={row.id}>
+                          <S.ReviewHeader>
+                            <S.Reviewer>
+                              <S.Avatar>{getInitials(row.reviewer)}</S.Avatar>
+                              <div>
+                                <S.ReviewerName>{row.reviewer}</S.ReviewerName>
+                                <S.ReviewMeta>
+                                  {row.direction} | Ordem {row.order.id} |{' '}
+                                  {row.form.submittedAt ? formatDate(row.form.submittedAt) : 'Data pendente'}
+                                </S.ReviewMeta>
+                              </div>
+                            </S.Reviewer>
+                            <S.ReviewScore>
+                              {row.score.toFixed(1)}
+                              <Stars score={row.score} />
+                            </S.ReviewScore>
+                          </S.ReviewHeader>
+                          <S.Comment>{row.comment}</S.Comment>
+                          <S.CriteriaGrid>
+                            {row.criteria.slice(0, 6).map((critérion) => (
+                              <S.CriteriaPill key={`${row.id}-${critérion.label}`}>
+                                <strong>{critérion.value.toFixed(1)}</strong>
+                                {critérion.label}
+                              </S.CriteriaPill>
+                            ))}
+                          </S.CriteriaGrid>
+                        </S.ReviewCard>
+                      ))}
+                      {selectedMomentRows.length === 0 ? (
+                        <S.Banner>Nenhum comentário enviado para este momento ainda.</S.Banner>
+                      ) : null}
+                    </S.ReviewList>
+                  </S.MomentPanel>
+                ) : null}
               </S.TriggerList>
             </S.Section>
-
-            <S.ReviewList>
-              {rows.map((row) => (
-                <S.ReviewCard key={row.id}>
-                  <S.ReviewHeader>
-                    <S.Reviewer>
-                      <S.Avatar>{getInitials(row.reviewer)}</S.Avatar>
-                      <div>
-                        <S.ReviewerName>{row.reviewer}</S.ReviewerName>
-                        <S.ReviewMeta>
-                          {row.direction} | Ordem {row.order.id} | {row.form.submittedAt ? formatDate(row.form.submittedAt) : 'Data pendente'}
-                        </S.ReviewMeta>
-                      </div>
-                    </S.Reviewer>
-                    <S.ReviewScore>
-                      {row.score.toFixed(1)}
-                      <Stars score={row.score} />
-                    </S.ReviewScore>
-                  </S.ReviewHeader>
-                  <S.Comment>{row.comment}</S.Comment>
-                  <S.CriteriaGrid>
-                    {row.criteria.slice(0, 6).map((critérion) => (
-                      <S.CriteriaPill key={`${row.id}-${critérion.label}`}>
-                        <strong>{critérion.value.toFixed(1)}</strong>
-                        {critérion.label}
-                      </S.CriteriaPill>
-                    ))}
-                  </S.CriteriaGrid>
-                </S.ReviewCard>
-              ))}
-              {rows.length === 0 ? <S.Banner>Nenhuma avaliação enviada para este perfil ainda.</S.Banner> : null}
-            </S.ReviewList>
           </>
         ) : null}
       </S.Panel>

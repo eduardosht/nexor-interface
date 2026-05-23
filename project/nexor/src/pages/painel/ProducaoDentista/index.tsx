@@ -49,13 +49,6 @@ type FinalAnamnesisPdfWorkerResponse =
       message?: string;
     };
 
-function StepCheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="m5 12 4 4L19 6" />
-    </svg>
-  );
-}
 
 
 
@@ -562,11 +555,6 @@ export function ProducaoDentista() {
                           </S.StepMeta>
                           <S.StepStatusRow>
                             <S.StepTitle>{step.label}</S.StepTitle>
-                            {completed ? (
-                              <S.StepCheck>
-                                <StepCheckIcon />
-                              </S.StepCheck>
-                            ) : null}
                           </S.StepStatusRow>
                         </S.StepTop>
                         <S.StepText>{step.description}</S.StepText>

@@ -87,6 +87,13 @@ describe('BiteplanerPage', () => {
     expect(screen.getByText(/processo contínuo de aperfeiçoamento/i)).toBeInTheDocument();
   });
 
+  it('wraps the comparison table in a horizontal scroll region for narrow screens', () => {
+    renderPage();
+
+    const scrollRegion = screen.getByRole('region', { name: /tabela comparativa com rolagem horizontal/i });
+    expect(scrollRegion).toContainElement(screen.getByRole('table'));
+  });
+
   it('renders educational and trust sections without absolute medical claims', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();

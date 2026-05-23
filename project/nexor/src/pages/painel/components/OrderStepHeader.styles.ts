@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom';
 export const Header = styled.header`
   display: grid;
   gap: 22px;
+
+  @media (max-width: 1280px) {
+    gap: 14px;
+  }
 `;
 
 export const Breadcrumb = styled.nav`
@@ -69,6 +73,10 @@ export const Title = styled.h1`
   line-height: 1.08;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 1280px) {
+    font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+  }
 `;
 
 export const Description = styled.p`
@@ -81,6 +89,10 @@ export const Description = styled.p`
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-weight: 700;
+  }
+
+  @media (max-width: 1280px) {
+    font-size: 14px;
   }
 `;
 
@@ -103,6 +115,11 @@ export const OrderBanner = styled.section`
     min-height: auto;
     gap: 18px;
   }
+
+  @media (max-width: 1280px) {
+    min-height: 128px;
+    padding: 16px;
+  }
 `;
 
 export const OrderSummary = styled.div`
@@ -114,6 +131,10 @@ export const OrderSummary = styled.div`
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 1280px) {
+    gap: 12px;
   }
 `;
 
@@ -127,6 +148,16 @@ export const OrderIcon = styled.span`
   border-radius: 999px;
   color: #111827;
   background: #fef3c7;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const OrderIconBadge = styled.span`
@@ -142,6 +173,19 @@ export const OrderIconBadge = styled.span`
   border-radius: 999px;
   color: #f59e0b;
   background: #fffbeb;
+
+  @media (max-width: 1280px) {
+    right: -2px;
+    bottom: -2px;
+    width: 14px;
+    height: 14px;
+    border-width: 1px;
+
+    svg {
+      width: 9px;
+      height: 9px;
+    }
+  }
 `;
 
 export const OrderSummaryText = styled.div`
@@ -160,6 +204,10 @@ export const OrderId = styled.strong`
   font-size: clamp(1.6rem, 2.4vw, 1.9rem);
   line-height: 1.1;
   font-weight: 800;
+
+  @media (max-width: 1280px) {
+    font-size: clamp(1.2rem, 1.8vw, 1.45rem);
+  }
 `;
 
 export const OrderHelpText = styled.p`
@@ -168,6 +216,10 @@ export const OrderHelpText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.45;
+
+  @media (max-width: 1280px) {
+    font-size: 12px;
+  }
 `;
 
 export const OrderMeta = styled.div`
@@ -182,6 +234,12 @@ export const OrderMeta = styled.div`
     padding: 18px 0 0;
     border-left: 0;
     border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  }
+
+  @media (max-width: 1280px) {
+    gap: 8px;
+    min-height: 68px;
+    padding-left: 16px;
   }
 `;
 

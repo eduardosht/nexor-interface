@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
@@ -632,10 +632,41 @@ const operationalTone = {
   }
 } satisfies Record<OperationalTone, { bg: string; color: string; halo: string }>;
 
+const compactStatCard = css`
+  @media (max-width: 1280px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    gap: 12px;
+    min-height: auto;
+    padding: 16px;
+    border-radius: 12px;
+  }
+`;
+
+const compactStatIcon = css`
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    align-self: flex-start;
+    border-radius: 8px;
+    box-shadow: none;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+`;
+
 export const AthleteStatsGrid = styled.section`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -654,6 +685,8 @@ export const AthleteStatCard = styled.article<{ $tone: AthleteTone }>`
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
 `;
 
 export const AthleteStatIcon = styled.span<{ $tone: AthleteTone }>`
@@ -666,6 +699,8 @@ export const AthleteStatIcon = styled.span<{ $tone: AthleteTone }>`
   background: ${({ $tone }) => athleteTone[$tone].bg};
   color: ${({ $tone }) => athleteTone[$tone].color};
   box-shadow: 0 0 0 8px ${({ $tone }) => athleteTone[$tone].halo};
+
+  ${compactStatIcon}
 `;
 
 export const AthleteStatContent = styled.div`
@@ -678,6 +713,10 @@ export const PartnerStatsGrid = styled.section`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -696,6 +735,8 @@ export const PartnerStatCard = styled.article<{ $tone: PartnerTone }>`
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
 `;
 
 export const PartnerStatIcon = styled.span<{ $tone: PartnerTone }>`
@@ -708,6 +749,8 @@ export const PartnerStatIcon = styled.span<{ $tone: PartnerTone }>`
   background: ${({ $tone }) => partnerTone[$tone].bg};
   color: ${({ $tone }) => partnerTone[$tone].color};
   box-shadow: 0 0 0 8px ${({ $tone }) => partnerTone[$tone].halo};
+
+  ${compactStatIcon}
 `;
 
 export const PartnerStatContent = styled.div`
@@ -720,6 +763,10 @@ export const OperationalStatsGrid = styled.section`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -738,6 +785,8 @@ export const OperationalStatCard = styled.article<{ $tone: OperationalTone }>`
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
 `;
 
 export const OperationalStatIcon = styled.span<{ $tone: OperationalTone }>`
@@ -750,6 +799,8 @@ export const OperationalStatIcon = styled.span<{ $tone: OperationalTone }>`
   background: ${({ $tone }) => operationalTone[$tone].bg};
   color: ${({ $tone }) => operationalTone[$tone].color};
   box-shadow: 0 0 0 8px ${({ $tone }) => operationalTone[$tone].halo};
+
+  ${compactStatIcon}
 `;
 
 export const OperationalStatContent = styled.div`
@@ -1579,9 +1630,15 @@ export const DentistStatusBar = styled.section`
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
-    padding: 22px;
+    padding: 14px;
   }
 `;
 
@@ -1590,6 +1647,10 @@ export const DentistStatusItem = styled.div`
   align-items: center;
   gap: 18px;
   min-width: 0;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 
   > span:last-child {
     display: grid;
@@ -1615,6 +1676,8 @@ export const DentistStatusIcon = styled.span`
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06));
   color: #6d3df5;
+
+  ${compactStatIcon}
 `;
 
 export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' | 'neutral' }>`

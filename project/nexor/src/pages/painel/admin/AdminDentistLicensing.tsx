@@ -318,6 +318,10 @@ const ModalOverlay = styled.div`
   display: grid;
   place-items: center;
   background: rgba(0, 0, 0, 0.42);
+
+  @media (max-width: 1280px) {
+    padding: 16px;
+  }
 `;
 
 const ModalBox = styled.div`
@@ -330,6 +334,12 @@ const ModalBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 18px;
+
+  @media (max-width: 1280px) {
+    max-height: calc(100vh - 32px);
+    gap: 12px;
+    padding: 16px;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -337,6 +347,10 @@ const ModalHeader = styled.div`
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 const ModalTitle = styled.h2`

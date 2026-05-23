@@ -10,6 +10,12 @@ export const Shell = styled.section`
     linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92)),
     ${({ theme }) => theme.colors.bgBase};
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
 `;
 
 export const Header = styled.header`
@@ -20,6 +26,12 @@ export const Header = styled.header`
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(14px);
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+  }
 `;
 
 export const StickySummary = styled.div`
@@ -51,6 +63,10 @@ export const Brand = styled.div`
   display: flex;
   gap: 14px;
   align-items: center;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const BrandMark = styled.span`
@@ -61,6 +77,17 @@ export const BrandMark = styled.span`
   border-radius: 14px;
   background: #0f2f57;
   color: #ffffff;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const TitleGroup = styled.div`
@@ -82,6 +109,10 @@ export const Title = styled.h3`
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
+
+  @media (max-width: 1280px) {
+    font-size: 20px;
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -164,6 +195,12 @@ export const PatientStrip = styled.div`
   border-radius: 14px;
   background: ${({ theme }) => theme.colors.bgInset};
 
+  @media (max-width: 1280px) {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
   @media (max-width: 980px) {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -179,6 +216,13 @@ export const Avatar = styled.div`
   color: #0f2f57;
   font-size: 20px;
   font-weight: 900;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
 `;
 
 export const PatientName = styled.strong`
@@ -271,6 +315,10 @@ export const NavItem = styled.a`
 export const Sections = styled.div`
   display: grid;
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const Card = styled.details`
@@ -284,6 +332,15 @@ export const Card = styled.details`
 
   &[open] {
     padding-bottom: 16px;
+  }
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    border-radius: 12px;
+
+    &[open] {
+      padding-bottom: 12px;
+    }
   }
 `;
 
@@ -299,6 +356,11 @@ export const CardSummary = styled.summary`
   &::-webkit-details-marker {
     display: none;
   }
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 12px;
+  }
 `;
 
 export const SectionIcon = styled.span`
@@ -309,6 +371,17 @@ export const SectionIcon = styled.span`
   border-radius: 12px;
   background: #eef4ff;
   color: #0f2f57;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const SectionTitle = styled.h4`
@@ -329,6 +402,11 @@ export const CardContent = styled.div`
   display: grid;
   gap: 14px;
   padding: 0 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 0 12px;
+  }
 `;
 
 export const Grid = styled.div<{ $columns?: number }>`
@@ -353,6 +431,11 @@ export const DataField = styled.div<{ $important?: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ $important, theme }) => ($important ? '#f8fbff' : theme.colors.bgInset)};
+
+  @media (max-width: 1280px) {
+    padding: ${({ $important }) => ($important ? '12px' : '10px')};
+    border-radius: 10px;
+  }
 `;
 
 export const DataLabel = styled.span`
@@ -515,4 +598,9 @@ export const UploadBox = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
   font-weight: 400;
+
+  @media (max-width: 1280px) {
+    gap: 8px;
+    padding: 10px;
+  }
 `;

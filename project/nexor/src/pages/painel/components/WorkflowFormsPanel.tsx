@@ -85,22 +85,6 @@ const STATUS_PRESENTATION: Record<DemoWorkflowForm['status'], { label: string; c
   submitted: { label: 'Enviado', color: '#15803D' },
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function getDefinition(templateKey: string) {
   return TEMPLATE_DEFINITIONS[templateKey] ?? {
     label: templateKey,

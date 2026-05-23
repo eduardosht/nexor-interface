@@ -285,6 +285,10 @@ const ModalOverlay = styled.div`
   display: grid;
   place-items: center;
   background: rgba(0, 0, 0, 0.42);
+
+  @media (max-width: 1280px) {
+    padding: 16px;
+  }
 `;
 
 const ModalBox = styled.div`
@@ -294,6 +298,11 @@ const ModalBox = styled.div`
   padding: 24px;
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 1280px) {
+    max-height: calc(100vh - 32px);
+    padding: 16px;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -302,6 +311,11 @@ const ModalHeader = styled.div`
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
 `;
 
 const ModalTitle = styled.h2`

@@ -1,13 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 
-const { mockUseAuth, mockApiGet, mockApiPatch, mockSendPasswordReset } = vi.hoisted(() => ({
+const { mockUseAuth, mockApiGet, mockApiPatch, mockApiPost, mockSendPasswordReset } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockApiGet: vi.fn(),
   mockApiPatch: vi.fn(),
+  mockApiPost: vi.fn(),
   mockSendPasswordReset: vi.fn(),
 }));
 
@@ -19,10 +22,22 @@ vi.mock('../../../lib/api', () => ({
   api: {
     get: mockApiGet,
     patch: mockApiPatch,
+    post: mockApiPost,
   },
 }));
 
 import { MinhaConta } from './index';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+
+  return { promise, resolve, reject };
+}
 
 function renderPage(authOverrides: Record<string, unknown> = {}) {
   mockUseAuth.mockReturnValue({
@@ -48,6 +63,7 @@ describe('MinhaConta', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPatch.mockReset();
+    mockApiPost.mockReset();
     mockSendPasswordReset.mockReset();
   });
 
@@ -70,6 +86,35 @@ describe('MinhaConta', () => {
     expect(screen.queryByText(/tipo de conta/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/tipo de documento/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/número do documento/i)).not.toBeInTheDocument();
+  });
+
+  it('uses the design-system field for the account deletion confirmation input', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/MinhaConta/index.tsx'), 'utf8');
+
+    expect(source).toContain("Field as DesignSystemField");
+    expect(source).toContain('<DesignSystemField');
+    expect(source).toContain('label={<>Digite <strong>{firstName}</strong> para confirmar</>}');
+  });
+
+  it('uses the design-system snackbar for account action feedbacks', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/MinhaConta/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/MinhaConta/styles.ts'), 'utf8');
+
+    expect(pageSource).toContain('SnackbarStack');
+    expect(pageSource).toContain('<Snackbar');
+    expect(pageSource).not.toContain('<S.Snackbar');
+    expect(pageSource).not.toContain('<S.SaveMsg');
+    expect(stylesSource).not.toContain('export const Snackbar');
+    expect(stylesSource).not.toContain('export const SaveMsg');
+  });
+
+  it('keeps modal body content aligned with internal padding', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/MinhaConta/styles.ts'), 'utf8');
+
+    expect(source).toContain('export const ModalBody = styled.div`');
+    expect(source).toContain('padding: 18px 20px;');
+    expect(source).toContain('> ${Field}');
+    expect(source).toContain('border-bottom: none;');
   });
 
   it('saves only editable account name', async () => {
@@ -99,6 +144,7 @@ describe('MinhaConta', () => {
         'tok'
       );
     });
+    expect(await screen.findByRole('status')).toHaveTextContent(/alterações salvas/i);
   });
 
   it('shows the acquired Biteplaner product for a user that has it', async () => {
@@ -151,6 +197,7 @@ describe('MinhaConta', () => {
     await waitFor(() => {
       expect(mockSendPasswordReset).toHaveBeenCalledWith('joao@nexor.dev');
     });
+    expect(await screen.findByRole('status')).toHaveTextContent(/link enviado/i);
   });
 
   it('does not fail password reset in demo mode when Supabase is unavailable', async () => {
@@ -181,5 +228,136 @@ describe('MinhaConta', () => {
 
     expect(await screen.findByRole('status')).toHaveTextContent(/ambiente de demonstração/i);
     expect(mockSendPasswordReset).not.toHaveBeenCalled();
+  });
+
+  it('submits an account deletion request with optional reason after first-name confirmation', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      user: {
+        email: 'joao@nexor.dev',
+        fullName: 'Joao Silva',
+        roles: ['dentist'],
+      },
+    });
+    const deletionRequest = deferred<{
+      status: string;
+      message: string;
+    }>();
+    mockApiPost.mockReturnValueOnce(deletionRequest.promise);
+
+    renderPage({ backendUser: { email: 'joao@nexor.dev', roles: ['dentist'] } });
+
+    fireEvent.click(await screen.findByRole('button', { name: /excluir conta/i }));
+
+    expect(screen.getAllByText('Joao').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole('button', { name: /confirmar exclusão/i })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /privacidade e lgpd/i }));
+    fireEvent.change(screen.getByLabelText(/digite joao para confirmar/i), {
+      target: { value: 'Joao' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar exclusão/i }));
+
+    expect(screen.getByRole('button', { name: /enviando/i })).toBeDisabled();
+
+    deletionRequest.resolve({
+      status: 'blocked_by_active_orders',
+      message: 'Solicitação registrada. Existem ordens em andamento vinculadas à conta.',
+    });
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/deletion-request',
+        {
+          confirmationFirstName: 'Joao',
+          reason: 'privacy',
+          reasonDetails: '',
+        },
+        'tok'
+      );
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /confirmar exclusão da conta/i })).not.toBeInTheDocument();
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent(/solicitação registrada/i);
+  });
+
+  it('allows an optional custom account deletion reason', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      user: {
+        email: 'joao@nexor.dev',
+        fullName: 'Joao Silva',
+        roles: ['user'],
+      },
+    });
+    mockApiPost.mockResolvedValueOnce({
+      status: 'pending',
+      message: 'Solicitação de exclusão registrada.',
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /excluir conta/i }));
+    fireEvent.click(screen.getByRole('button', { name: /outros/i }));
+    fireEvent.change(screen.getByLabelText(/descreva o motivo/i), {
+      target: { value: 'Prefiro encerrar meu cadastro agora.' },
+    });
+    fireEvent.change(screen.getByLabelText(/digite joao para confirmar/i), {
+      target: { value: 'Joao' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar exclusão/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/deletion-request',
+        {
+          confirmationFirstName: 'Joao',
+          reason: 'other',
+          reasonDetails: 'Prefiro encerrar meu cadastro agora.',
+        },
+        'tok'
+      );
+    });
+  });
+
+  it('closes the deletion modal and shows an error snackbar when deletion request fails', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      user: {
+        email: 'joao@nexor.dev',
+        fullName: 'Joao Silva',
+        roles: ['user'],
+      },
+    });
+    mockApiPost.mockRejectedValueOnce(new Error('network'));
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /excluir conta/i }));
+    fireEvent.change(screen.getByLabelText(/digite joao para confirmar/i), {
+      target: { value: 'Joao' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /confirmar exclusão/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /confirmar exclusão da conta/i })).not.toBeInTheDocument();
+    });
+    expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível registrar/i);
+  });
+
+  it('does not show account deletion controls for admins', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      user: {
+        email: 'admin@nexor.dev',
+        fullName: 'Admin Nexor',
+        roles: ['admin'],
+      },
+    });
+
+    renderPage({
+      session: { access_token: 'tok', user: { id: 'admin', email: 'admin@nexor.dev' } },
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+    });
+
+    expect(await screen.findByDisplayValue('Admin Nexor')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /excluir conta/i })).not.toBeInTheDocument();
   });
 });

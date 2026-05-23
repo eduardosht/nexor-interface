@@ -439,26 +439,32 @@ export function BiteplanerPage() {
           <S.SectionLabel>Comparação</S.SectionLabel>
           <S.SectionTitle>Genérico vs Biteplaner</S.SectionTitle>
         </S.SectionIntro>
-        <S.ComparisonTable>
-          <thead>
-            <tr>
-              <th>Critério</th>
-              <th>Protetor Genérico</th>
-              <th>Protetor Tradicional</th>
-              <th>BITEPLANER</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleComparisonRows.map((row) => (
-              <tr key={row.criterion}>
-                <td>{row.criterion}</td>
-                <td>{row.generic}</td>
-                <td>{row.traditional}</td>
-                <td>{row.biteplaner}</td>
+        <S.ComparisonTableViewport
+          role="region"
+          aria-label="Tabela comparativa com rolagem horizontal"
+          tabIndex={0}
+        >
+          <S.ComparisonTable>
+            <thead>
+              <tr>
+                <th>Critério</th>
+                <th>Protetor Genérico</th>
+                <th>Protetor Tradicional</th>
+                <th>BITEPLANER</th>
               </tr>
-            ))}
-          </tbody>
-        </S.ComparisonTable>
+            </thead>
+            <tbody>
+              {visibleComparisonRows.map((row) => (
+                <tr key={row.criterion}>
+                  <td>{row.criterion}</td>
+                  <td>{row.generic}</td>
+                  <td>{row.traditional}</td>
+                  <td>{row.biteplaner}</td>
+                </tr>
+              ))}
+            </tbody>
+          </S.ComparisonTable>
+        </S.ComparisonTableViewport>
         {!comparisonExpanded ? (
           <S.ComparisonToggleButton type="button" onClick={() => setComparisonExpanded(true)}>
             Mostrar comparação completa

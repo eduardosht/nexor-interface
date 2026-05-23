@@ -1,16 +1,11 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
 
 export const SectionWrapper = styled.section`
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background: ${imageSet(publicOptimizedImages.home.heroPoster.desktop)} center / cover no-repeat;
-
-  @media (max-width: 768px) {
-    background-image: ${imageSet(publicOptimizedImages.home.heroPoster.mobile)};
-  }
+  background: ${({ theme }) => theme.colors.bgBase};
 `;
 
 export const VideoBackground = styled.video`

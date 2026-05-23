@@ -29,6 +29,10 @@ export const WizardShell = styled.section`
     overflow: visible;
   }
 
+  @media (max-width: 1280px) {
+    border-radius: 14px;
+  }
+
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
   }
@@ -52,6 +56,11 @@ export const WizardSidebar = styled.aside`
     backdrop-filter: blur(12px);
   }
 
+  @media (max-width: 1280px) {
+    padding: 8px 10px;
+    border-radius: 14px 14px 0 0;
+  }
+
   @media (max-width: 980px) {
     border-right: none;
     border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -70,20 +79,26 @@ export const StepList = styled.ol`
     overflow-x: auto;
     padding-bottom: 2px;
   }
+
+  @media (max-width: 1280px) {
+    gap: 6px;
+  }
 `;
 
 export const StepCard = styled.button<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
-  position: relative;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 14px 14px 14px 58px;
+  padding: 14px;
   text-align: left;
   border: 1px solid
     ${({ $active, $completed, theme }) =>
-    $active ? theme.colors.textPrimary : $completed ? '#B7D9C2' : theme.colors.borderDefault};
+    $active ? theme.colors.textPrimary : $completed ? '#86D39D' : theme.colors.borderDefault};
   border-radius: 14px;
-  background: ${({ $active, theme }) => ($active ? theme.colors.bgBase : 'transparent')};
+  background: ${({ $active, $completed, theme }) =>
+    $active ? theme.colors.bgBase : $completed ? '#ECFDF3' : 'transparent'};
   box-shadow: ${({ $active }) => ($active ? '0 10px 24px rgba(23, 23, 23, 0.06)' : 'none')};
   opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
@@ -100,13 +115,17 @@ export const StepCard = styled.button<{ $active: boolean; $completed: boolean; $
   @media (max-width: 1440px) {
     min-height: 100%;
     gap: 4px;
-    padding: 10px 12px 10px 48px;
+    padding: 10px 12px;
     border-radius: 10px;
     box-shadow: ${({ $active }) => ($active ? '0 6px 16px rgba(23, 23, 23, 0.06)' : 'none')};
 
     &:hover {
       transform: ${({ $disabled }) => ($disabled ? 'none' : 'translateY(-1px)')};
     }
+  }
+
+  @media (max-width: 1280px) {
+    padding: 8px 10px;
   }
 `;
 
@@ -115,12 +134,10 @@ export const StepTop = styled.div`
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
+  min-width: 0;
 `;
 
 export const StepBadge = styled.span<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
-  position: absolute;
-  top: 18px;
-  left: 25px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -137,30 +154,13 @@ export const StepBadge = styled.span<{ $active: boolean; $completed: boolean; $d
   color: ${({ $active, $completed, theme }) =>
     $active || $completed ? theme.colors.bgBase : theme.colors.textPrimary};
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
-  z-index: 1;
+  flex: 0 0 auto;
 
   @media (max-width: 1440px) {
-    top: 12px;
-    left: 14px;
     width: 24px;
     height: 24px;
     font-size: 11px;
   }
-`;
-
-export const StepCheck = styled.span`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #15803d;
-  flex-shrink: 0;
 `;
 
 export const StepMeta = styled.span<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
@@ -192,6 +192,7 @@ export const StepTitle = styled.strong`
 `;
 
 export const StepText = styled.span`
+  grid-column: 2;
   font-size: 12px;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -206,6 +207,11 @@ export const WizardContent = styled.div`
   gap: 24px;
   padding: 28px;
   background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 1280px) {
+    gap: 14px;
+    padding: 16px;
+  }
 `;
 
 export const StepContentHeader = styled.div`
@@ -236,6 +242,10 @@ export const NoticeBox = styled.div`
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+
+  @media (max-width: 1280px) {
+    padding: 12px;
+  }
 `;
 
 export const NoticeTitle = styled.strong`
@@ -312,6 +322,10 @@ export const LabLayout = styled.div`
   grid-template-columns: minmax(0, 1.3fr) minmax(320px, 420px);
   gap: 20px;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
@@ -321,6 +335,10 @@ export const AttachmentGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 
   @media (max-width: 780px) {
     grid-template-columns: 1fr;
@@ -400,4 +418,8 @@ export const EmptyState = styled.div`
   border: 1px dashed ${({ theme }) => theme.colors.borderDefault};
   font-size: 14px;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 1280px) {
+    padding: 14px;
+  }
 `;

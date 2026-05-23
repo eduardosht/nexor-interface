@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Hero } from './Hero';
 import { lightTheme } from '../../styles/theme';
 
@@ -29,5 +31,16 @@ describe('Hero', () => {
 
     expect(source).toHaveAttribute('type', 'video/mp4');
     expect(source).not.toHaveAttribute('media');
+  });
+
+  it('não usa o poster otimizado como background alternativo no mobile', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/sections/Hero/styles.ts'), 'utf8');
+    const sectionWrapperSource = stylesSource.slice(
+      stylesSource.indexOf('export const SectionWrapper'),
+      stylesSource.indexOf('export const VideoBackground')
+    );
+
+    expect(sectionWrapperSource).not.toContain('heroPoster');
+    expect(sectionWrapperSource).not.toContain('background-image');
   });
 });

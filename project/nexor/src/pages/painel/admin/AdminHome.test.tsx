@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor } from '@testing-library/react';
 import { initDesignSystem } from '@nexor/design-system';
 import { MemoryRouter } from 'react-router-dom';
@@ -67,5 +69,19 @@ describe('AdminHome', () => {
     });
 
     expect(screen.getByText(/acompanhe a evolução operacional semanal das ordens do biteplaner/i)).toBeInTheDocument();
+  });
+
+  it('uses compact density for shared administrative cards and licensing modals', () => {
+    const adminStyles = readFileSync(join(process.cwd(), 'src/pages/painel/admin/styles.ts'), 'utf8');
+    const dentistLicensing = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminDentistLicensing.tsx'), 'utf8');
+    const labLicensing = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminLabLicensing.tsx'), 'utf8');
+    const partnerLicensing = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminPartnerLicensing.tsx'), 'utf8');
+
+    expect(adminStyles).toContain('@media (max-width: 1280px)');
+    expect(adminStyles).toContain('min-height: 88px');
+    expect(adminStyles).toContain('gap: 12px');
+    expect(dentistLicensing).toContain('@media (max-width: 1280px)');
+    expect(labLicensing).toContain('@media (max-width: 1280px)');
+    expect(partnerLicensing).toContain('@media (max-width: 1280px)');
   });
 });

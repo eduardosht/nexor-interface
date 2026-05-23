@@ -24,7 +24,7 @@ type TextareaFieldProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 type BaseFieldProps = {
-  label?: string;
+  label?: ReactNode;
   hint?: string;
   error?: string;
   leadingIcon?: ReactNode;
@@ -47,6 +47,11 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+
+  strong {
+    color: inherit;
+    font-weight: 850;
+  }
 `;
 
 const ControlWrap = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`

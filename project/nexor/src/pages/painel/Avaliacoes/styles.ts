@@ -163,20 +163,23 @@ export const StatValue = styled.strong`
 `;
 
 export const TemplateGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 `;
 
 export const TemplateCard = styled.article`
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 auto;
   min-width: 0;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(34, 197, 94, 0.14);
-  background: linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.98));
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
 `;
 
 export const TemplateScore = styled.strong`
@@ -187,9 +190,9 @@ export const TemplateScore = styled.strong`
   height: 34px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(34, 197, 94, 0.16);
-  background: #f0fdf4;
-  color: #15803d;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
 `;
 
@@ -198,6 +201,7 @@ export const TemplateLabel = styled.span`
   font-size: 12px;
   font-weight: 650;
   line-height: 1.35;
+  white-space: nowrap;
 `;
 
 export const Section = styled.section`
@@ -260,10 +264,49 @@ export const PendingCount = styled.strong`
   box-shadow: 0 10px 20px rgba(23, 23, 23, 0.16);
 `;
 
-export const PendingGrid = styled.div`
+export const PendingCarouselShell = styled.div`
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 8px;
+`;
+
+export const PendingCarouselActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+`;
+
+export const PendingCarouselButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+
+  &:hover {
+    border-color: rgba(124, 58, 237, 0.28);
+    color: #6d28d9;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 58, 237, 0.28);
+    outline-offset: 2px;
+  }
+`;
+
+export const PendingCarousel = styled.div`
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scroll-padding-inline: 2px;
+  scroll-snap-type: x mandatory;
+  padding: 2px 2px 8px;
 `;
 
 export const PendingCard = styled.article`
@@ -271,6 +314,8 @@ export const PendingCard = styled.article`
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
+  flex: 0 0 min(360px, calc(100vw - 56px));
+  scroll-snap-align: start;
   padding: 14px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -286,7 +331,49 @@ export const PendingTitle = styled.strong`
 
 export const TriggerList = styled.div`
   display: grid;
+  gap: 12px;
+`;
+
+export const SurveyTabs = styled.div`
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+`;
+
+export const SurveyTab = styled.button<{ $active: boolean }>`
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid ${({ $active, theme }) => ($active ? 'rgba(124, 58, 237, 0.3)' : theme.colors.borderDefault)};
+  border-radius: 8px;
+  background: ${({ $active, theme }) => ($active ? 'rgba(124, 58, 237, 0.1)' : theme.colors.bgElevated)};
+  color: ${({ $active, theme }) => ($active ? '#6d28d9' : theme.colors.textSecondary)};
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+
+  &:hover {
+    border-color: rgba(124, 58, 237, 0.3);
+    color: #6d28d9;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 58, 237, 0.28);
+    outline-offset: 2px;
+  }
+`;
+
+export const MomentPanel = styled.div`
+  display: grid;
+  gap: 12px;
 `;
 
 export const TriggerItem = styled.article`
@@ -361,6 +448,11 @@ export const ReviewerName = styled.strong`
 `;
 
 export const ReviewMeta = styled.span`
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 12px;
 `;

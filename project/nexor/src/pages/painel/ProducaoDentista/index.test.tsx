@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -232,6 +234,45 @@ describe('ProducaoDentista', () => {
       value: vi.fn(),
     });
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  it('uses compact dashboard density for dentist production cards on notebook and mobile screens', () => {
+    const productionStyles = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/styles.ts'), 'utf8');
+    const anamnesisStyles = readFileSync(
+      join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.styles.ts'),
+      'utf8'
+    );
+    const stepHeaderStyles = readFileSync(join(process.cwd(), 'src/pages/painel/components/OrderStepHeader.styles.ts'), 'utf8');
+    const formsPanelStyles = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.styles.ts'), 'utf8');
+
+    expect(productionStyles).toContain('@media (max-width: 1280px)');
+    expect(productionStyles).toContain('padding: 16px');
+    expect(anamnesisStyles).toContain('@media (max-width: 1280px)');
+    expect(anamnesisStyles).toContain('width: 32px');
+    expect(anamnesisStyles).toContain('height: 32px');
+    expect(stepHeaderStyles).toContain('@media (max-width: 1280px)');
+    expect(stepHeaderStyles).toContain('width: 32px');
+    expect(formsPanelStyles).toContain('@media (max-width: 1280px)');
+    expect(formsPanelStyles).toContain('padding: 14px');
+
+    const stepCardSource = productionStyles.slice(
+      productionStyles.indexOf('export const StepCard'),
+      productionStyles.indexOf('export const StepTop')
+    );
+    const stepBadgeSource = productionStyles.slice(
+      productionStyles.indexOf('export const StepBadge'),
+      productionStyles.indexOf('export const StepMeta')
+    );
+
+    expect(stepCardSource).toContain('grid-template-columns: auto minmax(0, 1fr)');
+    expect(stepCardSource).toContain('align-items: center');
+    expect(stepCardSource).toContain("$completed ? '#ECFDF3'");
+    expect(stepCardSource).not.toContain('position: relative');
+    expect(stepBadgeSource).not.toContain('position: absolute');
+    expect(productionStyles).not.toContain('export const StepCheck');
+    expect(readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/index.tsx'), 'utf8')).not.toContain(
+      'StepCheckIcon'
+    );
   });
 
   afterEach(() => {

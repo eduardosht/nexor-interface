@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -45,7 +47,9 @@ describe('Avaliações', () => {
     mockApiPost.mockReset();
   });
 
-  it('renders the dentist review dashboard with submitted feedback templates', async () => {
+  it('filters survey comments by the selected survey moment tab', async () => {
+    const user = userEvent.setup();
+
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -118,11 +122,62 @@ describe('Avaliações', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.queryByText(/após consulta de adaptação/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/cliente avaliando dentista/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/dentista avaliando laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/atendimento claro, pontual/i)).toBeInTheDocument();
+    expect(screen.queryByText(/laboratório respondeu rápido/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /dentista avalia laboratório/i }));
+
+    expect(screen.getByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(/dentista avaliando laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/laboratório respondeu rápido/i)).toBeInTheDocument();
+    expect(screen.queryByText(/atendimento claro, pontual/i)).not.toBeInTheDocument();
     expect(screen.getByText(/templates ativos/i)).toBeInTheDocument();
+  });
+
+  it('keeps review metadata on a single line in survey comments', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const reviewMetaSource = source.slice(source.indexOf('export const ReviewMeta'), source.indexOf('export const ReviewScore'));
+
+    expect(reviewMetaSource).toContain('white-space: nowrap');
+    expect(reviewMetaSource).toContain('text-overflow: ellipsis');
+  });
+
+  it('keeps template summary labels inline without green card backgrounds', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const templateGridSource = source.slice(source.indexOf('export const TemplateGrid'), source.indexOf('export const TemplateCard'));
+    const templateCardSource = source.slice(source.indexOf('export const TemplateCard'), source.indexOf('export const TemplateScore'));
+    const templateScoreSource = source.slice(source.indexOf('export const TemplateScore'), source.indexOf('export const TemplateLabel'));
+    const templateLabelSource = source.slice(source.indexOf('export const TemplateLabel'), source.indexOf('export const Section'));
+
+    expect(templateGridSource).toContain('display: flex');
+    expect(templateGridSource).toContain('flex-wrap: nowrap');
+    expect(templateGridSource).toContain('overflow-x: auto');
+    expect(templateCardSource).not.toContain('rgba(240, 253, 244');
+    expect(templateScoreSource).not.toContain('#f0fdf4');
+    expect(templateLabelSource).toContain('white-space: nowrap');
+  });
+
+  it('renders pending surveys as carousel cards', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/index.tsx'), 'utf8');
+    const pendingCarouselSource = stylesSource.slice(
+      stylesSource.indexOf('export const PendingCarousel'),
+      stylesSource.indexOf('export const PendingTitle')
+    );
+
+    expect(pageSource).toContain('PendingCarousel');
+    expect(pageSource).toContain('aria-label="Survey anterior"');
+    expect(pageSource).toContain('aria-label="Proximo survey"');
+    expect(pageSource).toContain('<S.Banner>Nenhum survey pendente para este perfil.</S.Banner>');
+    expect(pageSource).not.toContain('<Inbox size={16} aria-hidden />');
+    expect(pendingCarouselSource).toContain('overflow-x: auto');
+    expect(pendingCarouselSource).toContain('scroll-snap-type: x mandatory');
+    expect(pendingCarouselSource).toContain('scroll-snap-align: start');
   });
 
   it('uses partner-specific feedback templates', async () => {

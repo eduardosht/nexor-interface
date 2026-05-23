@@ -237,6 +237,37 @@ function getStatusTone(status: string): 'success' | 'warning' | 'neutral' {
   return 'neutral';
 }
 
+const TIMELINE_STATUS_LABELS: Record<string, string> = {
+  seeded: 'Ordem criada',
+  registration_started: 'Cadastro iniciado',
+  awaiting_scheduling: 'Aguardando agendamento',
+  in_progress: 'Consulta em andamento',
+  awaiting_dentist_acceptance: 'Aguardando aceite do dentista',
+  appointment_confirmed: 'Consulta confirmada',
+  treatment_required: 'Tratamento prévio necessário',
+  awaiting_payment: 'Aguardando pagamento',
+  awaiting_dentist_forms: 'Formulários do dentista pendentes',
+  awaiting_lab_start: 'Aguardando início da produção',
+  lab_processing: 'Produção em laboratório',
+  product_received_by_clinic: 'Produto recebido pela clínica',
+  awaiting_adaptation: 'Aguardando adaptação',
+  follow_up: 'Acompanhamento em andamento',
+  completed: 'Jornada concluída',
+  cancelled: 'Jornada cancelada',
+};
+
+function getTimelineStatusLabel(status: string) {
+  if (TIMELINE_STATUS_LABELS[status]) {
+    return TIMELINE_STATUS_LABELS[status];
+  }
+
+  return status
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ');
+}
+
 function getLeadAccountPresentation(funnelStage: PartnerOverviewResponse['leads'][number]['funnelStage']) {
   return funnelStage === 'lead_captured'
     ? { color: '#737373', label: 'Ainda não' }
@@ -1699,7 +1730,6 @@ export function BiteplanerHub() {
                   <S.StatValue>{stat.value}</S.StatValue>
                   <S.StatHint>{stat.hint}</S.StatHint>
                 </S.AthleteStatContent>
-                <ChevronRight size={22} aria-hidden />
               </S.AthleteStatCard>
             ))}
           </S.AthleteStatsGrid>
@@ -2306,7 +2336,6 @@ export function BiteplanerHub() {
                   <S.StatValue>{stat.value}</S.StatValue>
                   <S.StatHint>{stat.hint}</S.StatHint>
                 </S.OperationalStatContent>
-                <ChevronRight size={22} aria-hidden />
               </S.OperationalStatCard>
             ))}
           </S.OperationalStatsGrid>
@@ -2583,7 +2612,7 @@ export function BiteplanerHub() {
                     selectedTimelineEvents.map((event) => (
                       <tr key={event.id}>
                         <td>{formatDate(event.createdAt)}</td>
-                        <td>{event.toStatus}</td>
+                        <td>{getTimelineStatusLabel(event.toStatus)}</td>
                         <td>{event.reason ?? '-'}</td>
                       </tr>
                     ))

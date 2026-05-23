@@ -8,6 +8,11 @@ export const Panel = styled.section<{ $variant: 'panel' | 'embedded' }>`
   border: ${({ $variant, theme }) => ($variant === 'panel' ? `1px solid ${theme.colors.borderDefault}` : '0')};
   border-radius: 12px;
   background: ${({ $variant, theme }) => ($variant === 'panel' ? theme.colors.bgElevated : 'transparent')};
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+    padding: ${({ $variant }) => ($variant === 'panel' ? '14px' : '0')};
+  }
 `;
 
 export const Header = styled.div`
@@ -32,6 +37,10 @@ export const Description = styled.p`
 export const FormGrid = styled.div`
   display: grid;
   gap: 14px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
@@ -41,6 +50,11 @@ export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
   border: ${({ $presentation, theme }) => ($presentation === 'flat' ? '0' : `1px solid ${theme.colors.borderDefault}`)};
   border-radius: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '12px')};
   background: ${({ $presentation, theme }) => ($presentation === 'flat' ? 'transparent' : theme.colors.bgBase)};
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+    padding: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '14px')};
+  }
 `;
 
 export const FormHeader = styled.div`
@@ -69,6 +83,10 @@ export const Fields = styled.div`
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 12px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
@@ -206,6 +224,11 @@ export const IntakeProgressShell = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgInset};
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 10px;
+  }
 `;
 
 export const IntakeProgressHeader = styled.div`
@@ -309,6 +332,11 @@ export const FormSectionGroup = styled.section`
   gap: 12px;
   padding-top: 14px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding-top: 10px;
+  }
 `;
 
 export const SectionHeading = styled.h4`
@@ -336,12 +364,16 @@ export const ReadOnlyItem = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.bgInset};
+
+  @media (max-width: 1280px) {
+    padding: 8px 10px;
+  }
 `;
 
 export const ReadOnlyLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 400;
   letter-spacing: 0;
   text-transform: uppercase;
 `;
@@ -397,6 +429,12 @@ export const SurveyPrompt = styled.div`
   border: 1px solid #f3d27a;
   background: #fffbeb;
 
+  @media (max-width: 1280px) {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 10px;
+  }
+
   @media (max-width: 720px) {
     grid-template-columns: 42px minmax(0, 1fr);
 
@@ -416,6 +454,17 @@ export const SurveyPromptIcon = styled.span`
   border-radius: 10px;
   background: #facc15;
   color: #713f12;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const SurveyPromptTitle = styled.strong`
@@ -483,6 +532,12 @@ export const SurveyIntro = styled.div`
   border-radius: 10px;
   border: 1px solid #f3d27a;
   background: #fffbeb;
+
+  @media (max-width: 1280px) {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
 `;
 
 export const SurveyIntroIcon = styled.span`
@@ -494,6 +549,17 @@ export const SurveyIntroIcon = styled.span`
   border-radius: 10px;
   background: #facc15;
   color: #713f12;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const SurveyIntroTitle = styled.strong`
@@ -510,6 +576,11 @@ export const SurveyField = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-left: 4px solid #facc15;
   background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 1280px) {
+    gap: 6px;
+    padding: 10px;
+  }
 `;
 
 export const SurveyLabel = styled.span`

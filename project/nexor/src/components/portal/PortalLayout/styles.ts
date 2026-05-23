@@ -872,6 +872,9 @@ export const ContentScroll = styled.div`
 `;
 
 export const ContentInner = styled(motion.main)`
+  --portal-panel-card-padding: 24px;
+  --portal-panel-gap: 18px;
+  --portal-panel-icon-size: 44px;
   width: 100%;
   max-width: none;
   min-width: 0;
@@ -882,11 +885,45 @@ export const ContentInner = styled(motion.main)`
     padding: 28px 20px;
   }
 
+  @media (max-width: 1280px) {
+    --portal-panel-card-padding: 16px;
+    --portal-panel-gap: 12px;
+    --portal-panel-icon-size: 32px;
+    padding: 28px 24px;
+
+    :where(section, article, aside, form, [role='region']) {
+      gap: var(--portal-panel-gap);
+    }
+
+    :where(article, aside, [role='region']) {
+      padding: var(--portal-panel-card-padding);
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child),
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) {
+      width: var(--portal-panel-icon-size);
+      height: var(--portal-panel-icon-size);
+      min-width: var(--portal-panel-icon-size);
+      max-width: var(--portal-panel-icon-size);
+      flex-basis: var(--portal-panel-icon-size);
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child) svg,
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) svg {
+      width: 20px;
+      height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+    }
+  }
+
   @media (max-width: 640px) {
     padding: 20px 14px;
   }
 
   @media (max-width: 768px) {
+    --portal-panel-card-padding: 14px;
+    --portal-panel-gap: 10px;
     padding: 24px 18px calc(76px + env(safe-area-inset-bottom));
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
   }

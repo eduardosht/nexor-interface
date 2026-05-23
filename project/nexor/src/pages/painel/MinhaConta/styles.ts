@@ -50,6 +50,10 @@ export const Card = styled.div`
   overflow: hidden;
 `;
 
+export const DangerCard = styled(Card)`
+  border-color: rgba(185, 28, 28, 0.18);
+`;
+
 export const CardRow = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -138,17 +142,38 @@ export const SaveBtn = styled.button`
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
+export const DangerButton = styled.button`
+  padding: 10px 20px;
+  background: #b91c1c;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+
+  &:hover { opacity: 0.88; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
+
+export const CancelButton = styled.button`
+  padding: 10px 16px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
 export const FormActions = styled.div`
   padding: 16px 20px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
   display: flex;
   align-items: center;
   gap: 12px;
-`;
-
-export const SaveMsg = styled.span<{ $error?: boolean }>`
-  font-size: 12px;
-  color: ${({ $error, theme }) => $error ? theme.colors.error : theme.colors.green};
 `;
 
 export const SecurityContent = styled.div`
@@ -219,4 +244,105 @@ export const ProductLink = styled.a`
   &:hover {
     opacity: 0.85;
   }
+`;
+
+export const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(23, 23, 23, 0.42);
+`;
+
+export const Modal = styled.section`
+  width: min(560px, 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(185, 28, 28, 0.24);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 22px 70px rgba(23, 23, 23, 0.24);
+  overflow: hidden;
+`;
+
+export const ModalHeader = styled.header`
+  padding: 18px 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  strong {
+    color: #991b1b;
+  }
+`;
+
+export const ModalTitle = styled.h3`
+  margin: 0 0 6px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 16px;
+  font-weight: 850;
+`;
+
+export const ModalBody = styled.div`
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+
+  > ${Field} {
+    padding: 0;
+    border-bottom: none;
+    border-right: none;
+  }
+
+  @media (max-width: 560px) {
+    padding: 16px;
+  }
+`;
+
+export const ModalActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const ReasonChips = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+`;
+
+export const ReasonChip = styled.button<{ $active: boolean }>`
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.borderDefault)};
+  background: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.bgElevated)};
+  color: ${({ $active, theme }) => ($active ? theme.colors.bgBase : theme.colors.textSecondary)};
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ $active, theme }) => ($active ? theme.colors.bgBase : theme.colors.textPrimary)};
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(23, 23, 23, 0.2);
+    outline-offset: 2px;
+  }
+`;
+
+export const TextArea = styled.textarea`
+  min-height: 90px;
+  resize: vertical;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font: inherit;
+  line-height: 1.5;
 `;
