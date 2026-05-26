@@ -13,6 +13,8 @@ describe('Hero', () => {
   it('renderiza headline', () => {
     render(<Hero />, { wrapper: Wrapper });
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/da tecnologia/i)).toBeInTheDocument();
+    expect(screen.queryByText(/da precisão/i)).not.toBeInTheDocument();
   });
 
   it('renderiza CTA de produtos', () => {

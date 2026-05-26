@@ -37,6 +37,8 @@ export interface SelectProps {
   id?: string;
   disabled?: boolean;
   name?: string;
+  required?: boolean;
+  onBlur?: () => void;
 }
 
 const Wrapper = styled.div<{ $tokens: BrandTokens }>`
@@ -51,9 +53,19 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.07em;
   text-transform: uppercase;
+`;
+
+const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
+  color: inherit;
+  font-weight: 700;
+`;
+
+const ControlShell = styled.div`
+  position: relative;
+  min-width: 0;
 `;
 
 const Trigger = styled.button<{ $tokens: BrandTokens; $invalid: boolean; $open: boolean }>`
@@ -79,9 +91,10 @@ const Trigger = styled.button<{ $tokens: BrandTokens; $invalid: boolean; $open: 
   font-size: 14px;
   text-align: left;
   cursor: pointer;
+  outline: none;
   box-shadow: ${({ $tokens, $invalid, $open }) =>
     $open
-      ? `0 0 0 3px ${$invalid ? `${$tokens.colors.danger}18` : `${$tokens.colors.accent}18`}`
+      ? `inset 0 0 0 1px ${$invalid ? `${$tokens.colors.danger}28` : `${$tokens.colors.accent}28`}`
       : 'none'};
   transition:
     border-color ${({ $tokens }) => $tokens.motion.base} ease,
@@ -94,21 +107,31 @@ const Trigger = styled.button<{ $tokens: BrandTokens; $invalid: boolean; $open: 
     background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
   }
 
+  &:focus-visible {
+    border-color: ${({ $tokens, $invalid }) =>
+      $invalid ? $tokens.colors.danger : $tokens.colors.accentStrong};
+    box-shadow: inset 0 0 0 1px
+      ${({ $tokens, $invalid }) =>
+        $invalid ? `${$tokens.colors.danger}28` : `${$tokens.colors.accent}28`};
+  }
+
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.56;
-    filter: saturate(0.72);
+    border-color: ${({ $tokens }) => $tokens.colors.border};
+    background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
+    color: ${({ $tokens }) => $tokens.colors.textSoft};
+    opacity: 1;
   }
 `;
 
-const TriggerText = styled.span<{ $tokens: BrandTokens; $placeholder: boolean }>`
+const TriggerText = styled.span<{ $tokens: BrandTokens; $placeholder: boolean; $disabled: boolean }>`
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: ${({ $tokens, $placeholder }) =>
-    $placeholder ? $tokens.colors.textMuted : $tokens.colors.text};
+  color: ${({ $tokens, $placeholder, $disabled }) =>
+    $disabled ? $tokens.colors.textSoft : $placeholder ? $tokens.colors.textMuted : $tokens.colors.text};
 `;
 
 const ChevronWrap = styled.span<{ $open: boolean; $tokens: BrandTokens }>`
@@ -225,6 +248,8 @@ export function Select({
   placeholder = 'Selecione...',
   id,
   disabled = false,
+  required = false,
+  onBlur,
 }: SelectProps) {
   const { tokens } = useDesignSystem();
   const autoId = useId();
@@ -254,69 +279,77 @@ export function Select({
 
   return (
     <Wrapper $tokens={tokens} ref={wrapperRef}>
-      {label ? <Label $tokens={tokens} htmlFor={fieldId}>{label}</Label> : null}
-      <Trigger
-        id={fieldId}
-        type="button"
-        $tokens={tokens}
-        $invalid={invalid}
-        $open={open}
-        onClick={() => { if (!disabled) setOpen((previous) => !previous); }}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={listboxId}
-        disabled={disabled}
-      >
-        <TriggerText $tokens={tokens} $placeholder={!selectedOption}>
-          {selectedOption?.label ?? placeholder}
-        </TriggerText>
-        <ChevronWrap $open={open} $tokens={tokens}>
-          <ChevronDownIcon />
-        </ChevronWrap>
-      </Trigger>
-
-      {open ? (
-        <Dropdown $tokens={tokens}>
-          <OptionsList id={listboxId} role="listbox" aria-label={label ?? placeholder}>
-            {options.map((option) => {
-              const selected = option.value === value;
-
-              return (
-                <li key={option.value} role="presentation">
-                  <OptionButton
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    disabled={option.disabled}
-                    $tokens={tokens}
-                    $selected={selected}
-                    onClick={() => {
-                      if (option.disabled) {
-                        return;
-                      }
-
-                      onChange(option.value);
-                      setOpen(false);
-                    }}
-                  >
-                    <OptionText>
-                      <OptionLabel>{option.label}</OptionLabel>
-                      {option.description ? (
-                        <OptionDescription $tokens={tokens}>
-                          {option.description}
-                        </OptionDescription>
-                      ) : null}
-                    </OptionText>
-                    <CheckWrap $tokens={tokens} $visible={selected}>
-                      <CheckIcon />
-                    </CheckWrap>
-                  </OptionButton>
-                </li>
-              );
-            })}
-          </OptionsList>
-        </Dropdown>
+      {label ? (
+        <Label $tokens={tokens} htmlFor={fieldId}>
+          {label}
+          {required ? <> <RequiredMark $tokens={tokens}>(*)</RequiredMark></> : null}
+        </Label>
       ) : null}
+      <ControlShell>
+        <Trigger
+          id={fieldId}
+          type="button"
+          $tokens={tokens}
+          $invalid={invalid}
+          $open={open}
+          onClick={() => { if (!disabled) setOpen((previous) => !previous); }}
+          onBlur={onBlur}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          disabled={disabled}
+        >
+          <TriggerText $tokens={tokens} $placeholder={!selectedOption} $disabled={disabled}>
+            {selectedOption?.label ?? placeholder}
+          </TriggerText>
+          <ChevronWrap $open={open} $tokens={tokens}>
+            <ChevronDownIcon />
+          </ChevronWrap>
+        </Trigger>
+
+        {open ? (
+          <Dropdown $tokens={tokens}>
+            <OptionsList id={listboxId} role="listbox" aria-label={label ?? placeholder}>
+              {options.map((option) => {
+                const selected = option.value === value;
+
+                return (
+                  <li key={option.value} role="presentation">
+                    <OptionButton
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      disabled={option.disabled}
+                      $tokens={tokens}
+                      $selected={selected}
+                      onClick={() => {
+                        if (option.disabled) {
+                          return;
+                        }
+
+                        onChange(option.value);
+                        setOpen(false);
+                      }}
+                    >
+                      <OptionText>
+                        <OptionLabel>{option.label}</OptionLabel>
+                        {option.description ? (
+                          <OptionDescription $tokens={tokens}>
+                            {option.description}
+                          </OptionDescription>
+                        ) : null}
+                      </OptionText>
+                      <CheckWrap $tokens={tokens} $visible={selected}>
+                        <CheckIcon />
+                      </CheckWrap>
+                    </OptionButton>
+                  </li>
+                );
+              })}
+            </OptionsList>
+          </Dropdown>
+        ) : null}
+      </ControlShell>
 
       {error ? <Message $tokens={tokens} $tone="error">{error}</Message> : null}
       {!error && hint ? <Message $tokens={tokens} $tone="hint">{hint}</Message> : null}

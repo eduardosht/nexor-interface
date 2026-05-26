@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AlertTriangle, FileText, Lock, Mail, MessageCircleQuestion, Send, UserRound } from 'lucide-react';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
+  createTrainingReport,
   fetchOrders,
   fetchWorkflowForms,
   getAthletePrimaryOrder,
@@ -102,16 +104,20 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
   return 0;
 }
 
-function getWorkflowStepKey(form: DemoWorkflowForm): JourneyStepKey {
+function getWorkflowStepKey(form: DemoWorkflowForm): JourneyStepKey | null {
+  if (form.templateKey === 'customer_new_user_onboarding') {
+    return null;
+  }
+
   if (form.templateKey === 'customer_pre_consultation_intake') {
-    return 'prerequisite';
+    return form.stepKey === 'pre_requisite_pending' ? 'prerequisite' : 'consultation';
   }
 
   if (form.templateKey === 'lab_review_by_dentist' || form.templateKey === 'dentist_review_by_lab') {
     return 'laboratory';
   }
 
-  if (form.templateKey === 'dentist_review_by_customer') {
+  if (form.templateKey === 'dentist_review_by_customer' || form.templateKey === 'customer_training_report') {
     return 'follow_up';
   }
 
@@ -169,6 +175,7 @@ export function Jornada() {
   const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
   const [workflowFormsLoading, setWorkflowFormsLoading] = useState(false);
   const [workflowFormsError, setWorkflowFormsError] = useState('');
+  const [trainingReportCreating, setTrainingReportCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [contactName, setContactName] = useState('');
@@ -212,6 +219,7 @@ export function Jornada() {
 
   const primaryOrder = useMemo(() => getAthletePrimaryOrder(orders), [orders]);
   const selectedFormsOrder = primaryOrder;
+  const shouldRedirectToOnboarding = selectedFormsOrder?.stage === 'new_user_onboarding';
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
   const orderProblem = useMemo(
@@ -224,6 +232,10 @@ export function Jornada() {
 
     for (const form of workflowForms) {
       const stepKey = getWorkflowStepKey(form);
+      if (!stepKey) {
+        continue;
+      }
+
       grouped.set(stepKey, [...(grouped.get(stepKey) ?? []), form]);
     }
 
@@ -233,6 +245,12 @@ export function Jornada() {
   const isPrerequisiteStep = currentStep?.key === 'prerequisite';
   const isConsultationStep = currentStep?.key === 'consultation';
   const isPurchaseStep = currentStep?.key === 'purchase';
+  const canCreateTrainingReport =
+    currentStep?.key === 'follow_up' &&
+    currentStepForms.some((form) => form.templateKey === 'customer_training_report') &&
+    currentStepForms
+      .filter((form) => form.templateKey === 'customer_training_report')
+      .every((form) => form.status === 'submitted');
   const contactMailto = useMemo(() => {
     const body = [
       `Nome: ${contactName}`,
@@ -245,6 +263,24 @@ export function Jornada() {
 
     return `mailto:contato@necoradvance.com.br?subject=${encodeURIComponent(contactSubject)}&body=${encodeURIComponent(body)}`;
   }, [contactEmail, contactMessage, contactName, contactSubject, orderProblem, selectedFormsOrder]);
+
+  async function handleCreateTrainingReport() {
+    if (!selectedFormsOrder || !token || trainingReportCreating) {
+      return;
+    }
+
+    setTrainingReportCreating(true);
+    setWorkflowFormsError('');
+
+    try {
+      const nextForm = await createTrainingReport(selectedFormsOrder.id, token);
+      setWorkflowForms((current) => [...current, nextForm]);
+    } catch {
+      setWorkflowFormsError('Não foi possível liberar um novo relatório de treino agora.');
+    } finally {
+      setTrainingReportCreating(false);
+    }
+  }
 
   useEffect(() => {
     if (!selectedFormsOrder || !orderProblem) {
@@ -296,6 +332,10 @@ export function Jornada() {
       active = false;
     };
   }, [selectedFormsOrder?.id, token]);
+
+  if (!loading && shouldRedirectToOnboarding) {
+    return <Navigate to="/painel/biteplaner/onboarding" replace />;
+  }
 
   return (
     <S.Page>
@@ -448,6 +488,15 @@ export function Jornada() {
                     ? 'Preencha o intake pré-consulta do Biteplaner. Após o envio do cadastro e consentimentos, a jornada avança para a escolha da clínica na consulta inicial.'
                     : currentStep.description}
                 </S.Description>
+                {canCreateTrainingReport ? (
+                  <S.SecondaryActionButton
+                    type="button"
+                    disabled={trainingReportCreating}
+                    onClick={handleCreateTrainingReport}
+                  >
+                    {trainingReportCreating ? 'Liberando...' : 'Novo relatório de treino'}
+                  </S.SecondaryActionButton>
+                ) : null}
               </S.StepFormsHeader>
               <S.StepFormsGrid>
                 <S.StepFormsGroup data-testid={`journey-step-forms-${currentStep.key}`}>

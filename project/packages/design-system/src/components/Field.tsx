@@ -44,7 +44,7 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 
@@ -54,16 +54,23 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   }
 `;
 
-const ControlWrap = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
+const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
+  color: inherit;
+  font-weight: 700;
+`;
+
+const ControlWrap = styled.div<{ $tokens: BrandTokens; $invalid: boolean; $disabled: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ $tokens }) => $tokens.spacing.form.controlGap};
-  background: ${({ $tokens, $invalid }) =>
-    $invalid ? $tokens.colors.dangerBg : $tokens.colors.surface};
+  background: ${({ $tokens, $invalid, $disabled }) =>
+    $disabled ? $tokens.colors.surfaceSubtle : $invalid ? $tokens.colors.dangerBg : $tokens.colors.surface};
   border: 1px solid
-    ${({ $tokens, $invalid }) =>
-      $invalid ? $tokens.colors.dangerBorder : $tokens.colors.border};
+    ${({ $tokens, $invalid, $disabled }) =>
+      $disabled ? $tokens.colors.border : $invalid ? $tokens.colors.dangerBorder : $tokens.colors.border};
   border-radius: ${({ $tokens }) => $tokens.radius.md};
+  color: ${({ $tokens, $disabled }) => ($disabled ? $tokens.colors.textSoft : $tokens.colors.text)};
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'text')};
   padding: 0 12px;
   transition:
     border-color ${({ $tokens }) => $tokens.motion.base} ease,
@@ -73,9 +80,9 @@ const ControlWrap = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
   &:focus-within {
     border-color: ${({ $tokens, $invalid }) =>
       $invalid ? $tokens.colors.danger : $tokens.colors.accentStrong};
-    box-shadow: 0 0 0 3px
+    box-shadow: inset 0 0 0 1px
       ${({ $tokens, $invalid }) =>
-        $invalid ? `${$tokens.colors.danger}18` : `${$tokens.colors.accent}18`};
+        $invalid ? `${$tokens.colors.danger}24` : `${$tokens.colors.accent}24`};
   }
 `;
 
@@ -110,6 +117,12 @@ const InputControl = styled.input<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
+
+  &:disabled {
+    color: ${({ $tokens }) => $tokens.colors.textSoft};
+    cursor: not-allowed;
+    -webkit-text-fill-color: ${({ $tokens }) => $tokens.colors.textSoft};
+  }
 `;
 
 const SelectControl = styled.select<{ $tokens: BrandTokens }>`
@@ -120,6 +133,12 @@ const SelectControl = styled.select<{ $tokens: BrandTokens }>`
   font-size: 14px;
   appearance: none;
   cursor: pointer;
+
+  &:disabled {
+    color: ${({ $tokens }) => $tokens.colors.textSoft};
+    cursor: not-allowed;
+    -webkit-text-fill-color: ${({ $tokens }) => $tokens.colors.textSoft};
+  }
 `;
 
 const TextareaControl = styled.textarea<{ $tokens: BrandTokens }>`
@@ -131,6 +150,13 @@ const TextareaControl = styled.textarea<{ $tokens: BrandTokens }>`
   line-height: 1.6;
   resize: vertical;
   padding: 12px 0;
+
+  &:disabled {
+    color: ${({ $tokens }) => $tokens.colors.textSoft};
+    cursor: not-allowed;
+    resize: none;
+    -webkit-text-fill-color: ${({ $tokens }) => $tokens.colors.textSoft};
+  }
 `;
 
 const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
@@ -170,11 +196,18 @@ export const Field = forwardRef<
   const autoId = useId();
   const fieldId = id ?? autoId;
   const invalid = Boolean(error);
+  const required = Boolean((rest as { required?: boolean }).required);
+  const disabled = Boolean((rest as { disabled?: boolean }).disabled);
 
   return (
     <Wrapper $tokens={tokens}>
-      {label ? <Label $tokens={tokens} htmlFor={fieldId}>{label}</Label> : null}
-      <ControlWrap $tokens={tokens} $invalid={invalid}>
+      {label ? (
+        <Label $tokens={tokens} htmlFor={fieldId}>
+          {label}
+          {required ? <> <RequiredMark $tokens={tokens}>(*)</RequiredMark></> : null}
+        </Label>
+      ) : null}
+      <ControlWrap $tokens={tokens} $invalid={invalid} $disabled={disabled}>
         {leadingIcon ? <IconSlot $tokens={tokens}>{leadingIcon}</IconSlot> : null}
         {as === 'select' ? (
           <SelectControl

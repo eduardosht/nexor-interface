@@ -146,6 +146,10 @@ export type DemoWorkflowFormSummary = {
   hasComment: boolean;
   responseCount: number;
   submittedAt: string | null;
+  blocked?: boolean;
+  blocker?: string;
+  fieldCount?: number;
+  deviceUsage?: string;
 };
 
 export type DemoWorkflowForm = {
@@ -320,9 +324,11 @@ export const STAGE_LABELS: Record<string, string> = {
 };
 
 export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
+  athleteRegistered: 'user',
   athlete: 'user',
   athletePrerequisite: 'user',
   athleteScheduling: 'user',
+  athletePreConsultation: 'user',
   athleteClinicalDecision: 'user',
   athleteDentistForms: 'user',
   athletePayment: 'user',
@@ -412,7 +418,11 @@ export function getAthleteNextPath(order: DemoOrderSummary | null) {
     return '/painel/biteplaner/jornada';
   }
 
-  if (order.status === 'registration_started') {
+  if (order.stage === 'new_user_onboarding') {
+    return '/painel/biteplaner/onboarding';
+  }
+
+  if (order.status === 'registration_started' || order.stage === 'pre_requisite_pending') {
     return '/painel/pre-requisito';
   }
 
@@ -653,6 +663,14 @@ export async function submitWorkflowForm(
   return api.post<DemoWorkflowForm>(
     `/v1/orders/${orderId}/workflow-forms/${workflowFormId}/submit`,
     { payload },
+    token
+  );
+}
+
+export async function createTrainingReport(orderId: string, token?: string) {
+  return api.post<DemoWorkflowForm>(
+    `/v1/orders/${orderId}/workflow-forms/training-report`,
+    {},
     token
   );
 }

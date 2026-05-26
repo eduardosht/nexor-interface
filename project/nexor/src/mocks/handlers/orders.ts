@@ -172,6 +172,16 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/workflow-forms/training-report', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      applyOrderAction(request.params.orderId, {
+        type: 'create-training-report'
+      }, { requestHeaders: request.requestHeaders })
+    )
+  ));
+
   server.post('/v1/orders/:orderId/workflow-forms/:workflowFormId/revise', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 

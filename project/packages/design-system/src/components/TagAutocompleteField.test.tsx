@@ -28,25 +28,31 @@ function renderField(value: string[] = [], onChange = vi.fn()) {
 describe('TagAutocompleteField', () => {
   it('adds a matching option with Enter', () => {
     const handleChange = renderField();
+    const input = screen.getByLabelText('Esporte ou atividade');
 
-    fireEvent.change(screen.getByLabelText('Esporte ou atividade'), {
+    input.focus();
+    fireEvent.change(input, {
       target: { value: 'box' },
     });
-    fireEvent.keyDown(screen.getByLabelText('Esporte ou atividade'), { key: 'Enter' });
+    fireEvent.keyDown(input, { key: 'Enter' });
 
     expect(handleChange).toHaveBeenCalledWith(['boxe']);
+    expect(input).not.toHaveFocus();
   });
 
   it('adds a matching option by click and avoids duplicates', () => {
     const handleChange = renderField(['boxe']);
+    const input = screen.getByLabelText('Esporte ou atividade');
 
-    fireEvent.change(screen.getByLabelText('Esporte ou atividade'), {
+    input.focus();
+    fireEvent.change(input, {
       target: { value: 'nat' },
     });
     fireEvent.click(screen.getByRole('option', { name: 'Natacao' }));
 
     expect(handleChange).toHaveBeenCalledWith(['boxe', 'natacao']);
     expect(screen.queryByRole('option', { name: 'Boxe' })).not.toBeInTheDocument();
+    expect(input).not.toHaveFocus();
   });
 
   it('removes selected tags through the delete action', () => {

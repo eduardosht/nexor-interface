@@ -21,10 +21,12 @@ export type RadioQuestionGroupProps = {
   options: RadioQuestionOption[];
   onChange: (value: string) => void;
   hint?: ReactNode;
+  error?: ReactNode;
   required?: boolean;
   variant?: RadioQuestionVariant;
   columns?: RadioQuestionColumns;
   inline?: boolean;
+  onBlur?: () => void;
 };
 
 const Wrapper = styled.fieldset<{ $tokens: BrandTokens; $variant: RadioQuestionVariant; $inline: boolean }>`
@@ -49,12 +51,12 @@ const Legend = styled.legend<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
-  color: ${({ $tokens }) => $tokens.colors.danger};
+  color: inherit;
 `;
 
 const Hint = styled.p<{ $tokens: BrandTokens }>`
@@ -64,6 +66,14 @@ const Hint = styled.p<{ $tokens: BrandTokens }>`
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 13px;
   line-height: 1.45;
+`;
+
+const ErrorText = styled.span<{ $tokens: BrandTokens }>`
+  grid-column: 1 / -1;
+  color: ${({ $tokens }) => $tokens.colors.danger};
+  font-family: ${({ $tokens }) => $tokens.fonts.body};
+  font-size: 10px;
+  line-height: 1.4;
 `;
 
 const Options = styled.div<{
@@ -193,7 +203,7 @@ const OptionTitle = styled.span<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
 `;
 
@@ -211,10 +221,12 @@ export function RadioQuestionGroup({
   options,
   onChange,
   hint,
+  error,
   required = false,
   variant = 'inline',
   columns,
   inline = false,
+  onBlur,
 }: RadioQuestionGroupProps) {
   const { tokens } = useDesignSystem();
   const autoName = useId();
@@ -223,9 +235,9 @@ export function RadioQuestionGroup({
     columns ?? (variant === 'cards' ? 2 : (Math.min(options.length, 3) as RadioQuestionColumns));
 
   return (
-    <Wrapper $tokens={tokens} $variant={variant} $inline={inline}>
+    <Wrapper $tokens={tokens} $variant={variant} $inline={inline} onBlur={onBlur}>
       <Legend $tokens={tokens}>
-        {label} {required ? <RequiredMark $tokens={tokens}>*</RequiredMark> : null}
+        {label} {required ? <RequiredMark $tokens={tokens}>(*)</RequiredMark> : null}
       </Legend>
       {hint ? <Hint $tokens={tokens}>{hint}</Hint> : null}
       <Options
@@ -272,6 +284,7 @@ export function RadioQuestionGroup({
           );
         })}
       </Options>
+      {error ? <ErrorText $tokens={tokens} role="alert">{error}</ErrorText> : null}
     </Wrapper>
   );
 }

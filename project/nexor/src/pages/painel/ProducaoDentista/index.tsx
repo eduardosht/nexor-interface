@@ -17,11 +17,10 @@ import 'leaflet/dist/leaflet.css';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-   completeProductionRequest,
+  completeProductionRequest,
   fetchOrders,
   fetchWorkflowForms,
   getAuthToken,
-  saveProductionRequestDraft,
   type DemoWorkflowForm,
   type DemoLicensedLabSelection,
   type DemoOrderSummary,
@@ -103,20 +102,20 @@ const STEP_DEFINITIONS = [
   {
     key: 'anamnesis',
     label: 'Avaliação inicial / anamnese',
-    description: 'Revise, complemente e baixe a versão final para manter o prontuario sob sua guarda.',
+    description: 'Revise e complemente a avaliação compartilhada antes da geração da anamnese final.',
     shortLabel: 'Revisão clínica',
+  },
+  {
+    key: 'anamnesis-summary',
+    label: 'Resumo anamnese',
+    description: 'Revise todos os dados clínicos e registre o resumo antes de baixar a anamnese em PDF.',
+    shortLabel: 'Resumo clínico',
   },
   {
     key: 'production-request',
     label: 'Solicitação de produção',
-    description: 'Preencha a solicitação clínica e adicione observações extras para o laboratório.',
+    description: 'Preencha a solicitação clínica, observações e anexos obrigatórios para o laboratório.',
     shortLabel: 'Formulário produtivo',
-  },
-  {
-    key: 'attachments',
-    label: 'Anexos obrigatórios',
-    description: 'Anexe o escaneamento 3D intraoral e a prescrição assinada e carimbada.',
-    shortLabel: 'Arquivos obrigatórios',
   },
   {
     key: 'lab-selection',
@@ -151,16 +150,6 @@ function fileListFromName(fileName: string): UploadFieldFile[] {
   ];
 }
 
-function getDentistSummaryFromIntake(form: DemoWorkflowForm | undefined) {
-  const dentistPayload =
-    form?.payload && typeof form.payload === 'object' && !Array.isArray(form.payload)
-      ? (form.payload.dentist as Record<string, unknown> | undefined)
-      : undefined;
-  const summary = dentistPayload?.initialEvaluationSummary;
-
-  return typeof summary === 'string' ? summary.trim() : '';
-}
-
 function hasDentistComplement(form: DemoWorkflowForm | undefined) {
   if (!form) {
     return false;
@@ -184,6 +173,37 @@ function hasDentistComplement(form: DemoWorkflowForm | undefined) {
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getStringValue(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getDentistSystemValues(backendUser: unknown, sessionEmail?: string | null) {
+  const user = isRecord(backendUser) ? backendUser : {};
+  const productRoles = Array.isArray(user.productRoles) ? user.productRoles : [];
+  const dentistRole = productRoles.find((role) => {
+    if (!isRecord(role)) {
+      return false;
+    }
+
+    return role.productKey === 'biteplaner' && role.role === 'dentist';
+  });
+  const metadata = isRecord(dentistRole) && isRecord(dentistRole.metadata) ? dentistRole.metadata : {};
+  const email = getStringValue(user.email) || getStringValue(sessionEmail);
+  const phone = getStringValue(user.phone);
+  const contact = [email, phone].filter(Boolean).join(' / ');
+
+  return {
+    evaluationDate: new Date().toLocaleDateString('pt-BR'),
+    dentistName: getStringValue(metadata.fullName) || getStringValue(user.fullName) || email,
+    dentistCro: getStringValue(metadata.croNumber),
+    dentistProfessionalContact: contact,
+  };
+}
+
 function RatingStars({ score, label }: { score: number; label: string }) {
   const roundedScore = Math.round(score);
 
@@ -204,10 +224,9 @@ function RatingStars({ score, label }: { score: number; label: string }) {
 export function ProducaoDentista() {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, backendUser } = useAuth();
   const token = getAuthToken(session);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -304,9 +323,18 @@ export function ProducaoDentista() {
     attachmentsCompleted &&
     labSelectionCompleted;
 
-  const stepCompletion = [anamnesisCompleted, productionRequestCompleted, attachmentsCompleted, finalReviewCompleted];
+  const stepCompletion = [
+    dentistReviewCompleted,
+    anamnesisCompleted,
+    productionRequestCompleted && attachmentsCompleted,
+    finalReviewCompleted,
+  ];
   const currentStepData = STEP_DEFINITIONS[currentStep];
   const currentStepCompleted = stepCompletion[currentStep] ?? false;
+  const dentistSystemValues = useMemo(
+    () => getDentistSystemValues(backendUser, session?.user.email),
+    [backendUser, session?.user.email]
+  );
 
   const mapCenter = useMemo<[number, number]>(() => {
     if (selectedLab) {
@@ -331,38 +359,12 @@ export function ProducaoDentista() {
       return;
     }
 
-    const nextSummary = getDentistSummaryFromIntake(nextIntakeForm);
-    setDraft((current) => ({
-      ...current,
-      anamnesisSummary: current.anamnesisSummary.trim() ? current.anamnesisSummary : nextSummary,
-    }));
     setCurrentStep((current) => (current === 0 ? 1 : current));
   }
 
   function handleSearchLabs() {
     const nextLabs = listLicensedLabsByCep(labCep);
     setVisibleLabs(nextLabs);
-  }
-
-  async function handleSaveDraft() {
-    if (!token || !orderId) {
-      return;
-    }
-
-    setSaving(true);
-    setNotice('');
-    setError('');
-
-    try {
-      const response = await saveProductionRequestDraft(orderId, draft, token);
-      setOrder(response.order);
-      setDraft(response.order.productionRequestDraft ?? draft);
-      setNotice('Rascunho salvo com sucesso.');
-    } catch {
-      setError('Não foi possível salvar o rascunho da solicitação de produção.');
-    } finally {
-      setSaving(false);
-    }
   }
 
   async function handleComplete() {
@@ -377,7 +379,9 @@ export function ProducaoDentista() {
 
     try {
       const finalizedDraft = { ...draft, anamnesisDownloaded: true };
-      startFinalAnamnesisPdfGeneration(finalizedDraft);
+      if (!draft.anamnesisDownloaded) {
+        startFinalAnamnesisPdfGeneration(finalizedDraft);
+      }
       updateDraft({ anamnesisDownloaded: true });
       await completeProductionRequest(orderId, finalizedDraft, token);
       navigate('/painel/biteplaner?mode=dentist', {
@@ -451,6 +455,16 @@ export function ProducaoDentista() {
       worker.terminate();
       setPdfError('Não foi possível iniciar a geração do PDF final da anamnese.');
     }
+  }
+
+  function handleNextStep() {
+    if (currentStep === 1) {
+      const nextDraft = { ...draft, anamnesisDownloaded: true };
+      startFinalAnamnesisPdfGeneration(nextDraft);
+      updateDraft({ anamnesisDownloaded: true });
+    }
+
+    setCurrentStep((current) => Math.min(STEP_DEFINITIONS.length - 1, current + 1));
   }
 
   if (!orderId) {
@@ -576,18 +590,6 @@ export function ProducaoDentista() {
               <FormSection padding="lg">
                 {currentStep === 0 ? (
                   <>
-                    <S.NoticeBox>
-                      <S.NoticeTitle>Avaliação clínica Biteplaner consolidada</S.NoticeTitle>
-                      <S.NoticeText>
-                        Este fluxo substitui a duplicidade entre cadastro de usuário e avaliação inicial:
-                        a conta Nexor permanece simples, enquanto anamnese, achados clínicos e decisão
-                        odontológica ficam no domínio Biteplaner. Ao finalizar esta etapa, baixe
-                        obrigatoriamente a anamnese final. A guarda principal do prontuário permanece
-                        sob responsabilidade do dentista; a plataforma retem o pacote operacional apenas
-                        pelo tempo necessário para entrega, rastreabilidade e auditoria.
-                      </S.NoticeText>
-                    </S.NoticeBox>
-
                     <WorkflowFormsPanel
                       orderId={order.id}
                       token={token}
@@ -596,32 +598,37 @@ export function ProducaoDentista() {
                       onFormsChange={handleWorkflowFormsChange}
                       variant="embedded"
                       actorRole="dentist"
+                      defaultValues={dentistSystemValues}
+                      showFormHeaderStatus={false}
                     />
 
-                    {dentistReviewCompleted ? (
-                      <>
-                        <DentalAnamnesisRecord
-                          order={order}
-                          intakeForm={intakeForm}
-                          draft={draft}
-                          onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
-                        />
-
-                        {draft.anamnesisDownloaded ? (
-                          <S.ActionsRow>
-                            <StatusIndicator color="#15803D" label="Anamnese baixada" />
-                          </S.ActionsRow>
-                        ) : null}
-                      </>
-                    ) : (
+                    {!dentistReviewCompleted ? (
                       <S.EmptyState>
                         Revise e complemente a avaliação inicial compartilhada antes de preencher a anamnese final.
                       </S.EmptyState>
-                    )}
+                    ) : null}
                   </>
                 ) : null}
 
                 {currentStep === 1 ? (
+                  <>
+                    <DentalAnamnesisRecord
+                      order={order}
+                      intakeForm={intakeForm}
+                      draft={draft}
+                      onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
+                    />
+
+                    {draft.anamnesisDownloaded ? (
+                      <S.ActionsRow>
+                        <StatusIndicator color="#15803D" label="Anamnese baixada" />
+                      </S.ActionsRow>
+                    ) : null}
+                  </>
+                ) : null}
+
+                {currentStep === 2 ? (
+                  <>
                   <FieldsGrid>
                     <Field
                       as="textarea"
@@ -640,10 +647,7 @@ export function ProducaoDentista() {
                       onChange={(event: FieldChangeEvent) => updateDraft({ labNotes: event.target.value })}
                     />
                   </FieldsGrid>
-                ) : null}
 
-                {currentStep === 2 ? (
-                  <>
                     <S.AttachmentGrid>
                       <UploadField
                         label="Escaneamento 3D intraoral"
@@ -768,9 +772,6 @@ export function ProducaoDentista() {
                     >
                       Voltar
                     </Button>
-                    <Button type="button" variant="secondary" disabled={saving} onClick={() => void handleSaveDraft()}>
-                      {saving ? 'Salvando...' : 'Salvar rascunho'}
-                    </Button>
                   </S.SecondaryActions>
 
                   <S.SecondaryActions>
@@ -778,7 +779,7 @@ export function ProducaoDentista() {
                       <Button
                         type="button"
                         disabled={!currentStepCompleted}
-                        onClick={() => setCurrentStep((current) => Math.min(STEP_DEFINITIONS.length - 1, current + 1))}
+                        onClick={handleNextStep}
                       >
                         Próximo
                       </Button>

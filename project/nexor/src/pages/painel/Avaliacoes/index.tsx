@@ -233,6 +233,7 @@ export function Avaliacoes() {
   const [selectedSurvey, setSelectedSurvey] = useState<{ order: DemoOrderSummary; form: DemoWorkflowForm } | null>(null);
   const [surveyPayload, setSurveyPayload] = useState<Record<string, string>>({});
   const [surveyError, setSurveyError] = useState('');
+  const [surveyFieldErrors, setSurveyFieldErrors] = useState<Record<string, string>>({});
   const [surveySubmitting, setSurveySubmitting] = useState(false);
   const pendingCarouselRef = useRef<HTMLDivElement | null>(null);
 
@@ -354,6 +355,7 @@ export function Avaliacoes() {
     setSelectedSurvey(entry);
     setSurveyPayload(getEmptyPayload(template));
     setSurveyError('');
+    setSurveyFieldErrors({});
   }
 
   function scrollPendingSurveys(direction: 'previous' | 'next') {
@@ -377,6 +379,64 @@ export function Avaliacoes() {
     setSelectedSurvey(null);
     setSurveyPayload({});
     setSurveyError('');
+    setSurveyFieldErrors({});
+  }
+
+  function getSurveyFieldError(field: BiteplanerReviewFieldDefinition) {
+    const value = surveyPayload[field.key] ?? '';
+
+    if (field.required && !String(value).trim()) {
+      return 'Campo obrigatório';
+    }
+
+    if (isScoreField(field) && String(value).trim()) {
+      const score = Number(value);
+
+      if (!Number.isFinite(score) || score < 1 || score > 5) {
+        return 'Escolha uma nota de 1 a 5 estrelas.';
+      }
+    }
+
+    return '';
+  }
+
+  function validateSurveyField(field: BiteplanerReviewFieldDefinition) {
+    const message = getSurveyFieldError(field);
+    setSurveyFieldErrors((current) => {
+      if (!message) {
+        const { [field.key]: _removed, ...next } = current;
+        return next;
+      }
+
+      return { ...current, [field.key]: message };
+    });
+  }
+
+  function clearSurveyFieldError(fieldKey: string) {
+    setSurveyFieldErrors((current) => {
+      if (!current[fieldKey]) {
+        return current;
+      }
+
+      const { [fieldKey]: _removed, ...next } = current;
+      return next;
+    });
+  }
+
+  function validateSurveyFields(): Record<string, string> {
+    if (!selectedTemplate) {
+      return {};
+    }
+
+    const nextErrors = selectedTemplate.fields.reduce<Record<string, string>>((result, field) => {
+      const message = getSurveyFieldError(field);
+      if (message) {
+        result[field.key] = message;
+      }
+      return result;
+    }, {});
+    setSurveyFieldErrors(nextErrors);
+    return nextErrors;
   }
 
   async function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
@@ -386,34 +446,17 @@ export function Avaliacoes() {
       return;
     }
 
-    const missingField = selectedTemplate.fields.find((field) => {
-      if (!field.required) {
-        return false;
-      }
-
-      return !String(surveyPayload[field.key] ?? '').trim();
-    });
+    const fieldErrors = validateSurveyFields();
+    const missingField = selectedTemplate.fields.find((field) => fieldErrors[field.key] === 'Campo obrigatório');
 
     if (missingField) {
       setSurveyError(`Preencha o campo obrigatório: ${missingField.label.replace(/^Nota - /, '')}.`);
       return;
     }
 
-    const invalidScoreField = selectedTemplate.fields.find((field) => {
-      if (!isScoreField(field)) {
-        return false;
-      }
-
-      const value = surveyPayload[field.key];
-
-      if (!String(value ?? '').trim()) {
-        return false;
-      }
-
-      const score = Number(value);
-
-      return !Number.isFinite(score) || score < 1 || score > 5;
-    });
+    const invalidScoreField = selectedTemplate.fields.find(
+      (field) => fieldErrors[field.key] === 'Escolha uma nota de 1 a 5 estrelas.'
+    );
 
     if (invalidScoreField) {
       setSurveyError(`Escolha uma nota de 1 a 5 estrelas em: ${invalidScoreField.label.replace(/^Nota - /, '')}.`);
@@ -699,11 +742,15 @@ export function Avaliacoes() {
                 <S.SurveyField key={field.key}>
                   <S.SurveyLabel>
                     {field.label}
-                    {field.required ? <span>*</span> : null}
+                    {field.required ? <span>(*)</span> : null}
                   </S.SurveyLabel>
                   {field.helpText ? <S.SmallText>{field.helpText}</S.SmallText> : null}
                   {isScoreField(field) ? (
-                    <S.ScoreOptions role="radiogroup" aria-label={field.label}>
+                    <S.ScoreOptions
+                      role="radiogroup"
+                      aria-label={field.label}
+                      onBlur={() => validateSurveyField(field)}
+                    >
                       {field.options?.map((option) => {
                         const selectedValue = Number(surveyPayload[field.key]);
                         const isSelected = surveyPayload[field.key] === String(option.value);
@@ -716,9 +763,10 @@ export function Avaliacoes() {
                             name={field.key}
                             value={option.value}
                             checked={surveyPayload[field.key] === String(option.value)}
-                            onChange={(event) =>
-                              setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }))
-                            }
+                            onChange={(event) => {
+                              clearSurveyFieldError(field.key);
+                              setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }));
+                            }}
                           />
                           <span>
                             <Star size={24} fill="currentColor" aria-hidden="true" />
@@ -732,18 +780,24 @@ export function Avaliacoes() {
                     </S.ScoreOptions>
                   ) : (
                     <S.TextArea
+                      aria-label={field.label}
                       value={surveyPayload[field.key] ?? ''}
                       maxLength={500}
-                      onChange={(event) =>
-                        setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }))
-                      }
+                      onBlur={() => validateSurveyField(field)}
+                      onChange={(event) => {
+                        clearSurveyFieldError(field.key);
+                        setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }));
+                      }}
                     />
                   )}
                   {isScoreField(field) && (field.minLabel || field.maxLabel) ? (
                     <S.ScaleHint>
                       <span>{field.minLabel}</span>
                       <span>{field.maxLabel}</span>
-                    </S.ScaleHint>
+                      </S.ScaleHint>
+                    ) : null}
+                  {surveyFieldErrors[field.key] ? (
+                    <S.FieldError role="alert">{surveyFieldErrors[field.key]}</S.FieldError>
                   ) : null}
                 </S.SurveyField>
               ))}

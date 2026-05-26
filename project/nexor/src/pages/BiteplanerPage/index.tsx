@@ -81,7 +81,7 @@ const USE_CASES = [
     secondaryIcon: Zap,
     secondaryIconTestId: 'biteplaner-strength-zap-icon',
     title: 'Força e alta intensidade',
-    body: 'Para quem percebe apertamento, tensão mandibular ou dores mais previsíveis em treinos de carga e esforço.',
+    body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
   },
   {
     icon: Volleyball,
@@ -104,7 +104,7 @@ const JOURNEY_STEPS = [
     icon: Trophy,
     label: 'Elegibilidade',
     title: 'Pré-consulta',
-    body: 'Informe esporte, rotina, histórico e sintomas para entender uma clínica licenciada.',
+    body: 'Informe esporte, rotina, histórico e sintomas para selecionar um dentista licenciado.',
   },
   {
     n: 3,
@@ -118,21 +118,21 @@ const JOURNEY_STEPS = [
     icon: Activity,
     label: 'Compra segura',
     title: 'Pagamento após aptidão',
-    body: 'Confirmada sua aptidão, o pagamento será realizado após a primeira consulta do dentista.',
+    body: 'Confirmada sua aptidão na primeira consulta, o pagamento será realizado através da plataforma Nexor.',
   },
   {
     n: 5,
     icon: SlidersHorizontal,
     label: 'Laboratório',
     title: 'Produção personalizada',
-    body: 'A fabricação segue a solicitação profissional, os padrões necessários e o processo operacional do produto.',
+    body: 'A fabricação ocorre após confirmação do pagamento.',
   },
   {
     n: 6,
     icon: BadgeCheck,
     label: 'Uso real',
     title: 'Adaptação e acompanhamento',
-    body: 'A entrega será feito pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
+    body: 'A instalação inicial do dispositivo será feita pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
   },
 ];
 
@@ -161,7 +161,7 @@ const COMPARISON = [
   {
     criterion: 'Proteção Articular (ATM)',
     generic: 'Não',
-    traditional: 'Parcial e indireta',
+    traditional: 'Indireta',
     biteplaner: 'Direta com redução de carga articular e controle do apertamento',
   },
   {
@@ -211,19 +211,19 @@ const COMPARISON = [
   {
     criterion: 'Eficácia',
     generic: 'Muito baixa',
-    traditional: 'Parcial',
-    biteplaner: 'Muito alta',
+    traditional: 'Parcial (apenas proteção dental)',
+    biteplaner: 'Muito alta (proteção dental e articular)',
   },
   {
     criterion: 'Relação custo-benefício em contato pleno',
     generic: 'Ruim',
     traditional: 'Muito favorável (redução de traumas graves)',
-    biteplaner: 'Altamente relevante nesse contexto, pois não se trata somente de dispositivo de impacto; protege ATM',
+    biteplaner: 'Altamente relevante pois protege a ATM além dos dentes',
   },
   {
     criterion: 'Relação custo-benefício em atividades de força/intensidade',
     generic: 'Ruim',
-    traditional: 'Limitada, pois não ataca o principal problema (aperto mandibular)',
+    traditional: 'Limitada, pois não ataca o problema dos traumas na ATM',
     biteplaner: 'Elevada, por atuar diretamente sobre a causa biomecânica da sobrecarga',
   },
   {
@@ -260,14 +260,14 @@ const EDUCATION = [
   {
     icon: Target,
     title: 'Limites claros',
-    body: 'Biteplaner não promete resultado universal. A proposta é clareza, diagnóstico, personalização, adaptação e acompanhamento.',
+    body: 'Biteplaner não promete resultados imediatos. A proposta é clareza, diagnóstico, personalização, adaptação e acompanhamento.',
   },
 ];
 
 const TRUST_POINTS = [
   { icon: ShieldCheck, title: 'Avaliação profissional antes da compra' },
   { icon: SlidersHorizontal, title: 'Plano com dentistas licenciados' },
-  { icon: Activity, title: 'Produção sob padrões excelência' },
+  { icon: Activity, title: 'Produção sob padrões de excelência' },
   { icon: Heart, title: 'Acompanhamento após recebimento' },
 ];
 
@@ -276,7 +276,7 @@ const CUSTOMER_COMMENTS = [
     name: 'Marina Costa',
     context: 'Jiu-jitsu',
     quote:
-      'O Biteplaner ficou firme sem incomodar durante o rola. Senti mais confiança para treinar sem ficar ajustando o protetor o tempo todo.',
+      'O Biteplaner ficou firme sem incomodar durante o rola. Senti mais confiança para treinar sem ficar ajustando o dispositivo o tempo todo.',
   },
   {
     name: 'Rafael Nunes',
@@ -315,11 +315,11 @@ const FAQ = [
   },
   {
     q: 'Eu pago antes da avaliação?',
-    a: 'Não. A compra do produto é feita após a primeira consulta do dentista, dado a aptidão clínica. Os valores da consulta odontológica serão feitos diretamente com o dentista.',
+    a: 'Não. A compra é feita através da plataforma Nexor, na primeira consulta com o dentista, após a confirmação de sua aptidão clínica.',
   },
   {
     q: 'E se eu não for considerado apto?',
-    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar tratamento necessário antes de aprovar a aptidão.',
+    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar algum tratamento necessário antes de aprovar a aptidão.',
   },
   {
     q: 'Para quais esportes o Biteplaner é indicado?',
@@ -336,10 +336,16 @@ export function BiteplanerPage() {
       <S.HeroSection>
         <S.HeroCopy>
           <S.ProductLabel>Biteplaner</S.ProductLabel>
-          <S.HeroTitle>PROTEÇÃO, CONFORTO E PERFORMANCE</S.HeroTitle>
+          <S.HeroTitle>
+            Segurança
+            <br />
+            Conforto
+            <br />
+            Performance
+          </S.HeroTitle>
           <S.HeroSubtitle>
-            Dispositivo bucal personalizado para atletas construído através de uma jornada com avaliação
-            odontológica, produção sob protocolo e acompanhamento profissional.
+            Dispositivo intraoral personalizado para atletas e praticantes de esportes construído através de uma
+            jornada com avaliação odontológica, produção sob protocolo e acompanhamento profissional.
           </S.HeroSubtitle>
           <S.HeroActions>
             <S.PrimaryCta to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
@@ -362,11 +368,11 @@ export function BiteplanerPage() {
       <S.SplitSection>
         <S.SectionIntro>
           <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-          <S.SectionTitle>Feito para a rotina real<br />de treino e competições</S.SectionTitle>
+          <S.SectionTitle>Feito para a rotina real<br />de treinos e competições</S.SectionTitle>
           <S.SectionLead>
-            Durante esportes de combate, força e alta intensidade, esportes coletivos de treinos e
-            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem
-            perceber. O Biteplaner modula as sobrecargas com protocolo, avaliação e acompanhamento.
+            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e
+            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O
+            Biteplaner modula as sobrecargas através de um processo tecnológico e avaliações periódicas.
           </S.SectionLead>
         </S.SectionIntro>
         <S.CardGrid>
@@ -403,8 +409,8 @@ export function BiteplanerPage() {
             <S.SectionLabel>Como funciona</S.SectionLabel>
             <S.SectionTitle>Da elegibilidade ao acompanhamento</S.SectionTitle>
             <S.SectionLead>
-              A jornada foi desenhada para que o atleta entenda o próximo passo, passe por avaliação
-              profissional e compre apenas quando houver objetivo declarado.
+              A jornada foi desenhada para que o atleta entenda o passo a passo e possa adquirir o dispositivo
+              após avaliação do dentista.
             </S.SectionLead>
           </S.SectionIntro>
           <S.JourneyGrid data-testid="biteplaner-process-journey">
@@ -479,7 +485,7 @@ export function BiteplanerPage() {
             <S.SectionTitle>Educação para decidir melhor</S.SectionTitle>
           </S.SectionIntro>
           <S.CardGrid>
-          {EDUCATION.map(({ icon: Icon, title, body }, index) => (
+            {EDUCATION.map(({ icon: Icon, title, body }, index) => (
               <S.FeatureCard
                 key={title}
                 custom={index}

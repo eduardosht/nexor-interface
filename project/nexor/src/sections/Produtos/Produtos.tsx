@@ -40,7 +40,7 @@ export function Produtos() {
           animate={inView ? 'visible' : 'hidden'}
         >
           <motion.div variants={fadeUp}>
-            <S.Title>Tecnologia feita<br />para atletas<span style={{ color: '#3C7C56' }}>.</span></S.Title>
+            <S.Title>Tecnologia feita para<br />atletas e praticantes esportivos<span style={{ color: '#3C7C56' }}>.</span></S.Title>
           </motion.div>
 
           <motion.div variants={fadeUp}>
@@ -90,7 +90,7 @@ export function Produtos() {
                 </div>
 
                 <S.ProductDesc>
-                  Moldera personalizada desenvolvida com protocolo científico para atletas que exigem o máximo do seu corpo.
+                  Dispositivo intraoral personalizado desenvolvido com protocolo científico para atletas que exigem o máximo do seu corpo.
                 </S.ProductDesc>
 
                 <S.FeatureList>

@@ -760,8 +760,8 @@ export function BiteplanerHub() {
   const athleteOrder = getAthletePrimaryOrder(orders);
   const athleteNextPath = athleteOrder ? getAthleteNextPath(athleteOrder) : '#';
   const athleteNextStepLabel = athleteOrder
-    ? athleteNextPath === '/painel/pre-requisito'
-      ? 'concluir o pre-requisito'
+    ? athleteNextPath === '/painel/biteplaner/onboarding'
+      ? 'concluir o cadastro Biteplaner'
       : athleteNextPath === '/painel/compra'
         ? 'confirmar a compra mock'
         : 'acompanhar a jornada completa'

@@ -27,18 +27,35 @@ export const Banner = styled.div`
 export const StepFlow = styled.section`
   display: grid;
   gap: 26px;
+  padding: 34px 42px 28px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(247, 255, 249, 0.72) 0%, rgba(255, 255, 255, 0) 36%),
+    ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 920px) {
+    padding: 24px;
+  }
+
+  @media (max-width: 560px) {
+    padding: 18px;
+  }
 `;
 
 export const SectionHeader = styled.div`
   display: grid;
-  gap: 6px;
+  gap: 12px;
+  max-width: 900px;
 `;
 
 export const SectionTitle = styled.h2`
   margin: 0;
+  color: #07142e;
   font-size: 22px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  font-weight: 850;
+  line-height: 1.15;
 `;
 
 export const StepList = styled.ol`

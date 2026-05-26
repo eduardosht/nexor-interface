@@ -90,6 +90,7 @@ const cepMarkerIcon = divIcon({
 });
 
 const DENTIST_PARTNER_PATH = '/parceiros#dentistas';
+const CLINIC_WHATSAPP_MESSAGE = 'Olá! Quero agendar uma consulta para uso do Biteplaner e saber valores.';
 
 type ConsultaInicialProps = {
   embedded?: boolean;
@@ -121,6 +122,26 @@ function getDefaultDentistReferralMessage(dentistPartnerUrl: string) {
     'A Nexor licencia dentistas para avaliação, acompanhamento e atendimento do processo.',
     `Caso tenha interesse, veja como funciona para dentistas em: ${dentistPartnerUrl}`,
   ].join('\n\n');
+}
+
+function getBrazilWhatsappPhone(phone: string) {
+  const digits = phone.replace(/\D/g, '');
+
+  if (digits.length < 10) {
+    return '';
+  }
+
+  return digits.startsWith('55') ? digits : `55${digits}`;
+}
+
+function getClinicSchedulingWhatsappHref(phone: string) {
+  const whatsappPhone = getBrazilWhatsappPhone(phone);
+
+  if (!whatsappPhone) {
+    return '';
+  }
+
+  return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(CLINIC_WHATSAPP_MESSAGE)}`;
 }
 
 function RatingStars({ score, label }: { score: number; label: string }) {
@@ -224,6 +245,9 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
   const dentistReferralSubject = 'Convite para conhecer o licenciamento Biteplaner para dentistas';
   const dentistReferralEmailHref = `mailto:?subject=${encodeURIComponent(dentistReferralSubject)}&body=${encodeURIComponent(dentistReferralMessage)}`;
   const dentistReferralWhatsappHref = `https://wa.me/?text=${encodeURIComponent(dentistReferralMessage)}`;
+  const clinicSchedulingWhatsappHref = activeLocation
+    ? getClinicSchedulingWhatsappHref(activeLocation.phone)
+    : '';
 
   const mapCenter = useMemo<[number, number]>(() => {
     if (activeLocation) {
@@ -410,6 +434,12 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.DetailTerm>Distancia</S.DetailTerm>
                     <S.DetailValue>{activeLocation.distanceKm.toFixed(1)} km</S.DetailValue>
                   </S.DetailList>
+                  {clinicSchedulingWhatsappHref ? (
+                    <S.ActionHref href={clinicSchedulingWhatsappHref} target="_blank" rel="noreferrer">
+                      <MessageCircle size={16} aria-hidden data-testid="clinic-whatsapp-icon" />
+                      Agendar pelo WhatsApp
+                    </S.ActionHref>
+                  ) : null}
                   <S.GuidanceCard>
                     Confirme quando a consulta estiver agendada. A consulta so será considerada realizada depois do
                     match de confirmação entre paciente e dentista.

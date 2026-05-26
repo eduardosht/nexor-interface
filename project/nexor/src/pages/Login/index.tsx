@@ -33,9 +33,11 @@ import * as S from './styles';
 
 const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
   { persona: 'partner', testId: 'demo-login-partner' },
+  { persona: 'athleteRegistered', testId: 'demo-login-athlete-registered' },
   { persona: 'athlete', testId: 'demo-login-athlete' },
   { persona: 'athletePrerequisite', testId: 'demo-login-athlete-prerequisite' },
   { persona: 'athleteScheduling', testId: 'demo-login-athlete-scheduling' },
+  { persona: 'athletePreConsultation', testId: 'demo-login-athlete-pre-consultation' },
   { persona: 'athleteClinicalDecision', testId: 'demo-login-athlete-clinical-decision' },
   { persona: 'athleteDentistForms', testId: 'demo-login-athlete-dentist-forms' },
   { persona: 'athletePayment', testId: 'demo-login-athlete-payment' },
@@ -61,9 +63,11 @@ const DEMO_TABS = [
     key: 'cliente',
     label: 'Cliente',
     personas: [
+      'athleteRegistered',
       'athlete',
       'athletePrerequisite',
       'athleteScheduling',
+      'athletePreConsultation',
       'athleteClinicalDecision',
       'athleteDentistForms',
       'athletePayment',

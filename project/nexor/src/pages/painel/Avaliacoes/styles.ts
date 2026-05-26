@@ -628,12 +628,18 @@ export const SurveyField = styled.div`
 export const SurveyLabel = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 500;
 
   > span {
-    color: #b91c1c;
+    color: inherit;
     margin-left: 3px;
   }
+`;
+
+export const FieldError = styled.span`
+  color: #b91c1c;
+  font-size: 10px;
+  line-height: 1.4;
 `;
 
 export const ScoreOptions = styled.div`

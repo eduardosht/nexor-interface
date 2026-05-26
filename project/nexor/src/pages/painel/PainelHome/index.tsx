@@ -204,7 +204,7 @@ export function PainelHome() {
         token
       );
       mergeProductRole(response.productRole);
-      navigate('/painel/pre-requisito');
+      navigate('/painel/biteplaner/onboarding');
     } catch {
       setRoleError('Não foi possível iniciar o Biteplaner agora.');
     } finally {

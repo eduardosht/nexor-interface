@@ -128,6 +128,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
   const painScore = Number(customer.averagePainLastWeek ?? 0);
   const stressScore = Number(customer.stressLevel ?? 0);
   const sleepScore = Number(customer.sleepQualityScore ?? 0);
+  const hasDentistReview = Object.keys(dentist).length > 0;
   const completion = calculateCompletion([
     customer.fullName,
     order.customer?.phone,
@@ -138,7 +139,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
     customer.sportRoutine,
     customer.sleepQualityScore,
     dentist.painlessMaxOpeningMm,
-    dentist.initialEvaluationSummary,
+    hasDentistReview,
     draft.anamnesisSummary,
     draft.lgpdConfirmed,
   ]);
@@ -163,7 +164,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
           <FieldItem label="Profissão" value={customer.profissão} />
           <FieldItem label="Contato de emergencia" value={customer.contatoEmergencia} />
           <FieldItem label="Idade calculada" value={customer.idadeCalculada} />
-          <FieldItem label="Status clínico" value={dentist.initialEvaluationSummary ? 'Revisado pelo dentista' : 'Em revisão'} />
+          <FieldItem label="Status clínico" value={hasDentistReview ? 'Revisado pelo dentista' : 'Em revisão'} />
         </S.Grid>
       ),
     },
@@ -336,7 +337,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
               </tr>
             </tbody>
           </S.ModernTable>
-          <FieldItem label="Pontos de atenção" value={dentist.clinicalDecisionAttentionPoints} important />
         </>
       ),
     },
@@ -352,7 +352,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
             <S.TimelineDot />
             <div>
               <S.DataValue>Revisão e complemento da avaliação inicial</S.DataValue>
-              <S.PatientHint>{dentist.initialEvaluationSummary ? 'Concluído' : 'Pendente'}</S.PatientHint>
+              <S.PatientHint>{hasDentistReview ? 'Concluído' : 'Pendente'}</S.PatientHint>
             </div>
           </S.TimelineItem>
           <S.TimelineItem>
@@ -466,7 +466,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
             </S.QuickItem>
             <S.QuickItem>
               <S.QuickLabel>Status clínico</S.QuickLabel>
-              <S.QuickValue>{dentist.initialEvaluationSummary ? 'Revisado' : 'Aguardando revisão'}</S.QuickValue>
+              <S.QuickValue>{hasDentistReview ? 'Revisado' : 'Aguardando revisão'}</S.QuickValue>
             </S.QuickItem>
             <S.QuickItem>
               <S.QuickLabel>Ordem</S.QuickLabel>

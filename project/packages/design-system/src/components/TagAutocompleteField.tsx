@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type KeyboardEvent } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import { useDesignSystem } from '../provider';
 import type { BrandTokens } from '../tokens';
@@ -13,6 +13,7 @@ export interface TagAutocompleteFieldProps {
   value: string[];
   options: TagAutocompleteOption[];
   onChange: (value: string[]) => void;
+  onBlur?: () => void;
   placeholder?: string;
   hint?: string;
   error?: string;
@@ -35,7 +36,7 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
-  color: ${({ $tokens }) => $tokens.colors.danger};
+  color: inherit;
 `;
 
 const Control = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
@@ -177,6 +178,7 @@ export function TagAutocompleteField({
   value,
   options,
   onChange,
+  onBlur,
   placeholder = 'Buscar...',
   hint,
   error,
@@ -184,6 +186,7 @@ export function TagAutocompleteField({
 }: TagAutocompleteFieldProps) {
   const { tokens } = useDesignSystem();
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const invalid = Boolean(error);
@@ -208,6 +211,7 @@ export function TagAutocompleteField({
     onChange([...value, option.value]);
     setSearch('');
     setOpen(false);
+    inputRef.current?.blur();
   }
 
   function removeOption(nextValue: string) {
@@ -232,7 +236,7 @@ export function TagAutocompleteField({
     <Wrapper>
       <Label $tokens={tokens} htmlFor={id}>
         {label}
-        {required ? <> <RequiredMark $tokens={tokens}>*</RequiredMark></> : null}
+        {required ? <> <RequiredMark $tokens={tokens}>(*)</RequiredMark></> : null}
       </Label>
       <Control $tokens={tokens} $invalid={invalid}>
         {value.map((item) => {
@@ -257,6 +261,7 @@ export function TagAutocompleteField({
         })}
         <Input
           $tokens={tokens}
+          ref={inputRef}
           id={id}
           value={search}
           placeholder={value.length === 0 ? placeholder : 'Adicionar mais...'}
@@ -270,12 +275,13 @@ export function TagAutocompleteField({
             setSearch(event.target.value);
             setOpen(true);
           }}
+          onBlur={onBlur}
           onKeyDown={handleKeyDown}
         />
       </Control>
       {open && matchingOptions.length > 0 ? (
         <OptionsList $tokens={tokens} role="listbox" aria-label="Sugestoes">
-          {matchingOptions.slice(0, 10).map((option) => (
+          {matchingOptions.map((option) => (
             <OptionItem
               $tokens={tokens}
               key={option.value}

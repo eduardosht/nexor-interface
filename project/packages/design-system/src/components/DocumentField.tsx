@@ -42,7 +42,7 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
-  color: ${({ $tokens }) => $tokens.colors.danger};
+  color: inherit;
 `;
 
 const Control = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
@@ -136,7 +136,7 @@ export function DocumentField({
   return (
     <Wrapper $tokens={tokens}>
       <Label $tokens={tokens} htmlFor={inputId}>
-        {label} {required ? <RequiredMark $tokens={tokens}>*</RequiredMark> : null}
+        {label} {required ? <RequiredMark $tokens={tokens}>(*)</RequiredMark> : null}
       </Label>
       <Control $tokens={tokens} $invalid={invalid}>
         <TypeSelect

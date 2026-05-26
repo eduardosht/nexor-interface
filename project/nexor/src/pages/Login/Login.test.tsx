@@ -192,6 +192,7 @@ describe('Login', () => {
     renderLogin();
 
     expect(screen.getByRole('tab', { name: /cliente/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('demo-login-athlete-registered')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete-prerequisite')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete-payment')).toBeInTheDocument();

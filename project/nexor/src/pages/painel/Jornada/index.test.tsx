@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
@@ -40,6 +40,12 @@ vi.mock('react-leaflet', () => ({
 
 import { Jornada } from './index';
 
+function CurrentPath() {
+  const location = useLocation();
+
+  return <span data-testid="current-path">{location.pathname}</span>;
+}
+
 function renderPage() {
   mockUseAuth.mockReturnValue({
     loading: false,
@@ -59,6 +65,7 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <ThemeProvider theme={lightTheme}>
+        <CurrentPath />
         <Jornada />
       </ThemeProvider>
     </MemoryRouter>
@@ -96,7 +103,29 @@ describe('Jornada', () => {
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
   });
 
-  it('keeps the prerequisite step inside the journey before the intake is submitted', async () => {
+  it('redirects new-user-onboarding orders to the Biteplaner onboarding page', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Cadastro inicial pendente',
+            stage: 'new_user_onboarding',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('current-path')).toHaveTextContent('/painel/biteplaner/onboarding'));
+    expect(screen.queryByTestId('athlete-journey-steps')).not.toBeInTheDocument();
+  });
+
+  it('shows only the clinical intake in the prerequisite step after onboarding is complete', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -110,15 +139,397 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({ forms: [] });
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-ONBOARDING',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_new_user_onboarding',
+            stepKey: 'new_user_onboarding',
+            status: 'submitted',
+            canViewPayload: true,
+            summary: { title: 'Cadastro de novos usuários Biteplaner' },
+            releasedAt: '2026-05-01T10:00:00.000Z',
+            submittedAt: '2026-05-01T10:04:00.000Z',
+            payload: { fullName: 'Joao Demo' },
+          },
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i);
-    expect(screen.queryByRole('link', { name: /abrir pre-requisito/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/resumo da jornada/i)).not.toBeInTheDocument();
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    expect(within(prerequisiteForms).getByText(/pré-requisito clínico biteplaner/i)).toBeInTheDocument();
+    expect(within(prerequisiteForms).getByRole('button', { name: /continuar/i })).toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByText(/cadastro de novos usu.rios biteplaner/i)).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByText(/este cadastro . seu primeiro passo/i)).not.toBeInTheDocument();
   });
+
+  it('shows clinical detail inputs only after their yes/no question is answered yes', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage();
+
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/pol.*tica de privacidade/i));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /continuar/i }));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados cl.*nicos/i }));
+
+    const detailLabels = [
+      /quais diagn.*sticos ou condi/i,
+      /quais medicamentos, dosagens/i,
+      /especifique quais, dose/i,
+      /qual cirurgia e quando/i,
+      /descreva o trauma em face\/mand.*bula/i,
+      /descreva o acidente com impacto/i,
+    ];
+
+    detailLabels.forEach((label) => {
+      expect(within(prerequisiteForms).queryByLabelText(label)).not.toBeInTheDocument();
+    });
+
+    detailLabels.forEach((label, index) => {
+      fireEvent.click(within(prerequisiteForms).getAllByLabelText(/^Sim$/i)[index]);
+      expect(within(prerequisiteForms).getByLabelText(detailLabels[index])).toBeInTheDocument();
+
+      fireEvent.click(within(prerequisiteForms).getAllByLabelText(/^N.o$/i)[index]);
+      expect(within(prerequisiteForms).queryByLabelText(label)).not.toBeInTheDocument();
+    });
+  }, 10000);
+
+  it('shows orofacial and pain details only when their parent question allows it', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage();
+
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/pol.*tica de privacidade/i));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /continuar/i }));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados cl.*nicos/i }));
+
+    expect(within(prerequisiteForms).queryByLabelText(/ano do primeiro diagn.*stico/i)).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/cite a cidade\/bairro/i)).not.toBeInTheDocument();
+
+    const tmdQuestion = within(prerequisiteForms).getByRole('group', { name: /diagn.*stico de dtm/i });
+    fireEvent.click(within(tmdQuestion).getByLabelText(/^Sim$/i));
+    expect(within(prerequisiteForms).getByLabelText(/ano do primeiro diagn.*stico/i)).toBeInTheDocument();
+    fireEvent.click(within(tmdQuestion).getByLabelText(/^N.o$/i));
+    expect(within(prerequisiteForms).queryByLabelText(/ano do primeiro diagn.*stico/i)).not.toBeInTheDocument();
+
+    const dentistQuestion = within(prerequisiteForms).getByRole('group', { name: /frequenta regularmente algum dentista/i });
+    fireEvent.click(within(dentistQuestion).getByLabelText(/^Sim$/i));
+    expect(within(prerequisiteForms).getByLabelText(/cite a cidade\/bairro/i)).toBeInTheDocument();
+    fireEvent.click(within(dentistQuestion).getByLabelText(/^N.o$/i));
+    expect(within(prerequisiteForms).queryByLabelText(/cite a cidade\/bairro/i)).not.toBeInTheDocument();
+
+    [
+      /j.* teve ou tem algum destes sinais\/sintomas/i,
+      /sintomas articulares espec.*ficos de atm/i,
+      /h.*bitos parafuncionais acordado/i,
+      /tratamentos odontol.*gicos pr.*vios relacionados/i,
+    ].forEach((groupLabel) => {
+      const checkboxGroup = within(prerequisiteForms).getByRole('group', { name: groupLabel });
+      expect(within(checkboxGroup).getAllByRole('checkbox')[0]).toHaveAccessibleName('Nenhuma');
+    });
+
+    const currentPainQuestion = within(prerequisiteForms).getByRole('group', { name: /presen.*a de dor atualmente/i });
+    fireEvent.click(within(currentPainQuestion).getByLabelText(/^N.o$/i));
+
+    [
+      /localiza.*o da dor/i,
+      /padr.*o da dor/i,
+      /dor m.*dia na .*ltima semana/i,
+      /fatores que pioram a dor/i,
+      /quanto a dor\/desconforto/i,
+      /quantos treinos estima ter perdido por dor/i,
+    ].forEach((label) => {
+      expect(within(prerequisiteForms).queryByText(label)).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(within(currentPainQuestion).getByLabelText(/^Sim$/i));
+    expect(within(prerequisiteForms).getByText(/localiza.*o da dor/i)).toBeInTheDocument();
+    expect(within(prerequisiteForms).getByLabelText(/padr.*o da dor/i)).toBeInTheDocument();
+  }, 10000);
+
+  it('updates sleep bruxism fields and stops initial data when orthodontic treatment is active', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage();
+
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/pol.*tica de privacidade/i));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /continuar/i }));
+
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados cl.*nicos/i }));
+
+    expect(within(prerequisiteForms).getByRole('group', { name: /^dist.*rbios do sono relatados$/i })).toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByText(/bruxismo do sono com diagn.*stico confirmado/i)).not.toBeInTheDocument();
+
+    const sleepBruxismQuestion = within(prerequisiteForms).getByRole('group', {
+      name: /ranger ou apertar os dentes dormindo/i,
+    });
+    expect(within(sleepBruxismQuestion).getByLabelText(/^N.o$/i)).toBeInTheDocument();
+    expect(within(sleepBruxismQuestion).getByLabelText(/suspeito/i)).toBeInTheDocument();
+    expect(within(sleepBruxismQuestion).getByLabelText(/diagn.*stico confirmado/i)).toBeInTheDocument();
+
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados iniciais/i }));
+
+    const orthodonticSelect = within(prerequisiteForms).getByLabelText(/est.* em tratamento ortod.*ntico/i);
+    expect(orthodonticSelect).toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/telefone/i)).not.toBeInTheDocument();
+
+    fireEvent.click(orthodonticSelect);
+    fireEvent.click(await screen.findByRole('option', { name: /sim, ainda em tratamento ativo/i }));
+
+    expect(
+      within(prerequisiteForms).getByText(
+        /n.o . poss.vel continuar o processo antes de encerramento da fase ativa do tratamento ortod.ntico/i
+      )
+    ).toBeInTheDocument();
+    expect(within(prerequisiteForms).getByLabelText(/tristeza/i)).toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByText(/necessita de atendimento em cl.*nica adaptada/i)).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByRole('button', { name: /pr.*xima etapa/i })).not.toBeInTheDocument();
+  }, 10000);
+
+  it('reveals the initial data fields after a non-blocking orthodontic answer', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage();
+
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/pol.*tica de privacidade/i));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /continuar/i }));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados iniciais/i }));
+
+    expect(within(prerequisiteForms).queryByRole('button', { name: /voltar etapa/i })).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
+
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/est.* em tratamento ortod.*ntico/i));
+    fireEvent.click(await screen.findByRole('option', { name: /^n.o$/i }));
+
+    expect(within(prerequisiteForms).getByLabelText(/nome completo/i)).toBeInTheDocument();
+    expect(within(prerequisiteForms).getByLabelText(/telefone/i)).toBeInTheDocument();
+    expect(within(prerequisiteForms).getByText(/necessita de atendimento em cl.*nica adaptada/i)).toBeInTheDocument();
+  }, 10000);
+
+  it('uses conditional stimulant and device other detail fields', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'pending',
+            roleState: { customer: 'pending', dentist: 'locked' },
+            customerSubmittedAt: null,
+            dentistReviewStartedAt: null,
+            dentistSubmittedAt: null,
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage();
+
+    const prerequisiteForms = await screen.findByTestId('journey-step-forms-prerequisite');
+    fireEvent.click(within(prerequisiteForms).getByLabelText(/pol.*tica de privacidade/i));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /continuar/i }));
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /dados cl.*nicos/i }));
+
+    expect(within(prerequisiteForms).getByText(/grau de satisfa.*o com tratamento odontol.*gico anterior/i)).toBeInTheDocument();
+    expect(
+      within(prerequisiteForms).queryByText(/grau de satisfa.*o com tratamento odontol.*gico anterior.*\(\*\)/i)
+    ).not.toBeInTheDocument();
+    expect(within(prerequisiteForms).queryByLabelText(/dose di.*ria e hor.*rio de maior consumo/i)).not.toBeInTheDocument();
+
+    const caffeineQuestion = within(prerequisiteForms).getByRole('group', { name: /utiliza cafe.*na\/estimulantes/i });
+    fireEvent.click(within(caffeineQuestion).getByLabelText(/^Sim$/i));
+    expect(within(prerequisiteForms).getByLabelText(/dose di.*ria e hor.*rio de maior consumo/i)).toBeInTheDocument();
+    fireEvent.click(within(caffeineQuestion).getByLabelText(/^N.o$/i));
+    expect(within(prerequisiteForms).queryByLabelText(/dose di.*ria e hor.*rio de maior consumo/i)).not.toBeInTheDocument();
+
+    fireEvent.click(within(prerequisiteForms).getByRole('button', { name: /experi.*ncia com o dispositivo/i }));
+
+    const expectedBenefitGroup = within(prerequisiteForms).getByRole('group', {
+      name: /expectativa com o uso de um dispositivo bucal/i,
+    });
+    const expectedBenefitOther = within(expectedBenefitGroup).getByRole('checkbox', { name: /^outros$/i });
+    fireEvent.click(expectedBenefitOther);
+    const expectedBenefitOtherInput = within(prerequisiteForms).getByLabelText(/descreva outros benef.*cios esperados/i);
+    expect(expectedBenefitOtherInput).toBeRequired();
+    fireEvent.blur(expectedBenefitOtherInput);
+    expect(await within(prerequisiteForms).findByText('Campo obrigatório')).toBeInTheDocument();
+
+    const barrierGroup = within(prerequisiteForms).getByRole('group', {
+      name: /barreiras imaginadas ao uso de um dispositivo bucal/i,
+    });
+    fireEvent.click(within(barrierGroup).getByRole('checkbox', { name: /^outros$/i }));
+    expect(within(prerequisiteForms).getByLabelText(/descreva outras barreiras imaginadas/i)).toBeRequired();
+  }, 10000);
 
   it('keeps journey steps informational and renders consultation content directly', async () => {
     mockApiGet
@@ -226,15 +637,15 @@ describe('Jornada', () => {
     expect(screen.queryByText(/histórico resumido/i)).not.toBeInTheDocument();
   });
 
-  it('renders the intake in the prerequisite step and advances to initial consultation after submit', async () => {
+  it('shows the training report only in the follow-up stage', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
           {
-            id: 'BP-DEMO-001',
-            status: 'registration_started',
-            statusLabel: 'Pre-requisito pendente',
-            stage: 'pre_requisite_pending',
+            id: 'BP-DEMO-FOLLOW-UP',
+            status: 'follow_up',
+            statusLabel: 'Em acompanhamento',
+            stage: 'follow_up',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
           },
@@ -243,10 +654,10 @@ describe('Jornada', () => {
       .mockResolvedValueOnce({
         forms: [
           {
-            id: 'BP-WF-001-INTAKE',
-            orderId: 'BP-DEMO-001',
-            templateKey: 'customer_pre_consultation_intake',
-            stepKey: 'pre_requisite_pending',
+            id: 'BP-WF-TRAINING-001',
+            orderId: 'BP-DEMO-FOLLOW-UP',
+            templateKey: 'customer_training_report',
+            stepKey: 'post_adaptation_feedback',
             status: 'pending',
             canViewPayload: true,
             summary: null,
@@ -255,67 +666,13 @@ describe('Jornada', () => {
             payload: null,
           },
         ],
-    });
-    mockApiPost.mockResolvedValueOnce({
-      id: 'BP-WF-001-INTAKE',
-      orderId: 'BP-DEMO-001',
-      templateKey: 'customer_pre_consultation_intake',
-      stepKey: 'pre_requisite_pending',
-      status: 'submitted',
-      canViewPayload: true,
-      summary: { scoreAverage: null, hasComment: true, responseCount: 1, submittedAt: '2026-05-02T10:20:00.000Z' },
-      releasedAt: '2026-05-02T10:05:00.000Z',
-      submittedAt: '2026-05-02T10:20:00.000Z',
-      payload: {},
-    });
+      });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument());
-    expect(screen.getByTestId('journey-step-forms-prerequisite')).toBeInTheDocument();
-    expect(screen.queryByText(/formulários e feedbacks da etapa atual/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/pré-requisito/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/avalia.*inicial compartilhada/i)).toHaveLength(1);
-    expect(screen.queryByText(/intake pré-consulta preenchido pelo cliente/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i);
-    expect(screen.queryByRole('link', { name: /abrir consulta inicial/i })).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/nome completo/i)).toHaveValue('Joao Demo');
-    fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '11999999999' } });
-    expect(screen.getByLabelText(/telefone/i)).toHaveValue('(11) 99999-9999');
-    fireEvent.change(screen.getByLabelText(/modalidade principal/i), { target: { value: 'Boxe' } });
-    const medicalDiagnosisGroup = await screen.findByRole('group', {
-      name: /possui algum diagn/i,
-    });
-    fireEvent.click(within(medicalDiagnosisGroup).getByRole('radio', { name: /n/i }));
-    fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /4 consentimentos/i }));
-    fireEvent.click(screen.getByLabelText(/tratamento necessário para inscrição/i));
-    fireEvent.click(screen.getByLabelText(/tratamento de dados sensíveis/i));
-    fireEvent.click(screen.getByRole('button', { name: /enviar formulário/i }));
-
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-001/workflow-forms/BP-WF-001-INTAKE/submit',
-        {
-          payload: expect.objectContaining({
-            customer: expect.objectContaining({
-              fullName: 'Joao Demo',
-              phone: '11999999999',
-              sportRoutine: 'Boxe',
-              hasRelevantMedicalDiagnosis: 'no',
-              serviceConsent: ['accepted'],
-              sensitiveHealthConsent: ['accepted'],
-            }),
-          }),
-        },
-        'tok'
-      )
-    );
-    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i));
-    expect(screen.queryByRole('link', { name: /abrir consulta inicial/i })).not.toBeInTheDocument();
-    expect(screen.getByTestId('journey-consultation-content')).toBeInTheDocument();
-    expect(screen.getByTestId('consultation-map')).toBeInTheDocument();
-    expect(screen.queryByTestId('journey-step-forms-prerequisite')).not.toBeInTheDocument();
+    expect(await screen.findByText(/relat.*rio de treino\/competi/i)).toBeInTheDocument();
+    expect(screen.getByTestId('journey-step-forms-follow_up')).toBeInTheDocument();
+    expect(screen.getByLabelText(/data da atividade/i)).toBeInTheDocument();
   });
 
   it('keeps the athlete journey focused on a single primary order even when the backend returns more orders', async () => {
@@ -341,31 +698,15 @@ describe('Jornada', () => {
           },
         ],
       })
-      .mockResolvedValueOnce({
-        forms: [
-          {
-            id: 'BP-WF-001-INTAKE',
-            orderId: 'BP-DEMO-001',
-            templateKey: 'customer_pre_consultation_intake',
-            stepKey: 'initial_consultation_preparation',
-            status: 'pending',
-            canViewPayload: true,
-            summary: null,
-            releasedAt: '2026-05-02T10:05:00.000Z',
-            submittedAt: null,
-            payload: null,
-          },
-        ],
-      });
+      .mockResolvedValueOnce({ forms: [] });
 
     renderPage();
 
     await waitFor(() => expect(screen.getAllByText(/bp-demo-001/i).length).toBeGreaterThan(0));
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i);
     expect(screen.queryByText(/bp-demo-003/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ver formulários/i })).not.toBeInTheDocument();
     expect(screen.queryByText(/formulários e feedbacks da etapa atual/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/os passos abaixo mostram em que ponto a jornada bp-demo-001 está/i)).toBeInTheDocument();
-    expect(await screen.findByText(/avalia.*inicial compartilhada biteplaner/i)).toBeInTheDocument();
   });
 
   it('shows a problem message and contact form when the dentist marks the order as ineligible', async () => {

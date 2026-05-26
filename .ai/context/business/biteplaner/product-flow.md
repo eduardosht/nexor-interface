@@ -46,13 +46,18 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - O vínculo operacional da consulta com cliente, ordem e dentista passa a depender de duas etapas: solicitação "Consulta agendada" feita pelo cliente sobre uma clínica já licenciada e aceite do dentista licenciado responsável.
 - A fila operacional do dentista deve exibir solicitações pendentes de aceite e ordens já vinculadas operacionalmente a esse dentista.
 - O usuário final cria ou usa uma conta Nexor com cadastro simples de e-mail e senha, normalmente a partir de link único de parceiro quando houver indicação Biteplaner.
-- Antes da consulta inicial, o usuário deve preencher a avaliação inicial compartilhada Biteplaner dentro da etapa de pre-requisito.
-- Esse pre-requisito combina o formulário compartilhado entre cliente e dentista com os consentimentos específicos do Biteplaner.
+- Ao clicar em **Adquirir Biteplaner** dentro do painel, o perfil `customer` do produto fica ativo e a conta segue primeiro para o formulário `customer_new_user_onboarding`.
+- O onboarding do produto coleta dados complementares de perfil, esporte, saúde/lesões, consumo, objetivos, SIN, consentimentos e feedbacks; dados já conhecidos da conta Nexor devem vir pré-preenchidos.
+- O onboarding bloqueia avanço automático quando o aceite LGPD obrigatório não existir ou quando o usuário for menor de idade sem responsável maior assumindo a jornada.
+- Depois do onboarding aprovado, antes da consulta inicial, o usuário deve preencher a avaliação inicial compartilhada Biteplaner dentro da etapa de pre-requisito.
+- Esse pre-requisito usa o formulário `customer_pre_consultation_intake`, compartilhado entre cliente e dentista, com payload separado por role.
+- Tratamento ortodôntico ativo no formulário clínico bloqueia a continuidade automática para escolha de clínica.
 - A parte do cliente na avaliação inicial compartilhada deve ser concluída antes de liberar a busca por clínicas licenciadas; após a consulta, o dentista complementa o mesmo formulário com medidas de abertura bucal, observações clínicas por seção, síntese da anamnese/avaliação e pontos de atenção para decisão clínica.
 - Os informativos e declarações desse pre-requisito são obrigatórios antes de liberar a consulta inicial e a avaliação odontológica do Biteplaner.
 - As respostas do cliente ficam em modo leitura para o dentista. Os campos do dentista ficam separados por role e não devem sobrescrever as respostas do cliente.
 - Quando o dentista iniciar ou salvar seu complemento, o formulário fica bloqueado para edicao pelo cliente e deve exibir estado de revisão pelo dentista.
-- As perguntas de uso, adaptação e feedback pós-Biteplaner pertencem ao acompanhamento após entrega, não ao intake de compra.
+- As perguntas de uso, adaptação e feedback pós-Biteplaner pertencem ao acompanhamento após entrega/adaptação, não ao intake de compra.
+- O formulário `customer_training_report` é liberado somente quando a ordem entra em `follow_up` após a adaptação do produto e pode ter múltiplas submissões por ordem.
 - A origem da indicação pode ser capturada na Nexor durante cadastro/login e repassada ao Biteplaner no momento da inscrição ou criação da ordem.
 - O pagamento pode ser manual ou mockado no MVP.
 - O produto tem preco inicial único de R$ 400.
@@ -95,8 +100,9 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - O cadastro público do usuário final na Nexor usa apenas e-mail e senha.
 - No MVP1, clientes/atletas podem seguir do hub Nexor para a inscrição pública no Biteplaner imediatamente. Parceiros, dentistas e laboratórios podem solicitar seus perfis, mas só operam após aprovação.
 - A escolha explicita do Biteplaner dentro da área logada da Nexor e pre-requisito para iniciar a jornada do produto.
+- O preenchimento completo do onboarding `customer_new_user_onboarding` é obrigatório antes do pre-requisito clínico para quem opta por adquirir o Biteplaner no painel.
 - O preenchimento completo da avaliação inicial compartilhada Biteplaner na etapa de pre-requisito e pre-condicao obrigatória para liberar a escolha de clínicas.
-- O pre-requisito também registra os consentimentos específicos do produto antes da consulta inicial.
+- O pre-requisito também registra os consentimentos específicos do produto antes da consulta inicial e bloqueia automaticamente tratamento ortodôntico ativo.
 - A primeira consulta odontológica acontece antes da cobrança do produto.
 - O pagamento só pode ser iniciado quando o dentista declara o usuário apto para utilizar o Biteplaner.
 - Quando o dentista declarar o usuário apto, a ordem entra em uma etapa operacional de preenchimento dentista antes do envio ao laboratório.
@@ -107,6 +113,7 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - Em caso de inaptidão declarada pelo dentista antes da cobrança, a jornada é encerrada sem pagamento do produto.
 - O dentista também pode registrar que o usuário precisa concluir tratamento prévio antes da decisão final de aptidão; nesse caso a ordem fica em espera.
 - Formulários clínicos e operacionais formam o histórico do usuário e do dentista.
+- O relatório de treino/competição é pós-entrega/adaptação e repetível durante `follow_up` ou `completed`.
 - A jornada envolve dados pessoais e dados de saúde/odontologia.
 - Usuário menor de idade não compra diretamente; um responsável maior de idade deve criar a conta Nexor e assumir a jornada.
 
@@ -148,7 +155,7 @@ Resultado esperado:
 - usuário escolhe explicitamente o Biteplaner como produto de interesse e seleciona o perfil desejado no produto
 - inscrição ou vínculo Biteplaner criado para a conta
 - dados coletados com finalidade clara
-- conta pronta para seguir para a etapa pre-requisito do produto
+- conta pronta para seguir para o onboarding do produto Biteplaner antes do pre-requisito clínico
 
 ### 2.1. Onboarding e licenciamento do dentista
 
@@ -220,12 +227,13 @@ Regras de liberação operacional:
 - laboratórios só devem aparecer como opções de produção quando estiverem licenciados ativos
 - todas as decisoes administrativas, pagamentos simulados, assinaturas, tentativas de prova, certificados e distratos devem compor histórico/auditoria
 
-### 3. Pre-requisito e avaliação inicial compartilhada Biteplaner
+### 3. Onboarding, pre-requisito e avaliação inicial compartilhada Biteplaner
 
-Antes da consulta inicial, o Biteplaner deve apresentar a avaliação inicial compartilhada Biteplaner dentro da etapa de pre-requisito. O cliente preenche sua parte do formulário antes da escolha de clínicas, e o dentista complementa o mesmo registro após a consulta.
+Após o usuário optar por adquirir o Biteplaner no painel, o Biteplaner deve apresentar o onboarding `customer_new_user_onboarding`. Se não houver bloqueio, a jornada segue para a avaliação inicial compartilhada dentro da etapa de pre-requisito. O cliente preenche sua parte do formulário clínico antes da escolha de clínicas, e o dentista complementa o mesmo registro após a consulta.
 
 Essa etapa tem duas funcoes no MVP1:
 
+- registrar o cadastro complementar do produto antes da pre-consulta
 - registrar o intake inicial do cliente para preparar a consulta odontológica
 - registrar os consentimentos específicos do Biteplaner antes da continuidade
 
@@ -239,6 +247,7 @@ Exemplos de informações que podem entrar na avaliação compartilhada:
 Resultado esperado:
 
 - usuário recebe informativos obrigatórios antes de seguir
+- usuário preenche o onboarding Biteplaner e passa pelas regras impeditivas iniciais
 - usuário preenche a parte do cliente na avaliação inicial compartilhada
 - usuário registra os consentimentos Biteplaner obrigatórios
 - a plataforma registra as respostas para suporte da consulta inicial e da decisão clínica
@@ -374,11 +383,12 @@ Resultado esperado:
 
 ### 13. Acompanhamento periodico
 
-Após a entrega, o usuário retorna ao dentista a cada 3 meses, durante até 9 meses, para avaliar uso, ajustes e feedbacks.
+Após a entrega/adaptação, a ordem entra em `follow_up`. O primeiro `customer_training_report` é liberado para o cliente registrar uso real do Biteplaner em treino ou competição, e novas submissões podem ser criadas após cada envio. O usuário também retorna ao dentista a cada 3 meses, durante até 9 meses, para avaliar uso, ajustes e feedbacks.
 
 Resultado esperado:
 
 - retornos realizados em ciclos de 3 meses
+- relatório de treino/competição disponível somente após adaptação e repetível durante acompanhamento
 - acompanhamento mantido até completar 9 meses, quando aplicável
 - histórico do usuário e do dentista atualizado
 
@@ -441,6 +451,18 @@ Observacoes:
 ### Formulários operacionais do customer
 
 Preenchidos pelo usuário ou responsável em etapas da triagem, da consulta inicial e da continuidade da ordem Biteplaner, antes ou depois do pagamento conforme a etapa. Estes formulários pertencem ao produto Biteplaner, não ao perfil global Nexor.
+
+Templates atuais da jornada do cliente:
+
+- `customer_new_user_onboarding`: primeiro formulário após a escolha de comprar o Biteplaner no painel. Bloqueia LGPD obrigatório não aceito e menor de idade sem responsável/conta responsável.
+- `customer_pre_consultation_intake`: formulário clínico pré-consulta compartilhado; cliente e dentista preenchem seções separadas, e tratamento ortodôntico ativo bloqueia a continuidade automática.
+- `customer_training_report`: relatório de treino/competição pós-entrega/adaptação, liberado em `follow_up` e repetível por ordem.
+
+Regra de pré-preenchimento:
+
+- valores existentes na conta Nexor ou em formulários anteriores devem preencher automaticamente campos vazios em etapas posteriores
+- valores já salvos pelo usuário prevalecem sobre defaults
+- campos definidos como somente visualização aparecem bloqueados para edição
 
 ### Formulários de avaliação operacional
 
@@ -590,10 +612,6 @@ O parceiro não acessa ordens clínicas como operador, não vê dados odontológ
 
 ## Perguntas em aberto para decisão
 
-- Quem pode editar formulários depois de enviados?
-- Quais formulários do lado do customer entram antes da consulta inicial, entre aptidão e pagamento, e depois da compra?
-- Quais respostas do formulário pre-requisito bloqueiam automaticamente a continuidade e quais apenas sinalizam alerta para avaliação posterior?
-- Quais campos serão obrigatórios em cada formulário?
 - Quais provedores serão usados para e-mail e demais canais futuros?
 - Qual deve ser o conteúdo e a cadência da notificação enviada ao dentista indicado para processo de licenciamento?
 - Qual será a politica fiscal/nota fiscal e qual sistema externo será usado?

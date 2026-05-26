@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, ClipboardList, Clock3, Flag, ListChecks } from 'lucide-react';
+import { CalendarDays, ClipboardList, Clock3, Flag } from 'lucide-react';
 import * as S from './OrderStepHeader.styles';
 import {
   getOrderStatusPresentation,
@@ -27,16 +27,7 @@ import {
 
 
 
-const STEP_ITEMS = [
-  { key: 'prerequisite', label: 'Pre-requisito' },
-  { key: 'consultation', label: 'Consulta inicial' },
-  { key: 'clinical_decision', label: 'Decisão clínica' },
-  { key: 'purchase', label: 'Compra' },
-  { key: 'laboratory', label: 'Laboratório' },
-  { key: 'follow_up', label: 'Acompanhamento' },
-] as const;
-
-export type OrderStepKey = (typeof STEP_ITEMS)[number]['key'];
+export type OrderStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
 
 export interface OrderStepHeaderProps {
   title: ReactNode;
@@ -44,6 +35,7 @@ export interface OrderStepHeaderProps {
   currentStep: OrderStepKey;
   order: DemoOrderSummary | null;
   orderHelpText: ReactNode;
+  showOrderSummary?: boolean;
   children?: ReactNode;
 }
 
@@ -56,36 +48,20 @@ function formatOrderUpdate(value: string) {
   };
 }
 
-export function OrderStepHeader({ title, description, currentStep, order, orderHelpText, children }: OrderStepHeaderProps) {
+export function OrderStepHeader({
+  title,
+  description,
+  currentStep: _currentStep,
+  order,
+  orderHelpText,
+  showOrderSummary = true,
+  children
+}: OrderStepHeaderProps) {
   const orderUpdate = order ? formatOrderUpdate(order.created_at) : null;
   const status = order ? getOrderStatusPresentation(order) : null;
 
   return (
     <S.Header>
-      <S.Breadcrumb aria-label="Etapas da jornada Biteplaner">
-        <S.OverviewLink to="/painel/biteplaner/jornada">
-          <ListChecks size={15} strokeWidth={2.2} aria-hidden="true" />
-          Visão geral dos steps
-        </S.OverviewLink>
-        <S.StepList>
-          {STEP_ITEMS.map((step) => {
-            const active = step.key === currentStep;
-
-            return (
-              <li key={step.key}>
-                <S.StepCrumb
-                  $active={active}
-                  aria-current={active ? 'step' : undefined}
-                  data-testid={active ? 'step-breadcrumb-current' : undefined}
-                >
-                  {step.label}
-                </S.StepCrumb>
-              </li>
-            );
-          })}
-        </S.StepList>
-      </S.Breadcrumb>
-
       <S.Copy>
         <S.Title>{title}</S.Title>
         <S.Description>{description}</S.Description>
@@ -93,7 +69,7 @@ export function OrderStepHeader({ title, description, currentStep, order, orderH
 
       {children}
 
-      {order && orderUpdate && status ? (
+      {showOrderSummary && order && orderUpdate && status ? (
         <S.OrderBanner data-testid="athlete-order-card">
           <S.OrderSummary>
             <S.OrderIcon aria-hidden="true">

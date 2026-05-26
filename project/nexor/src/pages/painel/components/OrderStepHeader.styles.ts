@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
 
 export const Header = styled.header`
   display: grid;
@@ -8,57 +7,6 @@ export const Header = styled.header`
   @media (max-width: 1280px) {
     gap: 14px;
   }
-`;
-
-export const Breadcrumb = styled.nav`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-`;
-
-export const OverviewLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 6px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-weight: 700;
-  text-decoration: none;
-
-  svg {
-    flex-shrink: 0;
-  }
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.textPrimary};
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
-
-export const StepList = styled.ol`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
-export const StepCrumb = styled.span<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 4px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-weight: ${({ $active }) => ($active ? 700 : 600)};
-  opacity: ${({ $active }) => ($active ? 1 : 0.28)};
 `;
 
 export const Copy = styled.div`

@@ -1,9 +1,11 @@
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
+  | 'athleteRegistered'
   | 'athlete'
   | 'athletePrerequisite'
   | 'athleteScheduling'
+  | 'athletePreConsultation'
   | 'athleteClinicalDecision'
   | 'athleteDentistForms'
   | 'athletePayment'
@@ -25,9 +27,11 @@ export type DemoPersona =
   | 'admin';
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
+  athleteRegistered: 'Cliente - Apenas cadastrado',
   athlete: 'Atleta',
   athletePrerequisite: 'Cliente - Pre-requisito',
-  athleteScheduling: 'Cliente - Consulta inicial',
+  athleteScheduling: 'Cliente - Selecionar clinica',
+  athletePreConsultation: 'Cliente - Pre-consulta clinica',
   athleteClinicalDecision: 'Cliente - Decisao clinica',
   athleteDentistForms: 'Cliente - Formularios do dentista',
   athletePayment: 'Cliente - Pagamento',
@@ -56,8 +60,10 @@ export function isMockModeEnabled() {
 export function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
     value === 'athlete' ||
+    value === 'athleteRegistered' ||
     value === 'athletePrerequisite' ||
     value === 'athleteScheduling' ||
+    value === 'athletePreConsultation' ||
     value === 'athleteClinicalDecision' ||
     value === 'athleteDentistForms' ||
     value === 'athletePayment' ||

@@ -3,9 +3,11 @@
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
+  | 'athleteRegistered'
   | 'athlete'
   | 'athletePrerequisite'
   | 'athleteScheduling'
+  | 'athletePreConsultation'
   | 'athleteClinicalDecision'
   | 'athleteDentistForms'
   | 'athletePayment'
@@ -245,6 +247,10 @@ type DemoWorkflowSummary = {
   hasComment: boolean;
   responseCount: number;
   submittedAt: string | null;
+  blocked?: boolean;
+  blocker?: string;
+  fieldCount?: number;
+  deviceUsage?: string;
 };
 
 type DemoWorkflowForm = {
@@ -318,6 +324,7 @@ type AppointmentAction =
 
 type WorkflowAction =
   | { type: 'submit-workflow-form'; workflowFormId: string; payload: Record<string, unknown> }
+  | { type: 'create-training-report' }
   | {
       type: 'revise-workflow-form';
       workflowFormId: string;
@@ -446,10 +453,65 @@ function getWorkflowPayloadSection(payload: Record<string, unknown> | null, key:
   return isRecord(section) ? section : {};
 }
 
+function consentAccepted(value: unknown) {
+  return Array.isArray(value) ? value.includes('accepted') : value === true || value === 'accepted';
+}
+
+function isUnderageByBirthDate(value: unknown, referenceDate = new Date()) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const normalized = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const brazilian = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const year = normalized ? Number(normalized[1]) : brazilian ? Number(brazilian[3]) : null;
+  const month = normalized ? Number(normalized[2]) : brazilian ? Number(brazilian[2]) : null;
+  const day = normalized ? Number(normalized[3]) : brazilian ? Number(brazilian[1]) : null;
+
+  if (year === null || month === null || day === null) {
+    return false;
+  }
+
+  let age = referenceDate.getFullYear() - year;
+  const birthdayAlreadyHappened =
+    referenceDate.getMonth() + 1 > month ||
+    (referenceDate.getMonth() + 1 === month && referenceDate.getDate() >= day);
+
+  if (!birthdayAlreadyHappened) {
+    age -= 1;
+  }
+
+  return age < 18;
+}
+
+function summarizeCustomerNewUserOnboarding(payload: Record<string, unknown>, submittedAt: string, responseCount: number) {
+  const summary = createWorkflowSummary(payload, submittedAt, responseCount);
+
+  if (!consentAccepted(payload.privacyConsent)) {
+    return { ...summary, blocked: true, blocker: 'privacy_consent_required' };
+  }
+
+  if (isUnderageByBirthDate(payload.birthDate) || payload.isMinor === 'yes' || payload.isMinor === true) {
+    return { ...summary, blocked: true, blocker: 'minor_without_guardian' };
+  }
+
+  return { ...summary, blocked: false, fieldCount: Object.keys(payload).length };
+}
+
+function summarizeCustomerTrainingReport(payload: Record<string, unknown>, submittedAt: string, responseCount: number) {
+  return {
+    ...createWorkflowSummary(payload, submittedAt, responseCount),
+    deviceUsage: typeof payload.deviceUsage === 'string' ? payload.deviceUsage : undefined,
+    fieldCount: Object.keys(payload).length
+  };
+}
+
 const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
+  athleteRegistered: 'user',
   athlete: 'user',
   athletePrerequisite: 'user',
   athleteScheduling: 'user',
+  athletePreConsultation: 'user',
   athleteClinicalDecision: 'user',
   athleteDentistForms: 'user',
   athletePayment: 'user',
@@ -504,12 +566,18 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
   {
     persona: 'athleteScheduling',
     orderId: 'BP-DEMO-002',
-    fullName: 'Cliente Consulta Inicial',
-    email: 'cliente.consulta@nexor.dev'
+    fullName: 'Cliente Selecao Clinica',
+    email: 'cliente.selecao.clinica@nexor.dev'
+  },
+  {
+    persona: 'athletePreConsultation',
+    orderId: 'BP-DEMO-003',
+    fullName: 'Cliente Pre-consulta Clinica',
+    email: 'cliente.preconsulta@nexor.dev'
   },
   {
     persona: 'athleteClinicalDecision',
-    orderId: 'BP-DEMO-003',
+    orderId: 'BP-DEMO-014',
     fullName: 'Cliente Decisao Clinica',
     email: 'cliente.decisao@nexor.dev'
   },
@@ -640,6 +708,7 @@ function createCustomerStageUser(item: (typeof CUSTOMER_STAGE_PERSONAS)[number])
 
 const seedState = (): DemoState => ({
   sessions: [
+    { id: 'demo-session-athlete-registered', persona: 'athleteRegistered', accessToken: 'demo-athleteRegistered-token', userId: 'demo-user-athlete-registered' },
     { id: 'demo-session-athlete', persona: 'athlete', accessToken: 'demo-athlete-token', userId: 'demo-user-athlete' },
     ...CUSTOMER_STAGE_PERSONAS.map(createCustomerStageSession),
     { id: 'demo-session-partner', persona: 'partner', accessToken: 'demo-partner-token', userId: 'demo-user-partner' },
@@ -654,6 +723,24 @@ const seedState = (): DemoState => ({
     { id: 'demo-session-admin', persona: 'admin', accessToken: 'demo-admin-token', userId: 'demo-user-admin' }
   ],
   users: [
+    {
+      id: 'demo-user-athlete-registered',
+      authUserId: 'demo-auth-athleteRegistered',
+      profileId: 'demo-profile-athlete-registered',
+      fullName: 'Cliente Apenas Cadastrado',
+      email: 'cliente.cadastrado@nexor.dev',
+      phone: '11999990017',
+      roles: [],
+      clinicIds: [],
+      dentistId: null,
+      partnerId: null,
+      labId: null,
+      persona: 'athleteRegistered',
+      defaultMode: 'user',
+      allowedModes: ['user'],
+      productRoles: [],
+      enrollment: null
+    },
     {
       id: 'demo-user-athlete',
       authUserId: 'demo-auth-athlete',
@@ -1885,6 +1972,42 @@ const seedState = (): DemoState => ({
   ],
   workflowForms: [
     {
+      id: 'BP-WF-001-ONBOARDING',
+      orderId: 'BP-DEMO-001',
+      templateKey: 'customer_new_user_onboarding',
+      stepKey: 'new_user_onboarding',
+      status: 'submitted',
+      canViewPayload: true,
+      summary: {
+        scoreAverage: null,
+        hasComment: true,
+        responseCount: 1,
+        submittedAt: '2026-05-01T10:04:00.000Z',
+        blocked: false,
+        fieldCount: 12
+      },
+      releasedAt: '2026-05-01T10:01:00.000Z',
+      submittedAt: '2026-05-01T10:04:00.000Z',
+      payload: {
+        fullName: 'Joao Demo',
+        email: 'atleta.demo@nexor.dev',
+        phone: '11999990001',
+        cpf: '52998224725',
+        birthDate: '1990-01-10',
+        residenceCityOrNeighborhood: 'São Paulo / Vila Mariana',
+        profession: 'Educador físico',
+        biologicalSex: 'male',
+        dominantLaterality: 'right',
+        bodyMassKg: 82,
+        heightMeters: 1.78,
+        currentSports: ['crossfit', 'strength_training'],
+        trainingExperience: '5_to_10_years',
+        trainingCityOrNeighborhood: 'São Paulo / Moema',
+        clinicalPrivacyConsent: ['accepted'],
+        privacyConsent: ['accepted']
+      }
+    },
+    {
       id: 'BP-WF-001-INTAKE',
       orderId: 'BP-DEMO-001',
       templateKey: 'customer_pre_consultation_intake',
@@ -2061,6 +2184,18 @@ const seedState = (): DemoState => ({
         deviceUseAndAdjustmentGuidance: 8,
         comment: 'Atendimento claro, pontual e com boa orientação para adaptação do protetor.'
       }
+    },
+    {
+      id: 'BP-WF-009-TRAINING-001',
+      orderId: 'BP-DEMO-009',
+      templateKey: 'customer_training_report',
+      stepKey: 'post_adaptation_feedback',
+      status: 'pending',
+      canViewPayload: true,
+      summary: null,
+      releasedAt: '2026-05-05T09:05:00.000Z',
+      submittedAt: null,
+      payload: null
     },
     {
       id: 'BP-WF-014-PARTNER',
@@ -2473,9 +2608,11 @@ function clone<T>(value: T): T {
 
 function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
+    value === 'athleteRegistered' ||
     value === 'athlete' ||
     value === 'athletePrerequisite' ||
     value === 'athleteScheduling' ||
+    value === 'athletePreConsultation' ||
     value === 'athleteClinicalDecision' ||
     value === 'athleteDentistForms' ||
     value === 'athletePayment' ||
@@ -2575,7 +2712,7 @@ function isOperationalLabPersona(persona: DemoPersona) {
 }
 
 function isCustomerPersona(persona: DemoPersona) {
-  return persona === 'athlete' || Boolean(CUSTOMER_STAGE_ORDER_BY_PERSONA[persona]);
+  return persona === 'athleteRegistered' || persona === 'athlete' || Boolean(CUSTOMER_STAGE_ORDER_BY_PERSONA[persona]);
 }
 
 function canPersonaReadOrder(order: DemoOrder, persona: DemoPersona) {
@@ -2745,12 +2882,15 @@ function assertMutationAccess(orderId: string, action: DemoOrderAction, context?
     'confirm-payment',
     'user-confirmation',
     'submit-workflow-form',
-    'revise-workflow-form'
+    'revise-workflow-form',
+    'create-training-report'
   ];
   const allowedByPersona: Record<DemoPersona, DemoOrderAction['type'][]> = {
+    athleteRegistered: customerActions,
     athlete: customerActions,
     athletePrerequisite: customerActions,
     athleteScheduling: customerActions,
+    athletePreConsultation: customerActions,
     athleteClinicalDecision: customerActions,
     athleteDentistForms: customerActions,
     athletePayment: customerActions,
@@ -3080,6 +3220,82 @@ export function markAccountNotificationUnread(notificationId: string, context?: 
   return { notification: mapNotificationForProfile(notification, user.profileId) };
 }
 
+function ensureInitialCustomerOrder(user: DemoUser, activePersona: DemoPersona, now: string) {
+  if (state.orders.some((order) => order.customer_profile_id === user.profileId)) {
+    return;
+  }
+
+  const orderId = `BP-DEMO-${user.profileId.replace(/^demo-profile-/, '').toUpperCase()}-001`;
+  const practiceLocation = DEMO_PRACTICE_LOCATION_CATALOG['practice-demo-001'];
+
+  state.orders.push({
+    id: orderId,
+    status: 'registration_started',
+    statusLabel: 'Cadastro inicial pendente',
+    stage: 'new_user_onboarding',
+    created_at: now,
+    customer_profile_id: user.profileId,
+    user_profile_id: user.id,
+    practice_location_id: practiceLocation.id,
+    customer: {
+      id: user.profileId,
+      full_name: user.fullName,
+      email: user.email,
+      phone: user.phone
+    },
+    practice_location: clone(practiceLocation),
+    partnerId: null,
+    dentistId: null,
+    labId: null,
+    visibleTo: [activePersona, 'admin'],
+    nextActions: ['submit-workflow-form'],
+    productionRequestDraft: null,
+    preLabChecklistDraft: null,
+    flags: {
+      preRequisiteComplete: false,
+      eligible: null,
+      paymentConfirmed: false,
+      productionFormCompleted: false,
+      initialEvaluationCompleted: false,
+      retentionAcknowledged: false,
+      dentalArchFileAttached: false,
+      sentToLab: false,
+      productReceived: false
+    }
+  });
+
+  state.workflowForms.push(
+    {
+      id: `BP-WF-${orderId.replace(/^BP-DEMO-/, '')}-ONBOARDING`,
+      orderId,
+      templateKey: 'customer_new_user_onboarding',
+      stepKey: 'new_user_onboarding',
+      status: 'pending',
+      canViewPayload: true,
+      summary: null,
+      releasedAt: now,
+      submittedAt: null,
+      payload: null
+    },
+    {
+      id: `BP-WF-${orderId.replace(/^BP-DEMO-/, '')}-INTAKE`,
+      orderId,
+      templateKey: 'customer_pre_consultation_intake',
+      stepKey: 'pre_requisite_pending',
+      status: 'pending',
+      roleState: { customer: 'pending', dentist: 'locked' },
+      customerSubmittedAt: null,
+      dentistReviewStartedAt: null,
+      dentistSubmittedAt: null,
+      canViewPayload: true,
+      summary: null,
+      releasedAt: now,
+      submittedAt: null,
+      payload: null
+    }
+  );
+}
+
 export function createAccountNotification(
   payload: {
     scope?: 'global' | 'profile';
@@ -3129,7 +3345,8 @@ export function createProductRole(
   role: ProductRolePayload['role'],
   metadata: Record<string, unknown>
 ) {
-  const user = getPersonaUser(resolveActiveDemoPersona(context));
+  const activePersona = resolveActiveDemoPersona(context);
+  const user = getPersonaUser(activePersona);
   const current = user.productRoles ?? generatedProductRoles(user);
   const existing = current.find((item) => item.productKey === 'biteplaner' && item.role === role);
 
@@ -3162,6 +3379,10 @@ export function createProductRole(
       source_type: 'self_service',
       created_at: now
     };
+  }
+
+  if (role === 'customer') {
+    ensureInitialCustomerOrder(user, activePersona, now);
   }
 
   return clone(productRole);
@@ -3848,6 +4069,38 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     }
   };
 
+  if (action.type === 'create-training-report') {
+    const order = getOrderOrThrow(orderId);
+
+    if (order.status !== 'follow_up' && order.status !== 'completed') {
+      throw new DemoStateError(
+        409,
+        'training_report_not_available',
+        'Relatório de treino só pode ser criado após entrega e adaptação do Biteplaner.'
+      );
+    }
+
+    const sequence = state.workflowForms.filter(
+      (form) => form.orderId === orderId && form.templateKey === 'customer_training_report'
+    ).length + 1;
+    const releasedAt = new Date().toISOString();
+    const workflowForm: DemoWorkflowForm = {
+      id: `BP-WF-${orderId.replace(/^BP-DEMO-/, '')}-TRAINING-${String(sequence).padStart(3, '0')}`,
+      orderId,
+      templateKey: 'customer_training_report',
+      stepKey: 'post_adaptation_feedback',
+      status: 'pending',
+      canViewPayload: true,
+      summary: null,
+      releasedAt,
+      submittedAt: null,
+      payload: null
+    };
+
+    state.workflowForms.push(workflowForm);
+    return clone(workflowForm);
+  }
+
   if (action.type === 'submit-workflow-form' || action.type === 'revise-workflow-form') {
     const workflowForm = getWorkflowFormOrThrow(orderId, action.workflowFormId);
     const nextSubmittedAt = new Date().toISOString();
@@ -3965,7 +4218,11 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
 
     const sanitizedPayload = sanitizeWorkflowPayload(action.payload);
     assertReviewPayloadScale(workflowForm.templateKey, sanitizedPayload);
-    const summary = createWorkflowSummary(sanitizedPayload, nextSubmittedAt, nextRevision);
+    const summary = workflowForm.templateKey === 'customer_new_user_onboarding'
+      ? summarizeCustomerNewUserOnboarding(sanitizedPayload, nextSubmittedAt, nextRevision)
+      : workflowForm.templateKey === 'customer_training_report'
+        ? summarizeCustomerTrainingReport(sanitizedPayload, nextSubmittedAt, nextRevision)
+        : createWorkflowSummary(sanitizedPayload, nextSubmittedAt, nextRevision);
 
     workflowForm.status = 'submitted';
     workflowForm.submittedAt = nextSubmittedAt;
@@ -4463,6 +4720,20 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       'follow_up',
       'Consulta de adaptação concluída na demo.'
     );
+    if (!state.workflowForms.some((form) => form.orderId === orderId && form.templateKey === 'customer_training_report')) {
+      state.workflowForms.push({
+        id: `BP-WF-${orderId.replace(/^BP-DEMO-/, '')}-TRAINING-001`,
+        orderId,
+        templateKey: 'customer_training_report',
+        stepKey: 'post_adaptation_feedback',
+        status: 'pending',
+        canViewPayload: true,
+        summary: null,
+        releasedAt: new Date().toISOString(),
+        submittedAt: null,
+        payload: null
+      });
+    }
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 

@@ -111,7 +111,7 @@ describe('PainelHome', () => {
     expect(screen.getByRole('button', { name: /solicitar cadastro de laboratório/i })).toBeInTheDocument();
   });
 
-  it('creates active customer role and sends the user to prerequisite flow', async () => {
+  it('creates active customer role and sends the user to Biteplaner onboarding flow', async () => {
     mockApiPost.mockResolvedValueOnce({
       productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
     });
@@ -125,7 +125,7 @@ describe('PainelHome', () => {
         {},
         'tok'
       );
-      expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito');
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
     });
   });
 

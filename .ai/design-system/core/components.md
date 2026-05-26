@@ -40,6 +40,11 @@ Regras:
 
 - select e textarea não devem ter linguagem visual propria
 - campos de página legal ou landing seguem o mesmo campo base
+- todo campo obrigatório deve indicar `(*)` na label, legend ou texto principal do controle
+- validações de campo devem rodar no `blur` e também no envio como fallback
+- erros de validação devem aparecer abaixo do campo correspondente, em vermelho, com texto direto como `Campo obrigatório`
+- formulários não devem depender apenas de mensagens genéricas no topo/rodapé para erros de campo
+- novos formulários devem usar os componentes base do design system (`Field`, `Select`, `RadioQuestionGroup`, `CheckboxField` ou equivalentes) para manter labels obrigatórias, foco e erro consistentes
 
 ## Surface
 

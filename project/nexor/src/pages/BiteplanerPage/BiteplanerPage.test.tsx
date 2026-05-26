@@ -29,7 +29,8 @@ describe('BiteplanerPage', () => {
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /proteção, conforto e performance/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /segurança\. conforto\. performance/i })).toBeInTheDocument();
+    expect(screen.getByText(/dispositivo intraoral personalizado para atletas e praticantes de esportes/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
   });
@@ -42,6 +43,10 @@ describe('BiteplanerPage', () => {
     expect(screen.getAllByText('Pagamento após aptidão').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Produção personalizada').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Adaptação e acompanhamento').length).toBeGreaterThan(0);
+    expect(screen.getByText(/informe esporte, rotina, histórico e sintomas para selecionar um dentista licenciado/i)).toBeInTheDocument();
+    expect(screen.getByText(/confirmada sua aptidão na primeira consulta, o pagamento será realizado através da plataforma nexor/i)).toBeInTheDocument();
+    expect(screen.getByText(/a fabricação ocorre após confirmação do pagamento/i)).toBeInTheDocument();
+    expect(screen.getByText(/a instalação inicial do dispositivo será feita pelo dentista/i)).toBeInTheDocument();
   });
 
   it('renders the process journey map container', () => {
@@ -51,7 +56,9 @@ describe('BiteplanerPage', () => {
 
   it('renders athlete storytelling, use cases, and comparison content', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /feito para a rotina real de treino e competições/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /feito para a rotina real de treinos e competições/i })).toBeInTheDocument();
+    expect(screen.getByText(/nos esportes individuais ou coletivos de combate, força e alta intensidade/i)).toBeInTheDocument();
+    expect(screen.getByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
     const strengthDumbbellIcon = screen.getByTestId('biteplaner-strength-dumbbell-icon');
     const strengthZapIcon = screen.getByTestId('biteplaner-strength-zap-icon');
@@ -85,6 +92,11 @@ describe('BiteplanerPage', () => {
     expect(screen.getByText(/interferência na fala/i)).toBeInTheDocument();
     expect(screen.getByText(/integração com plataforma de dados/i)).toBeInTheDocument();
     expect(screen.getByText(/processo contínuo de aperfeiçoamento/i)).toBeInTheDocument();
+    expect(screen.getByText(/^indireta$/i)).toBeInTheDocument();
+    expect(screen.getByText(/parcial \(apenas proteção dental\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/muito alta \(proteção dental e articular\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/altamente relevante pois protege a ATM além dos dentes/i)).toBeInTheDocument();
+    expect(screen.getByText(/limitada, pois não ataca o problema dos traumas na ATM/i)).toBeInTheDocument();
   });
 
   it('wraps the comparison table in a horizontal scroll region for narrow screens', () => {
@@ -98,6 +110,8 @@ describe('BiteplanerPage', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();
     expect(screen.getByText(/pode auxiliar no conforto e prevenção/i)).toBeInTheDocument();
+    expect(screen.getByText(/não promete resultados imediatos/i)).toBeInTheDocument();
+    expect(screen.getByText(/produção sob padrões de excelência/i)).toBeInTheDocument();
     expect(screen.queryByText(/garante proteção/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/previne lesões/i)).not.toBeInTheDocument();
   });
@@ -108,6 +122,7 @@ describe('BiteplanerPage', () => {
     expect(screen.getByLabelText(/carrossel autom/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Marina Costa/i).length).toBeGreaterThan(1);
     expect(screen.getAllByText(/o biteplaner ficou firme/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ajustando o dispositivo o tempo todo/i).length).toBeGreaterThan(0);
   });
 
   it('renders FAQ section', () => {
@@ -115,5 +130,10 @@ describe('BiteplanerPage', () => {
     expect(screen.getByText(/perguntas frequentes/i)).toBeInTheDocument();
     expect(screen.getByText(/o que é Biteplaner/i)).toBeInTheDocument();
     expect(screen.getByText(/e se eu não for considerado apto/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /não\. a compra é feita através da plataforma nexor, na primeira consulta com o dentista, após a confirmação de sua aptidão clínica/i,
+      ),
+    ).toBeInTheDocument();
   });
 });

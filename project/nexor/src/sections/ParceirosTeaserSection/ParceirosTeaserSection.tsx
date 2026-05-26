@@ -6,15 +6,15 @@ import * as S from './styles';
 const PARTNERS = [
   {
     title: 'Dentista Licenciado',
-    body: 'Credenciamento para avaliação, moldagem e acompanhamento dos pacientes Biteplaner.',
+    body: 'Público diferenciado e serviços premium.',
   },
   {
     title: 'Academia / Coach Licenciado',
-    body: 'Programa de indicação com benefícios para parceiros que recomendam o Biteplaner.',
+    body: 'Aumento do Valuation e upgrade profissional.',
   },
   {
     title: 'Laboratório Licenciado',
-    body: 'Licenciamento para produção laboratorial de alto padrão dos dispositivos personalizados.',
+    body: 'Upgrade de produtos e novos nichos de mercado.',
   },
 ];
 

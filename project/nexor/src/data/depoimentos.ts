@@ -8,12 +8,12 @@ export const depoimentos: Depoimento[] = [
   {
     nome: 'Carlos M.',
     contexto: 'Lutador — MMA Amador',
-    texto: 'Nunca senti tanta diferença em performance com um produto de proteção. O Biteplaner mudou minha rotina de treino.',
+    texto: 'Nunca senti tanta diferença em performance com um dispositivo de segurança. O Biteplaner mudou minha rotina de treino.',
   },
   {
     nome: 'Ana P.',
     contexto: 'Triatleta — Iron Distance',
-    texto: 'A precisão de cada detalhe do produto reflete o que a Nexor entrega: ciência aplicada a resultado real.',
+    texto: 'A precisão de cada detalhe do dispositivo reflete o que a Nexor entrega: ciência aplicada a resultado real.',
   },
   {
     nome: 'Mariana L.',

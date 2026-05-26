@@ -72,8 +72,8 @@ describe('Compra', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /visão geral dos steps/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
-    expect(screen.getByTestId('step-breadcrumb-current')).toHaveTextContent(/compra/i);
+    expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/pedido/i);
     expect(screen.getByText(/bp-demo-003/i)).toBeInTheDocument();
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);

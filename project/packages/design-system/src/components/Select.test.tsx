@@ -30,4 +30,31 @@ describe('Select', () => {
 
     expect(handleChange).toHaveBeenCalledWith('2025');
   });
+
+  it('anchors the options to the control before helper text', () => {
+    render(
+      <DesignSystemProvider brand="nexor">
+        <Select
+          label="Ano"
+          hint="DescriÃ§Ã£o longa do campo"
+          value=""
+          onChange={() => undefined}
+          options={[
+            { value: '2026', label: '2026', description: 'Base atual' },
+            { value: '2025', label: '2025', description: 'Base histÃ³rica' },
+          ]}
+        />
+      </DesignSystemProvider>,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Ano' });
+    fireEvent.click(trigger);
+
+    const listbox = screen.getByRole('listbox', { name: 'Ano' });
+    const hint = screen.getByText(/descri/i);
+    const controlShell = trigger.parentElement;
+
+    expect(controlShell).toContainElement(listbox);
+    expect(controlShell).not.toContainElement(hint);
+  });
 });

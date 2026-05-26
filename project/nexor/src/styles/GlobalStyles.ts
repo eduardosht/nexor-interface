@@ -50,9 +50,15 @@ export const GlobalStyles = createGlobalStyle`
     outline-offset: 2px;
   }
 
-  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  :where(a, button, [tabindex]):focus-visible {
     outline: 3px solid #2f6df6;
     outline-offset: 3px;
+  }
+
+  :where(input, select, textarea):focus-visible {
+    border-radius: 6px;
+    outline: 2px solid rgba(47, 109, 246, 0.22);
+    outline-offset: 0;
   }
 
   button,

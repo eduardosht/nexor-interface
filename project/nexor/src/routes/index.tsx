@@ -18,6 +18,7 @@ const BiteplanerPage = lazy(() => import('../pages/BiteplanerPage').then(({ Bite
 const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) => ({ default: Parceiros })));
 const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
 const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
+const CadastroUsuarioBiteplaner = lazy(() => import('../pages/painel/CadastroUsuarioBiteplaner').then(({ CadastroUsuarioBiteplaner }) => ({ default: CadastroUsuarioBiteplaner })));
 const MinhaConta = lazy(() => import('../pages/painel/MinhaConta').then(({ MinhaConta }) => ({ default: MinhaConta })));
 const PreRequisito = lazy(() => import('../pages/painel/PreRequisito').then(({ PreRequisito }) => ({ default: PreRequisito })));
 const ConsultaInicial = lazy(() => import('../pages/painel/ConsultaInicial').then(({ ConsultaInicial }) => ({ default: ConsultaInicial })));
@@ -121,6 +122,7 @@ export const router = createBrowserRouter([
   { path: '/conta', element: <ProtectedRedirect><AccountRedirect /></ProtectedRedirect> },
   { path: '/painel', element: <ProtectedRedirect><PortalRootRedirect /></ProtectedRedirect> },
   { path: '/painel/home', element: <PainelRoute><PainelHome /></PainelRoute> },
+  { path: '/painel/biteplaner/onboarding', element: <PainelRoute><CadastroUsuarioBiteplaner /></PainelRoute> },
   { path: '/painel/biteplaner/cadastro/:role', element: <PainelRoute><CadastroPerfilBiteplaner /></PainelRoute> },
   { path: '/painel/conta', element: <PainelRoute><MinhaConta /></PainelRoute> },
   { path: '/painel/pre-requisito', element: <PainelRoute><PreRequisito /></PainelRoute> },

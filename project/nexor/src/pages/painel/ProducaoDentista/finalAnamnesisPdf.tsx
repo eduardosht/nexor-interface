@@ -306,7 +306,6 @@ function ClinicalTable({ dentist }: { dentist: Record<string, unknown> }) {
     ['Abertura com dor', dentist.painfulMaxOpeningMm],
     ['ATM', dentist.hasTmdDiagnosis],
     ['Observações clínicas', dentist.clinicalSectionNotes],
-    ['Pontos de atenção', dentist.clinicalDecisionAttentionPoints],
   ];
 
   return (
@@ -428,7 +427,6 @@ function FinalAnamnesisDocument({
             </Section>
 
             <Section number={8} title="PLANO DE TRATAMENTO / CONDUTA">
-              <Text style={styles.paragraphLine}>{value(dentist.initialEvaluationSummary)}</Text>
               <Text style={styles.paragraphLine}>{value(draft.productionRequestSummary)}</Text>
               <Text style={styles.paragraphLine}>{value(draft.labNotes)}</Text>
             </Section>

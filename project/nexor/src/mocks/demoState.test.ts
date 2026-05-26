@@ -3,6 +3,7 @@ import {
   ACTIVE_DEMO_PERSONA_STORAGE_KEY,
   DemoStateError,
   applyOrderAction,
+  createProductRole,
   getAccessOptions,
   getAppointments,
   getAuthPayload,
@@ -58,6 +59,37 @@ describe('shared Biteplaner demo state', () => {
     expect(partnerAuth.user.roles).toContain('partner');
     expect(partnerAuth.user.roles).not.toContain('parner');
     expect(partnerAuth.user.partnerId).toBeTruthy();
+  });
+
+  it('keeps the registered-only customer persona without a Biteplaner order until acquisition', () => {
+    const context = { requestHeaders: { 'x-demo-persona': 'athleteRegistered' } };
+
+    const initialAuth = getAuthPayload(context);
+    expect(initialAuth.user.email).toBe('cliente.cadastrado@nexor.dev');
+    expect(initialAuth.user.roles).toEqual([]);
+    expect(initialAuth.user.productRoles).toEqual([]);
+    expect(getAccessOptions(context).enrollment).toBeNull();
+    expect(listOrders(context, 'user').orders).toEqual([]);
+
+    const productRole = createProductRole(context, 'customer', {});
+    expect(productRole.status).toBe('active');
+
+    const afterAuth = getAuthPayload(context);
+    const orders = listOrders(context, 'user').orders;
+
+    expect(afterAuth.user.roles).toContain('customer');
+    expect(afterAuth.user.productRoles).toEqual([expect.objectContaining({ role: 'customer', status: 'active' })]);
+    expect(orders).toEqual([
+      expect.objectContaining({
+        status: 'registration_started',
+        stage: 'new_user_onboarding',
+        customer: expect.objectContaining({ email: 'cliente.cadastrado@nexor.dev' })
+      })
+    ]);
+    expect(getWorkflowForms(orders[0].id, context).forms.map((form) => form.templateKey)).toEqual([
+      'customer_new_user_onboarding',
+      'customer_pre_consultation_intake'
+    ]);
   });
 
   it('lists mock notifications and persists read state per active user', () => {
@@ -170,7 +202,8 @@ describe('shared Biteplaner demo state', () => {
     const scenarios = [
       ['athletePrerequisite', 'BP-DEMO-001'],
       ['athleteScheduling', 'BP-DEMO-002'],
-      ['athleteClinicalDecision', 'BP-DEMO-003'],
+      ['athletePreConsultation', 'BP-DEMO-003'],
+      ['athleteClinicalDecision', 'BP-DEMO-014'],
       ['athleteDentistForms', 'BP-DEMO-004'],
       ['athletePayment', 'BP-DEMO-005'],
       ['athleteTreatmentRequired', 'BP-DEMO-006'],

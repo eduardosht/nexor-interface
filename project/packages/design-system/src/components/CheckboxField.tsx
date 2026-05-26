@@ -8,11 +8,13 @@ export type CheckboxFieldProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   description?: ReactNode;
+  error?: ReactNode;
   badge?: ReactNode;
   badgeTone?: 'required' | 'optional';
   disabled?: boolean;
   name?: string;
   id?: string;
+  onBlur?: () => void;
 };
 
 const Wrapper = styled.label<{
@@ -99,7 +101,7 @@ const LabelText = styled.span<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.45;
 `;
 
@@ -126,16 +128,26 @@ const Description = styled.span<{ $tokens: BrandTokens }>`
   line-height: 1.45;
 `;
 
+const ErrorText = styled.span<{ $tokens: BrandTokens }>`
+  grid-column: 1 / -1;
+  color: ${({ $tokens }) => $tokens.colors.danger};
+  font-family: ${({ $tokens }) => $tokens.fonts.body};
+  font-size: 10px;
+  line-height: 1.4;
+`;
+
 export function CheckboxField({
   label,
   checked,
   onChange,
   description,
+  error,
   badge,
   badgeTone = 'optional',
   disabled = false,
   name,
   id,
+  onBlur,
 }: CheckboxFieldProps) {
   const { tokens } = useDesignSystem();
   const autoId = useId();
@@ -149,6 +161,7 @@ export function CheckboxField({
       $disabled={disabled}
       htmlFor={inputId}
       data-testid="checkbox-field-card"
+      onBlur={onBlur}
     >
       <NativeInput
         id={inputId}
@@ -166,6 +179,7 @@ export function CheckboxField({
           {badge ? <Badge $tokens={tokens} $tone={badgeTone}>{badge}</Badge> : null}
         </LabelRow>
         {description ? <Description $tokens={tokens}>{description}</Description> : null}
+        {error ? <ErrorText $tokens={tokens} role="alert">{error}</ErrorText> : null}
       </TextStack>
     </Wrapper>
   );

@@ -90,10 +90,8 @@ describe('ConsultaInicial', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /visão geral dos steps/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
-    expect(screen.getByTestId('step-breadcrumb-current')).toHaveTextContent(/consulta inicial/i);
-    expect(screen.getByText(/pre-requisito/i)).toBeInTheDocument();
-    expect(screen.getByText(/decisão clínica/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/pedido/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/bp-demo-002/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
@@ -141,6 +139,16 @@ describe('ConsultaInicial', () => {
     expect(screen.getAllByText(/instituto paulistano de odontologia esportiva/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/use os dados abaixo para entrar em contato com o consultório fora da plataforma/i)).toBeInTheDocument();
     expect(screen.getByText(/\(11\) 4000-1003/i)).toBeInTheDocument();
+    const clinicWhatsappLink = screen.getByRole('link', { name: /agendar pelo whatsapp/i });
+    expect(clinicWhatsappLink).toHaveAttribute('href', expect.stringContaining('https://wa.me/551140001003'));
+    expect(clinicWhatsappLink).toHaveAttribute(
+      'href',
+      expect.stringContaining(
+        encodeURIComponent('Olá! Quero agendar uma consulta para uso do Biteplaner e saber valores.')
+      )
+    );
+    expect(screen.getByTestId('clinic-whatsapp-icon')).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: /consulta agendada/i }));
     expect(mockApiPost).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog', { name: /confirmar consulta agendada/i })).toBeInTheDocument();

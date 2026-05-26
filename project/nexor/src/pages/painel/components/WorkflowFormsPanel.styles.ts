@@ -1,5 +1,15 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
+
+const sadPulse = keyframes`
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-3px) scale(1.04);
+  }
+`;
 
 export const Panel = styled.section<{ $variant: 'panel' | 'embedded' }>`
   display: grid;
@@ -32,6 +42,7 @@ export const Description = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+  white-space: pre-line;
 `;
 
 export const FormGrid = styled.div`
@@ -118,13 +129,13 @@ export const FieldShell = styled.label`
   border: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
 
   legend {
     padding: 0;
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 500;
   }
 `;
 
@@ -170,15 +181,26 @@ export const RadioQuestionSlot = styled.div`
   }
 `;
 
-export const Select = styled.select`
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 6px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font: inherit;
+export const StackedRadioQuestionSlot = styled(RadioQuestionSlot)`
+  > fieldset {
+    display: grid;
+    align-items: start;
+    justify-content: stretch;
+  }
+
+  > fieldset > legend {
+    min-height: auto;
+  }
+
+  > fieldset > div {
+    flex: initial;
+    justify-content: flex-start;
+  }
+`;
+
+export const ConditionalFieldGroup = styled.div`
+  display: grid;
+  gap: 10px;
 `;
 
 export const ScoreScale = styled.span`
@@ -189,6 +211,38 @@ export const ScoreScale = styled.span`
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
+`;
+
+export const FieldError = styled.span`
+  display: block;
+  margin-top: 6px;
+  color: ${({ theme }) => theme.colors.error};
+  font-size: 10px;
+  line-height: 1.4;
+`;
+
+export const TrainingLocationField = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+export const InlineCheckbox = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+
+  input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: ${({ theme }) => theme.colors.textPrimary};
+  }
 `;
 
 export const Actions = styled.div`
@@ -205,6 +259,34 @@ export const Feedback = styled.span<{ $tone: 'success' | 'error' }>`
   font-weight: 700;
 `;
 
+export const OrthodonticBlockerFeedback = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 2px;
+  padding: 14px 16px;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+  border-radius: 10px;
+  background: rgba(254, 242, 242, 0.92);
+  color: #991B1B;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+`;
+
+export const OrthodonticBlockerIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #FEE2E2;
+  color: #B91C1C;
+  animation: ${sadPulse} 1.8s ease-in-out infinite;
+`;
+
 export const LockNotice = styled.p`
   margin: 8px 0 0;
   padding: 10px 12px;
@@ -219,15 +301,15 @@ export const LockNotice = styled.p`
 
 export const IntakeProgressShell = styled.div`
   display: grid;
-  gap: 14px;
-  padding: 14px;
+  gap: 20px;
+  padding: 22px 24px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgInset};
 
   @media (max-width: 1280px) {
-    gap: 10px;
-    padding: 10px;
+    gap: 16px;
+    padding: 18px;
   }
 `;
 
@@ -237,6 +319,12 @@ export const IntakeProgressHeader = styled.div`
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+
+  > div {
+    display: grid;
+    gap: 8px;
+    max-width: 920px;
+  }
 `;
 
 export const StepKicker = styled.span`
@@ -245,6 +333,14 @@ export const StepKicker = styled.span`
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
+`;
+
+export const SectionLead = styled.p`
+  max-width: 920px;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  line-height: 1.75;
 `;
 
 export const StepProgressValue = styled.span`
@@ -270,16 +366,16 @@ export const ProgressFill = styled(motion.div)`
 export const StepRail = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
+  gap: 12px;
 `;
 
 export const StepTab = styled.button<{ $active: boolean; $complete: boolean }>`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 8px 10px;
+  gap: 12px;
+  min-height: 62px;
+  padding: 12px 14px;
   border: 1px solid
     ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.borderDefault)};
   border-radius: 8px;
@@ -319,7 +415,33 @@ export const StepTabLabel = styled.span`
   color: inherit;
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.25;
+  line-height: 1.35;
+`;
+
+export const FormSubsection = styled.section`
+  display: grid;
+  gap: 12px;
+
+  & + & {
+    padding-top: 18px;
+  }
+`;
+
+export const SubsectionHeading = styled.h4`
+  display: grid;
+  grid-template-columns: auto minmax(32px, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 15px;
+  font-weight: 800;
+
+  &::after {
+    content: '';
+    height: 1px;
+    background: ${({ theme }) => theme.colors.textPrimary};
+  }
 `;
 
 export const AnimatedStep = styled(motion.div)`
@@ -342,8 +464,174 @@ export const FormSectionGroup = styled.section`
 export const SectionHeading = styled.h4`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+`;
+
+export const SectionDescription = styled.div`
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgInset};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.55;
+
+  p {
+    margin: 0;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 2px;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  ul {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+`;
+
+export const PrivacyGate = styled.section`
+  display: grid;
+  gap: 22px;
+  padding: 28px 30px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  @media (max-width: 720px) {
+    gap: 18px;
+    padding: 20px;
+  }
+`;
+
+export const PrivacyIntro = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+  padding-bottom: 22px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+
+  ${SectionHeading} {
+    margin-bottom: 12px;
+    font-size: 20px;
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PrivacyIntroIcon = styled.span`
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  background: ${({ theme }) => theme.colors.greenGhost};
+  color: ${({ theme }) => theme.colors.green};
+`;
+
+export const PrivacyIntroText = styled.p`
+  max-width: 780px;
+  margin: 0 0 10px;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 400;
+  line-height: 1.7;
+`;
+
+export const PrivacyConsentArea = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  align-items: start;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PrivacyShield = styled.span`
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.greenGhost};
+  color: ${({ theme }) => theme.colors.green};
+`;
+
+export const PrivacyConsentContent = styled.div`
+  display: grid;
+  gap: 16px;
+`;
+
+export const PrivacyPurposeList = styled.div`
+  display: grid;
+  gap: 0;
+`;
+
+export const PrivacyPurposeItem = styled.div`
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 0;
+  border-bottom: 1px dashed ${({ theme }) => theme.colors.borderDefault};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  line-height: 1.55;
+
+  svg {
+    width: 34px;
+    height: 34px;
+    padding: 8px;
+    border-radius: 999px;
+    background: ${({ theme }) => theme.colors.greenGhost};
+    color: ${({ theme }) => theme.colors.green};
+  }
+`;
+
+export const PrivacyInfoBox = styled.div`
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.greenGhost};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.6;
+
+  svg {
+    color: ${({ theme }) => theme.colors.green};
+    margin-top: 2px;
+  }
+`;
+
+export const PrivacyActions = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
 `;
 
 export const ReadOnlyGrid = styled.div`
@@ -590,7 +878,7 @@ export const SurveyLabel = styled.span`
 
   > span {
     margin-left: 3px;
-    color: #b91c1c;
+    color: inherit;
   }
 `;
 

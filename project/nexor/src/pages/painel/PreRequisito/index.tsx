@@ -45,6 +45,23 @@ function getCustomerPayload(form: DemoWorkflowForm) {
   return {};
 }
 
+function getFormBlocker(form: DemoWorkflowForm) {
+  const summaryBlocker = form.summary && 'blocker' in form.summary ? form.summary.blocker : null;
+
+  if (summaryBlocker) {
+    return summaryBlocker;
+  }
+
+  const customerPayload = getCustomerPayload(form);
+  return isActiveOrthodonticTreatment(customerPayload.orthodonticTreatmentStatus)
+    ? 'active_orthodontic_treatment'
+    : null;
+}
+
+function isActiveOrthodonticTreatment(value: unknown) {
+  return value === 'active' || value === true || value === 'yes';
+}
+
 export function PreRequisito() {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -148,9 +165,15 @@ export function PreRequisito() {
     }
 
     const customerPayload = getCustomerPayload(form);
+    if (getFormBlocker(form) === 'active_orthodontic_treatment') {
+      setError('Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.');
+      return;
+    }
+
     const consents = {
-      service: consentWasAccepted(customerPayload.serviceConsent),
-      sensitiveHealth: consentWasAccepted(customerPayload.sensitiveHealthConsent),
+      service: consentWasAccepted(customerPayload.serviceConsent) || consentWasAccepted(customerPayload.clinicalPrivacyConsent),
+      sensitiveHealth:
+        consentWasAccepted(customerPayload.sensitiveHealthConsent) || consentWasAccepted(customerPayload.clinicalPrivacyConsent),
       research: consentWasAccepted(customerPayload.researchConsent),
       marketing: consentWasAccepted(customerPayload.marketingConsent),
     };
@@ -172,7 +195,7 @@ export function PreRequisito() {
           sport: '',
           isMinor: false,
           eligibility: {
-            orthodontic: false,
+            orthodontic: isActiveOrthodonticTreatment(customerPayload.orthodonticTreatmentStatus),
             activeDentalTreatment: false,
             relevantCondition: false,
           },
@@ -200,6 +223,11 @@ export function PreRequisito() {
     );
 
     if (submittedIntake) {
+      if (getFormBlocker(submittedIntake) === 'active_orthodontic_treatment') {
+        setError('Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.');
+        return;
+      }
+
       void completePrerequisiteFromIntake(submittedIntake);
     }
   }
@@ -227,7 +255,7 @@ export function PreRequisito() {
           </S.InfoIcon>
           <div>
             <p>
-              Campos marcados com <S.RequiredStar>*</S.RequiredStar> são obrigatórios.
+              Campos marcados com <S.RequiredStar>(*)</S.RequiredStar> são obrigatórios.
             </p>
             <p>Campos opcionais aparecem identificados como "Opcional".</p>
           </div>

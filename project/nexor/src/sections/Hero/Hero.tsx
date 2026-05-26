@@ -21,7 +21,7 @@ export function Hero() {
 
           <S.Headline variants={fadeUp}>
             <S.HeadlinePrimary>Performance através</S.HeadlinePrimary>
-            <S.HeadlineDim>da precisão.</S.HeadlineDim>
+            <S.HeadlineDim>da tecnologia.</S.HeadlineDim>
           </S.Headline>
 
           <S.Tagline variants={fadeUp}>
