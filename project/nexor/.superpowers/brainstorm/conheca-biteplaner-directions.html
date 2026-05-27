@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Direcoes visuais - Conheca Biteplaner</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f232b;
+        --panel: #152d36;
+        --panel-soft: #193944;
+        --line: #66a7ff;
+        --accent: #35a596;
+        --accent-soft: #93dec9;
+        --text: #f5f7f8;
+        --muted: #c4d0d5;
+        --quiet: #8ea2aa;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        width: min(1180px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 48px 0 72px;
+      }
+
+      .intro {
+        max-width: 860px;
+        margin-bottom: 34px;
+      }
+
+      .eyebrow {
+        margin: 0 0 16px;
+        color: var(--accent-soft);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 780px;
+        margin: 0;
+        font-size: clamp(38px, 5vw, 68px);
+        line-height: 0.98;
+        letter-spacing: 0;
+      }
+
+      .intro p {
+        max-width: 760px;
+        margin: 22px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.75;
+      }
+
+      .options {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .option {
+        min-height: 620px;
+        border: 1px solid rgba(102, 167, 255, 0.72);
+        background: linear-gradient(180deg, rgba(25, 57, 68, 0.92), rgba(16, 37, 45, 0.98));
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+      }
+
+      .option-header {
+        padding: 20px 22px 18px;
+        border-bottom: 5px solid var(--line);
+      }
+
+      .option-letter {
+        width: 34px;
+        height: 34px;
+        display: inline-grid;
+        place-items: center;
+        margin-bottom: 18px;
+        border-radius: 999px;
+        background: #71a9ff;
+        color: #07141c;
+        font-weight: 900;
+      }
+
+      .option h2 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.08;
+      }
+
+      .option-header p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .wire {
+        padding: 22px;
+      }
+
+      .block {
+        margin-bottom: 14px;
+        border: 1px solid rgba(102, 167, 255, 0.62);
+        background: rgba(12, 32, 40, 0.55);
+      }
+
+      .block.pad {
+        padding: 18px;
+      }
+
+      .mini-title {
+        margin: 0 0 10px;
+        color: var(--white);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .mini-copy {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .highlight {
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .tile {
+        min-height: 92px;
+        padding: 14px;
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .tile strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+      }
+
+      .tile span {
+        display: block;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .number-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .number-card {
+        position: relative;
+        min-height: 128px;
+        padding: 28px 14px 14px;
+        border: 1px solid rgba(102, 167, 255, 0.82);
+        border-top-width: 5px;
+      }
+
+      .num {
+        position: absolute;
+        top: -20px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        background: #71a9ff;
+        color: #07141c;
+        font-weight: 900;
+      }
+
+      .list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .list-item {
+        padding: 14px;
+        border-left: 5px solid var(--line);
+        border-top: 1px solid rgba(102, 167, 255, 0.72);
+        border-right: 1px solid rgba(102, 167, 255, 0.72);
+        border-bottom: 1px solid rgba(102, 167, 255, 0.72);
+      }
+
+      .icon-row {
+        display: grid;
+        grid-template-columns: 30px 1fr;
+        gap: 12px;
+        padding: 12px 0;
+      }
+
+      .icon {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--accent);
+        border-radius: 999px;
+      }
+
+      .note {
+        margin-top: 28px;
+        padding: 18px 20px;
+        border: 1px solid rgba(147, 222, 201, 0.35);
+        background: rgba(53, 165, 150, 0.12);
+        color: var(--muted);
+        border-radius: 8px;
+        line-height: 1.65;
+      }
+
+      @media (max-width: 980px) {
+        .options {
+          grid-template-columns: 1fr;
+        }
+
+        .option {
+          min-height: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">Mockup de direcao</p>
+        <h1>Como a pagina /conheca-biteplaner deve explicar o produto?</h1>
+        <p>
+          A rota nova pode herdar a atmosfera escura e tecnica das imagens anexas, mas deve ser menos campanha e mais
+          conteudo: problema, biomecanica, evidencias cautelosas, qualidade do processo e decisao segura.
+        </p>
+      </section>
+
+      <section class="options" aria-label="Tres direcoes visuais">
+        <article class="option">
+          <div class="option-header">
+            <div class="option-letter">A</div>
+            <h2>Editorial profundo</h2>
+            <p>Uma pagina de leitura premium, quase artigo técnico visual, com blocos densos e hierarquia clara.</p>
+          </div>
+          <div class="wire">
+            <div class="block pad">
+              <p class="mini-title">A dor invisivel nas academias</p>
+              <p class="mini-copy">
+                Explica o <span class="highlight">apertamento mandibular involuntario</span> em treinos intensos antes
+                de falar em compra.
+              </p>
+            </div>
+            <div class="two-col">
+              <div class="tile"><strong>Novo protocolo</strong><span>Prevencao e performance integradas a rotina.</span></div>
+              <div class="tile"><strong>Nova receita</strong><span>Linha recorrente de valor para academia.</span></div>
+            </div>
+            <div class="block pad">
+              <p class="mini-title">Evidencias e mercado</p>
+              <p class="mini-copy">Sobrecarga mandibular, fadiga, dores cervicofaciais e intervencoes estruturais.</p>
+            </div>
+            <div class="block pad">
+              <p class="mini-title">Qualidade do produto</p>
+              <p class="mini-copy">Molde individual, ajuste preciso, estabilidade, fala, hidratacao e acompanhamento.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-header">
+            <div class="option-letter">B</div>
+            <h2>Teses guiadas</h2>
+            <p>Uma narrativa estruturada em hipóteses e validação, ideal para transmitir rigor sem prometer demais.</p>
+          </div>
+          <div class="wire">
+            <div class="number-grid">
+              <div class="number-card">
+                <span class="num">1</span>
+                <p class="mini-title">Protecao articular</p>
+                <p class="mini-copy"><span class="highlight">Reducao de sobrecarga</span> em contextos avaliados.</p>
+              </div>
+              <div class="number-card">
+                <span class="num">2</span>
+                <p class="mini-title">Performance</p>
+                <p class="mini-copy">Potencial apoio em volume de treino, ainda em validacao.</p>
+              </div>
+              <div class="number-card">
+                <span class="num">3</span>
+                <p class="mini-title">Adesao</p>
+                <p class="mini-copy">Personalizacao para reduzir sensacao de produto generico.</p>
+              </div>
+              <div class="number-card">
+                <span class="num">4</span>
+                <p class="mini-title">Dor cervical</p>
+                <p class="mini-copy">Conforto postural em exercicios que exigem estabilidade.</p>
+              </div>
+            </div>
+            <div class="block pad">
+              <p class="mini-title">Tabela: protetor comum x Biteplaner</p>
+              <p class="mini-copy">Mantem comparacao objetiva, mas com linguagem cautelosa e educativa.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-header">
+            <div class="option-letter">C</div>
+            <h2>Diagnostico e engenharia</h2>
+            <p>Uma pagina mais produto: começa no problema, entra no mecanismo e fecha com processo de fabricação.</p>
+          </div>
+          <div class="wire">
+            <div class="list">
+              <div class="list-item">
+                <p class="mini-title">1. O problema</p>
+                <p class="mini-copy">Carga repetida, impacto, apertamento e tensao de mandibula/pescoco.</p>
+              </div>
+              <div class="list-item">
+                <p class="mini-title">2. O mecanismo</p>
+                <p class="mini-copy">Como um dispositivo intraoral personalizado busca organizar carga e encaixe.</p>
+              </div>
+              <div class="list-item">
+                <p class="mini-title">3. A qualidade</p>
+                <p class="mini-copy">Molde/scan, projeto, laboratorio, ajuste e acompanhamento profissional.</p>
+              </div>
+            </div>
+            <div class="block pad">
+              <div class="icon-row">
+                <span class="icon"></span>
+                <p class="mini-copy"><strong>ATM:</strong> pode apoiar a reducao de sobrecargas geradas por apertamento.</p>
+              </div>
+              <div class="icon-row">
+                <span class="icon"></span>
+                <p class="mini-copy"><strong>Foco:</strong> reduz desconforto percebido e ajuda o atleta a manter tecnica.</p>
+              </div>
+              <div class="icon-row">
+                <span class="icon"></span>
+                <p class="mini-copy"><strong>Encaixe:</strong> feito a partir de anatomia individual e ajustes profissionais.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <p class="note">
+        Minha recomendacao inicial: <strong>C com uma secao B no meio</strong>. Comeca pelo problema real, explica a engenharia
+        do produto e usa as teses numeradas como bloco de credibilidade. Isso diferencia bem da /biteplaner, que hoje e mais
+        jornada/comercial.
+      </p>
+    </main>
+  </body>
+</html>
