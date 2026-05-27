@@ -15,6 +15,7 @@ const Cadastro = lazy(() => import('../pages/Cadastro').then(({ Cadastro }) => (
 const RecuperarSenha = lazy(() => import('../pages/RecuperarSenha').then(({ RecuperarSenha }) => ({ default: RecuperarSenha })));
 const Sobre = lazy(() => import('../pages/Sobre').then(({ Sobre }) => ({ default: Sobre })));
 const BiteplanerPage = lazy(() => import('../pages/BiteplanerPage').then(({ BiteplanerPage }) => ({ default: BiteplanerPage })));
+const ConhecaBiteplaner = lazy(() => import('../pages/ConhecaBiteplaner').then(({ ConhecaBiteplaner }) => ({ default: ConhecaBiteplaner })));
 const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) => ({ default: Parceiros })));
 const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
 const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
@@ -110,6 +111,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <LazyRoute><Home /></LazyRoute> },
       { path: '/sobre', element: <LazyRoute><Sobre /></LazyRoute> },
       { path: '/biteplaner', element: <LazyRoute><BiteplanerPage /></LazyRoute> },
+      { path: '/conheca-biteplaner', element: <LazyRoute><ConhecaBiteplaner /></LazyRoute> },
       { path: '/parceiros', element: <LazyRoute><Parceiros /></LazyRoute> },
       { path: '/privacidade', element: <LazyRoute><Privacidade /></LazyRoute> },
       { path: '/termos', element: <LazyRoute><Termos /></LazyRoute> },
