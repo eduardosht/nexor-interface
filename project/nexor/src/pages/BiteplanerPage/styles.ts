@@ -33,21 +33,31 @@ export const HeroSection = styled.section`
   align-items: center;
   padding: 116px max(60px, calc((100vw - ${({ theme }) => theme.maxWidth}) / 2)) 118px;
   background: ${imageSet(publicOptimizedImages.biteplaner.hero.desktop)} center right / cover no-repeat;
+`;
 
-  @media (max-width: 900px) {
-    min-height: 100vh;
-    min-height: 100svh;
-    padding: 112px 24px 280px;
-    background:
-      linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.92) 50%, rgba(255, 255, 255, 0.2) 100%),
-      ${imageSet(publicOptimizedImages.biteplaner.hero.mobile)} center bottom / cover no-repeat;
+
+const morph = keyframes`
+  0% {
+    border-radius: 40% 60% 60% 40% / 70% 30% 70% 30%;
+  }
+
+  100% {
+    border-radius: 60% 40% 40% 60% / 30% 70% 30% 70%;
   }
 `;
 
 export const HeroCopy = styled.div`
+  padding: 115px;
   position: relative;
   z-index: 3;
-  max-width: 610px;
+  max-width: 730px;
+  width: 90vmin;
+  height: 73vmin;
+  background: #ffffff57;
+  background-image: linear-gradient(45deg, #5555555c 20%, #ffffff 100%);
+  box-shadow: -10vmin 10vmin 0 rgba(255, 255, 255, 0.07);
+
+  animation: ${morph} 10s linear infinite alternate;
 `;
 
 export const ProductLabel = styled.p`
@@ -80,7 +90,6 @@ export const HeroTitle = styled.h1`
 export const HeroSubtitle = styled.p`
   max-width: 520px;
   margin: 30px 0 0;
-  color: #465164;
   font-size: 16px;
   line-height: 1.72;
 `;
@@ -145,6 +154,12 @@ export const HeroProof = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
+
+  background-color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   @media (max-width: 900px) {
     position: relative;
