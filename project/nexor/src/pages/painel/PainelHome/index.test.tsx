@@ -73,31 +73,42 @@ describe('PainelHome', () => {
     mockNavigate.mockReset();
   });
 
-  it('renders welcome heading', async () => {
+  it('renders the coming soon hero and quick actions heading', async () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /informações da conta/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breve no nosso site/i })).toBeInTheDocument();
+    expect(screen.getByText(/a compra do biteplaner estar/i)).toBeInTheDocument();
+    expect(screen.getByText(/fique ligado/i)).toBeInTheDocument();
+    expect(screen.getByText(/tecnologia/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ações rápidas/i })).toBeInTheDocument();
+    expect(screen.getByText(/atalhos para otimizar sua rotina no biteplaner/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /informações da conta/i })).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('renders Biteplaner product card', async () => {
+  it('renders Biteplaner coming soon content', async () => {
     renderPage();
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
-    expect(screen.getByText(/R\$ 400/)).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breve no nosso site/i })).toBeInTheDocument();
+    expect(screen.queryByText(/R\$ 400/)).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('uses the Biteplaner mold image as a static banner background', async () => {
+  it('uses the generated Biteplaner product as a hero image', async () => {
     renderPage();
 
-    expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-product')).toHaveAttribute(
+      'src',
+      expect.stringContaining('biteplaner-coming-soon-product')
+    );
     expect(document.querySelector('img[src*="biteplaner-moldera"]')).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('renders the product hub area with Biteplaner actions', async () => {
+  it('renders the quick actions area with Biteplaner actions', async () => {
     renderPage();
-    expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ações rápidas/i })).toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar parceria/i })).toBeInTheDocument();
   });

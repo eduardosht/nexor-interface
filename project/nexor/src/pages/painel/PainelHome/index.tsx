@@ -3,21 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   Briefcase,
-  ChartNoAxesCombined,
+  CalendarDays,
   ClipboardList,
+  Clock3,
   FlaskConical,
-  Info,
-  LockKeyhole,
-  ShieldCheck,
   ShoppingBag,
-  ShoppingCart,
   UserRound,
 } from 'lucide-react';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { DEMO_PERSONA_LABELS } from '../../../features/demo/persona';
-import biteplanerMoldera from '../../../assets/biteplaner-transparent-2.png';
+import biteplanerComingSoonProduct from '../../../assets/biteplaner-coming-soon-product.png';
 import * as S from './styles';
 
 type ProductRoleKey = 'customer' | 'partner' | 'dentist' | 'lab';
@@ -95,18 +92,18 @@ function getRoleStatusLabel(status?: ProductRoleStatus) {
 
 function getActionIcon(role: ProductRoleKey) {
   if (role === 'customer') {
-    return <ShoppingBag size={24} strokeWidth={2.1} />;
+    return <ShoppingBag size={36} strokeWidth={2} />;
   }
 
   if (role === 'partner') {
-    return <Briefcase size={24} strokeWidth={2.1} />;
+    return <Briefcase size={36} strokeWidth={2} />;
   }
 
   if (role === 'dentist') {
-    return <UserRound size={24} strokeWidth={2.1} />;
+    return <UserRound size={36} strokeWidth={2} />;
   }
 
-  return <FlaskConical size={24} strokeWidth={2.1} />;
+  return <FlaskConical size={36} strokeWidth={2} />;
 }
 
 function getOperationalRoleLabel(role: ProductRoleKey) {
@@ -218,15 +215,38 @@ export function PainelHome() {
 
   return (
     <S.Page>
-      <S.PageHeader>
-        <S.TitleRow>
-          <S.PageTitle>Informações da conta</S.PageTitle>
-          <S.HeaderIcon aria-hidden="true">
-            <LockKeyhole size={16} strokeWidth={2.4} />
-          </S.HeaderIcon>
-        </S.TitleRow>
-        <S.PageSubtitle>Gerencie seus dados e acompanhe o status da sua conta.</S.PageSubtitle>
-      </S.PageHeader>
+      <S.ComingSoonHero data-testid="biteplaner-coming-soon-hero">
+        <S.HeroCopy>
+          <S.HeroBadge>
+            <Clock3 size={22} strokeWidth={2.4} />
+            EM BREVE
+          </S.HeroBadge>
+          <S.HeroTitle>
+            Em breve
+            <br />
+            no nosso <span>site.</span>
+          </S.HeroTitle>
+          <S.HeroDescription>A compra do Biteplaner estará disponível em breve.</S.HeroDescription>
+          <S.HeroAccentLine aria-hidden="true" />
+          <S.HeroNotice>
+            <S.HeroNoticeIcon aria-hidden="true">
+              <CalendarDays size={30} strokeWidth={2.2} />
+            </S.HeroNoticeIcon>
+            <div>
+              <S.HeroNoticeTitle>Fique ligado.</S.HeroNoticeTitle>
+              <S.HeroNoticeText>Novidades chegando para elevar sua performance.</S.HeroNoticeText>
+            </div>
+          </S.HeroNotice>
+        </S.HeroCopy>
+
+        <S.HeroProductImage
+          src={biteplanerComingSoonProduct}
+          alt=""
+          aria-hidden="true"
+          data-testid="biteplaner-coming-soon-product"
+        />
+        <S.HeroSignature>TECNOLOGIA • PERFORMANCE • PROTEÇÃO</S.HeroSignature>
+      </S.ComingSoonHero>
 
       {isMockMode && demoPersona ? (
         <S.DemoBanner data-testid="demo-banner-active-profile">
@@ -243,149 +263,89 @@ export function PainelHome() {
         </S.DemoBanner>
       ) : null}
 
-      <S.Section>
-        <S.ProductHero $backgroundImage={biteplanerMoldera} data-testid="biteplaner-product-banner">
-          <S.ProductHeroContent>
-            <S.ProductIcon aria-hidden="true">
-              <ShieldCheck size={34} strokeWidth={2} />
-            </S.ProductIcon>
-            <S.ProductTitle>Biteplaner</S.ProductTitle>
-            <S.ProductDescription>
-              Plataforma completa para triagem odontológica, planejamento e acompanhamento de atletas com tecnologia e segurança.
-            </S.ProductDescription>
-            <S.ProductStats>
-              <S.ProductStat>
-                <S.BpRowLabel>Status</S.BpRowLabel>
-                <S.BpStatusBadge>Disponível</S.BpStatusBadge>
-              </S.ProductStat>
-              <S.ProductStat>
-                <S.BpRowLabel>Valor</S.BpRowLabel>
-                <S.BpPrice>R$ 400,00</S.BpPrice>
-              </S.ProductStat>
-            </S.ProductStats>
-            <S.HeroButton
-              type="button"
-              disabled={loadingRoles || submittingRole}
-              onClick={() => {
-                if (shouldTrackOrder) {
-                  trackOrder();
-                  return;
-                }
-
-                void activateCustomer();
-              }}
-            >
-              {shouldTrackOrder ? (
-                <ClipboardList size={22} strokeWidth={2.2} />
-              ) : (
-                <ShoppingCart size={22} strokeWidth={2.2} />
-              )}
-              {shouldTrackOrder ? 'Acompanhar sua ordem' : 'Adquirir Biteplaner'}
-              <ArrowRight size={22} strokeWidth={2.2} />
-            </S.HeroButton>
-            <S.BpSecondaryLinks>
-              <S.BpLink to="/painel/biteplaner/jornada">
-                <ChartNoAxesCombined size={18} strokeWidth={2} />
-                Ver jornada
-              </S.BpLink>
-              <S.BpLink to="/biteplaner">
-                <Info size={18} strokeWidth={2} />
-                Ver detalhes
-              </S.BpLink>
-            </S.BpSecondaryLinks>
-          </S.ProductHeroContent>
-        </S.ProductHero>
-      </S.Section>
-
-      <S.Section>
-        <S.SectionTitle>Ações rápidas</S.SectionTitle>
+      <S.QuickActionsSection>
+        <S.QuickActionsHeader>
+          <S.SectionTitle>Ações rápidas</S.SectionTitle>
+          <S.SectionSubtitle>Atalhos para otimizar sua rotina no Biteplaner.</S.SectionSubtitle>
+        </S.QuickActionsHeader>
         {loadingRoles ? (
-          <SkeletonGrid cards={4} minCardWidth="220px" />
+          <SkeletonGrid cards={4} minCardWidth="260px" />
         ) : (
-        <S.RoleActionsGrid aria-label="Perfis Biteplaner">
-          {ROLE_ACTIONS.map((action) => {
-            const currentRole = rolesByKey.get(action.role);
-            const isPending = currentRole?.status === 'pending';
-            const isActive = currentRole?.status === 'active';
-            const isCustomer = action.role === 'customer';
-            const isCustomerTrackingAction = isCustomer && shouldTrackOrder;
-            const isOperationalRoleBlocked =
-              !isCustomer && activeOrPendingOperationalRole !== undefined && activeOrPendingOperationalRole !== action.role;
-            const operationalBlockerLabel = activeOrPendingOperationalRole
-              ? getOperationalRoleLabel(activeOrPendingOperationalRole)
-              : '';
-            const disabled =
-              loadingRoles ||
-              submittingRole ||
-              isPending ||
-              isOperationalRoleBlocked ||
-              (isActive && !isCustomerTrackingAction);
-            const actionTitle = isCustomerTrackingAction ? 'Acompanhar sua ordem' : action.title;
-            const actionDescription = isOperationalRoleBlocked
-              ? `Sua conta já possui solicitação ou perfil de ${operationalBlockerLabel} no Biteplaner.`
-              : isCustomerTrackingAction
-                ? 'Continue pelo acompanhamento da sua jornada Biteplaner.'
-                : action.description;
-            const actionButtonLabel = isOperationalRoleBlocked
-              ? 'Indisponível'
-              : isCustomerTrackingAction
-                ? 'Acompanhar ordem'
-                : action.buttonLabel;
-            const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
+          <S.RoleActionsGrid aria-label="Perfis Biteplaner">
+            {ROLE_ACTIONS.map((action) => {
+              const currentRole = rolesByKey.get(action.role);
+              const isPending = currentRole?.status === 'pending';
+              const isActive = currentRole?.status === 'active';
+              const isCustomer = action.role === 'customer';
+              const isCustomerTrackingAction = isCustomer && shouldTrackOrder;
+              const isOperationalRoleBlocked =
+                !isCustomer && activeOrPendingOperationalRole !== undefined && activeOrPendingOperationalRole !== action.role;
+              const operationalBlockerLabel = activeOrPendingOperationalRole
+                ? getOperationalRoleLabel(activeOrPendingOperationalRole)
+                : '';
+              const disabled =
+                loadingRoles ||
+                submittingRole ||
+                isPending ||
+                isOperationalRoleBlocked ||
+                (isActive && !isCustomerTrackingAction);
+              const actionTitle = isCustomerTrackingAction ? 'Acompanhar sua ordem' : action.title;
+              const actionDescription = isOperationalRoleBlocked
+                ? `Sua conta já possui solicitação ou perfil de ${operationalBlockerLabel} no Biteplaner.`
+                : isCustomerTrackingAction
+                  ? 'Continue pelo acompanhamento da sua jornada Biteplaner.'
+                  : action.description;
+              const actionButtonLabel = isOperationalRoleBlocked
+                ? 'Indisponível'
+                : isCustomerTrackingAction
+                  ? 'Acompanhar ordem'
+                  : action.buttonLabel;
+              const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
 
-            return (
-              <S.RoleActionCard
-                key={action.role}
-                $disabled={isOperationalRoleBlocked}
-                aria-disabled={isOperationalRoleBlocked}
-              >
-                <S.RoleCardIcon aria-hidden="true">
-                  {isCustomerTrackingAction ? <ClipboardList size={24} strokeWidth={2.1} /> : getActionIcon(action.role)}
-                </S.RoleCardIcon>
-                <S.RoleActionTitle>{actionTitle}</S.RoleActionTitle>
-                <S.RoleActionMeta>{actionDescription}</S.RoleActionMeta>
-                <S.RoleStatusPill $tone={isActive ? 'success' : isPending ? 'warning' : 'neutral'}>
-                  {statusLabel}
-                </S.RoleStatusPill>
-                <S.RoleActionButton
-                  type="button"
-                  aria-label={actionTitle}
-                  disabled={disabled}
-                  onClick={() => {
-                    if (isCustomerTrackingAction) {
-                      trackOrder();
-                      return;
-                    }
-
-                    if (isCustomer) {
-                      void activateCustomer();
-                      return;
-                    }
-
-                    if (action.requestPath) {
-                      navigate(action.requestPath);
-                    }
-                  }}
+              return (
+                <S.RoleActionCard
+                  key={action.role}
+                  $disabled={isOperationalRoleBlocked}
+                  aria-disabled={isOperationalRoleBlocked}
                 >
-                  {actionButtonLabel}
-                  <ArrowRight size={18} strokeWidth={2.2} />
-                </S.RoleActionButton>
-              </S.RoleActionCard>
-            );
-          })}
-        </S.RoleActionsGrid>
-        )}
-      </S.Section>
+                  <S.RoleCardIcon aria-hidden="true">
+                    {isCustomerTrackingAction ? <ClipboardList size={36} strokeWidth={2} /> : getActionIcon(action.role)}
+                  </S.RoleCardIcon>
+                  <S.RoleStatusPill $tone={isActive ? 'success' : isPending ? 'warning' : 'neutral'}>
+                    {statusLabel}
+                  </S.RoleStatusPill>
+                  <S.RoleActionTitle>{actionTitle}</S.RoleActionTitle>
+                  <S.RoleCardRule aria-hidden="true" />
+                  <S.RoleActionMeta>{actionDescription}</S.RoleActionMeta>
+                  <S.RoleActionButton
+                    type="button"
+                    aria-label={actionTitle}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (isCustomerTrackingAction) {
+                        trackOrder();
+                        return;
+                      }
 
-      <S.SecurityBanner>
-        <S.SecurityIcon aria-hidden="true">
-          <ShieldCheck size={20} strokeWidth={2.3} />
-        </S.SecurityIcon>
-        <div>
-          <S.SecurityTitle>Ambiente seguro</S.SecurityTitle>
-          <S.SecurityText>Seus dados são protegidos com segurança e em conformidade com a LGPD.</S.SecurityText>
-        </div>
-      </S.SecurityBanner>
+                      if (isCustomer) {
+                        void activateCustomer();
+                        return;
+                      }
+
+                      if (action.requestPath) {
+                        navigate(action.requestPath);
+                      }
+                    }}
+                  >
+                    {actionButtonLabel}
+                    <ArrowRight size={22} strokeWidth={2.2} />
+                  </S.RoleActionButton>
+                </S.RoleActionCard>
+              );
+            })}
+          </S.RoleActionsGrid>
+        )}
+      </S.QuickActionsSection>
     </S.Page>
   );
 }
