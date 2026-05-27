@@ -92,18 +92,18 @@ function getRoleStatusLabel(status?: ProductRoleStatus) {
 
 function getActionIcon(role: ProductRoleKey) {
   if (role === 'customer') {
-    return <ShoppingBag size={36} strokeWidth={2} />;
+    return <ShoppingBag size={28} strokeWidth={2} />;
   }
 
   if (role === 'partner') {
-    return <Briefcase size={36} strokeWidth={2} />;
+    return <Briefcase size={28} strokeWidth={2} />;
   }
 
   if (role === 'dentist') {
-    return <UserRound size={36} strokeWidth={2} />;
+    return <UserRound size={28} strokeWidth={2} />;
   }
 
-  return <FlaskConical size={36} strokeWidth={2} />;
+  return <FlaskConical size={28} strokeWidth={2} />;
 }
 
 function getOperationalRoleLabel(role: ProductRoleKey) {
@@ -309,7 +309,7 @@ export function PainelHome() {
                   aria-disabled={isOperationalRoleBlocked}
                 >
                   <S.RoleCardIcon aria-hidden="true">
-                    {isCustomerTrackingAction ? <ClipboardList size={36} strokeWidth={2} /> : getActionIcon(action.role)}
+                    {isCustomerTrackingAction ? <ClipboardList size={28} strokeWidth={2} /> : getActionIcon(action.role)}
                   </S.RoleCardIcon>
                   <S.RoleStatusPill $tone={isActive ? 'success' : isPending ? 'warning' : 'neutral'}>
                     {statusLabel}
@@ -338,7 +338,7 @@ export function PainelHome() {
                     }}
                   >
                     {actionButtonLabel}
-                    <ArrowRight size={22} strokeWidth={2.2} />
+                    <ArrowRight size={18} strokeWidth={2.2} />
                   </S.RoleActionButton>
                 </S.RoleActionCard>
               );
