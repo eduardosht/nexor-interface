@@ -48,9 +48,9 @@ const TRACKS = [
       { title: 'Cadastro', body: 'Registro como parceiro comercial da Nexor.' },
       { title: 'Link de indicação', body: 'Geração de link rastreável para indicações.' },
       { title: 'Indicação', body: 'Compartilhamento com alunos e atletas da sua base.' },
-      { title: 'Comissão', body: 'Recebimento automático por cada conversão realizada.' },
+      { title: 'Rastreabilidade', body: 'Acompanhamento das indicações geradas pelo seu link.' },
     ],
-    benefits: ['Comissão por indicação convertida', 'Dashboard de acompanhamento', 'Material de apoio para divulgação'],
+    benefits: ['Indicações rastreáveis', 'Dashboard de acompanhamento', 'Material de apoio para divulgação'],
   },
   {
     anchor: 'laboratórios',

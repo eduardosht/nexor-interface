@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import { getBrandTokens } from '@nexor/design-system';
 
 const bp = getBrandTokens('nexor').biteplanerContext;
@@ -241,6 +242,179 @@ export const HeroSignature = styled.p`
   letter-spacing: 0.34em;
   text-align: center;
   text-transform: uppercase;
+`;
+
+export const ProductHero = styled.section<{ $backgroundImage: string }>`
+  position: relative;
+  min-height: clamp(390px, 34vw, 470px);
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(12, 75, 47, 0.5);
+  background:
+    linear-gradient(90deg, rgba(1, 37, 29, 0.96) 0%, rgba(1, 37, 29, 0.82) 46%, rgba(1, 37, 29, 0.16) 72%, rgba(1, 37, 29, 0) 100%),
+    url(${({ $backgroundImage }) => $backgroundImage}) right 100px center / min(32vw, 400px) auto no-repeat,
+    radial-gradient(circle at 78% 45%, rgba(34, 197, 94, 0.32), transparent 30%),
+    linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
+  color: #ffffff;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(1, 37, 29, 0) 0%, rgba(56, 189, 124, 0.14) 56%, rgba(56, 189, 124, 0.42) 82%, rgba(1, 37, 29, 0) 100%);
+    mask-image: linear-gradient(180deg, transparent 8%, #000 45%, transparent 86%);
+    opacity: 0.55;
+  }
+
+  @media (max-width: 980px) {
+    background:
+      linear-gradient(90deg, rgba(1, 37, 29, 0.98) 0%, rgba(1, 37, 29, 0.9) 58%, rgba(1, 37, 29, 0.48) 100%),
+      url(${({ $backgroundImage }) => $backgroundImage}) right 12px center / min(42vw, 300px) auto no-repeat,
+      radial-gradient(circle at 78% 45%, rgba(34, 197, 94, 0.24), transparent 30%),
+      linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
+  }
+
+  @media (max-width: 640px) {
+    background:
+      linear-gradient(135deg, rgba(4, 45, 34, 0.98) 0%, rgba(6, 70, 47, 0.94) 100%),
+      radial-gradient(circle at 84% 84%, rgba(34, 197, 94, 0.18), transparent 34%),
+      linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
+  }
+`;
+
+export const ProductHeroContent = styled.div`
+  position: relative;
+  z-index: 1;
+  max-width: 540px;
+  padding: clamp(28px, 5vw, 50px);
+  display: grid;
+  gap: 22px;
+  align-content: center;
+`;
+
+export const ProductTitle = styled.h1`
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.3rem, 4vw, 3.55rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0;
+`;
+
+export const ProductDescription = styled.p`
+  max-width: 520px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1rem, 1.45vw, 1.22rem);
+  line-height: 1.55;
+  font-weight: 520;
+`;
+
+export const ProductStats = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 520px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ProductStat = styled.div`
+  min-height: 74px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 7px;
+`;
+
+export const BpRowLabel = styled.span`
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+`;
+
+export const BpStatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+
+  &::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #22c55e;
+  }
+`;
+
+export const BpPrice = styled.span`
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+`;
+
+export const HeroButton = styled.button`
+  width: min(100%, 520px);
+  min-height: 62px;
+  padding: 0 26px;
+  border: 1px solid rgba(74, 222, 128, 0.38);
+  border-radius: 8px;
+  background: linear-gradient(135deg, ${bp.accentSupport}, #16a34a);
+  color: #ffffff;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 18px 36px rgba(22, 163, 74, 0.28);
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: saturate(0.5);
+  }
+`;
+
+export const BpSecondaryLinks = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 34px;
+  align-items: center;
+`;
+
+export const BpLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+  text-decoration: none;
+
+  &:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
 `;
 
 export const QuickActionsSection = styled.section`

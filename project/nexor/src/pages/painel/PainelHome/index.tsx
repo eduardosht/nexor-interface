@@ -4,17 +4,22 @@ import {
   ArrowRight,
   Briefcase,
   CalendarDays,
+  ChartNoAxesCombined,
   ClipboardList,
   Clock3,
   FlaskConical,
+  Info,
   ShoppingBag,
+  ShoppingCart,
   UserRound,
 } from 'lucide-react';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { DEMO_PERSONA_LABELS } from '../../../features/demo/persona';
+import { parseEnv } from '../../../config/env';
 import biteplanerComingSoonProduct from '../../../assets/biteplaner-coming-soon-product.png';
+import biteplanerMoldera from '../../../assets/biteplaner-transparent-2.png';
 import * as S from './styles';
 
 type ProductRoleKey = 'customer' | 'partner' | 'dentist' | 'lab';
@@ -125,6 +130,7 @@ function getOperationalRoleLabel(role: ProductRoleKey) {
 export function PainelHome() {
   const navigate = useNavigate();
   const { demoPersona, isMockMode, session } = useAuth();
+  const { disableBiteplaner } = parseEnv(import.meta.env);
   const [productRoles, setProductRoles] = useState<ProductRole[]>([]);
   const [orders, setOrders] = useState<BiteplanerOrder[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
@@ -215,38 +221,89 @@ export function PainelHome() {
 
   return (
     <S.Page>
-      <S.ComingSoonHero data-testid="biteplaner-coming-soon-hero">
-        <S.HeroCopy>
-          <S.HeroBadge>
-            <Clock3 size={22} strokeWidth={2.4} />
-            EM BREVE
-          </S.HeroBadge>
-          <S.HeroTitle>
-            Em breve
-            <br />
-            no nosso <span>site.</span>
-          </S.HeroTitle>
-          <S.HeroDescription>A compra do Biteplaner estará disponível em breve.</S.HeroDescription>
-          <S.HeroAccentLine aria-hidden="true" />
-          <S.HeroNotice>
-            <S.HeroNoticeIcon aria-hidden="true">
-              <CalendarDays size={30} strokeWidth={2.2} />
-            </S.HeroNoticeIcon>
-            <div>
-              <S.HeroNoticeTitle>Fique ligado.</S.HeroNoticeTitle>
-              <S.HeroNoticeText>Novidades chegando para elevar sua performance.</S.HeroNoticeText>
-            </div>
-          </S.HeroNotice>
-        </S.HeroCopy>
+      {disableBiteplaner ? (
+        <S.ComingSoonHero data-testid="biteplaner-coming-soon-hero">
+          <S.HeroCopy>
+            <S.HeroBadge>
+              <Clock3 size={22} strokeWidth={2.4} />
+              EM BREVE
+            </S.HeroBadge>
+            <S.HeroTitle>
+              Em breve
+              <br />
+              no nosso <span>site.</span>
+            </S.HeroTitle>
+            <S.HeroDescription>A compra do Biteplaner estará disponível em breve.</S.HeroDescription>
+            <S.HeroAccentLine aria-hidden="true" />
+            <S.HeroNotice>
+              <S.HeroNoticeIcon aria-hidden="true">
+                <CalendarDays size={30} strokeWidth={2.2} />
+              </S.HeroNoticeIcon>
+              <div>
+                <S.HeroNoticeTitle>Fique ligado.</S.HeroNoticeTitle>
+                <S.HeroNoticeText>Novidades chegando para elevar sua performance.</S.HeroNoticeText>
+              </div>
+            </S.HeroNotice>
+          </S.HeroCopy>
 
-        <S.HeroProductImage
-          src={biteplanerComingSoonProduct}
-          alt=""
-          aria-hidden="true"
-          data-testid="biteplaner-coming-soon-product"
-        />
-        <S.HeroSignature>TECNOLOGIA • PERFORMANCE • PROTEÇÃO</S.HeroSignature>
-      </S.ComingSoonHero>
+          <S.HeroProductImage
+            src={biteplanerComingSoonProduct}
+            alt=""
+            aria-hidden="true"
+            data-testid="biteplaner-coming-soon-product"
+          />
+          <S.HeroSignature>TECNOLOGIA • PERFORMANCE • PROTEÇÃO</S.HeroSignature>
+        </S.ComingSoonHero>
+      ) : (
+        <S.ProductHero $backgroundImage={biteplanerMoldera} data-testid="biteplaner-product-banner">
+          <S.ProductHeroContent>
+            <S.ProductTitle>Biteplaner</S.ProductTitle>
+            <S.ProductDescription>
+              Plataforma completa para triagem odontológica, planejamento e acompanhamento de atletas com tecnologia e segurança.
+            </S.ProductDescription>
+            <S.ProductStats>
+              <S.ProductStat>
+                <S.BpRowLabel>Status</S.BpRowLabel>
+                <S.BpStatusBadge>Disponível</S.BpStatusBadge>
+              </S.ProductStat>
+              <S.ProductStat>
+                <S.BpRowLabel>Valor</S.BpRowLabel>
+                <S.BpPrice>R$ 1.000,00</S.BpPrice>
+              </S.ProductStat>
+            </S.ProductStats>
+            <S.HeroButton
+              type="button"
+              disabled={loadingRoles || submittingRole}
+              onClick={() => {
+                if (shouldTrackOrder) {
+                  trackOrder();
+                  return;
+                }
+
+                void activateCustomer();
+              }}
+            >
+              {shouldTrackOrder ? (
+                <ClipboardList size={22} strokeWidth={2.2} />
+              ) : (
+                <ShoppingCart size={22} strokeWidth={2.2} />
+              )}
+              {shouldTrackOrder ? 'Acompanhar sua ordem' : 'Adquirir Biteplaner'}
+              <ArrowRight size={22} strokeWidth={2.2} />
+            </S.HeroButton>
+            <S.BpSecondaryLinks>
+              <S.BpLink to="/painel/biteplaner/jornada">
+                <ChartNoAxesCombined size={18} strokeWidth={2} />
+                Ver jornada
+              </S.BpLink>
+              <S.BpLink to="/biteplaner">
+                <Info size={18} strokeWidth={2} />
+                Ver detalhes
+              </S.BpLink>
+            </S.BpSecondaryLinks>
+          </S.ProductHeroContent>
+        </S.ProductHero>
+      )}
 
       {isMockMode && demoPersona ? (
         <S.DemoBanner data-testid="demo-banner-active-profile">

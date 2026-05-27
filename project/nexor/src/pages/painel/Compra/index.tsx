@@ -4,7 +4,7 @@ import { Button, StatusIndicator } from '@nexor/design-system';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  confirmPayment,
+  createCheckoutSession,
   fetchOrders,
   getAuthToken,
   getOrderStatusPresentation,
@@ -13,7 +13,7 @@ import {
 import { OrderStepHeader } from '../components/OrderStepHeader';
 
 const NEXT_STEPS = [
-  'Confirmação do pagamento mock',
+  'Pagamento via Stripe Checkout',
   'Liberação para o dentista preencher a ordem de produção',
   'Encaminhamento controlado ao laboratório',
   'Retorno de adaptação e acompanhamento',
@@ -25,7 +25,7 @@ type CompraProps = {
   onOrderChange?: (order: DemoOrderSummary) => void;
 };
 
-export function Compra({ embedded = false, initialOrder = null, onOrderChange }: CompraProps) {
+export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const { session } = useAuth();
   const token = getAuthToken(session);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
@@ -91,12 +91,10 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
     setError('');
 
     try {
-      const response = await confirmPayment(order.id, token);
-      setOrder(response.order);
-      onOrderChange?.(response.order);
-      setNotice(`${response.order.id} agora está com pagamento confirmado e pronto para o laboratório.`);
+      const response = await createCheckoutSession(order.id, token);
+      window.location.assign(response.url);
     } catch {
-      setError('Não foi possível confirmar a compra mock agora.');
+      setError('Não foi possível iniciar o checkout Stripe agora.');
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +105,7 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
       {!embedded ? (
         <OrderStepHeader
           title="Confirmação de compra da demo"
-          description="Está tela simula o momento em que um caso clinicamente aprovado avança para pagamento e liberação operacional."
+          description="Esta tela inicia o pagamento real quando um caso clinicamente aprovado avança para liberação operacional."
           currentStep="purchase"
           order={order}
           orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
@@ -152,7 +150,7 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
               <S.CardTitle>Resumo do pedido</S.CardTitle>
               <S.SummaryRow>
                 <span>Biteplaner</span>
-                <strong>R$ 400,00</strong>
+                <strong>R$ 1.000,00</strong>
               </S.SummaryRow>
               <S.SummaryRow>
                 <span>Situação da demo</span>
@@ -167,11 +165,11 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
               </S.SummaryRow>
               <S.SummaryRow>
                 <span>Total</span>
-                <S.Total>R$ 400,00</S.Total>
+                <S.Total>R$ 1.000,00</S.Total>
               </S.SummaryRow>
 
               <Button onClick={handleConfirmPurchase} disabled={ctaDisabled}>
-                {submitting ? 'Confirmando...' : 'Confirmar compra mock'}
+                {submitting ? 'Abrindo checkout...' : 'Concluir pagamento'}
               </Button>
             </S.Card>
           </S.Layout>

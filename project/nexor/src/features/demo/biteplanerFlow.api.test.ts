@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../lib/api';
 import {
+  createCheckoutSession,
   confirmPayment,
   scheduleInitialConsultation,
   selectPracticeLocation,
@@ -34,6 +35,20 @@ describe('biteplanerFlow backend route adapters', () => {
 
     expect(apiPost).toHaveBeenCalledWith(
       '/v1/admin/orders/order-1/payment-confirmation',
+      {},
+      'token'
+    );
+  });
+
+  it('creates a Stripe checkout session through the order checkout route', async () => {
+    apiPost.mockResolvedValue({ url: 'https://checkout.stripe.test/session' });
+
+    await expect(createCheckoutSession(order.id, 'token')).resolves.toEqual({
+      url: 'https://checkout.stripe.test/session',
+    });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/checkout-session',
       {},
       'token'
     );

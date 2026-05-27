@@ -49,10 +49,17 @@ function renderPage() {
 }
 
 describe('Compra', () => {
+  let locationAssign: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    locationAssign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, assign: locationAssign },
+    });
   });
 
   it('renders the payment-ready shared order', async () => {
@@ -82,7 +89,7 @@ describe('Compra', () => {
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
   });
 
-  it('confirms the mock purchase and updates the visible status', async () => {
+  it('creates a Stripe checkout session and redirects the customer', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
@@ -95,27 +102,20 @@ describe('Compra', () => {
         },
       ],
     });
-    mockApiPost.mockResolvedValueOnce({
-      id: 'BP-DEMO-003',
-        status: 'payment_confirmed',
-        statusLabel: 'Pronto para laboratório',
-        stage: 'ready_for_lab',
-        created_at: '2026-05-01T10:00:00.000Z',
-        customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-    });
+    mockApiPost.mockResolvedValueOnce({ url: 'https://checkout.stripe.test/session' });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /confirmar compra mock/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: /confirmar compra mock/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /concluir pagamento/i })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/admin/orders/BP-DEMO-003/payment-confirmation',
+        '/v1/orders/BP-DEMO-003/checkout-session',
         {},
         'tok'
       )
     );
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pronto para laboratório/i);
+    expect(locationAssign).toHaveBeenCalledWith('https://checkout.stripe.test/session');
   });
 });

@@ -7,6 +7,7 @@ const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
+  envPrefix: ['VITE_', 'DISABLE_'],
   resolve: {
     dedupe: ['react', 'react-dom', 'styled-components'],
     alias: {

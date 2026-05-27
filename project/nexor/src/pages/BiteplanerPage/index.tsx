@@ -15,6 +15,7 @@ import {
 import { useState, type SVGProps } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
+import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 type InlineIconProps = SVGProps<SVGSVGElement> & {
@@ -140,12 +141,14 @@ const INITIAL_COMPARISON_ROWS = 7;
 
 const COMPARISON = [
   {
+    icon: ShieldCheck,
     criterion: 'Adequação para Treinos e Competições de Lutas, esportes de contato e alto risco de colisão facial',
     generic: 'Baixa',
     traditional: 'Alta',
     biteplaner: 'Alta',
   },
   {
+    icon: Dumbbell,
     criterion:
       'Adequação para Treinos de força, Musculação, Alta intensidade, Cross training, Competições e Todos os esportes, atividades e cenários que ocorra Apertamento Mandibular',
     generic: 'Não',
@@ -153,42 +156,49 @@ const COMPARISON = [
     biteplaner: 'Total',
   },
   {
+    icon: BadgeCheck,
     criterion: 'Proteção dental contra impactos',
     generic: 'Parcial',
     traditional: 'Sim',
     biteplaner: 'Sim',
   },
   {
+    icon: Target,
     criterion: 'Proteção Articular (ATM)',
     generic: 'Não',
     traditional: 'Indireta',
     biteplaner: 'Direta com redução de carga articular e controle do apertamento',
   },
   {
+    icon: Activity,
     criterion: 'Prevenção de microtrauma repetitivo',
     generic: 'Não',
     traditional: 'Limitada',
     biteplaner: 'Alta',
   },
   {
+    icon: SlidersHorizontal,
     criterion: 'Efeito sobre dor cervicofacial crônica',
     generic: 'Não',
     traditional: 'Secundário',
     biteplaner: 'Primário; projetado para reduzir dores relacionadas a DTM induzida por apertamento',
   },
   {
+    icon: Heart,
     criterion: 'Conforto em uso prolongado',
     generic: 'Não',
     traditional: 'Parcial',
     biteplaner: 'Projetado para maior conforto e adaptação individualizada',
   },
   {
+    icon: Zap,
     criterion: 'Interferência na fala',
     generic: 'Alta',
     traditional: 'Moderada',
     biteplaner: 'Geralmente menor',
   },
   {
+    icon: Trophy,
     criterion: 'Momento típico de uso no Esporte',
     generic: 'Durante treinos com risco de impacto',
     traditional: 'Durante competições/jogos e treinos com risco de impacto',
@@ -196,6 +206,7 @@ const COMPARISON = [
       'Durante competições/jogos e treinos com risco de impacto, treinos de alta intensidade com foco em performance e prevenção',
   },
   {
+    icon: SlidersHorizontal,
     criterion: 'Personalização',
     generic: 'Baixa (“Boil and bite”)',
     traditional: 'Sob medida',
@@ -203,42 +214,49 @@ const COMPARISON = [
       'Totalmente Individualizado com ajustes tecnológicos precisos de acordo com os esportes, atividades e contexto do usuário',
   },
   {
+    icon: BadgeCheck,
     criterion: 'Qualidade da Matéria-prima',
     generic: 'Muito Baixa',
     traditional: 'Moderada',
     biteplaner: 'Alta',
   },
   {
+    icon: Star,
     criterion: 'Eficácia',
     generic: 'Muito baixa',
     traditional: 'Parcial (apenas proteção dental)',
     biteplaner: 'Muito alta (proteção dental e articular)',
   },
   {
+    icon: Target,
     criterion: 'Relação custo-benefício em contato pleno',
     generic: 'Ruim',
     traditional: 'Muito favorável (redução de traumas graves)',
     biteplaner: 'Altamente relevante pois protege a ATM além dos dentes',
   },
   {
+    icon: Dumbbell,
     criterion: 'Relação custo-benefício em atividades de força/intensidade',
     generic: 'Ruim',
     traditional: 'Limitada, pois não ataca o problema dos traumas na ATM',
     biteplaner: 'Elevada, por atuar diretamente sobre a causa biomecânica da sobrecarga',
   },
   {
+    icon: Trophy,
     criterion: 'Foco em performance a longo prazo',
     generic: 'Baixo',
     traditional: 'Indireto (preserva integridade dentária)',
     biteplaner: 'Direto (reduz dor, melhora constância e longevidade de treino)',
   },
   {
+    icon: Zap,
     criterion: 'Tecnologia e Aperfeiçoamento Científico Contínuo',
     generic: 'Não',
     traditional: 'Não',
     biteplaner: 'O BITEPLANER encontra-se em processo contínuo de aperfeiçoamento, validação técnica e científica',
   },
   {
+    icon: Activity,
     criterion: 'Integração com plataforma de Dados',
     generic: 'Não',
     traditional: 'Não',
@@ -441,10 +459,25 @@ export function BiteplanerPage() {
       </S.ProcessOuter>
 
       <S.ComparisonSection>
-        <S.SectionIntro>
-          <S.SectionLabel>Comparação</S.SectionLabel>
-          <S.SectionTitle>Genérico vs Biteplaner</S.SectionTitle>
-        </S.SectionIntro>
+        <S.ComparisonHeader>
+          <S.SectionIntro>
+            <S.SectionLabel>Comparação</S.SectionLabel>
+            <S.ComparisonTitle>Genérico vs <S.ComparisonTitleAccent>Biteplaner</S.ComparisonTitleAccent></S.ComparisonTitle>
+            <S.ComparisonLead>
+              Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
+            </S.ComparisonLead>
+          </S.SectionIntro>
+          <S.ComparisonProductVisual>
+            <picture>
+              <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
+              <img
+                src={publicOptimizedImages.biteplaner.faqProduct.webp}
+                alt="Dispositivo Biteplaner na comparação"
+                loading="lazy"
+              />
+            </picture>
+          </S.ComparisonProductVisual>
+        </S.ComparisonHeader>
         <S.ComparisonTableViewport
           role="region"
           aria-label="Tabela comparativa com rolagem horizontal"
@@ -454,18 +487,25 @@ export function BiteplanerPage() {
             <thead>
               <tr>
                 <th>Critério</th>
-                <th>Protetor Genérico</th>
-                <th>Protetor Tradicional</th>
-                <th>BITEPLANER</th>
+                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Genérico</S.ColumnHeaderContent></th>
+                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Tradicional</S.ColumnHeaderContent></th>
+                <th data-highlighted-column="true"><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.7} />BITEPLANER</S.ColumnHeaderContent></th>
               </tr>
             </thead>
             <tbody>
-              {visibleComparisonRows.map((row) => (
+              {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
                 <tr key={row.criterion}>
-                  <td>{row.criterion}</td>
-                  <td>{row.generic}</td>
-                  <td>{row.traditional}</td>
-                  <td>{row.biteplaner}</td>
+                  <td>
+                    <S.CriterionContent>
+                      <S.CriterionIcon data-testid="comparison-criterion-icon">
+                        <Icon aria-hidden="true" size={32} strokeWidth={1.7} />
+                      </S.CriterionIcon>
+                      <span>{row.criterion}</span>
+                    </S.CriterionContent>
+                  </td>
+                  <td><S.ComparisonValue>{row.generic}</S.ComparisonValue></td>
+                  <td><S.ComparisonValue>{row.traditional}</S.ComparisonValue></td>
+                  <td data-highlighted-cell="true"><S.ComparisonValue>{row.biteplaner}</S.ComparisonValue></td>
                 </tr>
               ))}
             </tbody>
@@ -479,31 +519,45 @@ export function BiteplanerPage() {
       </S.ComparisonSection>
 
       <S.TrustOuter>
-        <S.SplitSection>
-          <S.SectionIntro>
+        <S.TrustHero>
+          <S.TrustIntro>
             <S.SectionLabel>Confiança</S.SectionLabel>
-            <S.SectionTitle>Educação para decidir melhor</S.SectionTitle>
-          </S.SectionIntro>
-          <S.CardGrid>
+            <S.TrustTitle>Educação para decidir <S.TrustTitleAccent>melhor</S.TrustTitleAccent></S.TrustTitle>
+          </S.TrustIntro>
+          <S.TrustProductVisual>
+            <picture>
+              <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
+              <img
+                src={publicOptimizedImages.biteplaner.faqProduct.webp}
+                alt="Dispositivo Biteplaner na seção de confiança"
+                loading="lazy"
+              />
+            </picture>
+          </S.TrustProductVisual>
+        </S.TrustHero>
+
+        <S.EducationRail>
             {EDUCATION.map(({ icon: Icon, title, body }, index) => (
-              <S.FeatureCard
+              <S.EducationItem
                 key={title}
+                data-testid="education-layout-item"
                 custom={index}
                 variants={cardVariants}
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.34 }}
               >
-                <S.CardIcon><Icon aria-hidden="true" size={46} strokeWidth={1.6} /></S.CardIcon>
-                <S.CardTitle>{title}</S.CardTitle>
-                <S.CardBody>{body}</S.CardBody>
-              </S.FeatureCard>
+                <S.EducationIcon><Icon aria-hidden="true" size={42} strokeWidth={1.7} /></S.EducationIcon>
+                <S.EducationCopy>
+                  <S.EducationTitle>{title}</S.EducationTitle>
+                  <S.EducationBody>{body}</S.EducationBody>
+                </S.EducationCopy>
+              </S.EducationItem>
             ))}
-          </S.CardGrid>
-        </S.SplitSection>
+        </S.EducationRail>
         <S.TrustRail>
           {TRUST_POINTS.map(({ icon: Icon, title }) => (
-            <S.TrustPoint key={title}>
+            <S.TrustPoint key={title} data-testid="trust-rail-item">
               <Icon aria-hidden="true" size={30} strokeWidth={1.6} />
               <span>{title}</span>
             </S.TrustPoint>

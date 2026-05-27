@@ -692,6 +692,10 @@ export async function confirmPayment(orderId: string, token?: string) {
   return { order };
 }
 
+export async function createCheckoutSession(orderId: string, token?: string) {
+  return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, {}, token);
+}
+
 export async function scheduleInitialConsultation(
   orderId: string,
   practiceLocationId: string,

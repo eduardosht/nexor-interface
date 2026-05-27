@@ -31,4 +31,22 @@ describe('parseEnv', () => {
     });
     expect(env.contactEmail).toBe('x@y.com');
   });
+
+  it('parses the Biteplaner disable flag', () => {
+    expect(
+      parseEnv({
+        VITE_BITEPLANER_URL: 'http://localhost:5174',
+        VITE_API_URL: 'http://127.0.0.1:3333',
+        DISABLE_BITEPLANER: 'true'
+      }).disableBiteplaner
+    ).toBe(true);
+
+    expect(
+      parseEnv({
+        VITE_BITEPLANER_URL: 'http://localhost:5174',
+        VITE_API_URL: 'http://127.0.0.1:3333',
+        DISABLE_BITEPLANER: 'false'
+      }).disableBiteplaner
+    ).toBe(false);
+  });
 });

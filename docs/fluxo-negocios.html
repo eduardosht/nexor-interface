@@ -516,12 +516,12 @@
     <div class="card">
       <h3>💳 Comercial</h3>
       <ul>
-        <li>Produto: <strong>R$ 400</strong></li>
+        <li>Produto: <strong>R$ 1.000</strong></li>
         <li>Consulta inicial só é liberada após formulário pré-requisito obrigatório</li>
         <li>O pré-requisito também complementa o cadastro do produto com dados específicos do Biteplaner</li>
-        <li>Desconto de <strong>10%</strong> com referral válido</li>
-        <li>Comissão de <strong>5%</strong> ao parceiro após consulta com aptidão</li>
-        <li>Pagamento manual/stub no MVP</li>
+        <li>Sem desconto no checkout nesta fase inicial</li>
+        <li>Link de parceiro com rastreabilidade comercial; pagamento relacionado a parceiros fica externo ao sistema neste início</li>
+        <li>Pagamento real via Stripe Checkout em homologação e produção, com cartão e Pix</li>
         <li>Se o dentista declarar inaptidão inicial, o fluxo encerra sem cobrança</li>
       </ul>
     </div>
@@ -556,7 +556,7 @@
     <div class="actor-card">
       <div class="icon">🤝</div>
       <h4>Parceiro Indicador</h4>
-      <p>Academia, coach ou profissional que indica usuários. Ganha 5% de comissão por ordem comissionável. Vê apenas nome, e-mail e telefone dos indicados.</p>
+      <p>Academia, coach ou profissional que indica usuários. Nesta fase inicial, o link preserva rastreabilidade comercial e o pagamento relacionado a parceiros fica externo ao sistema. Vê apenas nome, e-mail e telefone dos indicados.</p>
       <span class="tag tag-bite">Papel Biteplaner</span>
     </div>
     <div class="actor-card">
@@ -729,8 +729,8 @@
       <div class="step">
         <div class="step-inner bite-step">
           <div class="step-label"><span style="color:#fcd34d">●</span> Usuário</div>
-          <div class="step-title">Pagamento · R$ 400</div>
-          <div class="step-sub">Desconto 10% se referral válido. Stub/manual no MVP.</div>
+          <div class="step-title">Pagamento · R$ 1.000</div>
+          <div class="step-sub">Stripe Checkout após aptidão clínica. Cartão e Pix. Sem desconto nesta fase.</div>
         </div>
       </div>
       <div class="arrow-h">→</div>
@@ -888,7 +888,7 @@
       <div class="branch-item">
         <div class="step">
           <div class="step-inner danger-step">
-            <div class="step-label"><span class="pill pill-red">✗ ineligible_refund</span></div>
+            <div class="step-label"><span class="pill pill-red">✗ ineligible_closed</span></div>
             <div class="step-title">Inapto — Encerrado</div>
             <div class="step-sub">Fluxo produtivo encerrado sem cobrança do produto.</div>
           </div>
@@ -983,11 +983,10 @@
     <div class="card">
       <h3>💰 Regras financeiras</h3>
       <ul>
-        <li>Comissão do parceiro conta apenas após <strong>aptidão declarada</strong></li>
+        <li>Pagamento de parceiros fica externo ao sistema no início; o link preserva rastreabilidade comercial</li>
         <li>Inaptidão inicial: dentista declara não apto → fluxo encerra sem cobrança</li>
         <li>Tratamento prévio: pedido fica em espera até nova decisão clínica</li>
-        <li>Desconto de 10% aplicado na criação do pedido se referral válido</li>
-        <li>Como calcular 5% quando há desconto de 10%: <strong>em aberto</strong></li>
+        <li>Sem desconto aplicado no checkout do Biteplaner nesta fase inicial</li>
       </ul>
     </div>
   </div>
@@ -1015,7 +1014,7 @@
       <tr><td>Pagamento, evento financeiro</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Admin opera; dados sensíveis não logados</td></tr>
       <tr><td>Dentista (perfil operacional, CRO, aprovação)</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Usa conta Nexor para login</td></tr>
       <tr><td>Local de atendimento, endereço</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Vinculado ao dentista</td></tr>
-      <tr><td>Parceiro (perfil operacional, comissão)</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Usa conta Nexor para login</td></tr>
+      <tr><td>Parceiro (perfil operacional e rastreabilidade comercial)</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Usa conta Nexor para login</td></tr>
       <tr><td>Laboratório (perfil operacional)</td><td><span class="pill pill-yellow">Biteplaner</span></td><td>Usa conta Nexor para login</td></tr>
       <tr><td>Formulário de anamnese</td><td><span class="pill pill-red">Biteplaner (clínico)</span></td><td>Admin não acessa</td></tr>
       <tr><td>Formulário de pedido de produção</td><td><span class="pill pill-red">Biteplaner (clínico)</span></td><td>Admin não acessa</td></tr>
@@ -1116,11 +1115,11 @@
     <div class="sprint-num">Sprint 3</div>
     <div class="sprint-content">
       <h4>Compra, Pagamento e Confirmação Financeira</h4>
-      <p>Checkout R$ 400 iniciado apenas após aptidão clínica, com desconto de 10% por referral quando aplicável.</p>
+      <p>Checkout R$ 1.000 iniciado apenas após aptidão clínica, via Stripe, com cartão e Pix e sem desconto nesta fase inicial.</p>
       <div class="sprint-chips">
         <span class="chip fe">FE: tela de checkout e status de pagamento pós-aptidão</span>
-        <span class="chip be">BE: modelo de produto/preço/desconto/comissão</span>
-        <span class="chip be">BE: confirmação financeira manual após decisão do dentista</span>
+        <span class="chip be">BE: modelo de produto/preço, Stripe Checkout e webhook</span>
+        <span class="chip be">BE: confirmação financeira por webhook Stripe após decisão do dentista</span>
       </div>
     </div>
   </div>
@@ -1268,8 +1267,8 @@
       Qual será a política fiscal/NF e qual sistema externo será usado?
     </div>
     <div class="question-item">
-      <strong>Cálculo da comissão com desconto</strong>
-      Como calcular exatamente a comissão de 5% quando há desconto de 10% aplicado ao pedido?
+      <strong>Rastreabilidade comercial de parceiros</strong>
+      Como registrar a origem comercial dos links de parceiro enquanto pagamentos de parceiro ficam externos ao sistema?
     </div>
     <div class="question-item">
       <strong>Arquivos 3D</strong>
@@ -1280,8 +1279,8 @@
       Quais regras de aprovação e suspensão devem bloquear operação? Quem decide?
     </div>
     <div class="question-item">
-      <strong>Pagamento: stub ou provedor real no MVP?</strong>
-      Será feita integração com provedor real já no MVP ou continua manual?
+      <strong>Configuração Stripe</strong>
+      Quais URLs finais serão usadas para success_url, cancel_url e webhook nos ambientes de homologação e produção?
     </div>
     <div class="question-item">
       <strong>Acesso do laboratório à plataforma</strong>

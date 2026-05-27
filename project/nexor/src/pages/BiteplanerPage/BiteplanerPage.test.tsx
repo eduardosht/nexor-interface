@@ -21,15 +21,20 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
   });
 
-  it('renders the Biteplaner hero without the FAQ product image', () => {
+  it('does not inject the deprecated Orbitron font stack', () => {
+    renderPage();
+    expect(document.head.textContent).not.toContain('Orbitron');
+  });
+
+  it('renders the Biteplaner hero and the comparison product image only in the comparison section', () => {
     renderPage();
     expect(screen.getAllByText('Biteplaner').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('img', { name: /biteplaner/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /dispositivo biteplaner na comparação/i })).toBeInTheDocument();
   });
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /segurança\. conforto\. performance/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /segurança\s+conforto\s+performance/i })).toBeInTheDocument();
     expect(screen.getByText(/dispositivo intraoral personalizado para atletas e praticantes de esportes/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
@@ -84,6 +89,10 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('columnheader', { name: /protetor genérico/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /protetor tradicional/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toBeInTheDocument();
+    expect(screen.getByText(/compare e entenda por que o Biteplaner oferece mais proteção/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId('comparison-criterion-icon')).toHaveLength(7);
+    expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toHaveAttribute('data-highlighted-column', 'true');
+    expect(screen.queryByTestId('comparison-status-dot')).not.toBeInTheDocument();
     expect(screen.getByText(/conforto em uso prolongado/i)).toBeInTheDocument();
     expect(screen.queryByText(/interferência na fala/i)).not.toBeInTheDocument();
 
@@ -109,6 +118,9 @@ describe('BiteplanerPage', () => {
   it('renders educational and trust sections without absolute medical claims', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /dispositivo biteplaner na seção de confiança/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId('education-layout-item')).toHaveLength(3);
+    expect(screen.getAllByTestId('trust-rail-item')).toHaveLength(4);
     expect(screen.getByText(/pode auxiliar no conforto e prevenção/i)).toBeInTheDocument();
     expect(screen.getByText(/não promete resultados imediatos/i)).toBeInTheDocument();
     expect(screen.getByText(/produção sob padrões de excelência/i)).toBeInTheDocument();

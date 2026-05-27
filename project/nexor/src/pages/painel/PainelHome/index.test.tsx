@@ -71,6 +71,8 @@ describe('PainelHome', () => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     mockNavigate.mockReset();
+    vi.unstubAllEnvs();
+    vi.stubEnv('DISABLE_BITEPLANER', 'true');
   });
 
   it('renders the coming soon hero and quick actions heading', async () => {
@@ -90,6 +92,17 @@ describe('PainelHome', () => {
     expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /em breve no nosso site/i })).toBeInTheDocument();
     expect(screen.queryByText(/R\$ 400/)).not.toBeInTheDocument();
+    expect(await findEnabledCustomerAction()).toBeInTheDocument();
+  });
+
+  it('renders the product purchase banner when Biteplaner is enabled', async () => {
+    vi.stubEnv('DISABLE_BITEPLANER', 'false');
+
+    renderPage();
+
+    expect(screen.queryByTestId('biteplaner-coming-soon-hero')).not.toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
+    expect(screen.getByText('R$ 1.000,00')).toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 

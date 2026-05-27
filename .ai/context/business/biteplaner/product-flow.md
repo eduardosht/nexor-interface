@@ -59,16 +59,17 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - As perguntas de uso, adaptação e feedback pós-Biteplaner pertencem ao acompanhamento após entrega/adaptação, não ao intake de compra.
 - O formulário `customer_training_report` é liberado somente quando a ordem entra em `follow_up` após a adaptação do produto e pode ter múltiplas submissões por ordem.
 - A origem da indicação pode ser capturada na Nexor durante cadastro/login e repassada ao Biteplaner no momento da inscrição ou criação da ordem.
-- O pagamento pode ser manual ou mockado no MVP.
-- O produto tem preco inicial único de R$ 400.
-- Links de parceiro podem conceder 10% de desconto ao usuário.
+- O pagamento do produto deve ser feito via Stripe em ambiente de homologação e produção, usando Checkout hospedado.
+- O produto tem preço inicial único de R$ 1.000.
+- O checkout do produto deve aceitar cartão e Pix.
+- Nesta fase inicial não haverá desconto no checkout do Biteplaner.
+- Links de parceiro servem para rastreabilidade comercial; quando houver pagamento relacionado a parceiros neste início, ele será tratado fora do sistema.
 - Cada parceiro deve gerar um link novo para cada usuário potencialmente qualificado.
 - O link do parceiro não deve ser permanente nem reutilizado em massa para multiplos usuários sem abordagem comercial individual.
 - A geração do link acontece depois da conversa e da qualificação inicial do parceiro com o potencial cliente.
 - Parceiros indicadores seguem revisão cadastral pela Nexor Admin antes de operar, mas não passam pelo fluxo de licenciamento com pagamento, contratos, curso, prova e certificado usado para dentistas e laboratórios.
 - Após aprovação cadastral, a funcionalidade operacional do parceiro é gerar links individuais de indicação, acompanhar a conversão desses links e consultar avaliações recebidas.
-- A regra de comissão inicial considera 5% para o parceiro quando a ordem for considerada comissionavel.
-- A comissão do parceiro conta quando a ordem prossegue após consulta odontológica e o dentista declara o usuário apto.
+- A regra de comissão de parceiro fica fora do checkout Stripe inicial e deve ser tratada administrativamente enquanto o pagamento de parceiros estiver externo ao sistema.
 - O parceiro terá painel com acesso limitado a nome, e-mail e telefone dos usuários indicados.
 - O laboratório terá conta Nexor para login e perfil operacional Biteplaner, mas o fluxo inicial será operacional e manual.
 - Notificacoes do MVP devem usar painel e e-mail.
@@ -300,13 +301,14 @@ Resultado esperado:
 
 ### 7. Cenario apto: pagamento e liberação da ordem
 
-Quando o dentista declara o usuário apto, o Biteplaner pode iniciar a cobrança do produto. Depois disso, a ordem entra em uma etapa operacional em que o dentista precisa preencher a solicitação de produção completa antes do envio ao laboratório.
+Quando o dentista declara o usuário apto, o Biteplaner pode iniciar a cobrança do produto via Stripe. Depois da confirmação do pagamento, a ordem deve ir diretamente para `payment_confirmed` e seguir para a etapa operacional em que o dentista precisa preencher a solicitação de produção completa antes do envio ao laboratório.
 
 Resultado esperado:
 
 - pedido comercial apto para cobrança
-- pagamento iniciado ou registrado manualmente
-- usuário recebe orientação para concluir o pagamento
+- checkout Stripe criado para R$ 1.000
+- usuário recebe orientação para concluir o pagamento por cartão ou Pix
+- webhook Stripe confirma o pagamento e move a ordem diretamente para `payment_confirmed`
 - ordem entra em `Aguardando preenchimento dentista` para completar documentação e anexos obrigatórios
 - o envio ao laboratório só acontece depois do preenchimento completo da solicitação de produção
 
@@ -437,7 +439,7 @@ Observacoes:
 | `Tratamento prévio pendente` | novo status recomendado, ainda sem mapeamento tecnico consolidado |
 | `Em andamento` | `in_progress` |
 | `Consulta confirmada` | `appointment_confirmed` |
-| `Inapto - Encerrado` | hoje o tecnico mais próximo continua `ineligible_refund`, embora a regra comercial alvo sejá sem cobrança |
+| `Inapto - Encerrado` | recomendação de status técnico sem refund, por exemplo `ineligible_closed`; `ineligible_refund` deve ser descontinuado para o produto porque a cobrança só ocorre após aptidão |
 | `Aguardando inicio da produção` | `awaiting_lab_start` |
 | `Em processo - Laboratório` | `lab_processing` |
 | `Aguardando recebimento pelo dentista` | `product_received_by_clinic` |
@@ -615,7 +617,7 @@ O parceiro não acessa ordens clínicas como operador, não vê dados odontológ
 - Quais provedores serão usados para e-mail e demais canais futuros?
 - Qual deve ser o conteúdo e a cadência da notificação enviada ao dentista indicado para processo de licenciamento?
 - Qual será a politica fiscal/nota fiscal e qual sistema externo será usado?
-- Como será calculada exatamente a comissão de 5% quando houver desconto de 10%?
+- Como será registrada a origem comercial de parceiros quando o pagamento inicial do parceiro acontecer fora do sistema?
 - Como será feito o tratamento de arquivos 3D quando essa etapa existir?
 - Quais regras de licenciamento, aprovação e suspensão de dentistas e laboratórios devem bloquear operação?
 - Quais dados ficarão no perfil global Nexor e quais serão duplicados ou referênciados no vínculo Biteplaner?

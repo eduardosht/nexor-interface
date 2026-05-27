@@ -14,6 +14,7 @@ const schema = z.object({
   VITE_SUPABASE_ANON_KEY: z.preprocess(emptyToUndef, z.string().min(1).optional()),
   VITE_CONTACT_EMAIL: z.preprocess(emptyToUndef, z.string().email().optional()),
   VITE_CONTACT_WHATSAPP: z.preprocess(emptyToUndef, z.string().optional()),
+  DISABLE_BITEPLANER: z.preprocess(emptyToUndef, z.enum(['true', 'false']).optional()),
 });
 
 type RawEnv = Record<string, unknown>;
@@ -33,6 +34,7 @@ export function parseEnv(raw: RawEnv) {
     supabaseAnonKey: parsed.VITE_SUPABASE_ANON_KEY,
     contactEmail: parsed.VITE_CONTACT_EMAIL,
     contactWhatsapp: parsed.VITE_CONTACT_WHATSAPP,
+    disableBiteplaner: parsed.DISABLE_BITEPLANER === 'true',
   };
 }
 

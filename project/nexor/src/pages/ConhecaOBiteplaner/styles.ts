@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { getBrandTokens } from '@nexor/design-system';
 
 const bp = getBrandTokens('nexor').biteplanerContext;
-const uppercaseTitleFont = "'Orbitron', 'Inter', sans-serif";
 
 export const Page = styled.main`
   min-height: 100vh;
@@ -37,10 +36,10 @@ export const HeroCopy = styled.div`
 export const Eyebrow = styled.p`
   margin: 0 0 18px;
   color: ${bp.accentStrong};
-  font-family: ${uppercaseTitleFont};
+  font-family: ${({ theme }) => theme.fonts.display};
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0;
   line-height: 1;
   text-transform: uppercase;
 `;
@@ -86,10 +85,10 @@ export const PrimaryCta = styled(Link)`
   border-radius: 4px;
   background: ${bp.accentStrong};
   color: #ffffff;
-  font-family: ${uppercaseTitleFont};
+  font-family: ${({ theme }) => theme.fonts.display};
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-decoration: none;
   text-transform: uppercase;
   box-shadow: 0 18px 40px rgba(28, 94, 58, 0.22);
@@ -111,10 +110,10 @@ export const SecondaryCta = styled(Link)`
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.72);
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-family: ${uppercaseTitleFont};
+  font-family: ${({ theme }) => theme.fonts.display};
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-decoration: none;
   text-transform: uppercase;
 `;
