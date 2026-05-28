@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Building2, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Button, CheckboxField, Field, Select, Snackbar, SnackbarStack } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
@@ -41,7 +42,7 @@ const ROLE_CONFIG: Record<RouteRole, RoleConfig> = {
   },
   dentista: {
     apiRole: 'dentist',
-    title: 'Cadastro de dentista Biteplaner',
+    title: 'Solicitar cadastro de dentista',
     description:
       'Informe os dados profissionais iniciais. A liberação operacional depende da validação do cadastro, licença e local de atendimento.',
     successTitle: 'Solicitação enviada',
@@ -50,7 +51,7 @@ const ROLE_CONFIG: Record<RouteRole, RoleConfig> = {
   },
   laboratório: {
     apiRole: 'lab',
-    title: 'Cadastro de laboratório Biteplaner',
+    title: 'Solicitar cadastro de laboratório',
     description:
       'Informe os dados iniciais do laboratório e da cobertura de produção. A operação valida a solicitação antes de liberar acesso.',
     successTitle: 'Solicitação enviada',
@@ -350,6 +351,10 @@ export function CadastroPerfilBiteplaner() {
     return <Navigate to="/painel/home" replace />;
   }
 
+  const heroIcon = config.apiRole === 'partner'
+    ? <UserRoundCheck size={42} strokeWidth={1.9} />
+    : <Building2 size={42} strokeWidth={1.9} />;
+
   function updateField(field: string) {
     return (event: FieldChangeEvent) => {
       setValues((current) => ({ ...current, [field]: event.target.value }));
@@ -492,25 +497,49 @@ export function CadastroPerfilBiteplaner() {
 
   return (
     <S.Page>
-      <S.Header>
-        <S.BackLink to="/painel/home">Voltar para produtos</S.BackLink>
-        <S.Title>{config.title}</S.Title>
-        <S.Description>{config.description}</S.Description>
-      </S.Header>
+      <S.ProfileShell>
+        <S.ProfileHero>
+          <S.HeroContent>
+            <S.BackLink to="/painel/home">Voltar para produtos</S.BackLink>
+            <S.HeroTitleRow>
+              <S.HeroIcon aria-hidden="true">{heroIcon}</S.HeroIcon>
+              <S.Title>{config.title}</S.Title>
+            </S.HeroTitleRow>
+            <S.Description>{config.description}</S.Description>
+            <S.HeroInfoCallout>
+              <Info size={22} strokeWidth={2.3} aria-hidden="true" />
+              <span>
+                A solicitação passa por validação operacional da NEXOR antes da liberação de acesso,
+                contratos, licenciamento e próximos passos do Biteplaner.
+              </span>
+            </S.HeroInfoCallout>
+          </S.HeroContent>
+          <S.HeroVisual aria-hidden="true">
+            <S.HeroClipboard>
+              <ClipboardPlus size={58} strokeWidth={1.8} />
+              <span />
+              <span />
+              <span />
+              <S.HeroShield>
+                <ShieldCheck size={44} strokeWidth={2.2} />
+              </S.HeroShield>
+            </S.HeroClipboard>
+          </S.HeroVisual>
+        </S.ProfileHero>
 
-      {error ? <S.Banner role="alert">{error}</S.Banner> : null}
-      {submitted ? (
-        <SnackbarStack>
-          <Snackbar
-            tone="success"
-            title={config.successTitle}
-            message={config.successMessage}
-            onClose={() => setSubmitted(false)}
-          />
-        </SnackbarStack>
-      ) : null}
+        {error ? <S.Banner role="alert">{error}</S.Banner> : null}
+        {submitted ? (
+          <SnackbarStack>
+            <Snackbar
+              tone="success"
+              title={config.successTitle}
+              message={config.successMessage}
+              onClose={() => setSubmitted(false)}
+            />
+          </SnackbarStack>
+        ) : null}
 
-      <S.Form onSubmit={handleSubmit}>
+        <S.Form onSubmit={handleSubmit}>
         <S.Section>
           <S.SectionHeader>
             <S.StepBadge>1</S.StepBadge>
@@ -899,7 +928,8 @@ export function CadastroPerfilBiteplaner() {
             Cancelar
           </Button>
         </S.Actions>
-      </S.Form>
+        </S.Form>
+      </S.ProfileShell>
     </S.Page>
   );
 }

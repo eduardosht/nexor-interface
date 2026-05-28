@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { Database, Frown, Info, ShieldCheck, Star, UserRound, X } from 'lucide-react';
+import { BarChart3, ClipboardPlus, Database, Frown, Info, LockKeyhole, ShieldCheck, Star, UserRound, Users, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
@@ -1234,6 +1234,7 @@ function FormItem({
     ? displaySharedSections.findIndex((section) => section.key === activeSharedSection.key)
     : 0;
   const isClinicalCustomerIntake = form.templateKey === 'customer_pre_consultation_intake' && actorRole === 'user';
+  const isCustomerOnboarding = form.templateKey === 'customer_new_user_onboarding' && actorRole === 'user';
   const isClinicalPrivacyStep = isClinicalCustomerIntake && activeSharedSection?.key === 'clinical-privacy';
   const payloadBlockerMessage = isClinicalCustomerIntake ? getPayloadBlockerMessage(payload) : '';
   const navigationSharedSections =
@@ -1534,6 +1535,112 @@ function FormItem({
     }
   }
 
+  function renderStandardStepRail() {
+    return (
+      <S.StepRail>
+        {navigationSharedSections.map((section, index) => {
+          const displayIndex = displaySharedSections.findIndex((item) => item.key === section.key);
+
+          return (
+            <S.StepTab
+              key={section.key}
+              type="button"
+              disabled={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
+              $active={section.key === activeSharedSection?.key}
+              $complete={displayIndex < activeSharedSectionIndex}
+              onClick={() => goToSection(displayIndex)}
+              aria-current={section.key === activeSharedSection?.key ? 'step' : undefined}
+            >
+              <S.StepNumber
+                $active={section.key === activeSharedSection?.key}
+                $complete={displayIndex < activeSharedSectionIndex}
+              >
+                {index + 1}
+              </S.StepNumber>
+              <S.StepTabLabel>{getCompactSectionTitle(section.title)}</S.StepTabLabel>
+            </S.StepTab>
+          );
+        })}
+      </S.StepRail>
+    );
+  }
+
+  function renderOnboardingProgress() {
+    return (
+      <S.OnboardingProgressCard aria-label="Seu progresso">
+        <S.ProgressCardTitle>Seu progresso</S.ProgressCardTitle>
+        <S.OnboardingProgressRail>
+          {navigationSharedSections.map((section, index) => {
+            const displayIndex = displaySharedSections.findIndex((item) => item.key === section.key);
+            const compactTitle = getCompactSectionTitle(section.title);
+            const [firstLine, ...restLines] = compactTitle.split(/\s+E\s+|\s+PARA\s+/i);
+
+            return (
+              <S.OnboardingProgressStep
+                key={section.key}
+                type="button"
+                disabled={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
+                $active={section.key === activeSharedSection?.key}
+                $complete={displayIndex < activeSharedSectionIndex}
+                onClick={() => goToSection(displayIndex)}
+                aria-current={section.key === activeSharedSection?.key ? 'step' : undefined}
+                aria-label={compactTitle}
+              >
+                <S.OnboardingStepNumber
+                  $active={section.key === activeSharedSection?.key}
+                  $complete={displayIndex < activeSharedSectionIndex}
+                >
+                  {index + 1}
+                </S.OnboardingStepNumber>
+                <S.OnboardingStepText>
+                  <span>{firstLine}</span>
+                  {restLines.length > 0 ? <small>{restLines.join(' e ')}</small> : null}
+                </S.OnboardingStepText>
+              </S.OnboardingProgressStep>
+            );
+          })}
+        </S.OnboardingProgressRail>
+      </S.OnboardingProgressCard>
+    );
+  }
+
+  function renderOnboardingSectionOverview() {
+    return (
+      <S.SectionOverviewCard>
+        <S.SectionOverviewHeader>
+          <S.SectionOverviewIcon aria-hidden="true">
+            <ClipboardPlus size={34} strokeWidth={1.9} />
+          </S.SectionOverviewIcon>
+          <S.SectionOverviewCopy>
+            <S.SectionOverviewKicker>
+              Seção {navigationSharedSectionIndex + 1} de {navigationSharedSections.length}
+            </S.SectionOverviewKicker>
+            <S.SectionOverviewTitle>{getCompactSectionTitle(activeSharedSection?.title ?? '')}</S.SectionOverviewTitle>
+            {activeSharedSection?.description ? (
+              <S.SectionOverviewLead>{activeSharedSection.description}</S.SectionOverviewLead>
+            ) : null}
+          </S.SectionOverviewCopy>
+          <S.SectionProgressPill aria-label="Progresso da seção atual">
+            <span><strong>{sharedProgress}%</strong> concluído</span>
+            <S.ProgressTrack aria-hidden="true">
+              <S.ProgressFill
+                initial={false}
+                animate={{ width: `${sharedProgress}%` }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+              />
+            </S.ProgressTrack>
+          </S.SectionProgressPill>
+        </S.SectionOverviewHeader>
+        <S.TrustBadgeStrip aria-label="Garantias de privacidade e governança">
+          <S.TrustBadge><LockKeyhole size={24} /><span>Segurança de dados</span></S.TrustBadge>
+          <S.TrustBadge><ShieldCheck size={24} /><span>Privacidade protegida</span></S.TrustBadge>
+          <S.TrustBadge><Users size={24} /><span>Uso ético e responsável</span></S.TrustBadge>
+          <S.TrustBadge><BarChart3 size={24} /><span>Análises agregadas e anonimizadas</span></S.TrustBadge>
+        </S.TrustBadgeStrip>
+      </S.SectionOverviewCard>
+    );
+  }
+
   return (
     <S.FormCard ref={formCardRef} $presentation={formPresentation}>
       {showFormHeader ? (
@@ -1563,52 +1670,35 @@ function FormItem({
       {isSharedIntake ? (
         <>
           {!isClinicalPrivacyStep ? (
-          <S.IntakeProgressShell aria-label="Progresso do formulário compartilhado">
-            <S.IntakeProgressHeader>
-              <div>
-                <S.StepKicker>
-                    Seção {navigationSharedSectionIndex + 1} de {navigationSharedSections.length}
-                </S.StepKicker>
-                <S.SectionHeading>{activeSharedSection?.title}</S.SectionHeading>
-                {activeSharedSection?.description ? (
-                  <S.SectionLead>{activeSharedSection.description}</S.SectionLead>
-                ) : null}
-              </div>
-              <S.StepProgressValue>{sharedProgress}% completo</S.StepProgressValue>
-            </S.IntakeProgressHeader>
-            <S.ProgressTrack aria-hidden="true">
-              <S.ProgressFill
-                initial={false}
-                animate={{ width: `${sharedProgress}%` }}
-                transition={{ duration: 0.28, ease: 'easeOut' }}
-              />
-            </S.ProgressTrack>
-            <S.StepRail>
-              {navigationSharedSections.map((section, index) => {
-                const displayIndex = displaySharedSections.findIndex((item) => item.key === section.key);
-
-                return (
-                  <S.StepTab
-                    key={section.key}
-                    type="button"
-                    disabled={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
-                    $active={section.key === activeSharedSection?.key}
-                    $complete={displayIndex < activeSharedSectionIndex}
-                    onClick={() => goToSection(displayIndex)}
-                    aria-current={section.key === activeSharedSection?.key ? 'step' : undefined}
-                  >
-                    <S.StepNumber
-                      $active={section.key === activeSharedSection?.key}
-                      $complete={displayIndex < activeSharedSectionIndex}
-                    >
-                      {index + 1}
-                    </S.StepNumber>
-                    <S.StepTabLabel>{getCompactSectionTitle(section.title)}</S.StepTabLabel>
-                  </S.StepTab>
-                );
-              })}
-            </S.StepRail>
-          </S.IntakeProgressShell>
+            isCustomerOnboarding ? (
+              <>
+                {renderOnboardingSectionOverview()}
+                {renderOnboardingProgress()}
+              </>
+            ) : (
+              <S.IntakeProgressShell aria-label="Progresso do formulário compartilhado">
+                <S.IntakeProgressHeader>
+                  <div>
+                    <S.StepKicker>
+                      Seção {navigationSharedSectionIndex + 1} de {navigationSharedSections.length}
+                    </S.StepKicker>
+                    <S.SectionHeading>{activeSharedSection?.title}</S.SectionHeading>
+                    {activeSharedSection?.description ? (
+                      <S.SectionLead>{activeSharedSection.description}</S.SectionLead>
+                    ) : null}
+                  </div>
+                  <S.StepProgressValue>{sharedProgress}% completo</S.StepProgressValue>
+                </S.IntakeProgressHeader>
+                <S.ProgressTrack aria-hidden="true">
+                  <S.ProgressFill
+                    initial={false}
+                    animate={{ width: `${sharedProgress}%` }}
+                    transition={{ duration: 0.28, ease: 'easeOut' }}
+                  />
+                </S.ProgressTrack>
+                {renderStandardStepRail()}
+              </S.IntakeProgressShell>
+            )
           ) : null}
 
           {activeSharedSection

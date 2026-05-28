@@ -10,7 +10,6 @@ import {
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
-import { OrderStepHeader } from '../components/OrderStepHeader';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from '../PreRequisito/styles';
 
@@ -167,30 +166,6 @@ export function CadastroUsuarioBiteplaner() {
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title={
-          <S.OnboardingHeroTitle>
-            <S.OnboardingHeroIcon aria-hidden="true">
-              <UserRound size={48} strokeWidth={1.9} />
-              <S.OnboardingHeroIconBadge>
-                <CirclePlus size={20} strokeWidth={2.5} />
-              </S.OnboardingHeroIconBadge>
-            </S.OnboardingHeroIcon>
-            <span>Cadastro de novos usuários</span>
-          </S.OnboardingHeroTitle>
-        }
-        description={
-          <>
-            Este cadastro é o primeiro passo para quem optou por adquirir o <strong>Biteplaner</strong>.
-            Depois dele, a jornada segue para a pré-consulta clínica compartilhada com o dentista.
-          </>
-        }
-        currentStep="prerequisite"
-        order={order}
-        showOrderSummary={false}
-        orderHelpText="Este pedido ainda precisa do cadastro Biteplaner antes da pré-consulta."
-      />
-
       {loading ? (
         <S.Content aria-label="Carregando pedido Biteplaner">
           <SkeletonCard lines={5} blockHeight="96px" />
@@ -220,21 +195,49 @@ export function CadastroUsuarioBiteplaner() {
             </S.OnboardingCompletion>
           ) : (
             <S.OnboardingCard>
-              <S.OnboardingIntro>
-                <S.OnboardingIntroCopy>
-                  <S.OnboardingCardTitle>Cadastro Biteplaner</S.OnboardingCardTitle>
-                  <p>
-                    A NEXOR é uma empresa de bioengenharia que desenvolve pesquisas científicas e dispositivos técnicos
-                    personalizados para auxiliar atletas de elite e pessoas como você a treinarem com mais Conforto,
-                    Segurança, Performance, Consistência, Saúde e Longevidade.
-                  </p>
-                  <p>
-                    Este cadastro é seu primeiro passo para o time de especialistas projetar seu dispositivo
-                    personalizado e integrar você ao ecossistema NEXOR.
-                  </p>
+              <S.OnboardingHero>
+                <S.OnboardingHeroContent>
+                  <S.OnboardingMainTitle>
+                    <S.OnboardingHeroIcon aria-hidden="true">
+                      <UserRound size={48} strokeWidth={1.9} />
+                      <S.OnboardingHeroIconBadge>
+                        <CirclePlus size={20} strokeWidth={2.5} />
+                      </S.OnboardingHeroIconBadge>
+                    </S.OnboardingHeroIcon>
+                    <span>Cadastro de novos usuários</span>
+                  </S.OnboardingMainTitle>
+                  <S.OnboardingHeroLead>
+                    Este cadastro é o primeiro passo para quem optou por adquirir o <strong>Biteplaner</strong>.
+                    Depois dele, a jornada segue para a pré-consulta clínica compartilhada com o dentista.
+                  </S.OnboardingHeroLead>
+                  <S.OnboardingInfoCallout>
+                    <Info size={24} strokeWidth={2.4} aria-hidden="true" />
+                    <span>
+                      A NEXOR é uma empresa de bioengenharia que desenvolve pesquisas científicas e dispositivos
+                      técnicos personalizados para auxiliar atletas de elite e pessoas a treinar com mais Conforto,
+                      Segurança, Performance, Consistência, Saúde e Longevidade.
+                    </span>
+                  </S.OnboardingInfoCallout>
                   <S.RequiredHint>* Indica uma pergunta obrigatória.</S.RequiredHint>
-                </S.OnboardingIntroCopy>
-              </S.OnboardingIntro>
+                </S.OnboardingHeroContent>
+                <S.OnboardingHeroVisual aria-hidden="true">
+                  <S.OnboardingHeroClipboard>
+                    <S.ClipboardClip />
+                    <S.ClipboardAvatar>
+                      <UserRound size={48} strokeWidth={1.8} />
+                    </S.ClipboardAvatar>
+                    <S.ClipboardLines>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </S.ClipboardLines>
+                    <S.ClipboardShield>
+                      <ShieldCheck size={58} strokeWidth={2.2} />
+                    </S.ClipboardShield>
+                  </S.OnboardingHeroClipboard>
+                </S.OnboardingHeroVisual>
+              </S.OnboardingHero>
 
               {!privacyGateUnlocked ? (
                 <>

@@ -104,6 +104,19 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
   });
 
+  it('renders role-specific Biteplaner registration hero titles', () => {
+    let view = renderPage('/painel/biteplaner/cadastro/parceiro');
+    expect(screen.getByRole('heading', { name: /cadastro de parceiro biteplaner/i })).toBeInTheDocument();
+
+    view.unmount();
+    view = renderPage('/painel/biteplaner/cadastro/dentista');
+    expect(screen.getByRole('heading', { name: /solicitar cadastro de dentista/i })).toBeInTheDocument();
+
+    view.unmount();
+    renderPage('/painel/biteplaner/cadastro/laboratório');
+    expect(screen.getByRole('heading', { name: /solicitar cadastro de laborat.rio/i })).toBeInTheDocument();
+  });
+
   it('keeps submit disabled until required dentist and clinic fields and required terms are filled', async () => {
     mockCepLookup();
     renderPage();

@@ -313,6 +313,271 @@ export const IntakeProgressShell = styled.div`
   }
 `;
 
+export const OnboardingProgressCard = styled.section`
+  display: grid;
+  gap: 24px;
+  padding: 26px 32px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 720px) {
+    gap: 18px;
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+`;
+
+export const ProgressCardTitle = styled.h3`
+  margin: 0;
+  color: #07152f;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+`;
+
+export const OnboardingProgressRail = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+`;
+
+export const OnboardingProgressStep = styled.button<{ $active: boolean; $complete: boolean }>`
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: ${({ $active }) => ($active ? '#008d3f' : '#07152f')};
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    right: calc(50% + 26px);
+    left: -50%;
+    height: 6px;
+    border-radius: 999px;
+    background: ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#d7deea')};
+  }
+
+  &:first-child::before {
+    display: none;
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+
+    &::before {
+      display: none;
+    }
+  }
+`;
+
+export const OnboardingStepNumber = styled.span<{ $active: boolean; $complete: boolean }>`
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#d7deea')};
+  border-radius: 999px;
+  background: ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#ffffff')};
+  color: ${({ $active, $complete }) => ($active || $complete ? '#ffffff' : '#07152f')};
+  box-shadow: ${({ $active }) => ($active ? '0 10px 28px rgba(0, 156, 74, 0.28)' : 'none')};
+  font-size: 16px;
+  font-weight: 900;
+`;
+
+export const OnboardingStepText = styled.span`
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+
+  small {
+    color: #07152f;
+    font-size: 13px;
+    font-weight: 500;
+  }
+`;
+
+export const SectionOverviewCard = styled.section`
+  display: grid;
+  gap: 22px;
+  padding: 28px 32px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 720px) {
+    gap: 16px;
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+`;
+
+export const SectionOverviewHeader = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+
+  @media (max-width: 720px) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+`;
+
+export const SectionOverviewIcon = styled.span`
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #d8ffe9 0%, #f3fff8 100%);
+  color: #008d3f;
+  box-shadow: 0 14px 32px rgba(0, 156, 74, 0.16);
+
+  @media (max-width: 720px) {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+`;
+
+export const SectionOverviewCopy = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+`;
+
+export const SectionOverviewKicker = styled.span`
+  color: #008d3f;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
+`;
+
+export const SectionOverviewTitle = styled.h3`
+  margin: 0;
+  color: #07152f;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.22;
+
+  @media (max-width: 720px) {
+    font-size: 20px;
+  }
+`;
+
+export const SectionOverviewLead = styled.p`
+  max-width: 760px;
+  margin: 0;
+  color: #445066;
+  font-size: 14px;
+  line-height: 1.65;
+`;
+
+export const SectionProgressPill = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 160px;
+  padding: 12px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #07152f;
+  font-size: 14px;
+  font-weight: 800;
+
+  strong {
+    color: #009c4a;
+    font-size: 20px;
+  }
+
+  @media (max-width: 720px) {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+`;
+
+export const TrustBadgeStrip = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(0, 156, 74, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(90deg, #f7fffb 0%, #ffffff 100%);
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const TrustBadge = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  color: #07152f;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+
+  & + & {
+    border-left: 1px solid rgba(0, 156, 74, 0.12);
+  }
+
+  svg {
+    color: #008d3f;
+  }
+
+  @media (max-width: 900px) {
+    & + & {
+      border-left: 0;
+      border-top: 1px solid rgba(0, 156, 74, 0.12);
+    }
+  }
+`;
+
+export const StepTabsCard = styled.div`
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  background: #ffffff;
+`;
+
 export const IntakeProgressHeader = styled.div`
   display: flex;
   align-items: flex-end;

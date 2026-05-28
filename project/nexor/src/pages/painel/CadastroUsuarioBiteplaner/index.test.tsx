@@ -128,7 +128,7 @@ async function acceptInitialPrivacyGateIfNeeded() {
   await waitFor(() => {
     expect(
       screen.queryByLabelText(/declaro que li e entendi/i) ??
-        screen.queryByRole('button', { name: /dados cl.nicos/i })
+        screen.queryAllByRole('button', { name: /dados cl.nicos/i })[0]
     ).toBeTruthy();
   });
 
@@ -140,7 +140,7 @@ async function acceptInitialPrivacyGateIfNeeded() {
 
   fireEvent.click(privacyCheckbox);
   fireEvent.click(await screen.findByRole('button', { name: /continuar/i }));
-  await screen.findByRole('button', { name: /dados cl.nicos/i });
+  expect((await screen.findAllByRole('button', { name: /dados cl.nicos/i })).length).toBeGreaterThan(0);
 }
 
 async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '10011990' } = {}) {
@@ -249,10 +249,17 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.click(screen.getByLabelText(/declaro que li e entendi/i));
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
-    expect(await screen.findByRole('button', { name: /dados cl.nicos/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /perfil financeiro e objetivos/i })).toBeInTheDocument();
+    expect((await screen.findAllByRole('button', { name: /dados cl.nicos/i })).length).toBe(1);
+    expect(screen.getAllByRole('button', { name: /perfil financeiro e objetivos/i }).length).toBe(1);
     expect(screen.queryByRole('button', { name: /experi.ncia com o dispositivo/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /pesquisa de satisfa..o/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /pesquisa de satisfa..o/i }).length).toBe(1);
+    const sectionKicker = screen.getByText(/se..o 1 de 3/i);
+    const progressTitle = screen.getByText(/seu progresso/i);
+    expect(sectionKicker.compareDocumentPosition(progressTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText('33%')).toBeInTheDocument();
+    expect(screen.getByText(/conclu.do/i)).toBeInTheDocument();
+    expect(screen.getByText(/privacidade protegida/i)).toBeInTheDocument();
+    expect(screen.getByText(/uso .tico e respons.vel/i)).toBeInTheDocument();
     expect(screen.getAllByText(/dados cl.*nicos para seu cuidado/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/campos marcados com/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/menor de idade/i)).not.toBeInTheDocument();
