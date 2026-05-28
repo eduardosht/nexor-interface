@@ -59,6 +59,7 @@ export function OrderStepHeader({
 }: OrderStepHeaderProps) {
   const orderUpdate = order ? formatOrderUpdate(order.created_at) : null;
   const status = order ? getOrderStatusPresentation(order) : null;
+  const orderLabel = order?.displayId ?? order?.id;
 
   return (
     <S.Header>
@@ -80,7 +81,7 @@ export function OrderStepHeader({
             </S.OrderIcon>
             <S.OrderSummaryText>
               <S.OrderEyebrow>Pedido</S.OrderEyebrow>
-              <S.OrderId>{order.id}</S.OrderId>
+              <S.OrderId>{orderLabel}</S.OrderId>
               <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
             </S.OrderSummaryText>
           </S.OrderSummary>

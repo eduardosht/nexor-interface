@@ -66,7 +66,8 @@ describe('Compra', () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
-          id: 'BP-DEMO-003',
+          id: '11111111-1111-4111-8111-111111111003',
+          displayId: 'BP-DEMO-003',
           status: 'awaiting_payment',
           statusLabel: 'Aguardando pagamento',
           stage: 'awaiting_payment',
@@ -93,7 +94,8 @@ describe('Compra', () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
-          id: 'BP-DEMO-003',
+          id: '11111111-1111-4111-8111-111111111003',
+          displayId: 'BP-DEMO-003',
           status: 'awaiting_payment',
           statusLabel: 'Aguardando pagamento',
           stage: 'awaiting_payment',
@@ -106,16 +108,47 @@ describe('Compra', () => {
 
     renderPage();
 
+    await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('button', { name: /concluir pagamento/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-003/checkout-session',
+        '/v1/orders/11111111-1111-4111-8111-111111111003/checkout-session',
         {},
         'tok'
       )
     );
     expect(locationAssign).toHaveBeenCalledWith('https://checkout.stripe.test/session');
+  });
+
+  it('uses the real checkout order id when the loaded order comes from the demo mock', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: 'BP-DEMO-005',
+          checkoutOrderId: '22222222-2222-4222-8222-222222222005',
+          status: 'awaiting_payment',
+          statusLabel: 'Aguardando pagamento',
+          stage: 'awaiting_payment',
+          created_at: '2026-05-02T14:00:00.000Z',
+          customer: { full_name: 'Marina Lutadora', email: 'marina.demo@nexor.dev', phone: null },
+        },
+      ],
+    });
+    mockApiPost.mockResolvedValueOnce({ url: 'https://checkout.stripe.test/session' });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('BP-DEMO-005')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/22222222-2222-4222-8222-222222222005/checkout-session',
+        {},
+        'tok'
+      )
+    );
   });
 });

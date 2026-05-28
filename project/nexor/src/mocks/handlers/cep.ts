@@ -18,8 +18,21 @@ export const DEMO_VIA_CEP_RESPONSE = {
 
 const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
+function formatCep(cep: string) {
+  return cep.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+}
+
 export function getDemoViaCepResponse(cep: string) {
-  return onlyDigits(cep) === '01001000' ? DEMO_VIA_CEP_RESPONSE : { erro: true };
+  const digits = onlyDigits(cep);
+
+  if (digits.length !== 8) {
+    return { erro: true };
+  }
+
+  return {
+    ...DEMO_VIA_CEP_RESPONSE,
+    cep: formatCep(digits),
+  };
 }
 
 export function cepHandlers(server: Server) {
@@ -27,4 +40,3 @@ export function cepHandlers(server: Server) {
     getDemoViaCepResponse(String(request.params.cep))
   );
 }
-

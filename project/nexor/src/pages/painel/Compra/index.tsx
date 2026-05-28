@@ -91,7 +91,8 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
     setError('');
 
     try {
-      const response = await createCheckoutSession(order.id, token);
+      const checkoutOrderId = order.checkoutOrderId ?? order.id;
+      const response = await createCheckoutSession(checkoutOrderId, token);
       window.location.assign(response.url);
     } catch {
       setError('Não foi possível iniciar o checkout Stripe agora.');

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Database, Frown, Info, ShieldCheck, Star, UserRound, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
@@ -75,6 +75,9 @@ type RenderFieldControlContext = {
   trainingSameAsResidence?: boolean;
   residenceValue?: string;
   onTrainingSameAsResidenceChange?: (checked: boolean) => void;
+  residenceCepLookupError?: string;
+  onResidenceCepBlur?: () => void;
+  onResidenceCepChange?: () => void;
 };
 
 type VisibleSharedSection = {
@@ -141,6 +144,12 @@ function getDefinition(templateKey: string) {
 
 function getDefinitionFields(definition: FormDefinition) {
   if (definition.sharedIntake) {
+    if (definition.sharedIntake === CUSTOMER_NEW_USER_ONBOARDING) {
+      return definition.sharedIntake.sections
+        .filter((section) => section.key !== 'sin')
+        .flatMap((section) => section.fields);
+    }
+
     return definition.sharedIntake.sections.flatMap((section) => section.fields);
   }
 
@@ -187,9 +196,9 @@ function getOnboardingDisplaySections(sections: VisibleSharedSection[]): Display
     ),
     makeGroup(
       'device-platform-experience',
-      'SEÇÃO 2 - EXPERIÊNCIA COM O DISPOSITIVO E COM A PLATAFORMA NEXOR',
-      'Esta seção trata da sua relação com a NEXOR, expectativas em relação ao BITEPLANER e interesse no modelo integrado. Os dados ajudam a alinhar produto, serviços e suporte à sua realidade',
-      ['financial-profile', 'goals', 'sin']
+      'SEÇÃO 2 - PERFIL FINANCEIRO E OBJETIVOS',
+      'Esta seção trata do seu perfil financeiro, objetivos e prioridades para alinhar produto, serviços e suporte à sua realidade',
+      ['financial-profile', 'goals']
     ),
     makeGroup(
       'satisfaction-improvements',
@@ -333,6 +342,10 @@ function getInitialPayload(
         return [field.key, formatBirthDateValue(value)];
       }
 
+      if (field.key === 'residenceCep') {
+        return [field.key, formatCepValue(value)];
+      }
+
       if (isHealthConditionalField(field)) {
         if (value.trim().toLowerCase() === 'não' || value.trim().toLowerCase() === 'nao') {
           return [field.key, 'Não'];
@@ -430,6 +443,32 @@ const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
 
 function payloadHasCheckboxValue(payload: Record<string, string>, fieldKey: string, value: string) {
   return (payload[fieldKey] ?? '').split('|').includes(value);
+}
+
+function onlyDigits(value?: string) {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
+function formatCepValue(value: string) {
+  const digits = onlyDigits(value).slice(0, 8);
+
+  return digits.replace(/^(\d{5})(\d)/, '$1-$2');
+}
+
+function formatResidenceAddress(data: { street?: string; neighborhood?: string }) {
+  return [data.street, data.neighborhood].filter(Boolean).join(' - ');
+}
+
+function composeResidenceFullAddress(payload: Record<string, string>) {
+  const address = payload.residenceAddress?.trim();
+  const complement = payload.residenceComplement?.trim();
+  const cityState = [payload.residenceCity?.trim(), payload.residenceState?.trim()].filter(Boolean).join(' - ');
+
+  return [address, complement, cityState].filter(Boolean).join(', ');
+}
+
+function getResidenceValue(payload: Record<string, string>) {
+  return composeResidenceFullAddress(payload) || payload.fullAddress?.trim() || '';
 }
 
 function getCheckboxOtherDetailParentKey(fieldKey: string) {
@@ -823,7 +862,11 @@ function getFieldValidationMessage(
   }
 
   if (field.key === 'birthDate' && value.trim() && !isValidBirthDateValue(value)) {
-    return 'Data de nascimento inválida. Informe uma data real, sem ano futuro ou incompatível.';
+    return 'Insira uma data valida';
+  }
+
+  if (field.key === 'residenceCep' && value.trim() && onlyDigits(value).length !== 8) {
+    return 'CEP inválido. Informe 8 dígitos.';
   }
 
   return '';
@@ -853,6 +896,10 @@ function normalizeFieldValue(
 
   if (field.key === 'birthDate') {
     return normalizeBirthDateValue(trimmed);
+  }
+
+  if (field.key === 'residenceCep') {
+    return onlyDigits(trimmed);
   }
 
   if (isCurrencyField(field)) {
@@ -964,6 +1011,10 @@ function getFieldPlaceholder(
 
   if (field.key === 'birthDate') {
     return 'DD/MM/AAAA';
+  }
+
+  if (field.key === 'residenceCep') {
+    return '00000-000';
   }
 
   return undefined;
@@ -1134,11 +1185,13 @@ function FormItem({
   const [error, setError] = useState('');
   const [stepError, setStepError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [residenceCepLookupError, setResidenceCepLookupError] = useState('');
   const [trainingSameAsResidence, setTrainingSameAsResidence] = useState(
-    () => Boolean(payload.fullAddress?.trim() && payload.trainingCityOrNeighborhood === payload.fullAddress)
+    () => Boolean(getResidenceValue(payload) && payload.trainingCityOrNeighborhood === getResidenceValue(payload))
   );
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false);
+  const formCardRef = useRef<HTMLElement | null>(null);
   const presentation = STATUS_PRESENTATION[form.status];
   const fields = getDefinitionFields(definition);
   const isSharedIntake = Boolean(definition.sharedIntake);
@@ -1207,6 +1260,7 @@ function FormItem({
     setIsEditingSubmitted(false);
     setStepError('');
     setFieldErrors({});
+    setResidenceCepLookupError('');
     setTrainingSameAsResidence(false);
   }, [form.id, actorRole]);
 
@@ -1215,7 +1269,7 @@ function FormItem({
       return;
     }
 
-    const residenceValue = payload.fullAddress ?? '';
+    const residenceValue = getResidenceValue(payload);
     setPayload((current) => {
       if (current.trainingCityOrNeighborhood === residenceValue) {
         return current;
@@ -1223,13 +1277,63 @@ function FormItem({
 
       return { ...current, trainingCityOrNeighborhood: residenceValue };
     });
-  }, [payload.fullAddress, trainingSameAsResidence]);
+  }, [
+    payload.fullAddress,
+    payload.residenceAddress,
+    payload.residenceCity,
+    payload.residenceComplement,
+    payload.residenceState,
+    trainingSameAsResidence,
+  ]);
 
   useEffect(() => {
     if (activeSectionIndex >= displaySharedSections.length) {
       setActiveSectionIndex(Math.max(displaySharedSections.length - 1, 0));
     }
   }, [activeSectionIndex, displaySharedSections.length]);
+
+  async function lookupResidenceCep() {
+    if (form.templateKey !== 'customer_new_user_onboarding' || typeof fetch !== 'function') {
+      return;
+    }
+
+    const cep = onlyDigits(payload.residenceCep);
+    if (cep.length !== 8) {
+      return;
+    }
+
+    try {
+      setResidenceCepLookupError('');
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!response.ok) {
+        throw new Error('CEP lookup failed');
+      }
+
+      const data = await response.json();
+      if (data.erro) {
+        throw new Error('CEP not found');
+      }
+
+      setPayload((current) => {
+        if (onlyDigits(current.residenceCep) !== cep) {
+          return current;
+        }
+
+        return {
+          ...current,
+          residenceAddress:
+            formatResidenceAddress({ street: data.logradouro, neighborhood: data.bairro }) ||
+            current.residenceAddress ||
+            '',
+          residenceComplement: data.complemento ?? current.residenceComplement ?? '',
+          residenceCity: data.localidade ?? current.residenceCity ?? '',
+          residenceState: data.uf ?? current.residenceState ?? '',
+        };
+      });
+    } catch {
+      setResidenceCepLookupError('Não foi possível preencher o endereço automaticamente por este CEP.');
+    }
+  }
 
   function getEditableFieldsForSection(section: DisplaySharedSection) {
     return section.fields.filter(
@@ -1336,6 +1440,7 @@ function FormItem({
     }
 
     goToSection(Math.min(activeSharedSectionIndex + 1, displaySharedSections.length - 1));
+    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1404,7 +1509,13 @@ function FormItem({
       editableFields
         .map((field) => [field.key, normalizeFieldValue(field, payload[field.key] ?? '')])
         .filter(([, value]) => value !== '')
-    );
+    ) as Record<string, unknown>;
+    if (form.templateKey === 'customer_new_user_onboarding') {
+      const residenceFullAddress = composeResidenceFullAddress(payload);
+      if (residenceFullAddress) {
+        normalizedValues.fullAddress = residenceFullAddress;
+      }
+    }
     const normalizedPayload = isSharedIntake && definition.payloadMode !== 'flat'
       ? { [getSharedIntakePayloadKey(actorRole)]: normalizedValues }
       : normalizedValues;
@@ -1424,7 +1535,7 @@ function FormItem({
   }
 
   return (
-    <S.FormCard $presentation={formPresentation}>
+    <S.FormCard ref={formCardRef} $presentation={formPresentation}>
       {showFormHeader ? (
         <S.FormHeader>
           <div>
@@ -1521,8 +1632,11 @@ function FormItem({
                     () => clearFieldValidationError(privacyField.key),
                     {
                       trainingSameAsResidence,
-                      residenceValue: payload.fullAddress ?? '',
+                      residenceValue: getResidenceValue(payload),
                       onTrainingSameAsResidenceChange: setTrainingSameAsResidence,
+                      residenceCepLookupError,
+                      onResidenceCepBlur: lookupResidenceCep,
+                      onResidenceCepChange: () => setResidenceCepLookupError(''),
                     }
                   )
                   : null;
@@ -1642,8 +1756,11 @@ function FormItem({
                                   () => clearFieldValidationError(field.key),
                                   {
                                     trainingSameAsResidence,
-                                    residenceValue: payload.fullAddress ?? '',
+                                    residenceValue: getResidenceValue(payload),
                                     onTrainingSameAsResidenceChange: setTrainingSameAsResidence,
+                                    residenceCepLookupError,
+                                    onResidenceCepBlur: lookupResidenceCep,
+                                    onResidenceCepChange: () => setResidenceCepLookupError(''),
                                   }
                                 );
 
@@ -1871,8 +1988,11 @@ function FormItem({
                 () => clearFieldValidationError(field.key),
                 {
                   trainingSameAsResidence,
-                  residenceValue: payload.fullAddress ?? '',
+                  residenceValue: getResidenceValue(payload),
                   onTrainingSameAsResidenceChange: setTrainingSameAsResidence,
+                  residenceCepLookupError,
+                  onResidenceCepBlur: lookupResidenceCep,
+                  onResidenceCepChange: () => setResidenceCepLookupError(''),
                 }
               );
 
@@ -2219,32 +2339,46 @@ function renderFieldControl(
   }
 
   const isTrainingLocationField = isSharedField(field) && field.key === 'trainingCityOrNeighborhood';
+  const isResidenceCepField = isSharedField(field) && field.key === 'residenceCep';
   const isCurrencyInputField = isCurrencyField(field);
   const isSystemDentistField = isSharedField(field) && SYSTEM_DENTIST_FIELD_KEYS.has(field.key);
+  const displayedFieldError = isResidenceCepField
+    ? fieldError || context.residenceCepLookupError
+    : fieldError;
   const fieldControl = (
     <Field
       as={isTextareaField(field) ? 'textarea' : 'input'}
       label={field.label}
       value={payload[field.key] ?? ''}
       required={field.required}
-      error={fieldError}
+      error={displayedFieldError}
       hint={field.helpText}
       disabled={isSystemDentistField || (isTrainingLocationField && Boolean(context.trainingSameAsResidence))}
-      type={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' ? 'tel' : isSharedNumberField(field) && !isCurrencyInputField ? 'number' : 'text'}
-      inputMode={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' ? 'numeric' : isSharedNumberField(field) ? 'decimal' : undefined}
+      type={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' || isResidenceCepField ? 'tel' : isSharedNumberField(field) && !isCurrencyInputField ? 'number' : 'text'}
+      inputMode={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' || isResidenceCepField ? 'numeric' : isSharedNumberField(field) ? 'decimal' : undefined}
       min={isSharedNumberField(field) && !isCurrencyInputField ? field.min : undefined}
       max={isSharedNumberField(field) && !isCurrencyInputField ? field.max : undefined}
-      maxLength={field.key === 'phone' ? getPhoneMaxLength() : field.key === 'cpf' ? getDocumentMaxLength('cpf') : field.key === 'birthDate' ? 10 : undefined}
+      maxLength={field.key === 'phone' ? getPhoneMaxLength() : field.key === 'cpf' ? getDocumentMaxLength('cpf') : field.key === 'birthDate' ? 10 : isResidenceCepField ? 9 : undefined}
       placeholder={getFieldPlaceholder(field)}
-      onBlur={onFieldBlur}
+      onBlur={() => {
+        onFieldBlur();
+        if (isResidenceCepField) {
+          context.onResidenceCepBlur?.();
+        }
+      }}
       onChange={(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         onFieldChange();
+        if (isResidenceCepField) {
+          context.onResidenceCepChange?.();
+        }
         const value = field.key === 'phone'
           ? formatPhoneValue(event.target.value)
           : field.key === 'cpf'
             ? formatDocumentValue('cpf', event.target.value)
             : field.key === 'birthDate'
               ? formatBirthDateValue(event.target.value)
+              : isResidenceCepField
+                ? formatCepValue(event.target.value)
               : isCurrencyInputField
                 ? formatCurrencyInputValue(event.target.value)
           : isSharedNumberField(field)

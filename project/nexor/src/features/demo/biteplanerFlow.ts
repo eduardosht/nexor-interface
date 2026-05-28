@@ -26,6 +26,8 @@ export type AccessOptionsResponse = {
 
 export type DemoOrderSummary = {
   id: string;
+  displayId?: string;
+  checkoutOrderId?: string;
   status: string;
   statusLabel?: string;
   stage: string;

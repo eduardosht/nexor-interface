@@ -1,6 +1,8 @@
 ﻿// Stable key for the login/auth demo flow. Mock handlers read this directly so
 // the UI can switch personas without inventing a parallel session contract.
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
+const DEMO_STRIPE_CHECKOUT_ORDER_ID =
+  import.meta.env.VITE_DEMO_STRIPE_CHECKOUT_ORDER_ID?.trim() || '00000000-0000-4000-8000-000000000005';
 
 export type DemoPersona =
   | 'athleteRegistered'
@@ -160,6 +162,7 @@ type DemoCustomerSummary = {
 
 type DemoOrder = {
   id: string;
+  checkoutOrderId?: string;
   status: string;
   statusLabel: string;
   stage: string;
@@ -1394,6 +1397,7 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-005',
+      checkoutOrderId: DEMO_STRIPE_CHECKOUT_ORDER_ID,
       status: 'awaiting_payment',
       statusLabel: 'Aguardando pagamento',
       stage: 'awaiting_payment',
@@ -2797,6 +2801,7 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
 
   return {
     id: order.id,
+    checkoutOrderId: order.checkoutOrderId,
     status: order.status,
     statusLabel: order.statusLabel,
     stage: order.stage,

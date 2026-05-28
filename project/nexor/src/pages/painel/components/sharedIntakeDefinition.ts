@@ -1569,7 +1569,11 @@ export const CUSTOMER_NEW_USER_ONBOARDING: SharedIntakeDefinition = {
         { key: 'email', label: 'E-mail', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
         { key: 'phone', label: 'Telefone', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
         { key: 'cpf', label: 'CPF', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
-        { key: 'fullAddress', label: 'Cidade/Bairro onde reside', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
+        { key: 'residenceCep', label: 'CEP', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
+        { key: 'residenceAddress', label: 'Endereço', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
+        { key: 'residenceComplement', label: 'Complemento', required: false, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
+        { key: 'residenceCity', label: 'Cidade', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
+        { key: 'residenceState', label: 'Estado', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
         { key: 'profession', label: 'Profissão', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
         { key: 'birthDate', label: 'Data de nascimento', required: true, type: 'text', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Use o formato DD/MM/AAAA.' },
         {

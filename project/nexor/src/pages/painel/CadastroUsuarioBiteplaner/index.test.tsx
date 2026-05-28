@@ -33,6 +33,30 @@ vi.mock('../../../lib/api', () => ({
 
 import { CadastroUsuarioBiteplaner } from './index';
 
+function mockCepLookup() {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      cep: '01001-000',
+      logradouro: 'Praça da Sé',
+      complemento: 'lado ímpar',
+      unidade: '',
+      bairro: 'Sé',
+      localidade: 'São Paulo',
+      uf: 'SP',
+      estado: 'São Paulo',
+      regiao: 'Sudeste',
+      ibge: '3550308',
+      gia: '1004',
+      ddd: '11',
+      siafi: '7107',
+    }),
+  });
+
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
 function demoOrder() {
   return {
     id: 'BP-DEMO-ONBOARDING',
@@ -134,7 +158,11 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   fireEvent.change(birthDateInput, { target: { value: birthDate } });
   expect(cpfInput).toHaveValue(cpf === '52998224725' ? '529.982.247-25' : '123.456.789-01');
   expect(birthDateInput).toHaveValue(birthDate === '10011990' ? '10/01/1990' : '10/01/2010');
-  fireEvent.change(screen.getByLabelText(/cidade\/bairro onde reside/i), { target: { value: 'São Paulo / Pinheiros' } });
+  fireEvent.change(screen.getByLabelText(/^cep/i), { target: { value: '01001000' } });
+  fireEvent.change(screen.getByLabelText(/^endere.*o/i), { target: { value: 'Praça da Sé - Sé' } });
+  fireEvent.change(screen.getByLabelText(/complemento/i), { target: { value: 'lado ímpar' } });
+  fireEvent.change(screen.getByLabelText(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
+  fireEvent.change(screen.getByLabelText(/^estado \(\*\)$/i), { target: { value: 'SP' } });
   fireEvent.change(screen.getByLabelText(/profiss.*o/i), { target: { value: 'Atleta' } });
   selectDropdown(/sexo biol.*gico/i, 'Masculino');
   selectDropdown(/lateralidade predominante/i, 'Destro');
@@ -147,7 +175,7 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   selectDropdown(/h.* quanto tempo/i, '2 a 5 anos');
   fireEvent.click(screen.getByLabelText(/mesmo local da resid/i));
   expect(screen.getByLabelText(/cidade\/bairro onde treina/i)).toBeDisabled();
-  expect(screen.getByLabelText(/cidade\/bairro onde treina/i)).toHaveValue('São Paulo / Pinheiros');
+  expect(screen.getByLabelText(/cidade\/bairro onde treina/i)).toHaveValue('Praça da Sé - Sé, lado ímpar, São Paulo - SP');
   fireEvent.click(screen.getByLabelText(/^academia$/i));
   fireEvent.click(screen.getByLabelText(/personal trainer/i));
   selectTagOption(/acess.*rios de seguran.*a/i, 'rel', /rel.*gios sensores/i);
@@ -165,12 +193,10 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   fireEvent.change(screen.getByLabelText(/maior preocupa.*o/i), { target: { value: 'Evitar lesões' } });
   selectDropdown(/trabalho afeta/i, 'Não afeta');
 
-  expect(screen.getByText(/novo sistema integrado \(SIN\)/i)).toBeInTheDocument();
-  expect(screen.getByText('ACOMPANHAMENTO DE DISPOSITIVOS')).toBeInTheDocument();
-  expect(screen.getByText('SERVIÇOS ADICIONAIS')).toBeInTheDocument();
-  expect(screen.getByRole('radiogroup', { name: /chance de voc.* usar/i })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('radio', { name: /8 de 10/i }));
-  selectDropdown(/indicaria a nexor/i, 'Provavelmente sim');
+  expect(screen.queryByText(/novo sistema integrado \(SIN\)/i)).not.toBeInTheDocument();
+  expect(screen.queryByText('ACOMPANHAMENTO DE DISPOSITIVOS')).not.toBeInTheDocument();
+  expect(screen.queryByRole('radiogroup', { name: /chance de voc.* usar/i })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/indicaria a nexor/i)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: /pr.*xima etapa/i }));
 
   expect(screen.queryByLabelText(/pol.*tica de privacidade/i)).not.toBeInTheDocument();
@@ -186,6 +212,11 @@ describe('CadastroUsuarioBiteplaner', () => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     mockNavigate.mockReset();
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('prefills account data and sends a valid onboarding to the clinical prerequisite', async () => {
@@ -219,7 +250,8 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
     expect(await screen.findByRole('button', { name: /dados cl.nicos/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /experi.ncia com o dispositivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /perfil financeiro e objetivos/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /experi.ncia com o dispositivo/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /pesquisa de satisfa..o/i })).toBeInTheDocument();
     expect(screen.getAllByText(/dados cl.*nicos para seu cuidado/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/campos marcados com/i)).not.toBeInTheDocument();
@@ -239,7 +271,12 @@ describe('CadastroUsuarioBiteplaner', () => {
             phone: '11999999999',
             cpf: '52998224725',
             birthDate: '1990-01-10',
-            fullAddress: 'São Paulo / Pinheiros',
+            residenceCep: '01001000',
+            residenceAddress: 'Praça da Sé - Sé',
+            residenceComplement: 'lado ímpar',
+            residenceCity: 'São Paulo',
+            residenceState: 'SP',
+            fullAddress: 'Praça da Sé - Sé, lado ímpar, São Paulo - SP',
             profession: 'Atleta',
             handedness: 'right',
             bodyMassKg: 70.5,
@@ -247,7 +284,7 @@ describe('CadastroUsuarioBiteplaner', () => {
             currentSports: ['running'],
             pastSports: ['strength_training'],
             trainingExperience: '2_to_5_years',
-            trainingCityOrNeighborhood: 'São Paulo / Pinheiros',
+            trainingCityOrNeighborhood: 'Praça da Sé - Sé, lado ímpar, São Paulo - SP',
             trainingLocations: ['gym'],
             trainingSupport: ['personal_trainer'],
             accessories: ['sensor_watch'],
@@ -255,7 +292,6 @@ describe('CadastroUsuarioBiteplaner', () => {
             previousTrainingInjuries: 'Não',
             monthlyTrainingLocationSpend: 200,
             monthlyIncomeRange: '5001_10000',
-            sinUsageLikelihood: 8,
             nexorMostImportantHelp: 'A treinar com segurança',
             privacyConsent: ['accepted'],
           }),
@@ -315,8 +351,21 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.change(birthDateInput, { target: { value: '01019990' } });
     fireEvent.blur(birthDateInput);
 
-    expect(await screen.findByText(/data de nascimento inv.*lida/i)).toBeInTheDocument();
+    expect(await screen.findByText(/insira uma data valida/i)).toBeInTheDocument();
     expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
+  it('does not show CEP helper copy and scrolls smoothly to the top when advancing steps', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+
+    renderPage();
+
+    await fillRequiredOnboardingFields();
+
+    expect(screen.queryByText(/ao sair do campo/i)).not.toBeInTheDocument();
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 
   it('uses tag autocomplete fields for current sports and accessories', async () => {
@@ -354,14 +403,16 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    fireEvent.change(await screen.findByLabelText(/cidade\/bairro onde reside/i), {
-      target: { value: 'São Paulo / Pinheiros' },
+    fireEvent.change(await screen.findByLabelText(/^endere.*o/i), {
+      target: { value: 'Praça da Sé - Sé' },
     });
+    fireEvent.change(screen.getByLabelText(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
+    fireEvent.change(screen.getByLabelText(/^estado \(\*\)$/i), { target: { value: 'SP' } });
     const trainingLocationInput = screen.getByLabelText(/cidade\/bairro onde treina/i);
     fireEvent.click(screen.getByLabelText(/mesmo local da resid/i));
 
     expect(trainingLocationInput).toBeDisabled();
-    expect(trainingLocationInput).toHaveValue('São Paulo / Pinheiros');
+    expect(trainingLocationInput).toHaveValue('Praça da Sé - Sé, São Paulo - SP');
   });
 
   it('shows conditional health descriptions only when the answer is yes', async () => {
@@ -396,7 +447,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    fireEvent.click(await screen.findByRole('button', { name: /experi.ncia com o dispositivo/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /perfil financeiro e objetivos/i }));
 
     const locationSpendInput = screen.getByLabelText(/locais de treinamento/i);
     const accessorySpendInput = screen.getByLabelText(/gasto anual com acess.*rios/i);
@@ -455,5 +506,36 @@ describe('CadastroUsuarioBiteplaner', () => {
       expect(screen.getAllByRole('alert').some((alert) => /respons.*vel maior/i.test(alert.textContent ?? ''))).toBe(true)
     );
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('fills residence address fields automatically after a valid Brazilian CEP', async () => {
+    const fetchMock = mockCepLookup();
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+
+    renderPage();
+
+    await acceptInitialPrivacyGateIfNeeded();
+
+    expect(screen.queryByLabelText(/cidade\/bairro onde reside/i)).not.toBeInTheDocument();
+
+    fireEvent.change(await screen.findByLabelText(/^cep/i), {
+      target: { value: '01001000' },
+    });
+
+    expect(screen.getByLabelText(/^cep/i)).toHaveValue('01001-000');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.blur(screen.getByLabelText(/^cep/i));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^endere.*o/i)).toHaveValue('Praça da Sé - Sé');
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+    expect(screen.getByLabelText(/complemento/i)).toHaveValue('lado ímpar');
+    expect(screen.getByLabelText(/^cidade \(\*\)$/i)).toHaveValue('São Paulo');
+    expect(screen.getByLabelText(/^estado \(\*\)$/i)).toHaveValue('SP');
   });
 });
