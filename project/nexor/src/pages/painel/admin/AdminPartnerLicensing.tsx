@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, DataTable, Field, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
-import { Eye, X } from 'lucide-react';
+import { CheckCircle2, Eye, X, XCircle } from 'lucide-react';
 import styled from 'styled-components';
 import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -241,10 +241,21 @@ export function AdminPartnerLicensing() {
             />
 
             <ModalActions>
-              <Button type="button" variant="secondary" disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'} onClick={handleApprove}>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                onClick={handleApprove}
+                leadingIcon={<CheckCircle2 size={16} aria-hidden />}
+              >
                 {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
               </Button>
-              <DangerButton type="button" disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'} onClick={handleReject}>
+              <DangerButton
+                type="button"
+                disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
+                onClick={handleReject}
+                leadingIcon={<XCircle size={16} aria-hidden />}
+              >
                 {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
               </DangerButton>
             </ModalActions>
@@ -255,17 +266,17 @@ export function AdminPartnerLicensing() {
   );
 }
 
-const IconButton = styled.button`
+const IconButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as const })`
   width: 36px;
   height: 36px;
+  min-height: 36px;
+  padding: 0;
   border: 1px solid #E0E0E0;
   border-radius: 6px;
-  background: #FFFFFF;
   color: #171717;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
 `;
 
 const ModalOverlay = styled.div`

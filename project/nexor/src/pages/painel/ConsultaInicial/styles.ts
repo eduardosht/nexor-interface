@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Button } from '@nexor/design-system';
+import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   display: grid;
@@ -25,11 +26,11 @@ export const Banner = styled.div`
 
 export const SearchBar = styled.section`
   display: grid;
-  grid-template-columns: minmax(220px, 320px) max-content;
+  grid-template-columns: minmax(220px, 320px) max-content max-content;
   gap: 12px;
   align-items: end;
 
-  @media (max-width: 720px) {
+  @media (max-width: 860px) {
     grid-template-columns: 1fr;
   }
 `;
@@ -49,6 +50,25 @@ export const SearchButton = styled(Button)`
   max-width: 100%;
   justify-self: start;
   white-space: nowrap;
+`;
+
+export const ScheduleButton = styled(Button)`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+
+  @media (max-width: 760px) {
+    width: 100%;
+    min-width: 0;
+    gap: 12px;
+    padding: 12px 14px;
+
+    > span {
+      gap: 12px;
+    }
+  }
 `;
 
 export const SecondaryButton = styled(Button).attrs({ variant: 'secondary' })`
@@ -337,4 +357,43 @@ export const ActionHref = styled.a`
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+`;
+
+export const WhatsappActionHref = styled(ActionHref)`
+  border-color: #1da851;
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 211, 102, 0.22);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease,
+    transform 180ms ease;
+
+  &:hover {
+    border-color: #16843f;
+    background: #1da851;
+    box-shadow: 0 12px 26px rgba(37, 211, 102, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(37, 211, 102, 0.28);
+    outline-offset: 2px;
+  }
+`;
+
+export const EmailActionHref = styled(ActionHref)`
+  border-color: ${({ theme }) => theme.colors.borderDefault};
+  background: #ffffff;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.green};
+    box-shadow: 0 10px 22px rgba(23, 23, 23, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(7, 132, 90, 0.24);
+    outline-offset: 2px;
+  }
 `;

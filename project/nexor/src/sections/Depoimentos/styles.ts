@@ -1,20 +1,20 @@
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const Section = styled.section`
   ${fullBleedSection}
   background: #111113;
-  padding: 100px 48px;
+  padding: 100px 0;
 
   @media (max-width: 768px) {
-    padding: 80px 24px;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 `;
 
 export const Inner = styled.div`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
+  ${pageContainer}
 `;
 
 export const Header = styled.div`

@@ -64,6 +64,7 @@ export {
   type TagAutocompleteOption,
 } from './components/TagAutocompleteField';
 export { Select, type SelectProps, type SelectOption } from './components/Select';
+export { SliderField, type SliderFieldProps } from './components/SliderField';
 export { UploadField, type UploadFieldFile, type UploadFieldProps } from './components/UploadField';
 export { Snackbar, SnackbarStack, type SnackbarProps, type SnackbarStackProps, type SnackbarTone } from './components/Snackbar';
 export { StickyActionBar, type StickyActionBarProps } from './components/StickyActionBar';

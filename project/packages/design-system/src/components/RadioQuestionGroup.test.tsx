@@ -79,4 +79,27 @@ describe('RadioQuestionGroup', () => {
       display: 'flex',
     });
   });
+
+  it('places inline validation feedback below the question text', () => {
+    render(
+      <DesignSystemProvider brand="nexor">
+        <RadioQuestionGroup
+          name="answer"
+          label="Resposta"
+          inline
+          value=""
+          error="Campo obrigatorio"
+          onChange={vi.fn()}
+          options={[
+            { value: 'no', label: 'Nao' },
+            { value: 'yes', label: 'Sim' },
+          ]}
+        />
+      </DesignSystemProvider>,
+    );
+
+    const alertStyle = window.getComputedStyle(screen.getByRole('alert'));
+    expect(alertStyle.gridColumnStart).toBe('1');
+    expect(alertStyle.gridColumnEnd).toBe('2');
+  });
 });

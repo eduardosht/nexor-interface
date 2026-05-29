@@ -1,21 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
-import { AlertTriangle, FileText, Lock, Mail, MessageCircleQuestion, Send, UserRound } from 'lucide-react';
+import { AlertTriangle, Check, Clock3, Info } from 'lucide-react';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  createTrainingReport,
   fetchOrders,
+  fetchAppointments,
   fetchWorkflowForms,
+  confirmAppointmentByUser,
   getAthletePrimaryOrder,
   getAuthToken,
+  getEffectiveAthleteOrder,
+  getAthleteNextPath,
   getStageLabel,
   type DemoOrderSummary,
-  type DemoWorkflowForm,
+  type DemoAppointment,
 } from '../../../features/demo/biteplanerFlow';
-import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
-import { ConsultaInicial } from '../ConsultaInicial';
-import { Compra } from '../Compra';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import type { StepTone } from './styles';
 import * as S from './styles';
 
@@ -104,47 +106,6 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
   return 0;
 }
 
-function getWorkflowStepKey(form: DemoWorkflowForm): JourneyStepKey | null {
-  if (form.templateKey === 'customer_new_user_onboarding') {
-    return null;
-  }
-
-  if (form.templateKey === 'customer_pre_consultation_intake') {
-    return form.stepKey === 'pre_requisite_pending' ? 'prerequisite' : 'consultation';
-  }
-
-  if (form.templateKey === 'lab_review_by_dentist' || form.templateKey === 'dentist_review_by_lab') {
-    return 'laboratory';
-  }
-
-  if (form.templateKey === 'dentist_review_by_customer' || form.templateKey === 'customer_training_report') {
-    return 'follow_up';
-  }
-
-  if (form.templateKey === 'partner_review_by_customer' || form.templateKey === 'influencer_review_by_customer') {
-    return 'follow_up';
-  }
-
-  if (form.stepKey.includes('lab')) {
-    return 'laboratory';
-  }
-
-  if (form.stepKey.includes('adaptation') || form.stepKey.includes('feedback')) {
-    return 'follow_up';
-  }
-
-  return 'clinical_decision';
-}
-
-function advancePrerequisiteOrder(order: DemoOrderSummary): DemoOrderSummary {
-  return {
-    ...order,
-    status: 'awaiting_scheduling',
-    statusLabel: 'Aguardando consulta inicial',
-    stage: 'awaiting_initial_consultation',
-  };
-}
-
 function getOrderProblemContext(order: DemoOrderSummary) {
   if (order.status === 'ineligible_refund') {
     return {
@@ -167,171 +128,210 @@ function getOrderProblemContext(order: DemoOrderSummary) {
   return null;
 }
 
-export function Jornada() {
-  const { session, backendUser } = useAuth();
-  const token = getAuthToken(session);
-  const stepFlowRef = useRef<HTMLElement | null>(null);
-  const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
-  const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
-  const [workflowFormsLoading, setWorkflowFormsLoading] = useState(false);
-  const [workflowFormsError, setWorkflowFormsError] = useState('');
-  const [trainingReportCreating, setTrainingReportCreating] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [contactName, setContactName] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
-  const [contactSubject, setContactSubject] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
-
-  useEffect(() => {
-    if (!token) {
-      return;
+function getCurrentStepNotice(
+  order: DemoOrderSummary,
+  currentStep: JourneyStep | null,
+  initialAppointment: DemoAppointment | null
+) {
+  if (order.status === 'in_progress') {
+    if (!initialAppointment) {
+      return null;
     }
 
-    let active = true;
-
-    async function loadJourney() {
-      try {
-        const response = await fetchOrders('user', token);
-
-        if (!active) {
-          return;
-        }
-
-        setOrders(response.orders);
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar a jornada compartilhada agora.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+    if (initialAppointment.user_confirmed_at) {
+      return 'Consulta realizada confirmada pelo usuario. Agora a acao esta com o dentista para validar a realizacao da consulta.';
     }
 
-    void loadJourney();
+    return 'Ha uma acao pendente para o usuario: confirme que a consulta agendada foi realizada para liberar a proxima etapa da jornada.';
+  }
 
-    return () => {
-      active = false;
+  if (!currentStep) {
+    return null;
+  }
+
+  if (order.status === 'awaiting_dentist_acceptance') {
+    return `A consulta inicial foi solicitada. Agora Ã© preciso aguardar o aceite do dentista para seguir na etapa ${currentStep.title}.`;
+  }
+
+  if (order.status === 'in_progress') {
+    return `A consulta inicial estÃ¡ em andamento. Aguarde as confirmaÃ§Ãµes necessÃ¡rias para liberar a prÃ³xima etapa.`;
+  }
+
+  if (order.status === 'appointment_confirmed') {
+    return `Consulta confirmada. A jornada aguarda a decisÃ£o clÃ­nica do dentista para liberar a prÃ³xima aÃ§Ã£o.`;
+  }
+
+  if (order.status === 'payment_confirmed' || order.status === 'awaiting_dentist_forms') {
+    return `Pagamento confirmado. A jornada aguarda os registros operacionais do dentista para seguir.`;
+  }
+
+  if (order.status === 'lab_processing') {
+    return `O Biteplaner estÃ¡ em etapa laboratorial. Acompanhe o progresso por aqui enquanto o laboratÃ³rio conclui a produÃ§Ã£o.`;
+  }
+
+  if (order.status === 'awaiting_adaptation') {
+    return `Produto recebido pela clÃ­nica. Aguarde as orientaÃ§Ãµes para adaptaÃ§Ã£o e acompanhamento.`;
+  }
+
+  return null;
+}
+
+function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: DemoAppointment | null) {
+  if (order.status === 'in_progress' && initialAppointment?.user_confirmed_at) {
+    return {
+      tone: 'info' as const,
+      title: 'Acao com o dentista',
+      icon: <Clock3 size={18} aria-hidden />,
     };
-  }, [token]);
+  }
+
+  if (order.status === 'in_progress') {
+    return {
+      tone: 'warning' as const,
+      title: 'Acao pendente do usuario',
+      icon: <AlertTriangle size={18} aria-hidden />,
+    };
+  }
+
+  if (order.status === 'awaiting_dentist_acceptance') {
+    return {
+      tone: 'warning' as const,
+      title: 'Aguardando aceite do dentista',
+      icon: <Clock3 size={18} aria-hidden />,
+    };
+  }
+
+  if (order.status === 'appointment_confirmed') {
+    return {
+      tone: 'info' as const,
+      title: 'Aguardando decisao clinica',
+      icon: <Info size={18} aria-hidden />,
+    };
+  }
+
+  if (order.status === 'payment_confirmed' || order.status === 'awaiting_dentist_forms') {
+    return {
+      tone: 'success' as const,
+      title: 'Pagamento confirmado',
+      icon: <Check size={18} aria-hidden />,
+    };
+  }
+
+  if (order.status === 'lab_processing') {
+    return {
+      tone: 'info' as const,
+      title: 'Etapa laboratorial',
+      icon: <Clock3 size={18} aria-hidden />,
+    };
+  }
+
+  if (order.status === 'awaiting_adaptation') {
+    return {
+      tone: 'info' as const,
+      title: 'Aguardando adaptacao',
+      icon: <Info size={18} aria-hidden />,
+    };
+  }
+
+  return {
+    tone: 'info' as const,
+    title: 'Atualizacao da etapa',
+    icon: <Info size={18} aria-hidden />,
+  };
+}
+
+export function Jornada() {
+  const { session } = useAuth();
+  const queryClient = useQueryClient();
+  const token = getAuthToken(session);
+  const queryOwnerId = session?.user.id ?? 'anonymous';
+  const stepFlowRef = useRef<HTMLElement | null>(null);
+  const [appointmentAction, setAppointmentAction] = useState('');
+  const [appointmentNotice, setAppointmentNotice] = useState('');
+  const [appointmentError, setAppointmentError] = useState('');
+  const ordersQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orders('user', queryOwnerId),
+    queryFn: () => fetchOrders('user', token),
+    enabled: Boolean(token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const orders = ordersQuery.data?.orders ?? [];
 
   const primaryOrder = useMemo(() => getAthletePrimaryOrder(orders), [orders]);
-  const selectedFormsOrder = primaryOrder;
+  const workflowFormsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForms(primaryOrder?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForms(primaryOrder!.id, token),
+    enabled: Boolean(primaryOrder?.id && token),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const appointmentsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.appointments(primaryOrder?.id ?? 'pending'),
+    queryFn: () => fetchAppointments(primaryOrder!.id, token),
+    enabled: Boolean(primaryOrder?.id && token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const workflowForms = workflowFormsQuery.data?.forms ?? [];
+  const appointments = appointmentsQuery.data?.appointments ?? [];
+  const loading = ordersQuery.isLoading;
+  const error = ordersQuery.isError ? 'Não foi possível carregar a jornada compartilhada agora.' : '';
+  const workflowFormsError = workflowFormsQuery.isError ? 'Não foi possível carregar os formulários desta ordem.' : '';
+  const visibleAppointmentError = appointmentError ||
+    (appointmentsQuery.isError ? 'Nao foi possivel carregar a consulta agendada desta ordem.' : '');
+  const selectedFormsOrder = useMemo(
+    () => getEffectiveAthleteOrder(primaryOrder, workflowForms),
+    [primaryOrder, workflowForms]
+  );
   const shouldRedirectToOnboarding = selectedFormsOrder?.stage === 'new_user_onboarding';
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
+  const currentStepActionPath = getAthleteNextPath(selectedFormsOrder);
   const orderProblem = useMemo(
     () => (selectedFormsOrder ? getOrderProblemContext(selectedFormsOrder) : null),
     [selectedFormsOrder]
   );
-  const hasOrderProblem = orderProblem !== null;
-  const workflowFormsByStep = useMemo(() => {
-    const grouped = new Map<JourneyStepKey, DemoWorkflowForm[]>();
+  const initialAppointment = appointments.find((appointment) => appointment.type === 'initial') ?? appointments[0] ?? null;
+  const currentStepNotice = selectedFormsOrder
+    ? getCurrentStepNotice(selectedFormsOrder, currentStep, initialAppointment)
+    : null;
+  const currentStepDisclaimer = selectedFormsOrder
+    ? getCurrentStepDisclaimer(selectedFormsOrder, initialAppointment)
+    : null;
+  const hasPendingUserAppointmentConfirmation = Boolean(
+    selectedFormsOrder?.status === 'in_progress' &&
+    initialAppointment &&
+    !initialAppointment.user_confirmed_at
+  );
 
-    for (const form of workflowForms) {
-      const stepKey = getWorkflowStepKey(form);
-      if (!stepKey) {
-        continue;
-      }
-
-      grouped.set(stepKey, [...(grouped.get(stepKey) ?? []), form]);
-    }
-
-    return grouped;
-  }, [workflowForms]);
-  const currentStepForms = currentStep ? workflowFormsByStep.get(currentStep.key) ?? [] : [];
-  const isPrerequisiteStep = currentStep?.key === 'prerequisite';
-  const isConsultationStep = currentStep?.key === 'consultation';
-  const isPurchaseStep = currentStep?.key === 'purchase';
-  const canCreateTrainingReport =
-    currentStep?.key === 'follow_up' &&
-    currentStepForms.some((form) => form.templateKey === 'customer_training_report') &&
-    currentStepForms
-      .filter((form) => form.templateKey === 'customer_training_report')
-      .every((form) => form.status === 'submitted');
-  const contactMailto = useMemo(() => {
-    const body = [
-      `Nome: ${contactName}`,
-      `E-mail: ${contactEmail}`,
-      selectedFormsOrder ? `Ordem: ${selectedFormsOrder.id}` : '',
-      orderProblem ? `Etapa do problema: ${orderProblem.stageTitle}` : '',
-      '',
-      contactMessage,
-    ].filter(Boolean).join('\n');
-
-    return `mailto:contato@necoradvance.com.br?subject=${encodeURIComponent(contactSubject)}&body=${encodeURIComponent(body)}`;
-  }, [contactEmail, contactMessage, contactName, contactSubject, orderProblem, selectedFormsOrder]);
-
-  async function handleCreateTrainingReport() {
-    if (!selectedFormsOrder || !token || trainingReportCreating) {
+  async function handleUserAppointmentConfirmation() {
+    if (!selectedFormsOrder || !initialAppointment) {
       return;
     }
 
-    setTrainingReportCreating(true);
-    setWorkflowFormsError('');
+    const actionKey = `${selectedFormsOrder.id}:user-confirmation`;
+    setAppointmentAction(actionKey);
+    setAppointmentError('');
+    setAppointmentNotice('');
 
     try {
-      const nextForm = await createTrainingReport(selectedFormsOrder.id, token);
-      setWorkflowForms((current) => [...current, nextForm]);
+      const response = await confirmAppointmentByUser(selectedFormsOrder.id, initialAppointment.id, token);
+      queryClient.setQueryData<{ appointments: DemoAppointment[] }>(
+        biteplanerQueryKeys.appointments(selectedFormsOrder.id),
+        (current) => ({
+          appointments: (current?.appointments ?? appointments).map((appointment) =>
+            appointment.id === initialAppointment.id ? response.appointment : appointment
+          ),
+        })
+      );
+      setAppointmentNotice('Sua confirmacao de consulta realizada foi registrada.');
     } catch {
-      setWorkflowFormsError('Não foi possível liberar um novo relatório de treino agora.');
+      setAppointmentError('Nao foi possivel confirmar a consulta realizada agora.');
     } finally {
-      setTrainingReportCreating(false);
+      setAppointmentAction('');
     }
   }
-
-  useEffect(() => {
-    if (!selectedFormsOrder || !orderProblem) {
-      return;
-    }
-
-    const name = selectedFormsOrder.customer?.full_name ?? '';
-    const email = selectedFormsOrder.customer?.email ?? backendUser?.email ?? session?.user.email ?? '';
-
-    setContactName(name);
-    setContactEmail(email);
-    setContactSubject(`Erro ordem ${selectedFormsOrder.id} - `);
-    setContactMessage(
-      `Olá, equipe Nexor.\n\nMinha jornada apresentou um problema na etapa "${orderProblem.stageTitle}".\nMotivo exibido: ${orderProblem.reason}\n\nGostaria de entender o que aconteceu e quais são os próximos passos.`
-    );
-  }, [backendUser?.email, orderProblem, selectedFormsOrder, session?.user.email]);
-
-  useEffect(() => {
-    if (!selectedFormsOrder?.id || !token) {
-      setWorkflowForms([]);
-      return;
-    }
-
-    let active = true;
-    setWorkflowFormsLoading(true);
-    setWorkflowFormsError('');
-
-    async function loadWorkflowForms() {
-      try {
-        const response = await fetchWorkflowForms(selectedFormsOrder.id, token);
-
-        if (active) {
-          setWorkflowForms(response.forms);
-        }
-      } catch {
-        if (active) {
-          setWorkflowFormsError('Não foi possível carregar os formulários desta ordem.');
-        }
-      } finally {
-        if (active) {
-          setWorkflowFormsLoading(false);
-        }
-      }
-    }
-
-    void loadWorkflowForms();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedFormsOrder?.id, token]);
 
   if (!loading && shouldRedirectToOnboarding) {
     return <Navigate to="/painel/biteplaner/onboarding" replace />;
@@ -368,7 +368,13 @@ export function Jornada() {
                       <S.StepName>{step.title}</S.StepName>
                       <S.StepCopy>{step.description}</S.StepCopy>
                     </div>
-                    <S.StepStatus $tone={tone}>{getStepStatusLabel(tone)}</S.StepStatus>
+                    {tone === 'current' ? (
+                      <S.StepStatusLink $tone={tone} to={currentStepActionPath}>
+                        {getStepStatusLabel(tone)}
+                      </S.StepStatusLink>
+                    ) : (
+                      <S.StepStatus $tone={tone}>{getStepStatusLabel(tone)}</S.StepStatus>
+                    )}
                   </>
                 );
 
@@ -382,194 +388,51 @@ export function Jornada() {
               })}
             </S.StepList>
           </S.StepScroll>
-          {workflowFormsLoading ? <SkeletonCard lines={3} blockHeight="90px" /> : null}
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
+          {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
+          {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
           {orderProblem ? (
-            <S.OrderProblemSection role="alert" data-testid="journey-order-problem">
-              <S.OrderProblemHeader>
-                <S.OrderProblemIcon>
-                  <AlertTriangle size={34} aria-hidden />
-                </S.OrderProblemIcon>
-                <div>
-                  <S.SectionTitle>{orderProblem.title}</S.SectionTitle>
-                  <S.Description>
-                    O problema ocorreu na etapa <S.OrderProblemStage>{orderProblem.stageTitle}</S.OrderProblemStage> da jornada {selectedFormsOrder.id}.
-                  </S.Description>
-                </div>
-              </S.OrderProblemHeader>
-              <S.OrderProblemReason>
-                <MessageCircleQuestion size={34} aria-hidden />
-                <span>
-                  <strong>Motivo:</strong> {orderProblem.reason}
-                </span>
-              </S.OrderProblemReason>
-
-              <S.ContactPanel>
-                <S.ContactHeader>
-                  <S.ContactHeaderIcon>
-                    <Mail size={30} aria-hidden />
-                  </S.ContactHeaderIcon>
-                  <div>
-                    <S.SectionTitle>Falar com a Nexor</S.SectionTitle>
-                    <S.Description>
-                      Revise as informações abaixo e complete o assunto antes de enviar o e-mail para <S.ContactEmail>contato@necoradvance.com.br</S.ContactEmail>.
-                    </S.Description>
-                  </div>
-                </S.ContactHeader>
-                <S.ContactForm>
-                  <S.ContactField>
-                    <span>Nome</span>
-                    <label>
-                      <UserRound size={20} aria-hidden />
-                      <input
-                        aria-label="Nome"
-                        value={contactName}
-                        onChange={(event) => setContactName(event.target.value)}
-                      />
-                    </label>
-                  </S.ContactField>
-                  <S.ContactField>
-                    <span>E-mail</span>
-                    <label>
-                      <Mail size={20} aria-hidden />
-                      <input
-                        aria-label="E-mail"
-                        type="email"
-                        value={contactEmail}
-                        onChange={(event) => setContactEmail(event.target.value)}
-                      />
-                    </label>
-                  </S.ContactField>
-                  <S.ContactField $full>
-                    <span>Assunto</span>
-                    <label>
-                      <FileText size={20} aria-hidden />
-                      <input
-                        aria-label="Assunto"
-                        value={contactSubject}
-                        onChange={(event) => setContactSubject(event.target.value)}
-                      />
-                    </label>
-                  </S.ContactField>
-                  <S.ContactField $full>
-                    <span>Mensagem</span>
-                    <label>
-                      <MessageCircleQuestion size={22} aria-hidden />
-                      <textarea
-                        aria-label="Mensagem"
-                        rows={7}
-                        value={contactMessage}
-                        onChange={(event) => setContactMessage(event.target.value)}
-                      />
-                    </label>
-                  </S.ContactField>
-                  <S.ContactActions>
-                    <S.ContactSubmitLink href={contactMailto}>
-                      <Send size={18} aria-hidden />
-                      Enviar e-mail para a Nexor
-                    </S.ContactSubmitLink>
-                    <S.ContactPrivacyNote>
-                      <Lock size={14} aria-hidden />
-                      Seus dados estão protegidos
-                    </S.ContactPrivacyNote>
-                  </S.ContactActions>
-                </S.ContactForm>
-              </S.ContactPanel>
-            </S.OrderProblemSection>
+            <S.Banner role="alert" data-testid="journey-order-problem">
+              <strong>{orderProblem.title}</strong>
+              <span> {orderProblem.reason}</span>
+            </S.Banner>
           ) : null}
-          {!hasOrderProblem && currentStep && currentStepForms.length > 0 ? (
-            <S.StepFormsSection>
-              <S.StepFormsHeader>
-                <S.SectionTitle>
-                  {isPrerequisiteStep ? 'Pré-requisito: avaliação inicial compartilhada Biteplaner' : currentStep.title}
-                </S.SectionTitle>
-                <S.Description>
-                  {isPrerequisiteStep
-                    ? 'Preencha o intake pré-consulta do Biteplaner. Após o envio do cadastro e consentimentos, a jornada avança para a escolha da clínica na consulta inicial.'
-                    : currentStep.description}
-                </S.Description>
-                {canCreateTrainingReport ? (
-                  <S.SecondaryActionButton
-                    type="button"
-                    disabled={trainingReportCreating}
-                    onClick={handleCreateTrainingReport}
-                  >
-                    {trainingReportCreating ? 'Liberando...' : 'Novo relatório de treino'}
-                  </S.SecondaryActionButton>
-                ) : null}
-              </S.StepFormsHeader>
-              <S.StepFormsGrid>
-                <S.StepFormsGroup data-testid={`journey-step-forms-${currentStep.key}`}>
-                  <WorkflowFormsPanel
-                    orderId={selectedFormsOrder.id}
-                    token={token}
-                    forms={currentStepForms}
-                    defaultValues={{
-                      fullName: selectedFormsOrder.customer?.full_name ?? '',
-                    }}
-                    onFormsChange={(nextStepForms) => {
-                      setWorkflowForms((current) =>
-                        current.map((form) => nextStepForms.find((nextForm) => nextForm.id === form.id) ?? form)
-                      );
-
-                      if (
-                        currentStep.key === 'prerequisite' &&
-                        selectedFormsOrder.status === 'registration_started' &&
-                        nextStepForms.length > 0 &&
-                        nextStepForms.every((form) => form.status === 'submitted')
-                      ) {
-                        setOrders((currentOrders) =>
-                          currentOrders.map((order) =>
-                            order.id === selectedFormsOrder.id ? advancePrerequisiteOrder(order) : order
-                          )
-                        );
-                      }
-                    }}
-                    variant="embedded"
-                    formPresentation={isPrerequisiteStep ? 'flat' : 'card'}
-                    showFormHeader={!isPrerequisiteStep}
-                  />
-                </S.StepFormsGroup>
-              </S.StepFormsGrid>
-            </S.StepFormsSection>
+          {!orderProblem && currentStepNotice && currentStepDisclaimer ? (
+            <S.StepDisclaimer
+              role="status"
+              data-testid="journey-step-notice"
+              $tone={currentStepDisclaimer.tone}
+            >
+              <S.StepDisclaimerIcon $tone={currentStepDisclaimer.tone}>
+                {currentStepDisclaimer.icon}
+              </S.StepDisclaimerIcon>
+              <S.StepDisclaimerContent>
+                <S.StepDisclaimerTitle $tone={currentStepDisclaimer.tone}>
+                  {currentStepDisclaimer.title}
+                </S.StepDisclaimerTitle>
+                <S.StepDisclaimerText>{currentStepNotice}</S.StepDisclaimerText>
+              </S.StepDisclaimerContent>
+            </S.StepDisclaimer>
           ) : null}
-          {!hasOrderProblem && isConsultationStep ? (
-            <S.StepFormsSection data-testid="journey-consultation-content">
-              <S.StepFormsHeader>
-                <S.SectionTitle>Consulta inicial</S.SectionTitle>
+          {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
+            <S.PendingActionCard data-testid="journey-pending-user-action">
+              <S.PendingActionCopy>
+                <S.PendingActionTitle>Acao pendente do usuario</S.PendingActionTitle>
                 <S.Description>
-                  Escolha uma clínica licenciada para seguir com a primeira consulta da jornada Biteplaner.
+                  Confirme que a consulta agendada foi realizada para que a jornada possa seguir para a validacao do dentista.
                 </S.Description>
-              </S.StepFormsHeader>
-              <ConsultaInicial
-                embedded
-                initialOrder={selectedFormsOrder}
-                onOrderChange={(nextOrder) =>
-                  setOrders((currentOrders) =>
-                    currentOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order))
-                  )
-                }
-              />
-            </S.StepFormsSection>
-          ) : null}
-          {!hasOrderProblem && isPurchaseStep ? (
-            <S.StepFormsSection data-testid="journey-purchase-content">
-              <S.StepFormsHeader>
-                <S.SectionTitle>Compra</S.SectionTitle>
-                <S.Description>
-                  Confirme a compra mock diretamente na jornada para liberar a continuidade operacional.
-                </S.Description>
-              </S.StepFormsHeader>
-              <Compra
-                embedded
-                initialOrder={selectedFormsOrder}
-                onOrderChange={(nextOrder) =>
-                  setOrders((currentOrders) =>
-                    currentOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order))
-                  )
-                }
-              />
-            </S.StepFormsSection>
+              </S.PendingActionCopy>
+              <S.PendingActionButton
+                type="button"
+                disabled={appointmentAction === `${selectedFormsOrder.id}:user-confirmation`}
+                onClick={() => {
+                  void handleUserAppointmentConfirmation();
+                }}
+              >
+                <Check size={18} aria-hidden />
+                <span>Confirmar consulta realizada</span>
+              </S.PendingActionButton>
+            </S.PendingActionCard>
           ) : null}
         </S.StepFlow>
       ) : null}

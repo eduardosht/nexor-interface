@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
-import { Building2, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
-import { Navigate, useParams } from 'react-router-dom';
-import { Button, CheckboxField, Field, Select, Snackbar, SnackbarStack } from '@nexor/design-system';
+import { Building2, ChevronRight, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Button, CheckboxField, Field, RadioQuestionGroup, Select, Snackbar, SnackbarStack } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import * as S from './styles';
@@ -19,6 +19,7 @@ type ClinicValues = {
   complement: string;
   serviceHours: string;
   phone: string;
+  isAdapted: '' | 'yes' | 'no';
   city: string;
   state: string;
 };
@@ -36,7 +37,7 @@ const ROLE_CONFIG: Record<RouteRole, RoleConfig> = {
     apiRole: 'partner',
     title: 'Cadastro de parceiro Biteplaner',
     description:
-      'Envie os dados iniciais para análise da operação. Depois da aprovação, o perfil de parceiro será liberado no acesso do produto.',
+      'Envie os dados iniciais para análise da operação. Depois da aprovação, as funcionalidades de parceiros serão liberadas.',
     successTitle: 'Solicitação enviada',
     successMessage: 'Sua solicitação de parceiro foi enviada e ficará em análise pela equipe Nexor.',
   },
@@ -115,6 +116,7 @@ const createEmptyClinic = (): ClinicValues => ({
   complement: '',
   serviceHours: '',
   phone: '',
+  isAdapted: '',
   city: '',
   state: '',
 });
@@ -166,6 +168,27 @@ const formatCpf = (value: string) => {
   if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
   if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+};
+
+const formatCro = (value: string) => {
+  const compact = value
+    .toUpperCase()
+    .replace(/^CRO/, '')
+    .replace(/[^A-Z0-9]/g, '');
+  const state = compact.replace(/[^A-Z]/g, '').slice(0, 2);
+  const number = compact.replace(/\D/g, '').slice(0, 6);
+
+  if (!state && !number) {
+    return '';
+  }
+
+  return `CRO-${state}${number ? ` ${number}` : ''}`;
+};
+
+const isValidCro = (value: string) => {
+  const match = value.trim().toUpperCase().match(/^CRO-([A-Z]{2})\s(\d{4,6})$/);
+
+  return Boolean(match && BRAZILIAN_STATES.includes(match[1]));
 };
 
 const isValidCnpj = (value: string) => {
@@ -221,6 +244,7 @@ function formatClinicAddress(data: {
 
 export function CadastroPerfilBiteplaner() {
   const { role } = useParams();
+  const navigate = useNavigate();
   const { session } = useAuth();
   const token = session?.access_token;
   const config = ROLE_CONFIG[role as RouteRole];
@@ -311,12 +335,13 @@ export function CadastroPerfilBiteplaner() {
           clinic.address.trim() &&
           clinic.cep.trim() &&
           clinic.serviceHours.trim() &&
-          clinic.phone.trim()
+          clinic.phone.trim() &&
+          (clinic.isAdapted === 'yes' || clinic.isAdapted === 'no')
       );
 
       return Boolean(
         values.fullName?.trim() &&
-        values.croNumber?.trim() &&
+        isValidCro(values.croNumber ?? '') &&
         values.professionalSummary?.trim() &&
         clinics.length > 0 &&
         hasValidClinics
@@ -409,9 +434,9 @@ export function CadastroPerfilBiteplaner() {
         const coordinates =
           latitude && longitude
             ? {
-                lat: parseCoordinate(latitude),
-                lng: parseCoordinate(longitude),
-              }
+              lat: parseCoordinate(latitude),
+              lng: parseCoordinate(longitude),
+            }
             : undefined;
 
         return {
@@ -423,6 +448,7 @@ export function CadastroPerfilBiteplaner() {
             : {}),
           ...(emptyToUndefined(clinic.phone) ? { phone: emptyToUndefined(clinic.phone) } : {}),
           dentistName: values.fullName.trim(),
+          isAdapted: clinic.isAdapted === 'yes',
           serviceHours: clinic.serviceHours.trim(),
           city: clinic.city.trim(),
           state: clinic.state.trim(),
@@ -488,6 +514,7 @@ export function CadastroPerfilBiteplaner() {
         token
       );
       setSubmitted(true);
+      navigate('/painel/home');
     } catch {
       setError('Não foi possível enviar a solicitação agora.');
     } finally {
@@ -540,174 +567,320 @@ export function CadastroPerfilBiteplaner() {
         ) : null}
 
         <S.Form onSubmit={handleSubmit}>
-        <S.Section>
-          <S.SectionHeader>
-            <S.StepBadge>1</S.StepBadge>
-            <S.SectionTitle>Dados principais</S.SectionTitle>
-          </S.SectionHeader>
-          <S.SectionIntro>
-            Campos marcados como obrigatórios precisam ser preenchidos antes do envio.
-          </S.SectionIntro>
-          {config.apiRole === 'dentist' ? (
-            <S.SectionSubtitle>
-              Preencha os dados profissionais e cadastre a clínica de atendimento para análise operacional.
-            </S.SectionSubtitle>
-          ) : null}
-          {config.apiRole === 'dentist' ? (
-            <S.Banner>
-              A Nexor irá verificar o cadastro do dentista após o envio da solicitação para prosseguir
-              com pagamento, contratos, curso e licenciamento.
-            </S.Banner>
-          ) : null}
-          {config.apiRole === 'lab' ? (
-            <S.SectionSubtitle>
-              Preencha os dados do laboratório e cadastre o local operacional para análise da Nexor.
-            </S.SectionSubtitle>
-          ) : null}
-          {config.apiRole === 'lab' ? (
-            <S.Banner>
-              A Nexor ira verificar o cadastro do laboratório após o envio da solicitação para prosseguir
-              com pagamento, contratos, curso e licenciamento.
-            </S.Banner>
-          ) : null}
-          {config.apiRole === 'partner' ? (
-            <S.Banner>
-              A Nexor ira verificar o cadastro do parceiro apos o envio da solicitacao. Depois da aprovacao,
-              o acesso sera liberado para gerar links individuais de indicacao e acompanhar conversoes.
-            </S.Banner>
-          ) : null}
-          <S.FieldsGrid>
-            {config.apiRole === 'partner' ? (
-              <>
-                <Field
-                  label="Nome da empresa ou parceiro"
-                  value={values.name ?? ''}
-                  required
-                  onChange={updateField('name')}
-                />
-                <Select
-                  label="Tipo de documento"
-                  value={partnerDocumentType}
-                  options={PARTNER_DOCUMENT_OPTIONS}
-                  onChange={(value) => {
-                    const nextType: PartnerDocumentType = value === 'cpf' ? 'cpf' : 'cnpj';
-                    setValues((current) => ({
-                      ...current,
-                      documentType: nextType,
-                      documentNumber: '',
-                    }));
-                  }}
-                />
-                <Field
-                  label={`${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'} (*)`}
-                  value={values.documentNumber ?? ''}
-                  required
-                  inputMode="numeric"
-                  maxLength={partnerDocumentType === 'cpf' ? 14 : 18}
-                  hint={
-                    values.documentNumber &&
-                    !isValidPartnerDocument(partnerDocumentType, values.documentNumber)
-                      ? `Informe um ${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'} valido.`
-                      : undefined
-                  }
-                  onChange={updateMaskedField(
-                    'documentNumber',
-                    partnerDocumentType === 'cpf' ? formatCpf : formatCnpj
-                  )}
-                />
-                <Field
-                  label="E-mail de contato"
-                  type="email"
-                  value={values.contactEmail ?? ''}
-                  required
-                  onChange={updateField('contactEmail')}
-                />
-                <Field
-                  label="Cidade e estado"
-                  value={values.cityState ?? ''}
-                  required
-                  onChange={updateField('cityState')}
-                />
-                <S.FullField>
-                  <Field
-                    as="textarea"
-                    label="Canais de atuação"
-                    value={values.channels ?? ''}
-                    hint="Campo preliminar para detalhamento futuro."
-                    onChange={updateField('channels')}
-                  />
-                </S.FullField>
-              </>
-            ) : null}
-
+          <S.Section>
+            <S.SectionHeader>
+              <S.StepBadge>1</S.StepBadge>
+              <S.SectionTitle>Dados principais</S.SectionTitle>
+            </S.SectionHeader>
+            <S.SectionIntro>
+              Campos marcados como obrigatórios precisam ser preenchidos antes do envio.
+            </S.SectionIntro>
             {config.apiRole === 'dentist' ? (
-              <>
-                <Field
-                  label="Nome profissional (*)"
-                  value={values.fullName ?? ''}
-                  required
-                  onChange={updateField('fullName')}
-                />
-                <Field
-                  label="CRO (*)"
-                  value={values.croNumber ?? ''}
-                  required
-                  onChange={updateField('croNumber')}
-                />
-                <S.FullField>
+              <S.SectionSubtitle>
+                Preencha os dados profissionais e cadastre a clínica de atendimento para análise operacional.
+              </S.SectionSubtitle>
+            ) : null}
+            {config.apiRole === 'dentist' ? (
+              <S.Banner>
+                A Nexor irá verificar o cadastro do dentista após o envio da solicitação para prosseguir
+                com pagamento, contratos, curso e licenciamento.
+              </S.Banner>
+            ) : null}
+            {config.apiRole === 'lab' ? (
+              <S.SectionSubtitle>
+                Preencha os dados do laboratório e cadastre o local operacional para análise da Nexor.
+              </S.SectionSubtitle>
+            ) : null}
+            {config.apiRole === 'lab' ? (
+              <S.Banner>
+                A Nexor ira verificar o cadastro do laboratório após o envio da solicitação para prosseguir
+                com pagamento, contratos, curso e licenciamento.
+              </S.Banner>
+            ) : null}
+            {config.apiRole === 'partner' ? (
+              <S.Banner>
+                A Nexor ira verificar o cadastro do parceiro apos o envio da solicitacao. Depois da aprovacao,
+                o acesso sera liberado para gerar links individuais de indicacao e acompanhar conversoes.
+              </S.Banner>
+            ) : null}
+            <S.FieldsGrid>
+              {config.apiRole === 'partner' ? (
+                <>
                   <Field
-                    as="textarea"
-                    label="Resumo profissional (*)"
-                    value={values.professionalSummary ?? ''}
+                    label="Nome da empresa ou parceiro"
+                    value={values.name ?? ''}
                     required
-                    hint="Campo preliminar para detalhamento futuro."
-                    onChange={updateField('professionalSummary')}
+                    onChange={updateField('name')}
                   />
-                </S.FullField>
-                <S.FullField>
-                  <S.ClinicSection>
-                    <S.ClinicSectionHeader>
-                      <div>
-                        <S.ClinicSectionTitle>Dados da clínica</S.ClinicSectionTitle>
-                        <S.ClinicSectionIntro>
-                          Informe a clínica de atendimento que poderá aparecer na seleção de clínicas.
-                        </S.ClinicSectionIntro>
-                      </div>
-                    </S.ClinicSectionHeader>
-                    {clinics.map((clinic) => {
-                      return (
+                  <Select
+                    label="Tipo de documento"
+                    value={partnerDocumentType}
+                    options={PARTNER_DOCUMENT_OPTIONS}
+                    onChange={(value) => {
+                      const nextType: PartnerDocumentType = value === 'cpf' ? 'cpf' : 'cnpj';
+                      setValues((current) => ({
+                        ...current,
+                        documentType: nextType,
+                        documentNumber: '',
+                      }));
+                    }}
+                  />
+                  <Field
+                    label={`${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'}`}
+                    value={values.documentNumber ?? ''}
+                    required
+                    inputMode="numeric"
+                    maxLength={partnerDocumentType === 'cpf' ? 14 : 18}
+                    hint={
+                      values.documentNumber &&
+                        !isValidPartnerDocument(partnerDocumentType, values.documentNumber)
+                        ? `Informe um ${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'} valido.`
+                        : undefined
+                    }
+                    onChange={updateMaskedField(
+                      'documentNumber',
+                      partnerDocumentType === 'cpf' ? formatCpf : formatCnpj
+                    )}
+                  />
+                  <Field
+                    label="E-mail de contato"
+                    type="email"
+                    value={values.contactEmail ?? ''}
+                    required
+                    onChange={updateField('contactEmail')}
+                  />
+                  <Field
+                    label="Cidade e estado"
+                    value={values.cityState ?? ''}
+                    required
+                    onChange={updateField('cityState')}
+                  />
+                  <S.FullField>
+                    <Field
+                      as="textarea"
+                      label="Canais de atuação"
+                      value={values.channels ?? ''}
+                      hint="Campo preliminar para detalhamento futuro."
+                      onChange={updateField('channels')}
+                    />
+                  </S.FullField>
+                </>
+              ) : null}
+
+              {config.apiRole === 'dentist' ? (
+                <>
+                  <Field
+                    label="Nome profissional"
+                    value={values.fullName ?? ''}
+                    required
+                    onChange={updateField('fullName')}
+                  />
+                  <Field
+                    label="CRO"
+                    value={values.croNumber ?? ''}
+                    required
+                    inputMode="text"
+                    maxLength={13}
+                    hint={
+                      values.croNumber && !isValidCro(values.croNumber)
+                        ? 'Informe um CRO válido no formato CRO-UF 00000.'
+                        : 'Formato: CRO-SP 12345.'
+                    }
+                    onChange={updateMaskedField('croNumber', formatCro)}
+                  />
+                  <S.FullField>
+                    <Field
+                      as="textarea"
+                      label="Resumo profissional"
+                      value={values.professionalSummary ?? ''}
+                      required
+                      hint="Campo preliminar para detalhamento futuro."
+                      onChange={updateField('professionalSummary')}
+                    />
+                  </S.FullField>
+                  <S.FullField>
+                    <S.ClinicSection>
+                      <S.ClinicSectionHeader>
+                        <div>
+                          <S.ClinicSectionTitle>Dados da clínica</S.ClinicSectionTitle>
+                          <S.ClinicSectionIntro>
+                            Informe a clínica de atendimento que poderá aparecer na seleção de clínicas.
+                          </S.ClinicSectionIntro>
+                        </div>
+                      </S.ClinicSectionHeader>
+                      {clinics.map((clinic) => {
+                        return (
+                          <S.ClinicCard key={clinic.id}>
+                            <S.ClinicCardHeader>
+                              <S.ClinicTitle>Clínica</S.ClinicTitle>
+                            </S.ClinicCardHeader>
+                            <S.FieldsGrid>
+                              <Field
+                                label="Nome da clínica"
+                                value={clinic.name}
+                                required
+                                onChange={updateClinicField(clinic.id, 'name')}
+                              />
+                              <Field
+                                label="CEP da clínica"
+                                value={clinic.cep}
+                                required
+                                inputMode="numeric"
+                                maxLength={9}
+                                hint={
+                                  cepLookupErrors[clinic.id] ||
+                                  'Preenchemos cidade, estado, endereço e mapa automaticamente.'
+                                }
+                                onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
+                                onBlur={() => lookupClinicCep(clinic.id)}
+                              />
+                              <Field
+                                label="Cidade da clínica"
+                                value={clinic.city}
+                                required
+                                onChange={updateClinicField(clinic.id, 'city')}
+                              />
+                              <Select
+                                label="Estado da clínica"
+                                value={clinic.state}
+                                placeholder="Selecione um estado"
+                                onChange={(value) => {
+                                  setClinics((current) =>
+                                    current.map((item) =>
+                                      item.id === clinic.id ? { ...item, state: value } : item
+                                    )
+                                  );
+                                }}
+                                options={BRAZILIAN_STATE_OPTIONS}
+                              />
+                              <S.FullField>
+                                <Field
+                                  label="Endereço da clínica"
+                                  value={clinic.address}
+                                  required
+                                  hint="Use o endereço completo que será usado para posicionar a clínica no mapa."
+                                  onChange={updateClinicField(clinic.id, 'address')}
+                                />
+                              </S.FullField>
+                              <Field
+                                label="Complemento da clínica"
+                                value={clinic.complement}
+                                hint="Opcional"
+                                onChange={updateClinicField(clinic.id, 'complement')}
+                              />
+                              <Field
+                                label="Dia e horário de atendimento da clínica"
+                                value={clinic.serviceHours}
+                                required
+                                onChange={updateClinicField(clinic.id, 'serviceHours')}
+                              />
+                              <Field
+                                label="Telefone da clínica"
+                                value={clinic.phone}
+                                required
+                                inputMode="tel"
+                                maxLength={15}
+                                onChange={updateClinicMaskedField(clinic.id, 'phone', formatPhone)}
+                              />
+                              <S.FullField>
+                                <RadioQuestionGroup
+                                  name={`clinic-adapted-${clinic.id}`}
+                                  label="Clínica adaptada?"
+                                  value={clinic.isAdapted}
+                                  required
+                                  inline
+                                  hint="Essa informação ajuda a orientar clientes que precisam de atendimento em clínica adaptada."
+                                  options={[
+                                    { value: 'yes', label: 'Sim' },
+                                    { value: 'no', label: 'Não' },
+                                  ]}
+                                  onChange={(value) => {
+                                    setClinics((current) =>
+                                      current.map((item) =>
+                                        item.id === clinic.id
+                                          ? { ...item, isAdapted: value === 'yes' ? 'yes' : 'no' }
+                                          : item
+                                      )
+                                    );
+                                  }}
+                                />
+                              </S.FullField>
+                            </S.FieldsGrid>
+                          </S.ClinicCard>
+                        );
+                      })}
+                    </S.ClinicSection>
+                  </S.FullField>
+                </>
+              ) : null}
+
+              {config.apiRole === 'lab' ? (
+                <>
+                  <Field
+                    label="Nome do laboratório"
+                    value={values.labName ?? ''}
+                    required
+                    onChange={updateField('labName')}
+                  />
+                  <Field
+                    label="CNPJ"
+                    value={values.cnpj ?? ''}
+                    required
+                    inputMode="numeric"
+                    maxLength={18}
+                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ valido.' : undefined}
+                    onChange={updateMaskedField('cnpj', formatCnpj)}
+                  />
+                  <S.FullField>
+                    <Field
+                      as="textarea"
+                      label="Resumo operacional"
+                      value={values.professionalSummary ?? ''}
+                      required
+                      hint="Campo preliminar para detalhamento futuro."
+                      onChange={updateField('professionalSummary')}
+                    />
+                  </S.FullField>
+                  <S.FullField>
+                    <S.ClinicSection>
+                      <S.ClinicSectionHeader>
+                        <div>
+                          <S.ClinicSectionTitle>Dados do local</S.ClinicSectionTitle>
+                          <S.ClinicSectionIntro>
+                            Informe o local operacional do laboratório.
+                          </S.ClinicSectionIntro>
+                        </div>
+                      </S.ClinicSectionHeader>
+                      {clinics.slice(0, 1).map((clinic) => (
                         <S.ClinicCard key={clinic.id}>
-                          <S.ClinicCardHeader>
-                            <S.ClinicTitle>Clínica</S.ClinicTitle>
-                          </S.ClinicCardHeader>
                           <S.FieldsGrid>
                             <Field
-                              label="Nome da clínica (*)"
+                              label="Nome do local"
                               value={clinic.name}
                               required
                               onChange={updateClinicField(clinic.id, 'name')}
                             />
                             <Field
-                              label="CEP da clínica (*)"
+                              label="CEP do local"
                               value={clinic.cep}
                               required
                               inputMode="numeric"
                               maxLength={9}
                               hint={
                                 cepLookupErrors[clinic.id] ||
-                                'Preenchemos cidade, estado, endereço e mapa automaticamente.'
+                                'Preenchemos cidade, estado e endereço automaticamente.'
                               }
                               onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
                               onBlur={() => lookupClinicCep(clinic.id)}
                             />
                             <Field
-                              label="Cidade da clínica (*)"
+                              label="Cidade do local"
                               value={clinic.city}
                               required
                               onChange={updateClinicField(clinic.id, 'city')}
                             />
                             <Select
-                              label="Estado da clínica (*)"
+                              label="Estado do local"
                               value={clinic.state}
                               placeholder="Selecione um estado"
                               onChange={(value) => {
@@ -721,27 +894,25 @@ export function CadastroPerfilBiteplaner() {
                             />
                             <S.FullField>
                               <Field
-                                label="Endereço da clínica (*)"
+                                label="Endereço do local"
                                 value={clinic.address}
                                 required
-                                hint="Use o endereço completo que será usado para posicionar a clínica no mapa."
                                 onChange={updateClinicField(clinic.id, 'address')}
                               />
                             </S.FullField>
                             <Field
-                              label="Complemento da clínica"
+                              label="Complemento do local"
                               value={clinic.complement}
-                              hint="Opcional"
                               onChange={updateClinicField(clinic.id, 'complement')}
                             />
                             <Field
-                              label="Dia e horário de atendimento da clínica (*)"
+                              label="Dia e horário de operação"
                               value={clinic.serviceHours}
                               required
                               onChange={updateClinicField(clinic.id, 'serviceHours')}
                             />
                             <Field
-                              label="Telefone da clínica (*)"
+                              label="Telefone do local"
                               value={clinic.phone}
                               required
                               inputMode="tel"
@@ -750,184 +921,80 @@ export function CadastroPerfilBiteplaner() {
                             />
                           </S.FieldsGrid>
                         </S.ClinicCard>
-                      );
-                    })}
-                  </S.ClinicSection>
-                </S.FullField>
-              </>
-            ) : null}
+                      ))}
+                    </S.ClinicSection>
+                  </S.FullField>
+                </>
+              ) : null}
+            </S.FieldsGrid>
+          </S.Section>
 
-            {config.apiRole === 'lab' ? (
-              <>
-                <Field
-                  label="Nome do laboratório (*)"
-                  value={values.labName ?? ''}
-                  required
-                  onChange={updateField('labName')}
-                />
-                <Field
-                  label="CNPJ (*)"
-                  value={values.cnpj ?? ''}
-                  required
-                  inputMode="numeric"
-                  maxLength={18}
-                  hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ valido.' : undefined}
-                  onChange={updateMaskedField('cnpj', formatCnpj)}
-                />
-                <S.FullField>
-                  <Field
-                    as="textarea"
-                    label="Resumo operacional (*)"
-                    value={values.professionalSummary ?? ''}
-                    required
-                    hint="Campo preliminar para detalhamento futuro."
-                    onChange={updateField('professionalSummary')}
-                  />
-                </S.FullField>
-                <S.FullField>
-                  <S.ClinicSection>
-                    <S.ClinicSectionHeader>
-                      <div>
-                        <S.ClinicSectionTitle>Dados do local</S.ClinicSectionTitle>
-                        <S.ClinicSectionIntro>
-                          Informe o local operacional do laboratório. O complemento é opcional.
-                        </S.ClinicSectionIntro>
-                      </div>
-                    </S.ClinicSectionHeader>
-                    {clinics.slice(0, 1).map((clinic) => (
-                      <S.ClinicCard key={clinic.id}>
-                        <S.FieldsGrid>
-                          <Field
-                            label="Nome do local (*)"
-                            value={clinic.name}
-                            required
-                            onChange={updateClinicField(clinic.id, 'name')}
-                          />
-                          <Field
-                            label="CEP do local (*)"
-                            value={clinic.cep}
-                            required
-                            inputMode="numeric"
-                            maxLength={9}
-                            hint={
-                              cepLookupErrors[clinic.id] ||
-                              'Preenchemos cidade, estado e endereço automaticamente.'
-                            }
-                            onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
-                            onBlur={() => lookupClinicCep(clinic.id)}
-                          />
-                          <Field
-                            label="Cidade do local (*)"
-                            value={clinic.city}
-                            required
-                            onChange={updateClinicField(clinic.id, 'city')}
-                          />
-                          <Select
-                            label="Estado do local (*)"
-                            value={clinic.state}
-                            placeholder="Selecione um estado"
-                            onChange={(value) => {
-                              setClinics((current) =>
-                                current.map((item) =>
-                                  item.id === clinic.id ? { ...item, state: value } : item
-                                )
-                              );
-                            }}
-                            options={BRAZILIAN_STATE_OPTIONS}
-                          />
-                          <S.FullField>
-                            <Field
-                              label="Endereço do local (*)"
-                              value={clinic.address}
-                              required
-                              onChange={updateClinicField(clinic.id, 'address')}
-                            />
-                          </S.FullField>
-                          <Field
-                            label="Complemento do local"
-                            value={clinic.complement}
-                            hint="Opcional"
-                            onChange={updateClinicField(clinic.id, 'complement')}
-                          />
-                          <Field
-                            label="Dia e horário de operação (*)"
-                            value={clinic.serviceHours}
-                            required
-                            onChange={updateClinicField(clinic.id, 'serviceHours')}
-                          />
-                          <Field
-                            label="Telefone do local (*)"
-                            value={clinic.phone}
-                            required
-                            inputMode="tel"
-                            maxLength={15}
-                            onChange={updateClinicMaskedField(clinic.id, 'phone', formatPhone)}
-                          />
-                        </S.FieldsGrid>
-                      </S.ClinicCard>
-                    ))}
-                  </S.ClinicSection>
-                </S.FullField>
-              </>
-            ) : null}
-          </S.FieldsGrid>
-        </S.Section>
+          <S.Section>
+            <S.SectionHeader>
+              <S.StepBadge>2</S.StepBadge>
+              <S.SectionTitle>Termos e autorizações</S.SectionTitle>
+            </S.SectionHeader>
+            <S.TermsReadIntro>
+              Leia antes de aceitar: consulte os{' '}
+              <S.TermsReadLink to="/termos" target="_blank">
+                termos de cadastro
+              </S.TermsReadLink>
+              {' '}e a{' '}
+              <S.TermsReadLink to="/privacidade" target="_blank">
+                política de privacidade
+              </S.TermsReadLink>.
+            </S.TermsReadIntro>
+            <CheckboxField
+              checked={consents.operationalTerms}
+              onChange={(checked) => setConsents((current) => ({ ...current, operationalTerms: checked }))}
+              label={
+                <S.TermsLabel>
+                  Aceito os <strong>termos de cadastro operacional</strong> do Biteplaner.
+                </S.TermsLabel>
+              }
+              badge="Obrigatório"
+              badgeTone="required"
+            />
+            <CheckboxField
+              checked={consents.privacyPolicy}
+              onChange={(checked) => setConsents((current) => ({ ...current, privacyPolicy: checked }))}
+              label={
+                <S.TermsLabel>
+                  Aceito a <strong>política de privacidade</strong> para análise cadastral e
+                  contato operacional.
+                </S.TermsLabel>
+              }
+              badge="Obrigatório"
+              badgeTone="required"
+            />
+            <CheckboxField
+              checked={consents.contact}
+              onChange={(checked) => setConsents((current) => ({ ...current, contact: checked }))}
+              label={
+                <S.TermsLabel>
+                  Autorizo <strong>contato comercial e institucional</strong> sobre próximos
+                  passos do cadastro.
+                </S.TermsLabel>
+              }
+              badge="Opcional"
+              badgeTone="optional"
+            />
+          </S.Section>
 
-        <S.Section>
-          <S.SectionHeader>
-            <S.StepBadge>2</S.StepBadge>
-            <S.SectionTitle>Termos e autorizações</S.SectionTitle>
-          </S.SectionHeader>
-          <S.TermsReadIntro>
-            Leia antes de aceitar: consulte os{' '}
-            <S.TermsReadLink to="/termos">termos de cadastro</S.TermsReadLink> e a{' '}
-            <S.TermsReadLink to="/privacidade">política de privacidade</S.TermsReadLink>.
-          </S.TermsReadIntro>
-          <CheckboxField
-            checked={consents.operationalTerms}
-            onChange={(checked) => setConsents((current) => ({ ...current, operationalTerms: checked }))}
-            label={
-              <S.TermsLabel>
-                Aceito os <strong>termos de cadastro operacional</strong> do Biteplaner.
-              </S.TermsLabel>
-            }
-            badge="Obrigatório"
-            badgeTone="required"
-          />
-          <CheckboxField
-            checked={consents.privacyPolicy}
-            onChange={(checked) => setConsents((current) => ({ ...current, privacyPolicy: checked }))}
-            label={
-              <S.TermsLabel>
-                Aceito a <strong>política de privacidade</strong> para análise cadastral e
-                contato operacional.
-              </S.TermsLabel>
-            }
-            badge="Obrigatório"
-            badgeTone="required"
-          />
-          <CheckboxField
-            checked={consents.contact}
-            onChange={(checked) => setConsents((current) => ({ ...current, contact: checked }))}
-            label={
-              <S.TermsLabel>
-                Autorizo <strong>contato comercial e institucional</strong> sobre próximos
-                passos do cadastro.
-              </S.TermsLabel>
-            }
-            badge="Opcional"
-            badgeTone="optional"
-          />
-        </S.Section>
-
-        <S.Actions>
-          <Button type="submit" disabled={!isValid || submitting}>
-            {submitting ? 'Enviando...' : 'Enviar solicitação'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => window.history.back()}>
-            Cancelar
-          </Button>
-        </S.Actions>
+          <S.Actions>
+            <S.ActionPrivacyNote>
+              <ShieldCheck size={18} strokeWidth={2.2} aria-hidden="true" />
+              <span>
+                Seus dados estão protegidos e serão utilizados conforme nossa <strong>Política de Privacidade</strong>.
+              </span>
+            </S.ActionPrivacyNote>
+            <Button type="button" variant="secondary" onClick={() => window.history.back()}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={!isValid || submitting} trailingIcon={<ChevronRight size={16} aria-hidden="true" />}>
+              {submitting ? 'Enviando...' : 'Enviar solicitação'}
+            </Button>
+          </S.Actions>
         </S.Form>
       </S.ProfileShell>
     </S.Page>

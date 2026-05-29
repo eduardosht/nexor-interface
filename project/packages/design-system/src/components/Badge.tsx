@@ -58,7 +58,7 @@ const StyledBadge = styled.span<{ $tokens: BrandTokens; $tone: BadgeTone }>`
   border: 1px solid;
   border-radius: ${({ $tokens }) => $tokens.radius.pill};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;

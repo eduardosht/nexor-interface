@@ -1,4 +1,9 @@
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import {
+  biteplanerButtonHoverStyles,
+  biteplanerButtonSurfaceStyles,
+} from '../styles/biteplanerFormButton';
 
 export type StepTone = 'complete' | 'current' | 'upcoming';
 
@@ -22,6 +27,128 @@ export const Banner = styled.div`
   font-size: 14px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const disclaimerTone = {
+  info: {
+    border: 'rgba(14, 116, 144, 0.22)',
+    bg: 'linear-gradient(135deg, rgba(236, 254, 255, 0.92), rgba(255, 255, 255, 0.98))',
+    iconBg: 'rgba(14, 116, 144, 0.1)',
+    iconColor: '#0e7490',
+    title: '#0f172a',
+  },
+  warning: {
+    border: 'rgba(217, 119, 6, 0.26)',
+    bg: 'linear-gradient(135deg, rgba(255, 251, 235, 0.94), rgba(255, 255, 255, 0.98))',
+    iconBg: 'rgba(217, 119, 6, 0.12)',
+    iconColor: '#b45309',
+    title: '#0f172a',
+  },
+  success: {
+    border: 'rgba(21, 128, 61, 0.28)',
+    bg: 'linear-gradient(135deg, rgba(240, 253, 244, 0.94), rgba(255, 255, 255, 0.98))',
+    iconBg: 'rgba(21, 128, 61, 0.12)',
+    iconColor: '#15803d',
+    title: '#0f172a',
+  },
+  danger: {
+    border: 'rgba(220, 38, 38, 0.24)',
+    bg: 'linear-gradient(135deg, rgba(254, 242, 242, 0.94), rgba(255, 255, 255, 0.98))',
+    iconBg: 'rgba(220, 38, 38, 0.1)',
+    iconColor: '#dc2626',
+    title: '#0f172a',
+  },
+} satisfies Record<string, { border: string; bg: string; iconBg: string; iconColor: string; title: string }>;
+
+export const StepDisclaimer = styled.div<{ $tone?: keyof typeof disclaimerTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid ${({ $tone = 'info' }) => disclaimerTone[$tone].border};
+  background: ${({ $tone = 'info' }) => disclaimerTone[$tone].bg};
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+`;
+
+export const StepDisclaimerIcon = styled.span<{ $tone?: keyof typeof disclaimerTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconBg};
+  color: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconColor};
+`;
+
+export const StepDisclaimerContent = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+`;
+
+export const StepDisclaimerTitle = styled.strong<{ $tone?: keyof typeof disclaimerTone }>`
+  color: ${({ $tone = 'info' }) => disclaimerTone[$tone].title};
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.35;
+`;
+
+export const StepDisclaimerText = styled.span`
+  font-size: 14px;
+  line-height: 1.55;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PendingActionCard = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(21, 128, 61, 0.28);
+  background:
+    radial-gradient(circle at 6% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.96));
+
+  @media (max-width: 720px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const PendingActionCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const PendingActionTitle = styled.h2`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 18px;
+  font-weight: 850;
+`;
+
+export const PendingActionButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+
+  @media (max-width: 720px) {
+    width: 100%;
+  }
 `;
 
 export const StepFlow = styled.section`
@@ -167,6 +294,28 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   font-weight: 800;
 `;
 
+export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
+  width: fit-content;
+  justify-self: center;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: ${({ theme }) => `1px solid ${theme.colors.borderDefault}`};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.textPrimary};
+    outline-offset: 2px;
+  }
+`;
+
 export const OrderGrid = styled.div`
   display: grid;
   gap: 14px;
@@ -193,19 +342,26 @@ export const SecondaryActionButton = styled.button`
   align-items: center;
   justify-content: center;
   width: fit-content;
-  min-height: 38px;
-  padding: 0 14px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textPrimary};
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
   }
 `;
 
@@ -346,7 +502,7 @@ export const ContactField = styled.label<{ $full?: boolean }>`
   min-width: 0;
 
   span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;

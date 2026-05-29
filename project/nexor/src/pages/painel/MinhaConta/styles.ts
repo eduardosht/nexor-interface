@@ -35,7 +35,7 @@ export const TopGrid = styled.div`
 `;
 
 export const SectionTitle = styled.h2`
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -80,7 +80,7 @@ export const Field = styled.div<{ $editable?: boolean }>`
 `;
 
 export const FieldLabel = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -123,7 +123,7 @@ export const FieldSelect = styled.select`
 `;
 
 export const FieldLocked = styled.span`
-  font-size: 10px;
+  font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   opacity: 0.6;
 `;
@@ -217,7 +217,7 @@ export const ProductBadge = styled.span`
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.green}1a;
   color: ${({ theme }) => theme.colors.green};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 `;
 

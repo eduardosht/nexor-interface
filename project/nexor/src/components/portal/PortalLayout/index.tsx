@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, Boxes, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
-import { useAuth } from '../../../hooks/useAuth';
+import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
+import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
+import { hasAdministrativeRole } from '../../../features/auth/adminRoles';
+import { accountQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import * as S from './styles';
+import { usePortalUiStore } from './portalUiStore';
 
-const STORAGE_KEY = 'nexor-sidebar-collapsed';
 const DESKTOP_MEDIA_QUERY = '(min-width: 769px)';
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -16,23 +19,6 @@ const FOCUSABLE_SELECTOR = [
   'textarea:not([disabled])',
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
-
-/* ─── Access Mode Modal ─── */
-
-type AccessMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
-
-interface AccessOption {
-  key: AccessMode;
-  label: string;
-  description: string;
-  allowed: boolean;
-  reason: string | null;
-  status?: 'available' | 'missing' | 'pending' | 'active' | 'rejected' | 'suspended';
-}
-
-interface AccessResponse {
-  modes: AccessOption[];
-}
 
 interface MockNotification {
   id: string;
@@ -119,129 +105,6 @@ function mapAccountNotification(notification: AccountNotificationResponse): Mock
 
 
 
-const MODE_ICONS: Record<AccessMode, typeof User> = {
-  user: User,
-  dentist: Stethoscope,
-  partner: Handshake,
-  lab: FlaskConical,
-  admin: Boxes,
-};
-
-interface AccessModeModalProps {
-  onClose: () => void;
-  onConfirm: (mode: AccessMode) => void;
-}
-
-function AccessModeModal({ onClose, onConfirm }: AccessModeModalProps) {
-  const { session } = useAuth();
-  const [options, setOptions] = useState<AccessOption[]>([]);
-  const [selected, setSelected] = useState<AccessMode | null>(null);
-  const [loadingOptions, setLoadingOptions] = useState(true);
-  const overlayRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!session) {
-      setLoadingOptions(false);
-      return;
-    }
-    let active = true;
-    setLoadingOptions(true);
-    api.get<AccessResponse>('/v1/products/biteplaner/access-options', session.access_token)
-      .then((res) => {
-        if (!active) return;
-        const modes = Array.isArray(res.modes) ? res.modes : [];
-        setOptions(modes);
-        const defaultAllowed = modes.find((m) => m.allowed && m.key === 'user') ?? modes.find((m) => m.allowed);
-        if (defaultAllowed) setSelected(defaultAllowed.key);
-      })
-      .catch(() => {
-        if (!active) return;
-        setOptions([
-          { key: 'user', label: 'Continuar como Usuário', description: 'Acesse sua jornada pessoal do Biteplaner, acompanhe o status do seu produto, gerencie consultas e acesse suporte.', allowed: true, reason: null },
-          { key: 'dentist', label: 'Dentista', description: 'Portal para dentistas em licenciamento ou ja licenciados. Acompanhe o onboarding e opere pacientes quando liberado.', allowed: false, reason: null },
-          { key: 'partner', label: 'Parceiro Licenciado', description: 'Área para parceiros comerciais da Nexor. Gerencie indicações, acompanhe comissões e acesse materiais de divulgação.', allowed: false, reason: null },
-          { key: 'lab', label: 'Laboratório', description: 'Sistema de gestão de produção e licenciamento laboratorial. Receba moldagens, gerencie fabricacao, controle de qualidade e rastreamento de envios.', allowed: false, reason: null },
-        ]);
-        setSelected('user');
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoadingOptions(false);
-      });
-    return () => { active = false; };
-  }, [session]);
-
-  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (e.target === overlayRef.current) onClose();
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') onClose();
-  }
-
-  return (
-    <S.Overlay ref={overlayRef} onClick={handleOverlayClick} onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-label="Selecionar acesso ao Biteplaner">
-      <S.ModalBox>
-        <S.ModalTitle>Como deseja acessar?</S.ModalTitle>
-        <S.ModalSubtitle>Selecione o tipo de acesso ao Biteplaner</S.ModalSubtitle>
-        <S.CloseBtn onClick={onClose} aria-label="Fechar"><X size={16} /></S.CloseBtn>
-
-        <S.AccessCardsGrid aria-busy={loadingOptions}>
-          {loadingOptions ? Array.from({ length: 5 }).map((_, index) => (
-            <S.AccessCardSkeleton key={index} data-testid="access-option-skeleton" aria-hidden="true">
-              <S.AccessSkeletonRadio />
-              <S.AccessSkeletonIcon />
-              <S.AccessSkeletonLine $width="72%" />
-              <S.AccessSkeletonLine $width="100%" />
-              <S.AccessSkeletonLine $width="88%" />
-              <S.AccessSkeletonLine $width="64%" />
-            </S.AccessCardSkeleton>
-          )) : options.map((opt) => {
-            const Icon = MODE_ICONS[opt.key];
-            const isSelected = selected === opt.key;
-            return (
-              <S.AccessCard
-                key={opt.key}
-                $selected={isSelected}
-                $allowed={opt.allowed}
-                onClick={() => { if (opt.allowed) setSelected(opt.key); }}
-                aria-pressed={isSelected}
-                aria-disabled={!opt.allowed}
-              >
-                <S.AccessCardRadio $selected={isSelected} />
-                {!opt.allowed ? (
-                  <S.AccessCardBadge>
-                    {opt.status === 'pending' ? 'Em análise' : 'Sem acesso'}
-                  </S.AccessCardBadge>
-                ) : null}
-                <S.AccessCardIconWrap $selected={isSelected} $allowed={opt.allowed}>
-                  <Icon size={20} />
-                </S.AccessCardIconWrap>
-                <S.AccessCardTitle $allowed={opt.allowed}>{opt.label}</S.AccessCardTitle>
-                <S.AccessCardDesc $allowed={opt.allowed}>{opt.description}</S.AccessCardDesc>
-                {!opt.allowed && opt.reason ? (
-                  <S.AccessCardDesc $allowed={opt.allowed}>{opt.reason}</S.AccessCardDesc>
-                ) : null}
-              </S.AccessCard>
-            );
-          })}
-        </S.AccessCardsGrid>
-
-        <S.ModalNote>
-          <strong>Nota:</strong> Para acessar como Dentista, Parceiro ou Laboratório Licenciado, é necessário ter credenciais específicas fornecidas pela Nexor. Entre em contato conosco para solicitar acesso.
-        </S.ModalNote>
-
-        <S.ModalActions>
-          <S.ModalBtnSecondary onClick={onClose}>Cancelar</S.ModalBtnSecondary>
-          <S.ModalBtnPrimary disabled={loadingOptions || selected === null} onClick={() => { if (selected) onConfirm(selected); }}>
-            Continuar
-          </S.ModalBtnPrimary>
-        </S.ModalActions>
-      </S.ModalBox>
-    </S.Overlay>
-  );
-}
-
 /* ─── Layout Shell ─── */
 
 
@@ -291,6 +154,7 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
   { to: '/painel/admin/parceiros', label: 'Parceiros', Icon: Handshake },
   { to: '/painel/admin/dentistas', label: 'Dentistas', Icon: Stethoscope },
   { to: '/painel/admin/laboratorios', label: 'Laboratórios', Icon: FlaskConical },
@@ -299,12 +163,38 @@ const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/configuracoes/sistema', label: 'Config. Sistema', Icon: Settings2 },
 ];
 
+const ADMIN_OVERVIEW_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => item.to === '/painel/admin/home');
+const ADMIN_BITEPLANER_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
+  item.to === '/painel/admin/ordens' ||
+  item.to === '/painel/admin/relatorios' ||
+  item.to === '/painel/admin/parceiros' ||
+  item.to === '/painel/admin/dentistas' ||
+  item.to === '/painel/admin/laboratorios'
+));
+const ADMIN_SYSTEM_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
+  item.to === '/painel/admin/usuarios' ||
+  item.to === '/painel/admin/configuracoes/negocio' ||
+  item.to === '/painel/admin/configuracoes/sistema'
+));
+
 const ADMIN_MOBILE_PRIMARY_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
   { to: '/painel/admin/usuarios', label: 'Usuários', Icon: UserRound },
   { to: '/painel/admin/configuracoes/negocio', label: 'Configurações', Icon: Settings2 },
 ];
+
+const BITEPLANER_MENU_ROLES = new Set(['customer', 'partner', 'dentist', 'lab']);
+const BITEPLANER_MENU_STATUSES = new Set(['active']);
+
+function canSeeBiteplanerProductMenu(user?: BackendUser | null) {
+  return (user?.productRoles ?? []).some((productRole) => (
+    productRole.productKey === 'biteplaner' &&
+    BITEPLANER_MENU_ROLES.has(productRole.role) &&
+    BITEPLANER_MENU_STATUSES.has(productRole.status)
+  ));
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -317,13 +207,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut, backendUser, session } = useAuth();
+  const queryClient = useQueryClient();
   const contentScrollRef = useRef<HTMLDivElement>(null);
   const mobileDrawerRef = useRef<HTMLElement>(null);
   const mobileMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const previousMobileFocusRef = useRef<HTMLElement | null>(null);
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === 'true');
-  const [showAccessModal, setShowAccessModal] = useState(false);
-  const [notifications, setNotifications] = useState<MockNotification[]>(MOCK_NOTIFICATIONS);
+  const collapsed = usePortalUiStore((state) => state.sidebarCollapsed);
+  const hydrateSidebarCollapsed = usePortalUiStore((state) => state.hydrateSidebarCollapsed);
+  const toggleSidebarCollapsed = usePortalUiStore((state) => state.toggleSidebarCollapsed);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<MockNotification | null>(null);
   const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
@@ -340,28 +231,78 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const isLicensingBiteplanerMode = isDentistBiteplanerMode || isLabBiteplanerMode;
   const showEvaluationsSubmenu = biteplanerMode === 'partner' || biteplanerMode === 'dentist' || biteplanerMode === 'lab';
   const showBiteplanerMvpMenus = import.meta.env.VITE_MOCK === 'true';
-  const isAdmin = backendUser?.roles.includes('admin') ?? false;
+  const isAdmin = hasAdministrativeRole(backendUser?.roles);
+  const showBiteplanerProductMenu = canSeeBiteplanerProductMenu(backendUser);
+  const notificationsOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
+  const notificationsQueryKey = accountQueryKeys.notifications(notificationsOwnerId);
+  const notificationsQuery = useQuery<AccountNotificationsResponse>({
+    queryKey: notificationsQueryKey,
+    queryFn: () => api.get<AccountNotificationsResponse>('/v1/account/notifications', session!.access_token),
+    enabled: Boolean(session),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const notifications = useMemo(
+    () =>
+      notificationsQuery.data?.notifications
+        ? notificationsQuery.data.notifications.map(mapAccountNotification)
+        : MOCK_NOTIFICATIONS,
+    [notificationsQuery.data?.notifications]
+  );
   const hasUnreadNotifications = notifications.some((notification) => !notification.read);
+  const markNotificationRead = useMutation({
+    mutationFn: (notification: MockNotification) =>
+      api.patch<{ notification: AccountNotificationResponse }>(
+        `/v1/account/notifications/${notification.id}/read`,
+        {},
+        session!.access_token
+      ),
+    onMutate: async (notification) => {
+      await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
+      queryClient.setQueryData<AccountNotificationsResponse>(notificationsQueryKey, (current) => {
+        if (!current) {
+          return current;
+        }
 
-  useEffect(() => {
-    if (!session) return;
-
-    let active = true;
-
-    Promise.resolve(api.get<AccountNotificationsResponse>('/v1/account/notifications', session.access_token))
-      .then((response) => {
-        if (!active || !Array.isArray(response?.notifications)) return;
-        setNotifications(response.notifications.map(mapAccountNotification));
-      })
-      .catch(() => {
-        if (!active) return;
-        setNotifications(MOCK_NOTIFICATIONS);
+        return {
+          ...current,
+          notifications: current.notifications.map((item) =>
+            item.id === notification.id ? { ...item, read: true, readAt: new Date().toISOString() } : item
+          ),
+        };
       });
+      setSelectedNotification((current) =>
+        current?.id === notification.id ? { ...current, read: true } : current
+      );
+    },
+    onSuccess: (response) => {
+      if (!response.notification) {
+        return;
+      }
 
-    return () => {
-      active = false;
-    };
-  }, [session]);
+      const updatedNotification = response.notification;
+      queryClient.setQueryData<AccountNotificationsResponse>(notificationsQueryKey, (current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          notifications: current.notifications.map((item) =>
+            item.id === updatedNotification.id ? updatedNotification : item
+          ),
+        };
+      });
+      setSelectedNotification((current) =>
+        current?.id === updatedNotification.id ? mapAccountNotification(updatedNotification) : current
+      );
+    },
+  });
+
+  useLayoutEffect(() => {
+    hydrateSidebarCollapsed();
+  }, [hydrateSidebarCollapsed]);
 
   useEffect(() => {
     contentScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -407,19 +348,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   }, []);
 
   function toggle() {
-    const next = !collapsed;
-    setCollapsed(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
-  }
-
-  function handleAccessConfirm(mode: AccessMode) {
-    setShowAccessModal(false);
-    if (mode === 'admin') {
-      void navigate('/painel/admin/ordens');
-      return;
-    }
-
-    void navigate(`/painel/biteplaner?mode=${mode}`);
+    toggleSidebarCollapsed();
   }
 
   function handleNotificationClick(notification: MockNotification) {
@@ -430,28 +359,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    void api.patch<{ notification: AccountNotificationResponse }>(
-      `/v1/account/notifications/${notification.id}/read`,
-      {},
-      session.access_token
-    )
-      .then((response) => {
-        const updatedNotification = response.notification
-          ? mapAccountNotification(response.notification)
-          : { ...notification, read: true };
-
-        setNotifications((current) =>
-          current.map((item) => (item.id === notification.id ? updatedNotification : item))
-        );
-        setSelectedNotification((current) =>
-          current?.id === notification.id ? { ...current, read: true } : current
-        );
-      })
-      .catch(() => {
-        setNotifications((current) =>
-          current.map((item) => (item.id === notification.id ? { ...item, read: true } : item))
-        );
-      });
+    markNotificationRead.mutate(notification);
   }
 
   function handleMobileDrawerKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -489,12 +397,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
   return (
     <S.Shell>
-      {showAccessModal && (
-        <AccessModeModal
-          onClose={() => setShowAccessModal(false)}
-          onConfirm={handleAccessConfirm}
-        />
-      )}
       {selectedNotification ? (
         <S.Overlay
           role="dialog"
@@ -579,20 +481,22 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 </S.StyledNavLink>
               ))}
 
-              <S.NavSectionDivider />
-              <S.NavSectionLabel $collapsed={collapsed}>Produtos</S.NavSectionLabel>
-              <S.NavButton
-                $collapsed={collapsed}
-                $active={isBiteplanerActive}
-                onClick={() => {
-                  setShowAccessModal(true);
-                }}
-                title={collapsed ? 'Biteplaner' : undefined}
-                style={{ marginTop: 4 }}
-              >
-                <ShieldCheck size={16} />
-                <S.NavLabel $collapsed={collapsed}>Biteplaner</S.NavLabel>
-              </S.NavButton>
+              {showBiteplanerProductMenu ? (
+                <>
+                  <S.NavSectionDivider />
+                  <S.NavSectionLabel $collapsed={collapsed}>Produtos</S.NavSectionLabel>
+                  <S.NavButton
+                    $collapsed={collapsed}
+                    $active={isBiteplanerActive}
+                    onClick={() => {
+                      void navigate('/painel/biteplaner');
+                    }}
+                    title={collapsed ? 'Biteplaner' : undefined}
+                    style={{ marginTop: 4 }}
+                  >
+                    <ShieldCheck size={16} />
+                    <S.NavLabel $collapsed={collapsed}>Biteplaner</S.NavLabel>
+                  </S.NavButton>
               {isBiteplanerActive && (
                 <>
                   <S.SubNavLink
@@ -650,14 +554,40 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   ) : null}
                 </>
               )}
+                </>
+              ) : null}
             </>
           ) : null}
 
           {isAdmin ? (
             <>
+              {ADMIN_OVERVIEW_NAV_ITEMS.map(({ to, label, Icon }) => (
+                <S.StyledNavLink
+                  key={to}
+                  to={to}
+                  $collapsed={collapsed}
+                  title={collapsed ? label : undefined}
+                >
+                  <Icon size={16} />
+                  <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
+                </S.StyledNavLink>
+              ))}
               <S.NavSectionDivider style={{ marginTop: 8 }} />
               <S.NavSectionLabel $collapsed={collapsed}>Biteplaner</S.NavSectionLabel>
-              {ADMIN_NAV_ITEMS.map(({ to, label, Icon }) => (
+              {ADMIN_BITEPLANER_NAV_ITEMS.map(({ to, label, Icon }) => (
+                <S.StyledNavLink
+                  key={to}
+                  to={to}
+                  $collapsed={collapsed}
+                  title={collapsed ? label : undefined}
+                >
+                  <Icon size={16} />
+                  <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
+                </S.StyledNavLink>
+              ))}
+              <S.NavSectionDivider />
+              <S.NavSectionLabel $collapsed={collapsed}>Sistema</S.NavSectionLabel>
+              {ADMIN_SYSTEM_NAV_ITEMS.map(({ to, label, Icon }) => (
                 <S.StyledNavLink
                   key={to}
                   to={to}
@@ -728,24 +658,28 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <S.NotificationsPanelMeta>{notifications.length} itens</S.NotificationsPanelMeta>
                   </S.NotificationsPanelHeader>
                   <S.NotificationsList>
-                    {notifications.map((notification) => (
-                      <S.NotificationItem
-                        key={notification.id}
-                        type="button"
-                        $unread={!notification.read}
-                        aria-label={`Abrir notificação ${notification.title}`}
-                        onClick={() => handleNotificationClick(notification)}
-                      >
-                        <S.NotificationItemHeader>
-                          <S.NotificationTitle>{notification.title}</S.NotificationTitle>
-                          <S.NotificationStatus $unread={!notification.read}>
-                            {notification.read ? 'Lida' : 'Não lida'}
-                          </S.NotificationStatus>
-                        </S.NotificationItemHeader>
-                        <S.NotificationDate>{notification.datetime}</S.NotificationDate>
-                        <S.NotificationPreview>{notification.message}</S.NotificationPreview>
-                      </S.NotificationItem>
-                    ))}
+                    {notifications.length === 0 ? (
+                      <S.NotificationsEmpty>Nenhuma notificação encontrada.</S.NotificationsEmpty>
+                    ) : (
+                      notifications.map((notification) => (
+                        <S.NotificationItem
+                          key={notification.id}
+                          type="button"
+                          $unread={!notification.read}
+                          aria-label={`Abrir notificação ${notification.title}`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <S.NotificationItemHeader>
+                            <S.NotificationTitle>{notification.title}</S.NotificationTitle>
+                            <S.NotificationStatus $unread={!notification.read}>
+                              {notification.read ? 'Lida' : 'Não lida'}
+                            </S.NotificationStatus>
+                          </S.NotificationItemHeader>
+                          <S.NotificationDate>{notification.datetime}</S.NotificationDate>
+                          <S.NotificationPreview>{notification.message}</S.NotificationPreview>
+                        </S.NotificationItem>
+                      ))
+                    )}
                   </S.NotificationsList>
                 </S.NotificationsPanel>
               ) : null}

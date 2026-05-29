@@ -234,34 +234,41 @@ export const ModalActions = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 `;
 
 export const ModalBtnSecondary = styled.button`
-  min-height: 44px;
-  padding: 0 24px;
+  min-width: 150px;
+  min-height: 46px;
+  padding: 0 22px;
   border-radius: 4px;
   border: 1px solid #E0E0E0;
   background: #ffffff;
   color: #171717;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 150px;
   transition: background 120ms ease;
   &:hover { background: #F5F5F5; }
 `;
 
 export const ModalBtnPrimary = styled.button`
-  min-height: 44px;
-  padding: 0 32px;
+  min-width: 150px;
+  min-height: 46px;
+  padding: 0 22px;
   border-radius: 4px;
   border: none;
   background: #171717;
   color: #FAFAFA;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 150px;
   transition: opacity 120ms ease;
   &:hover { opacity: 0.88; }
   &:disabled { opacity: 0.4; cursor: default; }
@@ -761,6 +768,15 @@ export const NotificationsPanelMeta = styled.span`
 export const NotificationsList = styled.div`
   display: grid;
   overflow-y: auto;
+`;
+
+export const NotificationsEmpty = styled.p`
+  margin: 0;
+  padding: 22px 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
 `;
 
 export const NotificationItem = styled.button<{ $unread: boolean }>`

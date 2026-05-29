@@ -1,16 +1,32 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
+import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
 }));
+
+function readSourceFiles(root: string): string[] {
+  return readdirSync(root).flatMap((entry) => {
+    const path = join(root, entry);
+    const stats = statSync(path);
+
+    if (stats.isDirectory()) {
+      return readSourceFiles(path);
+    }
+
+    return /\.(ts|tsx)$/.test(entry) ? [readFileSync(path, 'utf8')] : [];
+  });
+}
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: mockUseAuth,
@@ -168,10 +184,12 @@ function renderPage(path = '/painel/dentista/producao/BP-DEMO-004') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <ThemeProvider theme={lightTheme}>
-        <Routes>
-          <Route path="/painel/dentista/producao/:orderId" element={<ProducaoDentista />} />
-          <Route path="/painel/biteplaner" element={<div>hub</div>} />
-        </Routes>
+        <TestQueryClientProvider>
+          <Routes>
+            <Route path="/painel/dentista/producao/:orderId" element={<ProducaoDentista />} />
+            <Route path="/painel/biteplaner" element={<div>hub</div>} />
+          </Routes>
+        </TestQueryClientProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -181,6 +199,8 @@ async function goToDentistComplement() {
   for (let index = 0; index < 8 && !screen.queryByRole('button', { name: /salvar complemento do dentista/i }); index += 1) {
     fireEvent.click(await screen.findByRole('button', { name: /próxima etapa/i }));
   }
+
+  expect(await screen.findByRole('button', { name: /salvar complemento do dentista/i })).toBeInTheDocument();
 }
 
 function getWizardNextButton() {
@@ -200,11 +220,47 @@ function getPainlessOpeningInput() {
 }
 
 function fillRequiredDentistComplement() {
+  fireEvent.change(screen.getByLabelText(/data da consulta/i), { target: { value: '2026-05-12' } });
   fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
   fireEvent.click(
     screen.getByRole('checkbox', {
       name: /declaro que as informações acima foram coletadas através de exame clínico/i,
     })
+  );
+}
+
+function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQueryClient>, path = '/painel/dentista/producao/BP-DEMO-004') {
+  mockUseAuth.mockReturnValue({
+    loading: false,
+    session: { access_token: 'tok', user: { id: '1', email: 'dentista@nexor.dev' } },
+    backendUser: {
+      id: 'dentist-user-1',
+      email: 'dentista@nexor.dev',
+      roles: ['dentist'],
+      productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+    },
+    backendUserResolved: true,
+    hasConfiguredAuth: true,
+    isMockMode: true,
+    demoPersona: 'dentist',
+    signIn: vi.fn(),
+    signInDemo: vi.fn(),
+    signOut: vi.fn(),
+    sendPasswordReset: vi.fn(),
+    refreshBackendUser: vi.fn(),
+  });
+
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <ThemeProvider theme={lightTheme}>
+        <QueryClientProvider client={queryClient}>
+          <Routes>
+            <Route path="/painel/dentista/producao/:orderId" element={<ProducaoDentista />} />
+            <Route path="/painel/biteplaner" element={<div>hub</div>} />
+          </Routes>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </MemoryRouter>
   );
 }
 
@@ -280,24 +336,117 @@ describe('ProducaoDentista', () => {
     expect(formsPanelStyles).toContain('@media (max-width: 1280px)');
     expect(formsPanelStyles).toContain('padding: 14px');
 
-    const stepCardSource = productionStyles.slice(
-      productionStyles.indexOf('export const StepCard'),
-      productionStyles.indexOf('export const StepTop')
+    expect(productionStyles).not.toContain('export const StepCard');
+    expect(productionStyles).not.toContain('export const WizardSidebar');
+    expect(productionStyles).not.toContain('export const ProgressHeader');
+    expect(readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8')).toContain(
+      'isClinicalDentistIntake'
     );
-    const stepBadgeSource = productionStyles.slice(
-      productionStyles.indexOf('export const StepBadge'),
-      productionStyles.indexOf('export const StepMeta')
-    );
-
-    expect(stepCardSource).toContain('grid-template-columns: auto minmax(0, 1fr)');
-    expect(stepCardSource).toContain('align-items: center');
-    expect(stepCardSource).toContain("$completed ? '#ECFDF3'");
-    expect(stepCardSource).not.toContain('position: relative');
-    expect(stepBadgeSource).not.toContain('position: absolute');
     expect(productionStyles).not.toContain('export const StepCheck');
     expect(readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/index.tsx'), 'utf8')).not.toContain(
       'StepCheckIcon'
     );
+  });
+
+  it('keeps administrative form section groups as minimal fieldsets without decorative section icons', () => {
+    const formsPanelStyles = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.styles.ts'), 'utf8');
+    const formsPanelSource = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+    const anamnesisStyles = readFileSync(
+      join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.styles.ts'),
+      'utf8'
+    );
+    const anamnesisSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.tsx'), 'utf8');
+    const subsectionSource = formsPanelStyles.slice(
+      formsPanelStyles.indexOf('export const FormSubsection'),
+      formsPanelStyles.indexOf('export const SectionHeading')
+    );
+
+    expect(subsectionSource).toContain('styled.fieldset');
+    expect(subsectionSource).toContain('styled.legend');
+    expect(subsectionSource).not.toContain('&::before');
+    expect(subsectionSource).not.toContain('border-radius: 999px');
+    expect(formsPanelSource).toContain('<S.SubsectionHeading>{childSection.title}</S.SubsectionHeading>');
+    expect(anamnesisStyles).not.toContain('export const SectionIcon');
+    expect(anamnesisSource).not.toContain('<S.SectionIcon>');
+  });
+
+  it('keeps form action buttons on the onboarding button pattern and admin actions on the design-system Button', () => {
+    const workflowFormsSource = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+    const workflowFormsStyles = readFileSync(
+      join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.styles.ts'),
+      'utf8'
+    );
+    const productionSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/index.tsx'), 'utf8');
+    const productionStyles = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/styles.ts'), 'utf8');
+    const profileStyles = readFileSync(join(process.cwd(), 'src/pages/painel/CadastroPerfilBiteplaner/styles.ts'), 'utf8');
+    const hubStyles = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
+    const buttonStyleSource = readFileSync(join(process.cwd(), 'src/pages/painel/styles/biteplanerFormButton.ts'), 'utf8');
+    const dentistLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminDentistLicensing.tsx'), 'utf8');
+    const partnerLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminPartnerLicensing.tsx'), 'utf8');
+    const labLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminLabLicensing.tsx'), 'utf8');
+
+    [
+      /<Button[\s\S]*?type="button"[\s\S]*?onClick=\{handleNextSection\}[\s\S]*?trailingIcon=\{<ChevronRight/,
+      /<Button[\s\S]*?type="submit"[\s\S]*?trailingIcon=\{<Send/,
+      /<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
+      /<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
+    ].forEach((pattern) => {
+      expect(workflowFormsSource).toMatch(pattern);
+    });
+
+    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{handleSearchLabs\}[\s\S]*?trailingIcon=\{<Search/);
+    expect(productionSource).toMatch(/<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/);
+    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{handleNextStep\}[\s\S]*?trailingIcon=\{<ChevronRight/);
+    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\}[\s\S]*?trailingIcon=\{<CheckCircle2/);
+
+    expect(buttonStyleSource).toContain('background: #15803d;');
+    expect(buttonStyleSource).toContain('min-height: 52px;');
+    [workflowFormsStyles, productionStyles, profileStyles, hubStyles].forEach((source) => {
+      expect(source).toContain('biteplanerFormButtonStyles');
+    });
+
+    [dentistLicensingSource, partnerLicensingSource, labLicensingSource].forEach((source) => {
+      expect(source).not.toContain('const DangerButton = styled.button');
+      expect(source).toMatch(/const DangerButton = styled\(Button\)/);
+      expect(source).not.toContain('const IconButton = styled.button');
+      expect(source).toMatch(/const IconButton = styled\(Button\)/);
+      expect(source).toMatch(/leadingIcon=\{<XCircle/);
+      expect(source).toMatch(/leadingIcon=\{<CheckCircle2/);
+    });
+  });
+
+  it('keeps administrative form typography aligned with the onboarding scale', () => {
+    const onboardingStyles = readFileSync(join(process.cwd(), 'src/pages/painel/PreRequisito/styles.ts'), 'utf8');
+    const adminStyles = readFileSync(join(process.cwd(), 'src/pages/painel/admin/styles.ts'), 'utf8');
+    const designSystemFormSources = [
+      '../packages/design-system/src/components/Field.tsx',
+      '../packages/design-system/src/components/Select.tsx',
+      '../packages/design-system/src/components/DocumentField.tsx',
+      '../packages/design-system/src/components/UploadField.tsx',
+      '../packages/design-system/src/components/TagAutocompleteField.tsx',
+    ].map((path) => readFileSync(join(process.cwd(), path), 'utf8'));
+
+    expect(onboardingStyles).toContain('font-size: 2rem;');
+    expect(onboardingStyles).toContain('font-size: 1rem;');
+    expect(onboardingStyles).toContain('font-size: 0.875rem;');
+    expect(adminStyles).toContain('export const PageTitle');
+    expect(adminStyles).toContain('font-size: 2rem;');
+    expect(adminStyles).toContain('font-size: 1rem;');
+
+    designSystemFormSources.forEach((source) => {
+      const labelBlock = source.slice(source.indexOf('const Label'), source.indexOf('const RequiredMark'));
+
+      expect(labelBlock).toContain('font-size: 14px;');
+      expect(labelBlock).not.toContain('text-transform: uppercase');
+      expect(labelBlock).not.toContain('letter-spacing');
+    });
+
+    [
+      ...readSourceFiles(join(process.cwd(), 'src/pages/painel')),
+      ...readSourceFiles(join(process.cwd(), '../packages/design-system/src/components')),
+    ].forEach((source) => {
+      expect(source).not.toMatch(/font-size:\s*(0|10|11)px|font-size:\s*0;|font-size:\s*0\.(?:[0-6][0-9]*|7[0-4])rem/);
+    });
   });
 
   afterEach(() => {
@@ -318,11 +467,10 @@ describe('ProducaoDentista', () => {
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
-    expect(screen.getAllByText(/^1$/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^2$/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^3$/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^4$/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/resumo anamnese/i)).toBeInTheDocument();
+    expect(screen.getByText(/etapa 1 de 4/i)).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
+    expect(screen.getByText(/seção 1 de 3/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
     expect(screen.queryByText(/^anexos obrigatórios$/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /salvar rascunho/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
@@ -330,6 +478,98 @@ describe('ProducaoDentista', () => {
     await fillProductionRequestUntilLabSelection();
     expect(screen.getAllByLabelText(/4\.0 de 5 avaliações do laboratório/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/2 avaliações/i)).not.toBeInTheDocument();
+  });
+
+  it('reuses fresh React Query cache when the production page remounts', async () => {
+    const queryClient = createTestQueryClient();
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder()] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/workflow-forms') {
+        return Promise.resolve({ forms: [reviewedSharedIntake()] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    const firstRender = renderPageWithQueryClient(queryClient);
+
+    expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+
+    firstRender.unmount();
+    renderPageWithQueryClient(queryClient);
+
+    expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not refetch production data when only the auth token changes', async () => {
+    const queryClient = createTestQueryClient();
+    let accessToken = 'tok';
+    mockUseAuth.mockImplementation(() => ({
+      loading: false,
+      session: { access_token: accessToken, user: { id: '1', email: 'dentista@nexor.dev' } },
+      backendUser: {
+        id: 'dentist-user-1',
+        email: 'dentista@nexor.dev',
+        roles: ['dentist'],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+      },
+      backendUserResolved: true,
+      hasConfiguredAuth: true,
+      isMockMode: true,
+      demoPersona: 'dentist',
+      signIn: vi.fn(),
+      signInDemo: vi.fn(),
+      signOut: vi.fn(),
+      sendPasswordReset: vi.fn(),
+      refreshBackendUser: vi.fn(),
+    }));
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder()] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/workflow-forms') {
+        return Promise.resolve({ forms: [reviewedSharedIntake()] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    const view = render(
+      <MemoryRouter initialEntries={['/painel/dentista/producao/BP-DEMO-004']}>
+        <ThemeProvider theme={lightTheme}>
+          <QueryClientProvider client={queryClient}>
+            <Routes>
+              <Route path="/painel/dentista/producao/:orderId" element={<ProducaoDentista />} />
+            </Routes>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+
+    accessToken = 'tok-refreshed';
+    view.rerender(
+      <MemoryRouter initialEntries={['/painel/dentista/producao/BP-DEMO-004']}>
+        <ThemeProvider theme={lightTheme}>
+          <QueryClientProvider client={queryClient}>
+            <Routes>
+              <Route path="/painel/dentista/producao/:orderId" element={<ProducaoDentista />} />
+            </Routes>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
   });
 
   it('keeps the anamnesis record in the summary step and attachments inside production request', async () => {
@@ -354,26 +594,30 @@ describe('ProducaoDentista', () => {
     expect(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i)).toBeInTheDocument();
   });
 
-  it('keeps the production steps as compact sticky top navigation at 1440px layouts', async () => {
+  it('keeps the clinical form progress inside the form card instead of the production shell', async () => {
     mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
 
     renderPage();
 
-    expect(await screen.findByTestId('dentist-production-steps')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: /solicitação de produção/i });
+    expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
 
     const stylesheet = Array.from(document.head.querySelectorAll('style'))
       .map((style) => style.textContent ?? '')
       .join('\n');
-    const stepsClass = getGeneratedClass(screen.getByTestId('dentist-production-steps'));
-    const stepDescriptionClass = getGeneratedClass(screen.getAllByText(/revise e complemente/i)[0]);
-    fireEvent.click(screen.getByRole('button', { name: /resumo anamnese/i }));
-    const anamnesisSideNavClass = getGeneratedClass(screen.getByRole('navigation', { name: /navegacao da ficha de anamnese/i }));
 
-    expect(stylesheet).toMatch(new RegExp(`@media \\(max-width:\\s?1440px\\).*\\.${stepsClass}\\{[^}]*position:sticky;[^}]*top:0`, 's'));
-    expect(stylesheet).toContain('grid-template-columns:1fr');
-    expect(stylesheet).toMatch(/grid-template-columns:repeat\(4,\s?minmax\(150px,\s?1fr\)\)/);
-    expect(stylesheet).toMatch(new RegExp(`@media \\(max-width:\\s?1440px\\).*\\.${stepDescriptionClass}\\{[^}]*display:none`, 's'));
-    expect(stylesheet).toMatch(new RegExp(`@media \\(max-width:\\s?1440px\\).*\\.${anamnesisSideNavClass}\\{[^}]*display:none`, 's'));
+    expect(screen.getByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
+    expect(stylesheet).toContain('grid-auto-flow:column');
+
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    const updatedStylesheet = Array.from(document.head.querySelectorAll('style'))
+      .map((style) => style.textContent ?? '')
+      .join('\n');
+    const anamnesisSideNavClass = getGeneratedClass(
+      await screen.findByRole('navigation', { name: /navegacao da ficha de anamnese/i })
+    );
+
+    expect(updatedStylesheet).toMatch(new RegExp(`@media \\(max-width:\\s?1440px\\).*\\.${anamnesisSideNavClass}\\{[^}]*display:none`, 's'));
   });
 
   it('starts the fixed dental anamnesis card area at the progress section', async () => {
@@ -713,6 +957,7 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
     await goToDentistComplement();
+    expect(screen.getByLabelText(/data da consulta/i)).toHaveAttribute('type', 'date');
     expect(getPainlessOpeningInput()).toBeInTheDocument();
 
     fillRequiredDentistComplement();
@@ -724,6 +969,7 @@ describe('ProducaoDentista', () => {
         {
           payload: expect.objectContaining({
             dentist: expect.objectContaining({
+              consultationDate: '2026-05-12',
               painlessMaxOpeningMm: 42,
               dentistClinicalDeclaration: ['accepted'],
             }),
@@ -814,6 +1060,37 @@ describe('ProducaoDentista', () => {
     ).toBeInTheDocument();
   });
 
+  it('uses the dentist-filled consultation date in the anamnesis record', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({
+      forms: [
+        reviewedSharedIntake({
+          dentistSubmittedAt: '2026-05-20T12:10:00.000Z',
+          payload: {
+            customer: {
+              fullName: 'Carlos Demo',
+              hasRelevantMedicalDiagnosis: 'yes',
+              relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
+              averagePainLastWeek: 6,
+              sportRoutine: 'Musculação cinco vezes por semana.',
+            },
+            dentist: {
+              consultationDate: '2026-05-12',
+              painlessMaxOpeningMm: 42,
+              dentistClinicalDeclaration: ['accepted'],
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /próximo/i }));
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getAllByText(/12\/05\/2026/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/20\/05\/2026/)).not.toBeInTheDocument();
+  });
+
   it('shows the dentist clinical form as three sections with clinical subsections grouped under section 2', async () => {
     mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
 
@@ -821,23 +1098,110 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByText(/seção 1 de 3/i)).toBeInTheDocument();
     expect(screen.queryByText(/seção 1 de 7/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/seção 1 - dados iniciais/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: /dados iniciais/i }).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
 
-    expect(screen.getAllByText(/seção 2 - dados clínicos para seu cuidado/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('heading', { name: /dados clínicos para seu cuidado/i }).length).toBeGreaterThan(0);
     expect(screen.getByText(/histórico odontológico e orofacial/i)).toBeInTheDocument();
     expect(screen.getByText(/sintomas atuais - dor orofacial, cervical e impacto funcional/i)).toBeInTheDocument();
     expect(screen.getAllByText(/hábitos de vida/i).length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole('button', { name: /complemento dentista/i }));
+    fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
 
-    await waitFor(() => expect(screen.getAllByText(/seção 3 - complemento dentista/i).length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByRole('heading', { name: /complemento dentista/i }).length).toBeGreaterThan(0));
     expect(screen.getAllByText(/realizar o exame com o paciente em posição de cabeça natural/i).length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(/sempre que possível, associar a avaliação clínica a fotografias padronizadas/i).length
     ).toBeGreaterThan(0);
     expect(screen.queryByText(/info interna/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps every dentist section 2 clinical question backed by a customer-filled pre-consultation field', () => {
+    const customerClinicalSectionKeys = new Set([
+      'medical-history',
+      'dental-orofacial-history',
+      'current-pain-function',
+      'life-habits',
+    ]);
+    const sectionTwoFields = SHARED_INITIAL_EVALUATION_INTAKE.sections
+      .filter((section) => customerClinicalSectionKeys.has(section.key))
+      .flatMap((section) => section.fields);
+
+    expect(sectionTwoFields.length).toBeGreaterThan(0);
+    sectionTwoFields.forEach((field) => {
+      expect(field.ownerRole).toBe('user');
+      expect(field.editableWhen).toBe('customer_intake');
+      expect(field.visibleTo).toContain('user');
+    });
+  });
+
+  it('reflects customer conditional clinical answers in the dentist read-only section 2 review', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({
+      forms: [
+        sharedIntake({
+          payload: {
+            customer: {
+              orthodonticTreatmentStatus: 'none',
+              fullName: 'Carlos Demo',
+              phone: '(11) 99999-9999',
+              needsAdaptedClinic: 'no',
+              hasRelevantMedicalDiagnosis: 'yes',
+              relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
+              currentMedicationUse: 'yes',
+              currentMedicationDetails: 'Relaxante muscular quando necessário.',
+              hasCurrentPain: 'yes',
+              painLocations: ['temples', 'neck'],
+              painPatternDetails: 'Dor temporal após treinos intensos.',
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    await screen.findByText(/seção 1 de 3/i);
+    fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
+
+    expect(screen.getByText(/possui algum diagnóstico médico prévio relevante/i)).toBeInTheDocument();
+    expect(screen.getByText(/bruxismo diagnosticado/i)).toBeInTheDocument();
+    expect(screen.getByText(/quais medicamentos, dosagens e há quanto tempo/i)).toBeInTheDocument();
+    expect(screen.getByText(/relaxante muscular quando necessário/i)).toBeInTheDocument();
+    expect(screen.getByText(/localização da dor/i)).toBeInTheDocument();
+    expect(screen.getByText(/dor temporal após treinos intensos/i)).toBeInTheDocument();
+  });
+
+  it('loads the workflow form detail when the list response omits the sensitive payload for the dentist', async () => {
+    const listForm = sharedIntake({ payload: null });
+    const detailedForm = sharedIntake({
+      payload: {
+        customer: {
+          orthodonticTreatmentStatus: 'none',
+          fullName: 'Carlos Demo',
+          phone: '(11) 99999-9999',
+          needsAdaptedClinic: 'no',
+          hasRelevantMedicalDiagnosis: 'yes',
+          relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
+        },
+      },
+    });
+
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [createOrder()] })
+      .mockResolvedValueOnce({ forms: [listForm] })
+      .mockResolvedValueOnce(detailedForm);
+
+    renderPage();
+
+    await screen.findByText(/seção 1 de 3/i);
+    fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
+
+    expect(await screen.findByText(/bruxismo diagnosticado/i)).toBeInTheDocument();
+    expect(mockApiGet).toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/workflow-forms/BP-WF-004-INTAKE',
+      'tok'
+    );
   });
 
   it('renders the clinical form without duplicate internal heading, release metadata or consolidated notice card', async () => {
@@ -851,7 +1215,7 @@ describe('ProducaoDentista', () => {
     expect(screen.queryByText(/enviado em/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/enviado$/i)).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading', { name: /formulário clínico biteplaner/i })).toHaveLength(1);
-    expect(screen.getAllByRole('heading', { name: /seção 1 - dados iniciais/i })).toHaveLength(1);
+    expect(screen.getAllByRole('heading', { name: /dados iniciais/i })).toHaveLength(1);
   });
 
   it('includes the detailed facial profile and skeletal pattern fields in the dentist complement', async () => {

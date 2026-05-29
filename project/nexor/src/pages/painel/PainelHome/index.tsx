@@ -141,9 +141,8 @@ export function PainelHome() {
     () => new Map(productRoles.map((role) => [role.role, role])),
     [productRoles]
   );
-  const hasActiveCustomerRole = rolesByKey.get('customer')?.status === 'active';
   const hasActiveOrder = orders.some((order) => !CLOSED_ORDER_STATUSES.has(order.status));
-  const shouldTrackOrder = hasActiveCustomerRole || hasActiveOrder;
+  const shouldTrackOrder = hasActiveOrder;
   const activeOrPendingOperationalRole = EXCLUSIVE_OPERATIONAL_ROLES.find((role) => {
     const status = rolesByKey.get(role)?.status;
     return status === 'active' || status === 'pending';
@@ -207,6 +206,7 @@ export function PainelHome() {
         token
       );
       mergeProductRole(response.productRole);
+      await api.post('/v1/orders', {}, token);
       navigate('/painel/biteplaner/onboarding');
     } catch {
       setRoleError('Não foi possível iniciar o Biteplaner agora.');
@@ -345,8 +345,14 @@ export function PainelHome() {
                 submittingRole ||
                 isPending ||
                 isOperationalRoleBlocked ||
-                (isActive && !isCustomerTrackingAction);
-              const actionTitle = isCustomerTrackingAction ? 'Acompanhar sua ordem' : action.title;
+                (!isCustomer && isActive && !isCustomerTrackingAction);
+              const actionTitle = isPending
+                ? `Cadastro de ${getOperationalRoleLabel(action.role)} em análise`
+                : isPending
+                  ? `Sua solicitação de ${getOperationalRoleLabel(action.role)} está em análise pela equipe Nexor.`
+                  : isCustomerTrackingAction
+                  ? 'Acompanhar sua ordem'
+                  : action.title;
               const actionDescription = isOperationalRoleBlocked
                 ? `Sua conta já possui solicitação ou perfil de ${operationalBlockerLabel} no Biteplaner.`
                 : isCustomerTrackingAction
@@ -358,6 +364,7 @@ export function PainelHome() {
                   ? 'Acompanhar ordem'
                   : action.buttonLabel;
               const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
+              const shouldShowActionButton = !isPending;
 
               return (
                 <S.RoleActionCard
@@ -374,29 +381,31 @@ export function PainelHome() {
                   <S.RoleActionTitle>{actionTitle}</S.RoleActionTitle>
                   <S.RoleCardRule aria-hidden="true" />
                   <S.RoleActionMeta>{actionDescription}</S.RoleActionMeta>
-                  <S.RoleActionButton
-                    type="button"
-                    aria-label={actionTitle}
-                    disabled={disabled}
-                    onClick={() => {
-                      if (isCustomerTrackingAction) {
-                        trackOrder();
-                        return;
-                      }
+                  {shouldShowActionButton ? (
+                    <S.RoleActionButton
+                      type="button"
+                      aria-label={actionTitle}
+                      disabled={disabled}
+                      onClick={() => {
+                        if (isCustomerTrackingAction) {
+                          trackOrder();
+                          return;
+                        }
 
-                      if (isCustomer) {
-                        void activateCustomer();
-                        return;
-                      }
+                        if (isCustomer) {
+                          void activateCustomer();
+                          return;
+                        }
 
-                      if (action.requestPath) {
-                        navigate(action.requestPath);
-                      }
-                    }}
-                  >
-                    {actionButtonLabel}
-                    <ArrowRight size={18} strokeWidth={2.2} />
-                  </S.RoleActionButton>
+                        if (action.requestPath) {
+                          navigate(action.requestPath);
+                        }
+                      }}
+                    >
+                      <span>{actionButtonLabel}</span>
+                      <ArrowRight size={18} strokeWidth={2.2} />
+                    </S.RoleActionButton>
+                  ) : null}
                 </S.RoleActionCard>
               );
             })}

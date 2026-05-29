@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { biteplanerFormButtonStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   width: min(100%, 1120px);
@@ -227,53 +228,66 @@ export const Form = styled.form`
   gap: 20px;
 `;
 
-export const Section = styled.section`
+export const Section = styled.fieldset`
   display: grid;
-  gap: 18px;
-  padding: 26px 30px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.06);
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border: 0;
+  border-left: 2px solid rgba(148, 163, 184, 0.34);
+  background: transparent;
+  box-shadow: none;
 
   @media (max-width: 760px) {
-    padding: 18px;
-    border-radius: 14px;
+    gap: 14px;
+    padding-left: 12px;
   }
 `;
 
-export const SectionHeader = styled.div`
-  display: flex;
+export const SectionHeader = styled.legend`
+  display: grid;
+  grid-template-columns: auto auto minmax(32px, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0;
+
+  &::after {
+    content: '';
+    height: 1px;
+    background: rgba(148, 163, 184, 0.45);
+  }
 `;
 
 export const StepBadge = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 18px;
+  height: 18px;
   border-radius: 999px;
+  border: 2px solid #009c4a;
   background: #009c4a;
   color: #ffffff;
-  box-shadow: 0 10px 24px rgba(0, 156, 74, 0.22);
-  font-size: 14px;
+  box-shadow: inset 0 0 0 4px #ffffff;
+  font-size: 12px;
   font-weight: 800;
 `;
 
 export const SectionTitle = styled.h2`
   margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 20px;
-  font-weight: 800;
+  color: #07152f;
+  font-size: 13px;
+  font-weight: 900;
   letter-spacing: 0;
 `;
 
 export const FieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 
   > * {
     grid-column: span 6;
@@ -308,16 +322,24 @@ export const SectionSubtitle = styled.p`
   line-height: 1.55;
 `;
 
-export const ClinicSection = styled.div`
+export const ClinicSection = styled.fieldset`
   display: grid;
   gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border: 0;
+  border-left: 2px solid rgba(148, 163, 184, 0.34);
 `;
 
-export const ClinicSectionHeader = styled.div`
+export const ClinicSectionHeader = styled.legend`
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
 
   @media (max-width: 640px) {
     flex-direction: column;
@@ -344,10 +366,10 @@ export const ClinicSectionIntro = styled.p`
 export const ClinicCard = styled.div`
   display: grid;
   gap: 14px;
-  padding: 16px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.bgBase};
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 `;
 
 export const ClinicCardHeader = styled.div`
@@ -400,5 +422,57 @@ export const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
+  gap: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  ${biteplanerFormButtonStyles}
+
+  > :first-child {
+    order: 1;
+  }
+
+  button[type='button'] {
+    order: 2;
+  }
+
+  button[type='submit'] {
+    order: 3;
+  }
+
+  @media (max-width: 760px) {
+    align-items: stretch;
+    justify-content: stretch;
+
+    > * {
+      flex: 1 1 100%;
+    }
+  }
+`;
+
+export const ActionPrivacyNote = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 360px;
+  margin-right: auto;
+  padding: 11px 13px;
+  border: 1px solid rgba(0, 156, 74, 0.18);
+  border-radius: 8px;
+  background: #f6fdf8;
+  color: #405169;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+
+  svg {
+    color: #009c4a;
+  }
+
+  strong {
+    color: #008d3f;
+    font-weight: 800;
+  }
 `;

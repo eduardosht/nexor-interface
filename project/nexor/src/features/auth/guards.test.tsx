@@ -55,6 +55,23 @@ describe('RequireAdmin', () => {
     expect(screen.getByText('admin-only')).toBeInTheDocument();
   });
 
+  it('renders admin children for administrative report roles', () => {
+    mockUseAuth.mockReturnValue({
+      loading: false,
+      session: { user: { id: '1' } },
+      backendUserResolved: true,
+      backendUser: { roles: ['finance'] },
+    });
+
+    render(
+      <MemoryRouter>
+        <RequireAdmin><div>admin-only</div></RequireAdmin>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('admin-only')).toBeInTheDocument();
+  });
+
   it('blocks non-admin users from admin routes', () => {
     mockUseAuth.mockReturnValue({
       loading: false,

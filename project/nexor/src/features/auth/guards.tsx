@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { hasAdministrativeRole } from './adminRoles';
 
 function currentPath() {
   if (typeof window === 'undefined') return '/';
@@ -30,7 +31,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     return <Navigate to={`/entrar?next=${encodeURIComponent(currentPath())}`} replace />;
   }
 
-  if (!backendUser?.roles.includes('admin')) {
+  if (!hasAdministrativeRole(backendUser?.roles)) {
     return <Navigate to="/painel/home" replace />;
   }
 
@@ -48,7 +49,7 @@ export function RequireNonAdmin({ children }: { children: ReactNode }) {
     return <Navigate to={`/entrar?next=${encodeURIComponent(currentPath())}`} replace />;
   }
 
-  if (backendUser?.roles.includes('admin')) {
+  if (hasAdministrativeRole(backendUser?.roles)) {
     return <Navigate to="/painel/admin/home" replace />;
   }
 

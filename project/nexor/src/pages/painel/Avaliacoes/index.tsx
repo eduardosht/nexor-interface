@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, ClipboardList, Clock3, Star, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
@@ -13,6 +14,7 @@ import {
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import {
   BITEPLANER_REVIEW_TEMPLATES,
   type BiteplanerReviewFieldDefinition,
@@ -221,14 +223,12 @@ function getPendingSurveyContext(form: DemoWorkflowForm, order: DemoOrderSummary
 
 export function Avaliacoes() {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
+  const queryOwnerId = session?.user.id ?? 'anonymous';
   const [searchParams] = useSearchParams();
   const mode = getMode(searchParams.get('mode'));
   const copy = MODE_COPY[mode];
-  const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
-  const [forms, setForms] = useState<Array<{ order: DemoOrderSummary; form: DemoWorkflowForm }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [selectedMomentKey, setSelectedMomentKey] = useState(getDefaultMomentKey(copy));
   const [selectedSurvey, setSelectedSurvey] = useState<{ order: DemoOrderSummary; form: DemoWorkflowForm } | null>(null);
   const [surveyPayload, setSurveyPayload] = useState<Record<string, string>>({});
@@ -237,49 +237,38 @@ export function Avaliacoes() {
   const [surveySubmitting, setSurveySubmitting] = useState(false);
   const pendingCarouselRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
+  const reviewsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.reviews(mode, queryOwnerId),
+    queryFn: async () => {
+      const ordersResponse = await queryClient.fetchQuery({
+        queryKey: biteplanerQueryKeys.orders(mode, queryOwnerId),
+        queryFn: () => fetchOrders(mode, token),
+        staleTime: 60_000,
+      });
+      const formEntries = await Promise.all(
+        ordersResponse.orders.map(async (order) => {
+          const response = await queryClient.fetchQuery({
+            queryKey: biteplanerQueryKeys.workflowForms(order.id),
+            queryFn: () => fetchWorkflowForms(order.id, token),
+            staleTime: 5 * 60_000,
+          });
+          return response.forms.map((form) => ({ order, form }));
+        })
+      );
 
-    let active = true;
-
-    async function loadReviews() {
-      setLoading(true);
-      setError('');
-
-      try {
-        const ordersResponse = await fetchOrders(mode, token);
-        const formEntries = await Promise.all(
-          ordersResponse.orders.map(async (order) => {
-            const response = await fetchWorkflowForms(order.id, token);
-            return response.forms.map((form) => ({ order, form }));
-          })
-        );
-
-        if (!active) {
-          return;
-        }
-
-        setOrders(ordersResponse.orders);
-        setForms(formEntries.flat());
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar as avaliações agora.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadReviews();
-
-    return () => {
-      active = false;
-    };
-  }, [mode, token]);
+      return {
+        orders: ordersResponse.orders,
+        forms: formEntries.flat(),
+      };
+    },
+    enabled: Boolean(token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const orders = reviewsQuery.data?.orders ?? [];
+  const forms = reviewsQuery.data?.forms ?? [];
+  const loading = reviewsQuery.isLoading;
+  const error = reviewsQuery.isError ? 'Não foi possível carregar as avaliações agora.' : '';
 
   useEffect(() => {
     setSelectedMomentKey(getDefaultMomentKey(copy));
@@ -484,12 +473,25 @@ export function Avaliacoes() {
       setSurveySubmitting(true);
       setSurveyError('');
       const updatedForm = await submitWorkflowForm(selectedSurvey.order.id, selectedSurvey.form.id, payload, token);
-      setForms((current) =>
-        current.map((entry) =>
-          entry.form.id === updatedForm.id && entry.order.id === selectedSurvey.order.id
-            ? { ...entry, form: updatedForm }
-            : entry
-        )
+      queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
+        biteplanerQueryKeys.workflowForms(selectedSurvey.order.id),
+        (current) => ({
+          forms: (current?.forms ?? []).map((form) => (form.id === updatedForm.id ? updatedForm : form)),
+        })
+      );
+      queryClient.setQueryData<{ orders: DemoOrderSummary[]; forms: Array<{ order: DemoOrderSummary; form: DemoWorkflowForm }> }>(
+        biteplanerQueryKeys.reviews(mode, queryOwnerId),
+        (current) =>
+          current
+            ? {
+                ...current,
+                forms: current.forms.map((entry) =>
+                  entry.form.id === updatedForm.id && entry.order.id === selectedSurvey.order.id
+                    ? { ...entry, form: updatedForm }
+                    : entry
+                ),
+              }
+            : current
       );
       setSelectedMomentKey(updatedForm.templateKey);
       closeSurvey();

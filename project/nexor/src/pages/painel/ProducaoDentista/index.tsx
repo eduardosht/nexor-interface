@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, FileText, Search, Star } from 'lucide-react';
 import {
    Button,
   CheckboxField,
@@ -20,19 +21,18 @@ import {
   completeProductionRequest,
   fetchOrders,
   fetchWorkflowForms,
+  getStageLabel,
   getAuthToken,
   type DemoWorkflowForm,
   type DemoLicensedLabSelection,
-  type DemoOrderSummary,
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import { getLicensedLab, listLicensedLabsByCep } from '../../../features/demo/labLocations';
 import {
    FieldsGrid,
-  FormSection,
   PageStack,
 } from '../admin/styles';
-import { OrderStepHeader } from '../components/OrderStepHeader';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import { DentalAnamnesisRecord } from './DentalAnamnesisRecord';
 import * as S from './styles';
@@ -204,6 +204,19 @@ function getDentistSystemValues(backendUser: unknown, sessionEmail?: string | nu
   };
 }
 
+function formatOrderDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 function RatingStars({ score, label }: { score: number; label: string }) {
   const roundedScore = Math.round(score);
 
@@ -225,86 +238,67 @@ export function ProducaoDentista() {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { session, backendUser } = useAuth();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
-  const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
-  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [notice, setNotice] = useState('');
   const [pdfNotice, setPdfNotice] = useState('');
   const [pdfError, setPdfError] = useState('');
-  const [order, setOrder] = useState<DemoOrderSummary | null>(null);
-  const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
-  const [formsError, setFormsError] = useState('');
   const [draft, setDraft] = useState<ProductionRequestDraft>(EMPTY_DRAFT);
   const [currentStep, setCurrentStep] = useState(0);
   const [labCep, setLabCep] = useState('01310-100');
   const [visibleLabs, setVisibleLabs] = useState<DemoLicensedLabSelection[]>(() => listLicensedLabsByCep('01310-100'));
   const [selectedLab, setSelectedLab] = useState<DemoLicensedLabSelection | null>(null);
+  const queryOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
+
+  const ordersQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orders('dentist', queryOwnerId),
+    queryFn: () => fetchOrders('dentist', token),
+    enabled: Boolean(token && orderId),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const order = useMemo(
+    () => ordersQuery.data?.orders.find((item) => item.id === orderId) ?? null,
+    [orderId, ordersQuery.data?.orders]
+  );
+  const workflowFormsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForms(order?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForms(order!.id, token),
+    enabled: Boolean(token && order?.id),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const workflowForms = workflowFormsQuery.data?.forms ?? [];
+  const loading = ordersQuery.isLoading || (Boolean(order) && workflowFormsQuery.isLoading);
+  const error = actionError ||
+    (ordersQuery.isError
+      ? 'Não foi possível carregar a solicitação de produção da demo.'
+      : ordersQuery.isSuccess && !order
+        ? 'Não foi possível localizar essa ordem na fila do dentista.'
+        : '');
+  const formsError = workflowFormsQuery.isError
+    ? 'Não foi possível carregar o intake compartilhado desta ordem.'
+    : '';
 
   useEffect(() => {
-    if (!token || !orderId) {
+    if (!order) {
       return;
     }
 
-    let active = true;
+    const nextDraft = order.productionRequestDraft ?? EMPTY_DRAFT;
+    setDraft(nextDraft);
 
-    async function loadOrder() {
-      setLoading(true);
-      setError('');
-
-      try {
-        const response = await fetchOrders('dentist', token);
-        const nextOrder = response.orders.find((item) => item.id === orderId) ?? null;
-
-        if (!active) {
-          return;
-        }
-
-        if (!nextOrder) {
-          setError('Não foi possível localizar essa ordem na fila do dentista.');
-          setOrder(null);
-          return;
-        }
-
-        setOrder(nextOrder);
-        const nextDraft = nextOrder.productionRequestDraft ?? EMPTY_DRAFT;
-        setDraft(nextDraft);
-
-        try {
-          const formsResponse = await fetchWorkflowForms(nextOrder.id, token);
-          if (active) {
-            setWorkflowForms(formsResponse.forms);
-            setFormsError('');
-          }
-        } catch {
-          if (active) {
-            setFormsError('Não foi possível carregar o intake compartilhado desta ordem.');
-          }
-        }
-
-        if (nextDraft.selectedLabId) {
-          const lab = getLicensedLab(nextDraft.selectedLabId);
-          if (lab) {
-            setSelectedLab(lab);
-          }
-        }
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar a solicitação de produção da demo.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+    if (nextDraft.selectedLabId) {
+      const lab = getLicensedLab(nextDraft.selectedLabId);
+      if (lab) {
+        setSelectedLab(lab);
       }
+    } else {
+      setSelectedLab(null);
     }
-
-    void loadOrder();
-
-    return () => {
-      active = false;
-    };
-  }, [orderId, token]);
+  }, [order?.id]);
 
   const selectedLabId = draft.selectedLabId;
   const intakeForm = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
@@ -331,6 +325,8 @@ export function ProducaoDentista() {
   ];
   const currentStepData = STEP_DEFINITIONS[currentStep];
   const currentStepCompleted = stepCompletion[currentStep] ?? false;
+  const completedStepCount = stepCompletion.filter(Boolean).length;
+  const progressPercent = Math.round((completedStepCount / STEP_DEFINITIONS.length) * 100);
   const dentistSystemValues = useMemo(
     () => getDentistSystemValues(backendUser, session?.user.email),
     [backendUser, session?.user.email]
@@ -350,7 +346,12 @@ export function ProducaoDentista() {
   }
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
-    setWorkflowForms(nextForms);
+    if (order) {
+      queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
+        biteplanerQueryKeys.workflowForms(order.id),
+        { forms: nextForms }
+      );
+    }
 
     const nextIntakeForm = nextForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
     const nextDentistReviewCompleted = hasDentistComplement(nextIntakeForm);
@@ -374,7 +375,7 @@ export function ProducaoDentista() {
 
     setCompleting(true);
     setNotice('');
-    setError('');
+    setActionError('');
     setPdfError('');
 
     try {
@@ -384,6 +385,7 @@ export function ProducaoDentista() {
       }
       updateDraft({ anamnesisDownloaded: true });
       await completeProductionRequest(orderId, finalizedDraft, token);
+      await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orders('dentist', queryOwnerId) });
       navigate('/painel/biteplaner?mode=dentist', {
         replace: true,
         state: {
@@ -393,7 +395,7 @@ export function ProducaoDentista() {
         },
       });
     } catch {
-      setError('Não foi possível concluir o envio ao laboratório.');
+      setActionError('Não foi possível concluir o envio ao laboratório.');
     } finally {
       setCompleting(false);
     }
@@ -477,14 +479,6 @@ export function ProducaoDentista() {
 
   return (
     <PageStack>
-      <OrderStepHeader
-        title="Solicitação de produção"
-        description="Fluxo dedicado para o dentista preencher a documentação obrigatória, anexar os arquivos clínicos e selecionar o laboratório licenciado."
-        currentStep="laboratory"
-        order={order}
-        orderHelpText="Este pedido está com o dentista para completar a solicitação produtiva e liberar o envio ao laboratório."
-      />
-
       {loading ? (
         <S.LoadingStack aria-label="Carregando solicitação de produção">
           <SkeletonGrid cards={2} minCardWidth="260px" />
@@ -530,7 +524,7 @@ export function ProducaoDentista() {
               title="Falha na requisicao"
               message={error}
               onClose={() => {
-                setError('');
+                setActionError('');
               }}
             />
           ) : null}
@@ -538,56 +532,61 @@ export function ProducaoDentista() {
       ) : null}
 
       {order ? (
-        <>
+        <S.ProductionCard>
+          <S.ProductionHero>
+            <S.ProductionHeroCopy>
+              <S.HeroEyebrow>
+                <ClipboardCheck size={18} aria-hidden="true" />
+                Fluxo do dentista
+              </S.HeroEyebrow>
+              <S.ProductionTitle>Solicitação de produção</S.ProductionTitle>
+              <S.ProductionLead>
+                Complete a revisão clínica, gere a anamnese e envie somente os dados necessários ao laboratório licenciado.
+              </S.ProductionLead>
+            </S.ProductionHeroCopy>
+
+            <S.OrderContextCard data-testid="athlete-order-card">
+              <S.OrderContextHeader>
+                <S.OrderContextIcon aria-hidden="true">
+                  <FileText size={22} />
+                </S.OrderContextIcon>
+                <span>
+                  <S.ContextLabel>Pedido</S.ContextLabel>
+                  <S.ContextStrong>{order.displayId ?? order.id}</S.ContextStrong>
+                </span>
+              </S.OrderContextHeader>
+
+              <S.ContextGrid>
+                <S.ContextItem>
+                  <S.ContextLabel>Status atual</S.ContextLabel>
+                  <S.StatusBadge>{order.statusLabel ?? order.status}</S.StatusBadge>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Etapa atual</S.ContextLabel>
+                  <S.ContextValue>{getStageLabel(order)}</S.ContextValue>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Última atualização</S.ContextLabel>
+                  <S.ContextValue>{formatOrderDate(order.created_at)}</S.ContextValue>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Progresso</S.ContextLabel>
+                  <S.ContextValue>{progressPercent}% completo</S.ContextValue>
+                </S.ContextItem>
+              </S.ContextGrid>
+            </S.OrderContextCard>
+          </S.ProductionHero>
           <S.WizardShell>
-            <S.WizardSidebar data-testid="dentist-production-steps">
-              <S.StepList>
-                {STEP_DEFINITIONS.map((step, index) => {
-                  const completed = stepCompletion[index];
-                  const active = currentStep === index;
-                  const disabled = index > currentStep && !stepCompletion[index - 1];
-
-                  return (
-                    <li key={step.key}>
-                      <S.StepCard
-                        type="button"
-                        $active={active}
-                        $completed={completed}
-                        $disabled={disabled}
-                        onClick={() => {
-                          if (!disabled) {
-                            setCurrentStep(index);
-                          }
-                        }}
-                      >
-                        <S.StepBadge $active={active} $completed={completed} $disabled={disabled}>
-                          {index + 1}
-                        </S.StepBadge>
-                        <S.StepTop>
-                          <S.StepMeta $active={active} $completed={completed} $disabled={disabled}>
-                            {active ? 'Em preenchimento' : disabled ? 'Bloqueado' : step.shortLabel}
-                          </S.StepMeta>
-                          <S.StepStatusRow>
-                            <S.StepTitle>{step.label}</S.StepTitle>
-                          </S.StepStatusRow>
-                        </S.StepTop>
-                        <S.StepText>{step.description}</S.StepText>
-                      </S.StepCard>
-                    </li>
-                  );
-                })}
-              </S.StepList>
-            </S.WizardSidebar>
-
             <S.WizardContent>
               <S.StepContentHeader>
+                <S.StepKicker>Etapa {currentStep + 1} de {STEP_DEFINITIONS.length}</S.StepKicker>
                 <S.StepStatusRow>
                   <S.StepContentTitle>{currentStepData.label}</S.StepContentTitle>
                 </S.StepStatusRow>
                 <S.StepContentDescription>{currentStepData.description}</S.StepContentDescription>
               </S.StepContentHeader>
 
-              <FormSection padding="lg">
+              <S.FormPanel>
                 {currentStep === 0 ? (
                   <>
                     <WorkflowFormsPanel
@@ -694,7 +693,11 @@ export function ProducaoDentista() {
                         onChange={(event: FieldChangeEvent) => setLabCep(event.target.value)}
                       />
                       <S.SearchActionSlot>
-                        <Button type="button" onClick={handleSearchLabs}>
+                        <Button
+                          type="button"
+                          onClick={handleSearchLabs}
+                          trailingIcon={<Search size={16} aria-hidden="true" />}
+                        >
                           Buscar laboratórios
                         </Button>
                       </S.SearchActionSlot>
@@ -769,6 +772,7 @@ export function ProducaoDentista() {
                       variant="secondary"
                       disabled={currentStep === 0}
                       onClick={() => setCurrentStep((current) => Math.max(0, current - 1))}
+                      leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                     >
                       Voltar
                     </Button>
@@ -780,20 +784,26 @@ export function ProducaoDentista() {
                         type="button"
                         disabled={!currentStepCompleted}
                         onClick={handleNextStep}
+                        trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                       >
                         Próximo
                       </Button>
                     ) : null}
-                    <Button type="button" disabled={!canComplete || completing} onClick={() => void handleComplete()}>
+                    <Button
+                      type="button"
+                      disabled={!canComplete || completing}
+                      onClick={() => void handleComplete()}
+                      trailingIcon={<CheckCircle2 size={16} aria-hidden="true" />}
+                    >
                       {completing ? 'Finalizando...' : 'Finalizar'}
                     </Button>
                   </S.SecondaryActions>
                 </S.StepActions>
                 )}
-              </FormSection>
+              </S.FormPanel>
             </S.WizardContent>
           </S.WizardShell>
-        </>
+        </S.ProductionCard>
       ) : null}
     </PageStack>
   );

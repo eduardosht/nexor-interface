@@ -115,7 +115,7 @@ const Badge = styled.span<{ $tokens: BrandTokens; $tone: 'required' | 'optional'
   background: ${({ $tone }) => ($tone === 'required' ? '#dbeafe' : '#f0fdf4')};
   color: ${({ $tone }) => ($tone === 'required' ? '#1d4ed8' : '#15803d')};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -132,7 +132,7 @@ const ErrorText = styled.span<{ $tokens: BrandTokens }>`
   grid-column: 1 / -1;
   color: ${({ $tokens }) => $tokens.colors.danger};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 

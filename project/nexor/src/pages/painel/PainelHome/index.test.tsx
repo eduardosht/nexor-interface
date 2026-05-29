@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -136,24 +136,37 @@ describe('PainelHome', () => {
   });
 
   it('creates active customer role and sends the user to Biteplaner onboarding flow', async () => {
-    mockApiPost.mockResolvedValueOnce({
-      productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
-    });
+    mockApiPost
+      .mockResolvedValueOnce({
+        productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
+      })
+      .mockResolvedValueOnce({
+        order: { id: 'order-1', status: 'registration_started' },
+      });
     renderPage();
 
     fireEvent.click(await findEnabledCustomerAction());
 
     await waitFor(() => {
-      expect(mockApiPost).toHaveBeenCalledWith(
+      expect(mockApiPost).toHaveBeenNthCalledWith(
+        1,
         '/v1/account/products/biteplaner/roles/customer',
         {},
         'tok'
       );
+      expect(mockApiPost).toHaveBeenNthCalledWith(2, '/v1/orders', {}, 'tok');
       expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
     });
   });
 
-  it('replaces the acquisition CTA with order tracking when Biteplaner is already active', async () => {
+  it('keeps the acquisition CTA when Biteplaner is active but no order exists yet', async () => {
+    mockApiPost
+      .mockResolvedValueOnce({
+        productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
+      })
+      .mockResolvedValueOnce({
+        order: { id: 'order-1', status: 'registration_started' },
+      });
     renderPage(
       {},
       {
@@ -162,12 +175,21 @@ describe('PainelHome', () => {
       }
     );
 
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).length).toBeGreaterThan(0));
-    expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
+    const action = await findEnabledCustomerAction();
+    expect(screen.queryByRole('button', { name: /acompanhar sua ordem/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /acompanhar sua ordem/i })[0]);
+    fireEvent.click(action);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenNthCalledWith(
+        1,
+        '/v1/account/products/biteplaner/roles/customer',
+        {},
+        'tok'
+      );
+      expect(mockApiPost).toHaveBeenNthCalledWith(2, '/v1/orders', {}, 'tok');
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
+    });
   });
 
   it('replaces the acquisition CTA with order tracking when there is an order in progress', async () => {
@@ -214,11 +236,12 @@ describe('PainelHome', () => {
       }
     );
 
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true)
-    );
+    expect(await findEnabledCustomerAction()).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar parceria/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /solicitar cadastro de dentista/i })).toBeDisabled();
+    const pendingDentistCard = screen.getByText(/cadastro de dentista em an.lise/i).closest('article');
+    expect(pendingDentistCard).toBeInTheDocument();
+    expect(within(pendingDentistCard as HTMLElement).queryByText(/^solicitar cadastro$/i)).not.toBeInTheDocument();
+    expect(within(pendingDentistCard as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar cadastro de laborat/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /solicitar parceria/i }).closest('article')).toHaveAttribute(
       'aria-disabled',

@@ -30,20 +30,19 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - Após o envio do cadastro profissional do dentista, a Nexor deve informar explicitamente que ira verificar os dados antes de prosseguir com os proximos passos.
 - Solicitações de dentistas querendo se licenciar entram em uma fila no painel administrativo da Nexor, baseada na solicitação bruta enviada pelo formulário.
 - A Nexor Admin deve conseguir visualizar os dados preenchidos pelo dentista, aprovar ou recusar a solicitação, sem acessar dados clínicos de pacientes.
-- Aprovação do cadastro não significa dentista plenamente licenciado: ela libera apenas o onboarding de licenciamento no painel do dentista.
-- O dentista só fica operacionalmente selecionavel por usuários após concluir pagamento, contratos, curso, prova, contrato final e emissão do certificado Biteplaner.
-- O laboratório segue fluxo espelhado ao dentista: cadastro complementar, revisão Nexor Admin, pagamento, contrato de intencao, curso, prova, contrato final e certificado antes de ficar operacional.
+- No MVP atual, aprovação cadastral pela Nexor Admin já libera o dentista para operar no workspace, ter seus locais de atendimento selecionáveis por usuários e receber solicitações de consulta. O licenciamento completo com pagamento, contratos, curso, prova, contrato final e certificado fica preservado como evolução futura.
+- No MVP atual, aprovação cadastral pela Nexor Admin já libera o laboratório para operar no workspace. O licenciamento completo espelhado ao dentista fica preservado como evolução futura.
 - No onboarding do laboratório, o CNPJ é obrigatório, deve ter máscara e validação; a seção de local operacional deve coletar CEP, endereço, cidade, estado, telefone e horário, com consulta de CEP quando disponível. Complemento é opcional.
 - A plataforma não agenda consulta odontológica no MVP.
 - A seleção do dentista e do local de atendimento acontece antes do pagamento, para viabilizar a primeira consulta obrigatória.
 - O cliente/atleta não escolhe data ou horário pelo sistema; ele visualiza os dados do consultório para entrar em contato fora da plataforma.
-- Quando a consulta estiver combinada fora da plataforma, o cliente confirma "Consulta agendada" na tela de escolha do consultório. Essa ação salva o local escolhido e envia uma solicitação ao dentista licenciado daquele local.
+- Quando a consulta estiver combinada fora da plataforma, o cliente confirma "Consulta agendada" na tela de escolha do consultório. Essa ação salva o local escolhido e envia uma solicitação ao dentista aprovado daquele local.
 - Para evitar continuidade sem comunicação real com o consultório, a ordem só avança quando o dentista aceita a consulta agendada no painel.
 - A home do dentista não oferece mais a ação manual "vincular consulta" por e-mail ou telefone; a fila operacional do dentista deve exibir solicitações de consulta enviadas pelo cliente e ordens já aceitas pelo dentista.
 - Ao escolher a consulta clínica, o usuário também pode indicar o processo de licenciamento a um dentista de preferência ainda não licenciado, usando mensagem pronta por WhatsApp ou e-mail com link para `/parceiros#dentistas`.
 - A indicação de dentista de preferência pode iniciar o contato com esse profissional, mas não libera a escolha imediata da clínica ou do dentista enquanto o licenciamento não for concluído.
-- Para prosseguir com a ordem atual, o usuário precisa selecionar uma clínica já licenciada, pois o processo de licenciamento de um novo dentista pode demorar.
-- O vínculo operacional da consulta com cliente, ordem e dentista passa a depender de duas etapas: solicitação "Consulta agendada" feita pelo cliente sobre uma clínica já licenciada e aceite do dentista licenciado responsável.
+- Para prosseguir com a ordem atual, o usuário precisa selecionar uma clínica/local já aprovado, pois o processo de aprovação ou licenciamento de um novo dentista pode demorar.
+- O vínculo operacional da consulta com cliente, ordem e dentista passa a depender de duas etapas: solicitação "Consulta agendada" feita pelo cliente sobre uma clínica/local aprovado e aceite do dentista aprovado responsável.
 - A fila operacional do dentista deve exibir solicitações pendentes de aceite e ordens já vinculadas operacionalmente a esse dentista.
 - O usuário final cria ou usa uma conta Nexor com cadastro simples de e-mail e senha, normalmente a partir de link único de parceiro quando houver indicação Biteplaner.
 - Ao clicar em **Adquirir Biteplaner** dentro do painel, o perfil `customer` do produto fica ativo e a conta segue primeiro para o formulário `customer_new_user_onboarding`.
@@ -107,8 +106,8 @@ No MVP1, clientes do produto, categorizados como atletas, entram por fluxo públ
 - A primeira consulta odontológica acontece antes da cobrança do produto.
 - O pagamento só pode ser iniciado quando o dentista declara o usuário apto para utilizar o Biteplaner.
 - Quando o dentista declarar o usuário apto, a ordem entra em uma etapa operacional de preenchimento dentista antes do envio ao laboratório.
-- Somente dentistas licenciados e locais de atendimento vinculados a eles podem ser selecionados pelo usuário.
-- Cada dentista licenciado precisa ter cadastro ativo e aprovado pela operação/admin.
+- No MVP atual, somente dentistas aprovados pela operação/admin e locais de atendimento vinculados a eles podem ser selecionados pelo usuário.
+- Quando o licenciamento completo for ativado, a seleção pode passar a exigir certificado/licença ativa além da aprovação cadastral.
 - A consulta odontológica é obrigatória antes da produção.
 - O usuário pode ser considerado inapto para utilizar o produto.
 - Em caso de inaptidão declarada pelo dentista antes da cobrança, a jornada é encerrada sem pagamento do produto.
@@ -160,7 +159,7 @@ Resultado esperado:
 
 ### 2.1. Onboarding e licenciamento do dentista
 
-O dentista solicita o perfil Biteplaner dentro do painel Nexor, preenchendo dados profissionais, CRO, resumo profissional e dados obrigatórios de uma ou mais clínicas. Após o envio, o sistema deve exibir disclaimer informando que a Nexor ira verificar o cadastro antes dos proximos passos.
+O dentista solicita o perfil Biteplaner dentro do painel Nexor, preenchendo dados profissionais, CRO, resumo profissional e dados obrigatórios de uma ou mais clínicas. Cada clínica/local deve coletar se a clínica é adaptada por meio do campo obrigatório `Clínica adaptada?` com opções Sim e Não. Após o envio, o sistema deve exibir disclaimer informando que a Nexor ira verificar o cadastro antes dos proximos passos.
 
 Fluxo de revisão Nexor Admin:
 
@@ -170,7 +169,7 @@ Fluxo de revisão Nexor Admin:
 - em caso de recusa, o motivo fica registrado e o dentista é notificado
 - em caso de aprovação, o dentista recebe modal e notificação de sistema informando que o cadastro foi aprovado
 
-Fluxo após aprovação cadastral:
+Fluxo futuro de licenciamento completo após aprovação cadastral:
 
 - o dentista confirma o pagamento do licenciamento
 - após confirmação do pagamento, assina o Contrato de Intenção de Licenciamento
@@ -185,13 +184,11 @@ Fluxo após aprovação cadastral:
 
 Regras de liberação operacional:
 
-- aprovação cadastral libera o painel de onboarding do dentista, mas não libera seleção por usuários
-- pagamento confirmado não libera operação sozinho
-- assinatura do Contrato de Intenção não libera operação sozinho
-- curso concluído e prova aprovada não liberam operação sem Contrato de Licenciamento assinado
-- somente após assinatura do Contrato de Licenciamento e emissão do certificado o dentista ganha status de licenciado ativo
-- locais de atendimento do dentista só devem aparecer na seleção de usuários quando o dentista estiver licenciado ativo
-- todas as decisoes administrativas, pagamentos simulados, assinaturas, tentativas de prova, certificados e distratos devem compor histórico/auditoria
+- no MVP atual, aprovação cadastral pela Nexor Admin ativa o perfil operacional do dentista
+- locais de atendimento enviados e aprovados no cadastro profissional podem aparecer na seleção de usuários após essa aprovação
+- o workspace do dentista, a fila de aceite de consulta, as confirmações operacionais e as etapas clínicas ficam disponíveis para o dentista aprovado
+- pagamento, contratos, curso, prova, contrato final e certificado não bloqueiam a operação no MVP atual; esses marcos ficam como roadmap de licenciamento completo
+- todas as decisoes administrativas, pagamentos simulados, assinaturas, tentativas de prova, certificados e distratos devem compor histórico/auditoria quando essa evolução for ativada
 
 ### 2.2. Onboarding e licenciamento do laboratório
 
@@ -205,7 +202,7 @@ Fluxo de revisão Nexor Admin:
 - em caso de recusa, o motivo fica registrado e o laboratório é notificado
 - em caso de aprovação, o laboratório recebe modal e notificação de sistema informando que o cadastro foi aprovado
 
-Fluxo após aprovação cadastral:
+Fluxo futuro de licenciamento completo após aprovação cadastral:
 
 - o laboratório confirma o pagamento do licenciamento
 - após confirmação do pagamento, assina o Contrato de Intenção de Licenciamento
@@ -220,13 +217,10 @@ Fluxo após aprovação cadastral:
 
 Regras de liberação operacional:
 
-- aprovação cadastral libera o painel de onboarding do laboratório, mas não libera operação produtiva plena
-- pagamento confirmado não libera operação sozinho
-- assinatura do Contrato de Intenção não libera operação sozinho
-- curso concluído e prova aprovada não liberam operação sem Contrato de Licenciamento assinado
-- somente após assinatura do Contrato de Licenciamento e emissão do certificado o laboratório ganha status de licenciado ativo
-- laboratórios só devem aparecer como opções de produção quando estiverem licenciados ativos
-- todas as decisoes administrativas, pagamentos simulados, assinaturas, tentativas de prova, certificados e distratos devem compor histórico/auditoria
+- no MVP atual, aprovação cadastral pela Nexor Admin ativa o perfil operacional do laboratório
+- o workspace do laboratório e a fila de produção ficam disponíveis para laboratório aprovado
+- pagamento, contratos, curso, prova, contrato final e certificado não bloqueiam a operação produtiva no MVP atual; esses marcos ficam como roadmap de licenciamento completo
+- todas as decisoes administrativas, pagamentos simulados, assinaturas, tentativas de prova, certificados e distratos devem compor histórico/auditoria quando essa evolução for ativada
 
 ### 3. Onboarding, pre-requisito e avaliação inicial compartilhada Biteplaner
 
@@ -256,34 +250,35 @@ Resultado esperado:
 
 ### 4. Escolha do dentista e local de atendimento
 
-Depois da conta Nexor, da escolha do produto, da inscrição no Biteplaner e da conclusão do pre-requisito com avaliação inicial compartilhada e consentimentos, o usuário escolhe um dentista licenciado e um local de atendimento para realizar a primeira consulta.
+Depois da conta Nexor, da escolha do produto, da inscrição no Biteplaner e da conclusão do pre-requisito com avaliação inicial compartilhada e consentimentos, o usuário escolhe um dentista aprovado operacionalmente e um local de atendimento para realizar a primeira consulta.
 
 Como alternativa, o usuário pode indicar o processo de licenciamento a um dentista de preferência que ainda não faça parte da rede licenciada. Nessa ação, o usuário usa uma mensagem pronta em seu nome por WhatsApp ou e-mail, com link para `/parceiros#dentistas`, para que o dentista entenda o processo e os benefícios de se tornar licenciado.
 
 Resultado esperado:
 
 - usuário seleciona dentista e local de atendimento
+- se o cliente informou que necessita de atendimento em clínica adaptada, a seleção continua exibindo todos os locais aprovados, mas qualquer clínica/local não adaptado deve trazer um disclaimer bem evidente antes da escolha ou confirmação
 - usuário pode indicar o processo de licenciamento ao dentista de preferência por WhatsApp ou e-mail, com mensagem pronta e link para `/parceiros#dentistas`
 - o dentista indicado entende o processo e os benefícios pela página de parceiros antes de eventual cadastro/licenciamento
 - plataforma valida que o dentista está ativo e aprovado
 - enquanto o licenciamento não for concluído, o usuário não pode escolher essa clínica/dentista indicado como local valido da consulta
-- para seguir com a ordem atual, o usuário precisa escolher uma clínica já licenciada
+- para seguir com a ordem atual, o usuário precisa escolher uma clínica/local já aprovado
 - plataforma exibe os dados de contato do local selecionado
 - o usuário usa esses dados para contato direto fora da plataforma
 - quando a consulta estiver combinada, o usuário confirma "Consulta agendada" no sistema
-- essa confirmação envia a solicitação ao dentista licenciado do local selecionado e coloca a ordem como aguardando aceite do dentista
+- essa confirmação envia a solicitação ao dentista aprovado do local selecionado e coloca a ordem como aguardando aceite do dentista
 - o dentista precisa aceitar a consulta agendada para criar o vínculo operacional e permitir a continuidade da ordem
 - a consulta ainda não é considerada realizada até existir match/confirmação operacional entre paciente e dentista
 
 ### 5. Consulta inicial e confirmação operacional
 
-Após combinar a consulta fora da plataforma, o cliente confirma "Consulta agendada" no local selecionado. A partir dessa solicitação, o sistema exibe a ordem na fila operacional do dentista licenciado como pendente de aceite. Quando o dentista aceita, o sistema registra que a avaliação inicial está em andamento.
+Após combinar a consulta fora da plataforma, o cliente confirma "Consulta agendada" no local selecionado. A partir dessa solicitação, o sistema exibe a ordem na fila operacional do dentista aprovado como pendente de aceite. Quando o dentista aceita, o sistema registra que a avaliação inicial está em andamento.
 
 Resultado esperado:
 
-- cliente confirma consulta agendada para uma clínica/licenciado já selecionado
+- cliente confirma consulta agendada para uma clínica/local aprovado já selecionado
 - sistema valida se a ordem ainda está aguardando consulta inicial e se a clínica está licenciada
-- sistema envia a solicitação de consulta ao dentista licenciado do local selecionado
+- sistema envia a solicitação de consulta ao dentista aprovado do local selecionado
 - dentista aceita a consulta agendada antes da continuidade da ordem
 - sistema vincula operacionalmente a ordem ao dentista após o aceite
 - usuário e dentista confirmam posteriormente que o atendimento foi realizado; quando as duas confirmacoes existem, a consulta fica confirmada
@@ -401,7 +396,7 @@ Resultado esperado:
 | `Cadastro iniciado` | Usuário acessou a Nexor com contexto Biteplaner e iniciou entrada/cadastro. |
 | `Pre-requisito pendente` | Conta Nexor criada e inscrição Biteplaner iniciada, mas o formulário obrigatório anterior a consulta ainda não foi concluído. |
 | `Aguardando consulta inicial` | Produto escolhido e triagem concluída, mas a primeira consulta ainda não foi vinculada/confirmada. |
-| `Aguardando aceite do dentista` | Cliente informou consulta agendada em uma clínica licenciada, mas o dentista ainda precisa aceitar antes da continuidade. |
+| `Aguardando aceite do dentista` | Cliente informou consulta agendada em uma clínica/local aprovado, mas o dentista ainda precisa aceitar antes da continuidade. |
 | `Aguardando decisão clínica` | Consulta inicial em andamento ou concluída, aguardando o desfecho do dentista. |
 | `Aguardando pagamento` | Usuário foi declarado apto, mas o pagamento ainda não foi confirmado. |
 | `Aguardando preenchimento dentista` | Usuário foi declarado apto, mas o dentista ainda não concluiu a solicitação de produção e os anexos obrigatórios para envio ao laboratório. |

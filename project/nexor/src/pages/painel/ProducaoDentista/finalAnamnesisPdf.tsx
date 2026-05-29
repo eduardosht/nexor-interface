@@ -30,6 +30,15 @@ function value(rawValue: unknown): string {
   return String(rawValue);
 }
 
+function dateValue(rawValue: unknown): string {
+  if (typeof rawValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    const [year, month, day] = rawValue.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  return value(rawValue);
+}
+
 function checkText(raw: unknown) {
   return value(raw) === 'Sim' ? '(x) Sim   ( ) Não' : value(raw) === 'Não' ? '( ) Sim   (x) Não' : '( ) Sim   ( ) Não';
 }
@@ -331,7 +340,8 @@ function FinalAnamnesisDocument({
 }) {
   const customer = getPayloadSection(intakeForm, 'customer');
   const dentist = getPayloadSection(intakeForm, 'dentist');
-  const generatedAt = new Date().toLocaleDateString('pt-BR');
+  const consultationDate = dateValue(dentist.consultationDate);
+  const generatedAt = consultationDate !== missingValue ? consultationDate : new Date().toLocaleDateString('pt-BR');
   const patientName = value(customer.fullName ?? order.customer?.full_name);
 
   return (

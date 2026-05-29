@@ -1,6 +1,51 @@
 import styled, { css, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import {
+  biteplanerButtonHoverStyles,
+  biteplanerButtonSurfaceStyles,
+  biteplanerFormButtonStyles,
+} from '../styles/biteplanerFormButton';
+
+type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+
+const workspaceHeroBackground = (mode: WorkspaceHeroMode | undefined, fallback: string) => {
+  switch (mode) {
+    case 'partner':
+      return `radial-gradient(circle at 88% 16%, rgba(34, 197, 94, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(20, 184, 166, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 251, 0.99) 0%, rgba(239, 253, 246, 0.94) 58%, rgba(236, 253, 245, 0.92) 100%),
+    ${fallback}`;
+    case 'dentist':
+      return `radial-gradient(circle at 88% 16%, rgba(14, 165, 233, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(45, 212, 191, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 255, 0.99) 0%, rgba(239, 250, 255, 0.94) 58%, rgba(236, 254, 255, 0.9) 100%),
+    ${fallback}`;
+    case 'lab':
+      return `radial-gradient(circle at 88% 16%, rgba(124, 58, 237, 0.16), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(252, 251, 255, 0.99) 0%, rgba(245, 243, 255, 0.94) 58%, rgba(239, 246, 255, 0.9) 100%),
+    ${fallback}`;
+    default:
+      return `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
+    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
+    ${fallback}`;
+  }
+};
+
+const workspaceHeroAccent = (mode: WorkspaceHeroMode | undefined) => {
+  switch (mode) {
+    case 'partner':
+      return '#16a34a';
+    case 'dentist':
+      return '#0891b2';
+    case 'lab':
+      return '#7c3aed';
+    default:
+      return '#f59e0b';
+  }
+};
 
 export const Page = styled.div`
   display: grid;
@@ -49,7 +94,7 @@ export const RoleTabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-export const Hero = styled.section<{ $showcase?: boolean }>`
+export const Hero = styled.section<{ $showcase?: boolean; $mode?: WorkspaceHeroMode }>`
   display: grid;
   grid-template-columns: ${({ $showcase }) => ($showcase ? 'minmax(0, 1fr) minmax(320px, 0.9fr)' : '1fr')};
   align-items: ${({ $showcase }) => ($showcase ? 'center' : 'stretch')};
@@ -58,12 +103,9 @@ export const Hero = styled.section<{ $showcase?: boolean }>`
   padding: ${({ $showcase }) => ($showcase ? '38px 46px' : '24px')};
   border-radius: ${({ $showcase }) => ($showcase ? '18px' : '16px')};
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ $showcase, theme }) =>
+  background: ${({ $showcase, $mode, theme }) =>
     $showcase
-      ? `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
-    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
-    ${theme.colors.bgElevated}`
+      ? workspaceHeroBackground($mode, theme.colors.bgElevated)
       : theme.colors.bgElevated};
   box-shadow: ${({ $showcase }) => ($showcase ? '0 18px 48px rgba(15, 23, 42, 0.07)' : 'none')};
   overflow: hidden;
@@ -186,17 +228,17 @@ export const HeroChartLine = styled.span`
   transform: skewY(-16deg);
 `;
 
-export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean }>`
+export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean; $mode?: WorkspaceHeroMode }>`
   position: absolute;
   left: ${({ $left }) => $left};
   top: ${({ $top }) => $top};
   width: ${({ $active }) => ($active ? '34px' : '10px')};
   height: ${({ $active }) => ($active ? '34px' : '10px')};
   border-radius: 999px;
-  border: ${({ $active }) => ($active ? '8px solid rgba(245, 158, 11, 0.56)' : '2px solid rgba(15, 23, 42, 0.66)')};
-  background: ${({ $active }) => ($active ? '#f59e0b' : '#fff')};
+  border: ${({ $active, $mode }) => ($active ? `8px solid ${workspaceHeroAccent($mode)}66` : '2px solid rgba(15, 23, 42, 0.66)')};
+  background: ${({ $active, $mode }) => ($active ? workspaceHeroAccent($mode) : 'rgba(255, 255, 255, 0.96)')};
   transform: translate(-50%, -50%);
-  box-shadow: ${({ $active }) => ($active ? '0 0 0 4px rgba(245, 158, 11, 0.2)' : 'none')};
+  box-shadow: ${({ $active, $mode }) => ($active ? `0 0 0 4px ${workspaceHeroAccent($mode)}24` : 'none')};
 `;
 
 export const HeroFloatingCard = styled.div`
@@ -222,21 +264,30 @@ export const HeroFloatingCard = styled.div`
   }
 
   strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 13px;
     font-weight: 600;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
-export const HeroFloatingIcon = styled.span`
+export const HeroFloatingIcon = styled.span<{ $mode?: WorkspaceHeroMode; $tone?: 'success' | 'warning' | 'neutral' }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: #dcfce7;
-  color: #16a34a;
+  background: ${({ $tone, $mode }) =>
+    $tone === 'warning'
+      ? 'rgba(245, 158, 11, 0.14)'
+      : $tone === 'neutral'
+        ? 'rgba(148, 163, 184, 0.16)'
+        : `${workspaceHeroAccent($mode)}18`};
+  color: ${({ $tone, $mode }) =>
+    $tone === 'warning' ? '#d18a00' : $tone === 'neutral' ? '#64748b' : workspaceHeroAccent($mode)};
 `;
 
 export const PartnerHeroVisual = styled.div`
@@ -1129,7 +1180,7 @@ export const StatCard = styled.article`
 
 export const StatLabel = styled.span`
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1236,7 +1287,7 @@ export const ReferralField = styled.div`
   min-width: 0;
 
   > span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1574,6 +1625,42 @@ export const AthleteOrderHighlight = styled.article`
   }
 `;
 
+export const AthletePendingActionsPanel = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(21, 128, 61, 0.28);
+  background:
+    radial-gradient(circle at 6% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.96));
+
+  @media (max-width: 720px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const AthletePendingActionsCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const AthletePendingActionButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+
+  @media (max-width: 720px) {
+    width: 100%;
+  }
+`;
+
 export const AthleteOrderAvatar = styled.span`
   display: inline-flex;
   align-items: center;
@@ -1622,7 +1709,7 @@ export const SectionStack = styled.div`
 
 export const DentistStatusBar = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+  grid-template-columns: minmax(300px, 1.35fr) minmax(220px, 0.75fr) minmax(220px, 0.9fr);
   gap: 28px;
   padding: 28px 32px;
   border-radius: 16px;
@@ -1631,12 +1718,13 @@ export const DentistStatusBar = styled.section`
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 
   @media (max-width: 1280px) {
+    grid-template-columns: minmax(260px, 1fr) minmax(180px, 0.7fr) minmax(180px, 0.8fr);
     gap: 12px;
     padding: 16px;
     border-radius: 12px;
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
     padding: 14px;
   }
@@ -1694,6 +1782,12 @@ export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' 
   overflow-wrap: anywhere;
 `;
 
+export const DentistStatusDescription = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
 export const DentistStatusDot = styled.span<{ $tone: 'success' | 'warning' | 'neutral' }>`
   width: 9px;
   height: 9px;
@@ -1749,7 +1843,7 @@ export const CourseTabButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
 
   span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1767,7 +1861,7 @@ export const CourseCompletionMark = styled.small`
   align-items: center;
   gap: 5px;
   width: fit-content;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1936,6 +2030,7 @@ export const InlineForm = styled.form`
   grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) auto;
   gap: 12px;
   align-items: end;
+  ${biteplanerFormButtonStyles}
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -2071,7 +2166,43 @@ export const LinkPreview = styled.input`
 export const ModalActions = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
+
+  @media (max-width: 560px) {
+    justify-content: stretch;
+
+    > button,
+    > a {
+      width: 100%;
+    }
+  }
+`;
+
+export const ModalSecondaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  min-height: 44px;
+  padding: 0 18px;
+  border-color: #15803d;
+  background: transparent;
+  color: #15803d;
+  box-shadow: none;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    border-color: #166534;
+    background: rgba(21, 128, 61, 0.08);
+    color: #166534;
+    box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
+  }
+`;
+
+export const ModalPrimaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  min-height: 44px;
+  padding: 0 20px;
 `;
 
 export const ModalActionLink = styled(motion.a)`
@@ -2124,7 +2255,7 @@ export const DocumentationItem = styled.div`
 `;
 
 export const DocumentationLabel = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2182,7 +2313,7 @@ export const SimpleTable = styled.table`
   }
 
   th {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;

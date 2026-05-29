@@ -20,18 +20,18 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const sizeStyles: Record<ButtonSize, ReturnType<typeof css>> = {
   sm: css`
-    min-height: 36px;
-    padding: 8px 14px;
-    font-size: 11px;
-  `,
-  md: css`
-    min-height: 44px;
-    padding: 11px 18px;
+    min-height: 40px;
+    padding: 9px 16px;
     font-size: 13px;
   `,
+  md: css`
+    min-height: 46px;
+    padding: 12px 20px;
+    font-size: 14px;
+  `,
   lg: css`
-    min-height: 50px;
-    padding: 13px 22px;
+    min-height: 52px;
+    padding: 14px 24px;
     font-size: 14px;
   `,
 };
@@ -189,11 +189,17 @@ const StyledButton = styled.button<{
   justify-content: center;
   gap: 8px;
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
+  max-width: 100%;
+  min-width: 0;
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   font-family: ${({ $tokens }) => $tokens.fonts.display};
   font-weight: 400;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
   cursor: pointer;
   transition:
     background ${({ $tokens }) => $tokens.motion.base} ease,
@@ -229,12 +235,23 @@ const Content = styled.span`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  line-height: inherit;
+  overflow-wrap: normal;
+  white-space: inherit;
+  text-wrap: nowrap;
+
+  svg {
+    flex: 0 0 auto;
+  }
 `;
 
 export function Button({
   variant = 'primary',
   tone = 'default',
   size = 'md',
+  type = 'button',
   fullWidth = false,
   loading = false,
   leadingIcon,
@@ -252,6 +269,8 @@ export function Button({
       $tone={tone}
       $size={size}
       $fullWidth={fullWidth}
+      data-variant={variant}
+      type={type}
       disabled={disabled || loading}
       {...rest}
     >

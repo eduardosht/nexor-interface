@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { pageContainer } from '../../styles/layout';
 
 export const FooterEl = styled.footer`
   background: #f5f5f5;
@@ -7,9 +8,8 @@ export const FooterEl = styled.footer`
 `;
 
 export const Main = styled.div`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
-  padding: 34px 48px 30px;
+  ${pageContainer}
+  padding: 34px 0 30px;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   gap: 64px;
@@ -17,7 +17,8 @@ export const Main = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr 1fr;
-    padding: 48px 24px 40px;
+    padding-top: 48px;
+    padding-bottom: 40px;
     gap: 36px;
   }
 
@@ -76,10 +77,10 @@ export const NavLink = styled(Link)`
 `;
 
 export const Bottom = styled.div`
+  ${pageContainer}
   border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  padding: 16px 48px;
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
+  padding-top: 16px;
+  padding-bottom: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -87,7 +88,8 @@ export const Bottom = styled.div`
 
   @media (max-width: 768px) {
     flex-direction: column;
-    padding: 20px 24px;
+    padding-top: 20px;
+    padding-bottom: 20px;
     text-align: center;
   }
 `;

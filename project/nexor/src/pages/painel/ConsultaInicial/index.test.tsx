@@ -24,6 +24,10 @@ vi.mock('../../../lib/api', () => ({
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="consultation-map">{children}</div>,
   TileLayer: () => <div data-testid="consultation-tiles" />,
+  useMap: () => ({
+    fitBounds: vi.fn(),
+    setView: vi.fn(),
+  }),
   Marker: ({
     children,
     eventHandlers,
@@ -165,7 +169,29 @@ describe('ConsultaInicial', () => {
       )
     );
     expect(await screen.findByText(/aguardando o dentista aceitar a ordem via sistema/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /consulta agendada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando aceite/i })).not.toBeInTheDocument();
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps only the informed consultation message after the athlete already confirmed scheduling', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          ...scheduledOrder(),
+          status: 'awaiting_dentist_acceptance',
+          statusLabel: 'Aguardando aceite do dentista',
+          stage: 'dentist_acceptance_pending',
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/consulta informada com sucesso/i)).toBeInTheDocument();
+    expect(screen.getByText(/aguardando o dentista aceitar a ordem via sistema/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /consulta agendada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando aceite/i })).not.toBeInTheDocument();
   });
 
   it('offers ready WhatsApp and e-mail messages to indicate dentist licensing without unlocking the current order', async () => {

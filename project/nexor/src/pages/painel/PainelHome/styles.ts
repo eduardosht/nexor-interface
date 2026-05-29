@@ -516,7 +516,7 @@ export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neu
   align-items: center;
   padding: 4px 10px;
   border-radius: 4px;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -532,7 +532,7 @@ export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neu
 
 export const RoleActionButton = styled.button`
   width: 100%;
-  min-height: 44px;
+  min-height: 50px;
   margin-top: 4px;
   padding: 14px 0 0;
   border: 0;
@@ -546,8 +546,20 @@ export const RoleActionButton = styled.button`
   gap: 16px;
   font-size: 0.9rem;
   font-weight: 800;
+  line-height: 1.2;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  svg {
+    flex: 0 0 auto;
+  }
 
   &:hover:not(:disabled) {
     color: ${bp.accentSupport};
@@ -556,6 +568,17 @@ export const RoleActionButton = styled.button`
   &:disabled {
     cursor: default;
     color: ${({ theme }) => theme.colors.textSecondary};
+  }
+
+  @media (max-width: 640px) {
+    justify-content: center;
+    padding-top: 12px;
+    text-align: center;
+
+    span {
+      overflow: visible;
+      text-overflow: clip;
+    }
   }
 `;
 

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { useDesignSystem } from '../provider';
 import type { BrandTokens } from '../tokens';
@@ -39,6 +39,9 @@ export interface SelectProps {
   name?: string;
   required?: boolean;
   onBlur?: () => void;
+  leadingIcon?: ReactNode;
+  className?: string;
+  ariaLabel?: string;
 }
 
 const Wrapper = styled.div<{ $tokens: BrandTokens }>`
@@ -52,10 +55,8 @@ const Wrapper = styled.div<{ $tokens: BrandTokens }>`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
@@ -132,6 +133,19 @@ const TriggerText = styled.span<{ $tokens: BrandTokens; $placeholder: boolean; $
   text-overflow: ellipsis;
   color: ${({ $tokens, $placeholder, $disabled }) =>
     $disabled ? $tokens.colors.textSoft : $placeholder ? $tokens.colors.textMuted : $tokens.colors.text};
+`;
+
+const LeadingIconWrap = styled.span<{ $tokens: BrandTokens; $disabled: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ $tokens, $disabled }) => ($disabled ? $tokens.colors.textSoft : $tokens.colors.textMuted)};
+  flex: 0 0 auto;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 `;
 
 const ChevronWrap = styled.span<{ $open: boolean; $tokens: BrandTokens }>`
@@ -212,7 +226,7 @@ const OptionLabel = styled.span`
 `;
 
 const OptionDescription = styled.span<{ $tokens: BrandTokens }>`
-  font-size: 11px;
+  font-size: 12px;
   color: ${({ $tokens }) => $tokens.colors.textSoft};
   line-height: 1.4;
 `;
@@ -234,7 +248,7 @@ const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
   color: ${({ $tokens, $tone }) =>
     $tone === 'error' ? $tokens.colors.danger : $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -250,6 +264,9 @@ export function Select({
   disabled = false,
   required = false,
   onBlur,
+  leadingIcon,
+  className,
+  ariaLabel,
 }: SelectProps) {
   const { tokens } = useDesignSystem();
   const autoId = useId();
@@ -278,7 +295,7 @@ export function Select({
   }, []);
 
   return (
-    <Wrapper $tokens={tokens} ref={wrapperRef}>
+    <Wrapper $tokens={tokens} ref={wrapperRef} className={className}>
       {label ? (
         <Label $tokens={tokens} htmlFor={fieldId}>
           {label}
@@ -297,8 +314,14 @@ export function Select({
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
+          aria-label={label ? undefined : ariaLabel}
           disabled={disabled}
         >
+          {leadingIcon ? (
+            <LeadingIconWrap $tokens={tokens} $disabled={disabled}>
+              {leadingIcon}
+            </LeadingIconWrap>
+          ) : null}
           <TriggerText $tokens={tokens} $placeholder={!selectedOption} $disabled={disabled}>
             {selectedOption?.label ?? placeholder}
           </TriggerText>
@@ -309,7 +332,7 @@ export function Select({
 
         {open ? (
           <Dropdown $tokens={tokens}>
-            <OptionsList id={listboxId} role="listbox" aria-label={label ?? placeholder}>
+            <OptionsList id={listboxId} role="listbox" aria-label={label ?? ariaLabel ?? placeholder}>
               {options.map((option) => {
                 const selected = option.value === value;
 

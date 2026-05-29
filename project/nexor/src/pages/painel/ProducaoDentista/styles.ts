@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { biteplanerFormButtonStyles } from '../styles/biteplanerFormButton';
 
 export const Banner = styled.div`
   padding: 16px 18px;
@@ -15,198 +16,172 @@ export const LoadingStack = styled.div`
   gap: 16px;
 `;
 
-export const WizardShell = styled.section`
+export const ProductionCard = styled.section`
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  gap: 0;
-  border-radius: 20px;
+  gap: 28px;
+  padding: 38px 34px 30px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
-  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(34, 197, 94, 0.12), transparent 26%),
+    linear-gradient(180deg, rgba(248, 252, 255, 0.96) 0%, rgba(255, 255, 255, 0) 46%),
+    ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
 
-  @media (max-width: 1440px) {
-    grid-template-columns: 1fr;
-    overflow: visible;
+  @media (max-width: 920px) {
+    gap: 22px;
+    padding: 24px;
   }
 
-  @media (max-width: 1280px) {
-    border-radius: 14px;
-  }
-
-  @media (max-width: 980px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-export const WizardSidebar = styled.aside`
-  position: relative;
-  padding: 28px 22px;
-  border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: linear-gradient(180deg, rgba(250, 250, 250, 0.96), rgba(244, 244, 244, 0.96));
-
-  @media (max-width: 1440px) {
-    position: sticky;
-    top: 0;
-    z-index: 4;
-    padding: 10px 12px;
-    border-right: none;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
-    border-radius: 20px 20px 0 0;
-    background: rgba(250, 250, 250, 0.96);
-    backdrop-filter: blur(12px);
-  }
-
-  @media (max-width: 1280px) {
-    padding: 8px 10px;
-    border-radius: 14px 14px 0 0;
-  }
-
-  @media (max-width: 980px) {
-    border-right: none;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  @media (max-width: 560px) {
+    padding: 18px;
   }
 `;
 
-export const StepList = styled.ol`
-  margin: 0;
-  padding: 0;
-  list-style: none;
+export const ProductionHero = styled.header`
   display: grid;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
+  align-items: start;
+  gap: 28px;
 
-  @media (max-width: 1440px) {
-    grid-template-columns: repeat(4, minmax(150px, 1fr));
-    overflow-x: auto;
-    padding-bottom: 2px;
-  }
-
-  @media (max-width: 1280px) {
-    gap: 6px;
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
   }
 `;
 
-export const StepCard = styled.button<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
+export const ProductionHeroCopy = styled.div`
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+`;
+
+export const HeroEyebrow = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  color: #008d3f;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+`;
+
+export const ProductionTitle = styled.h1`
+  margin: 0;
+  color: #07152f;
+  font-size: 2rem;
+  font-weight: 950;
+  line-height: 1.1;
+
+  @media (max-width: 640px) {
+    font-size: 1.75rem;
+    line-height: 1.08;
+  }
+`;
+
+export const ProductionLead = styled.p`
+  max-width: 680px;
+  margin: 0;
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.55;
+`;
+
+export const OrderContextCard = styled.section`
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+`;
+
+export const OrderContextHeader = styled.div`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 14px;
-  text-align: left;
-  border: 1px solid
-    ${({ $active, $completed, theme }) =>
-    $active ? theme.colors.textPrimary : $completed ? '#86D39D' : theme.colors.borderDefault};
-  border-radius: 14px;
-  background: ${({ $active, $completed, theme }) =>
-    $active ? theme.colors.bgBase : $completed ? '#ECFDF3' : 'transparent'};
-  box-shadow: ${({ $active }) => ($active ? '0 10px 24px rgba(23, 23, 23, 0.06)' : 'none')};
-  opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
-  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  transition:
-    background 180ms ease,
-    box-shadow 180ms ease,
-    opacity 180ms ease,
-    transform 120ms ease;
-
-  &:hover {
-    transform: ${({ $disabled }) => ($disabled ? 'none' : 'translateX(2px)')};
-  }
-
-  @media (max-width: 1440px) {
-    min-height: 100%;
-    gap: 4px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    box-shadow: ${({ $active }) => ($active ? '0 6px 16px rgba(23, 23, 23, 0.06)' : 'none')};
-
-    &:hover {
-      transform: ${({ $disabled }) => ($disabled ? 'none' : 'translateY(-1px)')};
-    }
-  }
-
-  @media (max-width: 1280px) {
-    padding: 8px 10px;
-  }
-`;
-
-export const StepTop = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  gap: 12px;
   min-width: 0;
 `;
 
-export const StepBadge = styled.span<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
+export const OrderContextIcon = styled.span`
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #d8ffe9 0%, #f3fff8 100%);
+  color: #008d3f;
+`;
+
+export const ContextGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ContextItem = styled.div`
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.68);
+`;
+
+export const ContextLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 700;
+`;
+
+export const ContextStrong = styled.strong`
+  display: block;
+  color: #07152f;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+`;
+
+export const ContextValue = styled.span`
+  color: #07152f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+`;
+
+export const StatusBadge = styled.span`
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 156, 74, 0.24);
   border-radius: 999px;
-  font-size: 12px;
+  background: #f0fdf4;
+  color: #008d3f;
+  font-size: 13px;
   font-weight: 800;
-  border: 1px solid
-    ${({ $active, $completed, theme }) =>
-    $active || $completed ? theme.colors.textPrimary : theme.colors.borderDefault};
-  background: ${({ $active, $completed, theme }) =>
-    $active || $completed ? theme.colors.textPrimary : theme.colors.bgElevated};
-  color: ${({ $active, $completed, theme }) =>
-    $active || $completed ? theme.colors.bgBase : theme.colors.textPrimary};
-  opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
-  flex: 0 0 auto;
-
-  @media (max-width: 1440px) {
-    width: 24px;
-    height: 24px;
-    font-size: 11px;
-  }
 `;
 
-export const StepMeta = styled.span<{ $active: boolean; $completed: boolean; $disabled: boolean }>`
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ $active, $completed, $disabled, theme }) => {
-    if ($disabled) {
-      return theme.colors.textSoft;
-    }
-
-    if ($active) {
-      return theme.colors.textPrimary;
-    }
-
-    if ($completed) {
-      return theme.colors.textSecondary;
-    }
-
-    return theme.colors.textSecondary;
-  }};
-`;
-
-export const StepTitle = styled.strong`
-  font-size: 14px;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-export const StepText = styled.span`
-  grid-column: 2;
-  font-size: 12px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 1440px) {
-    display: none;
-  }
+export const WizardShell = styled.section`
+  display: grid;
+  gap: 18px;
 `;
 
 export const WizardContent = styled.div`
   display: grid;
-  gap: 24px;
-  padding: 28px;
-  background: ${({ theme }) => theme.colors.bgBase};
+  gap: 18px;
+  padding: 0;
+  background: transparent;
 
   @media (max-width: 1280px) {
     gap: 14px;
@@ -216,15 +191,36 @@ export const WizardContent = styled.div`
 
 export const StepContentHeader = styled.div`
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  padding: 26px 32px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 720px) {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
 `;
 
 export const StepContentTitle = styled.h3`
   margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: #07152f;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.22;
+
+  @media (max-width: 720px) {
+    font-size: 20px;
+  }
+`;
+
+export const StepKicker = styled.span`
+  color: #008d3f;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
 `;
 
 export const StepContentDescription = styled.p`
@@ -233,6 +229,18 @@ export const StepContentDescription = styled.p`
   font-size: 14px;
   line-height: 1.7;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const FormPanel = styled.section`
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+
+  @media (max-width: 1280px) {
+    gap: 14px;
+  }
 `;
 
 export const NoticeBox = styled.div`
@@ -280,6 +288,7 @@ export const SecondaryActions = styled.div`
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
+  ${biteplanerFormButtonStyles}
 
   @media (max-width: 860px) {
     justify-content: space-between;
@@ -301,6 +310,7 @@ export const StepActions = styled.div`
 export const SearchActionSlot = styled.div`
   display: flex;
   align-items: end;
+  ${biteplanerFormButtonStyles}
 
   > button {
     width: max-content;

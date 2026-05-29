@@ -1,17 +1,9 @@
 import {
-  Activity,
-  AlertTriangle,
   CalendarDays,
   CheckCircle2,
-  ClipboardCheck,
-  FileText,
-  HeartPulse,
-  History,
-  ShieldCheck,
   Sparkles,
   Stethoscope,
   Upload,
-  UserRound,
 } from 'lucide-react';
 import type { ChangeEvent, ReactNode } from 'react';
 import { formatDate, type DemoOrderSummary, type DemoWorkflowForm, type ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
@@ -28,7 +20,6 @@ type SectionConfig = {
   id: string;
   title: string;
   description: string;
-  icon: ReactNode;
   status?: string;
   content: ReactNode;
 };
@@ -63,6 +54,15 @@ function formatValue(value: unknown) {
   }
 
   return String(value);
+}
+
+function formatClinicalDate(value: unknown) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  return typeof value === 'string' && value.trim() ? formatDate(value) : missingValue;
 }
 
 function valueTone(value: unknown): 'success' | 'warning' | 'neutral' {
@@ -124,7 +124,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
   const patientName = formatValue(customer.fullName) !== missingValue
     ? formatValue(customer.fullName)
     : order.customer?.full_name ?? 'Paciente não identificado';
-  const appointmentDate = intakeForm?.dentistSubmittedAt ?? intakeForm?.submittedAt ?? order.created_at;
+  const appointmentDate = dentist.consultationDate ?? intakeForm?.dentistSubmittedAt ?? intakeForm?.submittedAt ?? order.created_at;
   const painScore = Number(customer.averagePainLastWeek ?? 0);
   const stressScore = Number(customer.stressLevel ?? 0);
   const sleepScore = Number(customer.sleepQualityScore ?? 0);
@@ -149,7 +149,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'identificacao',
       title: 'Identificacao do paciente',
       description: 'Dados de cadastro e contexto básico do paciente vindos do pedido e do intake.',
-      icon: <UserRound size={18} />,
       status: 'Paciente',
       content: (
         <S.Grid>
@@ -172,7 +171,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'queixa',
       title: 'Queixa principal',
       description: 'Motivacao principal, sintomas e tags automaticas derivadas das respostas do paciente.',
-      icon: <AlertTriangle size={18} />,
       status: 'Paciente',
       content: (
         <>
@@ -190,7 +188,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'condicao',
       title: 'Historico da condicao atual',
       description: 'Evolucao da dor, intensidade e impacto sobre treino e rotina.',
-      icon: <History size={18} />,
       status: 'Paciente',
       content: (
         <S.Grid>
@@ -213,7 +210,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'medico',
       title: 'Histórico médico',
       description: 'Condicoes sistemicas, alergias, medicamentos e cirurgias relevantes.',
-      icon: <HeartPulse size={18} />,
       status: 'Paciente',
       content: (
         <>
@@ -252,7 +248,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'odontológico',
       title: 'Historico odontológico',
       description: 'Uso de aparelho, bruxismo, ATM, protetores e histórico oral.',
-      icon: <ClipboardCheck size={18} />,
       status: 'Paciente',
       content: (
         <S.TagRow>
@@ -271,7 +266,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'hábitos',
       title: 'Habitos e rotina',
       description: 'Rotina esportiva, sono, nicotina e fatores de estilo de vida.',
-      icon: <Activity size={18} />,
       status: 'Paciente',
       content: (
         <S.Grid>
@@ -302,7 +296,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'clínica',
       title: 'Avaliação clínica',
       description: 'Area profissional para achados clínicos e indicadores de prioridade.',
-      icon: <Stethoscope size={18} />,
       status: 'Profissional',
       content: (
         <>
@@ -344,7 +337,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'plano',
       title: 'Plano de tratamento',
       description: 'Conduta sugerida e etapas operacionais para continuidade do cuidado.',
-      icon: <ClipboardCheck size={18} />,
       status: 'Profissional',
       content: (
         <S.Timeline>
@@ -376,7 +368,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'observacoes',
       title: 'Observações profissionais',
       description: 'Campo amplo para registrar anamnese final e notas essenciais ao prontuario.',
-      icon: <FileText size={18} />,
       status: 'Profissional',
       content: (
         <>
@@ -398,14 +389,13 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       id: 'consentimento',
       title: 'Consentimento',
       description: 'Aceites, responsabilidade profissional e rastreabilidade da ficha.',
-      icon: <ShieldCheck size={18} />,
       status: 'Governanca',
       content: (
         <S.Grid>
           <FieldItem label="LGPD operacional" value={draft.lgpdConfirmed ? 'Ciente' : 'Pendente'} />
           <FieldItem label="Aceite digital" value={draft.lgpdConfirmed ? 'Registrado no fluxo' : missingValue} />
           <FieldItem label="Assinatura" value={missingValue} />
-          <FieldItem label="Data" value={formatDate(appointmentDate)} />
+          <FieldItem label="Data" value={formatClinicalDate(appointmentDate)} />
           <FieldItem label="Profissional responsável" value="Dentista licenciado Biteplaner" />
           <FieldItem label="Guarda do registro" value="Responsabilidade do dentista" />
         </S.Grid>
@@ -437,7 +427,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
             </S.Badge>
             <S.Badge>
               <CalendarDays size={14} />
-              {formatDate(appointmentDate)}
+              {formatClinicalDate(appointmentDate)}
             </S.Badge>
             <S.Badge $tone="neutral">Auto-save visual</S.Badge>
           </S.HeaderMeta>
@@ -490,7 +480,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
           {sections.map((section, index) => (
             <S.Card key={section.id} id={`anamnese-${section.id}`} open>
               <S.CardSummary>
-                <S.SectionIcon>{section.icon}</S.SectionIcon>
                 <div>
                   <S.SectionTitle>{index + 1}. {section.title}</S.SectionTitle>
                   <S.SectionDescription>{section.description}</S.SectionDescription>

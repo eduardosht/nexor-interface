@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { pageContainer } from '../../styles/layout';
 
 export const SectionWrapper = styled.section`
   min-height: 100vh;
@@ -30,9 +31,8 @@ export const VideoOverlay = styled.div`
 
 export const Section = styled.div`
   min-height: 100vh;
-  padding: 140px 48px 80px;
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
+  ${pageContainer}
+  padding: 140px 0 80px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -40,7 +40,8 @@ export const Section = styled.div`
   z-index: 2;
 
   @media (max-width: 768px) {
-    padding: 120px 24px 60px;
+    padding-top: 120px;
+    padding-bottom: 60px;
   }
 `;
 

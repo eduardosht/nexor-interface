@@ -1,23 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Snackbar, SnackbarStack } from '@nexor/design-system';
-import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
+import { SkeletonCard } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  completePrerequisite,
   fetchOrders,
   fetchWorkflowForms,
   getAuthToken,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
-import { OrderStepHeader } from '../components/OrderStepHeader';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from './styles';
 
 const SUCCESS_REDIRECT_DELAY_MS = 700;
 const INTAKE_TEMPLATE_KEY = 'customer_pre_consultation_intake';
+const BITEPLANER_CONSENT_PAYLOAD = {
+  customer: {
+    serviceConsent: ['accepted'],
+    sensitiveHealthConsent: ['accepted'],
+  },
+};
 
 function customerIntakeIsComplete(form: DemoWorkflowForm) {
   if (form.roleState) {
@@ -25,14 +31,6 @@ function customerIntakeIsComplete(form: DemoWorkflowForm) {
   }
 
   return form.status === 'submitted';
-}
-
-function consentWasAccepted(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.includes('accepted');
-  }
-
-  return value === 'accepted' || value === true;
 }
 
 function getCustomerPayload(form: DemoWorkflowForm) {
@@ -65,85 +63,45 @@ function isActiveOrthodonticTreatment(value: unknown) {
 export function PreRequisito() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
+  const queryOwnerId = session?.user.id ?? 'anonymous';
   const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [order, setOrder] = useState<DemoOrderSummary | null>(null);
-  const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [formsLoading, setFormsLoading] = useState(false);
-  const [formsError, setFormsError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadOrder() {
-      try {
-        const response = await fetchOrders('user', token);
-        const nextOrder = response.orders.find((item) => item.status === 'registration_started') ?? response.orders[0] ?? null;
-
-        if (active) {
-          setOrder(nextOrder);
-        }
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar o pedido do pre-requisito.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadOrder();
-
-    return () => {
-      active = false;
-    };
-  }, [token]);
-
-  useEffect(() => {
-    if (!token || !order?.id) {
-      setWorkflowForms([]);
-      return;
-    }
-
-    let active = true;
-    const orderId = order.id;
-    setFormsLoading(true);
-    setFormsError('');
-
-    async function loadForms() {
-      try {
-        const response = await fetchWorkflowForms(orderId, token);
-
-        if (active) {
-          setWorkflowForms(response.forms);
-        }
-      } catch {
-        if (active) {
-          setFormsError('Não foi possível carregar a avaliação inicial compartilhada.');
-        }
-      } finally {
-        if (active) {
-          setFormsLoading(false);
-        }
-      }
-    }
-
-    void loadForms();
-
-    return () => {
-      active = false;
-    };
-  }, [order?.id, token]);
+  const ordersQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orders('user', queryOwnerId),
+    queryFn: () => fetchOrders('user', token),
+    enabled: Boolean(token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const order = useMemo(
+    () =>
+      ordersQuery.data?.orders.find((item) => item.status === 'registration_started') ??
+      ordersQuery.data?.orders[0] ??
+      null,
+    [ordersQuery.data?.orders]
+  );
+  const workflowFormsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForms(order?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForms(order!.id, token),
+    enabled: Boolean(token && order?.id),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const workflowForms = workflowFormsQuery.data?.forms ?? [];
+  const loading = ordersQuery.isLoading;
+  const formsLoading = Boolean(order?.id) && workflowFormsQuery.isLoading;
+  const formsError = workflowFormsQuery.isError ? 'Não foi possível carregar a avaliação inicial compartilhada.' : '';
+  const loadError = ordersQuery.isError ? 'Não foi possível carregar o pedido do pre-requisito.' : '';
+  const workflowDefaultValues = useMemo(
+    () => ({
+      fullName: order?.customer?.full_name ?? '',
+    }),
+    [order?.customer?.full_name]
+  );
 
   useEffect(() => {
     return () => {
@@ -157,66 +115,55 @@ export function PreRequisito() {
     () => workflowForms.filter((form) => form.templateKey === INTAKE_TEMPLATE_KEY),
     [workflowForms]
   );
-  const intakeIsComplete = intakeForms.length > 0 && intakeForms.every(customerIntakeIsComplete);
+  const completedIntake = useMemo(
+    () => intakeForms.find(customerIntakeIsComplete) ?? null,
+    [intakeForms]
+  );
 
-  async function completePrerequisiteFromIntake(form: DemoWorkflowForm) {
-    if (!order || !token || order.status !== 'registration_started' || submitting) {
+  function handleSubmittedIntake(form: DemoWorkflowForm) {
+    if (!order || order.status !== 'registration_started' || redirectTimeoutRef.current) {
       return;
     }
 
-    const customerPayload = getCustomerPayload(form);
     if (getFormBlocker(form) === 'active_orthodontic_treatment') {
       setError('Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.');
       return;
     }
 
-    const consents = {
-      service: consentWasAccepted(customerPayload.serviceConsent) || consentWasAccepted(customerPayload.clinicalPrivacyConsent),
-      sensitiveHealth:
-        consentWasAccepted(customerPayload.sensitiveHealthConsent) || consentWasAccepted(customerPayload.clinicalPrivacyConsent),
-      research: consentWasAccepted(customerPayload.researchConsent),
-      marketing: consentWasAccepted(customerPayload.marketingConsent),
-    };
-
-    if (!consents.service || !consents.sensitiveHealth) {
-      return;
-    }
-
-    setSubmitting(true);
     setNotice('');
     setError('');
 
-    try {
-      const response = await completePrerequisite(
-        order.id,
-        {
-          documentType: 'workflow_intake',
-          documentNumber: '',
-          sport: '',
-          isMinor: false,
-          eligibility: {
-            orthodontic: isActiveOrthodonticTreatment(customerPayload.orthodonticTreatmentStatus),
-            activeDentalTreatment: false,
-            relevantCondition: false,
-          },
-          consents,
-        },
-        token
-      );
-      setOrder(response.order);
-      setNotice('Pre-requisito concluído. Agora escolha o consultório para a consulta inicial.');
-      redirectTimeoutRef.current = setTimeout(() => {
-        navigate('/painel/consulta-inicial');
-      }, SUCCESS_REDIRECT_DELAY_MS);
-    } catch {
-      setError('Não foi possível concluir o pre-requisito agora.');
-    } finally {
-      setSubmitting(false);
-    }
+    queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
+      biteplanerQueryKeys.orders('user', queryOwnerId),
+      (current) =>
+        current
+          ? {
+              orders: current.orders.map((currentOrder) =>
+                currentOrder.id === order.id
+                  ? {
+                      ...currentOrder,
+                      status: 'awaiting_scheduling',
+                      statusLabel: 'Aguardando consulta inicial',
+                      stage: 'awaiting_initial_consultation',
+                    }
+                  : currentOrder
+              ),
+            }
+          : current
+    );
+    setNotice('Pre-requisito concluído. Agora escolha o consultório para a consulta inicial.');
+    redirectTimeoutRef.current = setTimeout(() => {
+      navigate('/painel/consulta-inicial');
+    }, SUCCESS_REDIRECT_DELAY_MS);
   }
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
-    setWorkflowForms(nextForms);
+    if (order) {
+      queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
+        biteplanerQueryKeys.workflowForms(order.id),
+        { forms: nextForms }
+      );
+    }
 
     const submittedIntake = nextForms.find(
       (form) => form.templateKey === INTAKE_TEMPLATE_KEY && customerIntakeIsComplete(form)
@@ -228,54 +175,12 @@ export function PreRequisito() {
         return;
       }
 
-      void completePrerequisiteFromIntake(submittedIntake);
+      handleSubmittedIntake(submittedIntake);
     }
   }
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title="Pre-requisito Biteplaner"
-        description={
-          <>
-            Antes da consulta inicial, precisamos registrar a avaliação inicial compartilhada e os
-            consentimentos necessários para a jornada <strong>Biteplaner</strong>.
-            <br />
-            Essas informações ajudam o dentista licenciado a preparar o atendimento e mantém as
-            autorizações obrigatórias separadas das permissões opcionais.
-          </>
-        }
-        currentStep="prerequisite"
-        order={order}
-        orderHelpText="Este pedido ainda precisa da avaliação inicial e dos consentimentos para avancar."
-      >
-        <S.GuidanceBanner>
-          <S.InfoIcon aria-hidden="true">
-            <Info size={18} strokeWidth={2.3} />
-          </S.InfoIcon>
-          <div>
-            <p>
-              Campos marcados com <S.RequiredStar>(*)</S.RequiredStar> são obrigatórios.
-            </p>
-            <p>Campos opcionais aparecem identificados como "Opcional".</p>
-          </div>
-        </S.GuidanceBanner>
-      </OrderStepHeader>
-
-      {loading ? (
-        <S.Content aria-label="Carregando pedido do pre-requisito">
-          <SkeletonCard lines={3} />
-          <SkeletonCard lines={5} blockHeight="96px" />
-        </S.Content>
-      ) : null}
-      {error ? <S.Banner role="alert">{error}</S.Banner> : null}
-      {!loading && formsLoading ? (
-        <S.Content aria-label="Carregando avaliação inicial compartilhada">
-          <SkeletonGrid cards={2} minCardWidth="260px" />
-          <SkeletonCard lines={4} blockHeight="120px" />
-        </S.Content>
-      ) : null}
-      {formsError ? <S.Banner role="alert">{formsError}</S.Banner> : null}
       {notice ? (
         <SnackbarStack>
           <Snackbar
@@ -289,34 +194,85 @@ export function PreRequisito() {
         </SnackbarStack>
       ) : null}
 
-      {!loading && !formsLoading ? (
-        <S.Content>
-        <WorkflowFormsPanel
-          orderId={order?.id ?? null}
-          token={token}
-          title="Avaliação inicial compartilhada Biteplaner"
-          description="Preencha está avaliação em etapas para liberar a próxima fase da jornada Biteplaner."
-          templateFilter={[INTAKE_TEMPLATE_KEY]}
-          defaultValues={{
-            fullName: order?.customer?.full_name ?? '',
-          }}
-          forms={workflowForms}
-          onFormsChange={handleWorkflowFormsChange}
-          actorRole="user"
-        />
+      <S.Content>
+        <S.OnboardingCard data-testid="pre-requisito-onboarding-card">
+          {loading ? (
+            <div aria-label="Carregando pedido do pre-requisito">
+              <SkeletonCard lines={5} blockHeight="112px" />
+            </div>
+          ) : (
+            <>
+              <S.PrerequisiteHero>
+                <S.OnboardingMainTitle>
+                  <S.OnboardingHeroIcon aria-hidden="true">
+                    <Info size={48} strokeWidth={1.9} />
+                  </S.OnboardingHeroIcon>
+                  <span>Pre-requisito Biteplaner</span>
+                </S.OnboardingMainTitle>
+                <S.OnboardingHeroLead>
+                  Antes da consulta inicial, registre a avaliação compartilhada para preparar a jornada{' '}
+                  <strong>Biteplaner</strong>.
+                </S.OnboardingHeroLead>
+                <S.PrerequisiteMetaGrid>
+                  <S.PrerequisiteMetaItem>
+                    <S.PrerequisiteMetaLabel>Pedido</S.PrerequisiteMetaLabel>
+                    <S.PrerequisiteMetaValue>{order?.id ?? 'Pedido Biteplaner'}</S.PrerequisiteMetaValue>
+                  </S.PrerequisiteMetaItem>
+                  <S.PrerequisiteMetaItem>
+                    <S.PrerequisiteMetaLabel>Status atual</S.PrerequisiteMetaLabel>
+                    <S.PrerequisiteStatus data-testid="athlete-order-status">
+                      {order?.statusLabel ?? 'Pre-requisito pendente'}
+                    </S.PrerequisiteStatus>
+                  </S.PrerequisiteMetaItem>
+                  <S.PrerequisiteMetaItem>
+                    <S.PrerequisiteMetaLabel>Preenchimento</S.PrerequisiteMetaLabel>
+                    <S.PrerequisiteMetaValue>Campos com (*) são obrigatórios.</S.PrerequisiteMetaValue>
+                  </S.PrerequisiteMetaItem>
+                </S.PrerequisiteMetaGrid>
+              </S.PrerequisiteHero>
 
-        {intakeForms.length === 0 && !formsLoading && !formsError ? (
-          <S.Banner role="status">A avaliação inicial compartilhada ainda não foi liberada para este pedido.</S.Banner>
-        ) : null}
+              {loadError ? <S.Banner role="alert">{loadError}</S.Banner> : null}
+              {error ? <S.Banner role="alert">{error}</S.Banner> : null}
+              {formsError ? <S.Banner role="alert">{formsError}</S.Banner> : null}
+              {formsLoading ? (
+                <div aria-label="Carregando avaliação inicial compartilhada">
+                  <SkeletonCard lines={4} blockHeight="120px" />
+                </div>
+              ) : (
+                <>
+                  <S.OnboardingDivider />
+                  {completedIntake ? (
+                    <S.Banner role="status">
+                      Você já preencheu este formulário. O pré-requisito foi concluído e a próxima etapa da jornada Biteplaner já está disponível.
+                    </S.Banner>
+                  ) : (
+                    <WorkflowFormsPanel
+                    orderId={order?.id ?? null}
+                    token={token}
+                    title="Avaliação inicial compartilhada Biteplaner"
+                    description="Preencha esta avaliação em etapas para liberar a próxima fase da jornada Biteplaner."
+                    templateFilter={[INTAKE_TEMPLATE_KEY]}
+                    defaultValues={workflowDefaultValues}
+                    forms={workflowForms}
+                    onFormsChange={handleWorkflowFormsChange}
+                    payloadExtras={BITEPLANER_CONSENT_PAYLOAD}
+                    actorRole="user"
+                    formPresentation="flat"
+                    showFormHeader={false}
+                    variant="embedded"
+                    />
+                  )}
 
-        {submitting ? <S.Banner role="status">Concluindo pre-requisito...</S.Banner> : null}
-        {!intakeIsComplete && intakeForms.length > 0 ? (
-          <S.Banner role="status">
-            Envie a avaliação inicial compartilhada com os consentimentos obrigatórios para concluir o pre-requisito.
-          </S.Banner>
-        ) : null}
-        </S.Content>
-      ) : null}
+                  {intakeForms.length === 0 && !completedIntake && !formsLoading && !formsError ? (
+                    <S.Banner role="status">A avaliação inicial compartilhada ainda não foi liberada para este pedido.</S.Banner>
+                  ) : null}
+
+                </>
+              )}
+            </>
+          )}
+        </S.OnboardingCard>
+      </S.Content>
     </S.Page>
   );
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { describe, expect, it, vi } from 'vitest';
@@ -122,7 +122,11 @@ describe('CadastroPerfilBiteplaner', () => {
     renderPage();
 
     const submit = screen.getByRole('button', { name: /enviar solicitação/i });
+    const cancel = screen.getByRole('button', { name: /cancelar/i });
     expect(submit).toBeDisabled();
+    expect(cancel).toHaveAttribute('data-variant', 'secondary');
+    expect(screen.getByText(/seus dados est.o protegidos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/salvar rascunho/i)).not.toBeInTheDocument();
     expect(screen.getByText(/cadastre a clínica de atendimento/i)).toBeInTheDocument();
     expect(screen.getByText(/a nexor irá verificar o cadastro do dentista/i)).toBeInTheDocument();
 
@@ -151,6 +155,11 @@ describe('CadastroPerfilBiteplaner', () => {
 
     expect(screen.queryByLabelText(/latitude/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/longitude/i)).not.toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    const adaptedGroup = screen.getByRole('group', { name: /clínica adaptada/i });
+    fireEvent.click(within(adaptedGroup).getByLabelText('Sim'));
+
     expect(submit).toBeEnabled();
   });
 
@@ -216,6 +225,48 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.getByLabelText(/telefone da clínica/i)).toHaveValue('(11) 98765-4321');
   });
 
+  it('applies CRO mask and keeps dentist submit disabled while CRO is invalid', async () => {
+    mockCepLookup();
+    renderPage();
+
+    const submit = screen.getByRole('button', { name: /enviar solicita/i });
+
+    fireEvent.change(screen.getByLabelText(/nome profissional/i), {
+      target: { value: 'Dra Maria' },
+    });
+    fireEvent.change(screen.getByLabelText(/cro/i), {
+      target: { value: 'sp12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
+      target: { value: 'Dentista com foco em performance esportiva.' },
+    });
+    fireEvent.change(screen.getByLabelText(/nome da cl.nica/i), {
+      target: { value: 'ClÃ­nica Esportiva Nexor' },
+    });
+    fireEvent.change(screen.getByLabelText(/dia e hor.rio de atendimento/i), {
+      target: { value: 'Segunda a sexta, 8h as 18h' },
+    });
+    fireEvent.change(screen.getByLabelText(/telefone da cl.nica/i), {
+      target: { value: '11987654321' },
+    });
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/privacidade/i));
+
+    await fillCepAndWaitForAddress();
+
+    expect(screen.getByLabelText(/cro/i)).toHaveValue('CRO-SP 12345');
+    expect(submit).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText(/cro/i), {
+      target: { value: 'xx123' },
+    });
+
+    expect(screen.getByLabelText(/cro/i)).toHaveValue('CRO-XX 123');
+    expect(screen.getByText(/cro v.lido no formato/i)).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+  });
+
   it('keeps submit enabled when the optional complement is empty', async () => {
     mockCepLookup();
     renderPage();
@@ -246,6 +297,7 @@ describe('CadastroPerfilBiteplaner', () => {
     await fillCepAndWaitForAddress();
 
     expect(screen.getByLabelText(/^complemento da clínica$/i)).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
     expect(submit).toBeEnabled();
   });
 
@@ -280,6 +332,7 @@ describe('CadastroPerfilBiteplaner', () => {
     });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
 
     await waitFor(() => {
@@ -296,6 +349,7 @@ describe('CadastroPerfilBiteplaner', () => {
             cep: '01001-000',
             complement: 'Sala 42',
             dentistName: 'Dra Maria',
+            isAdapted: true,
             serviceHours: 'Segunda a sexta, 8h as 18h',
           }),
           practiceLocations: [
@@ -303,6 +357,7 @@ describe('CadastroPerfilBiteplaner', () => {
               name: 'Clínica Esportiva Nexor',
               address: 'Praça da Sé - Sé, São Paulo - SP',
               cep: '01001-000',
+              isAdapted: true,
             }),
           ],
         }),
@@ -310,6 +365,7 @@ describe('CadastroPerfilBiteplaner', () => {
       );
       expect(screen.getByRole('status')).toHaveTextContent(/solicitação enviada/i);
       expect(screen.getByRole('status')).toHaveTextContent(/nexor irá verificar/i);
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/home');
     });
   });
 
@@ -344,6 +400,7 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/telefone da clínica \(\*\)/i), {
       target: { value: '11987654321' },
     });
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Não'));
 
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
@@ -356,11 +413,13 @@ describe('CadastroPerfilBiteplaner', () => {
           practiceLocation: expect.objectContaining({
             name: 'Clínica Centro',
             cep: '01001-000',
+            isAdapted: false,
           }),
           practiceLocations: [
             expect.objectContaining({
               name: 'Clínica Centro',
               address: 'Praça da Sé - Sé, São Paulo - SP',
+              isAdapted: false,
               serviceHours: 'Segunda a sexta, 8h as 18h',
             }),
           ],

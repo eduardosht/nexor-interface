@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, CirclePlus, Database, Info, ShieldCheck, UserRound, UserRoundCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonCard } from '../../../components/Skeleton';
@@ -137,11 +137,6 @@ export function CadastroUsuarioBiteplaner() {
     };
   }, [navigate, onboardingCompleted]);
 
-  const onboardingForms = useMemo(
-    () => workflowForms.filter((form) => form.templateKey === ONBOARDING_TEMPLATE_KEY),
-    [workflowForms]
-  );
-
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
     setWorkflowForms(nextForms);
     const submittedOnboarding = nextForms.find(
@@ -262,20 +257,20 @@ export function CadastroUsuarioBiteplaner() {
                       <S.PrivacyGateList>
                         <li>
                           <UserRoundCheck size={18} strokeWidth={2} aria-hidden="true" />
-                          <span>viabilizar meu cadastro, meu atendimento e o uso dos serviços e dispositivos da NEXOR;</span>
+                          <span>Viabilizar meu cadastro, meu atendimento e o uso dos serviços e dispositivos da NEXOR</span>
                         </li>
                         <li>
                           <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
                           <span>
-                            registrar informações necessárias para meu cuidado, minha segurança e meu acompanhamento ao
-                            longo do tempo;
+                            Registrar informações necessárias para meu cuidado, minha segurança e meu acompanhamento ao
+                            longo do tempo
                           </span>
                         </li>
                         <li>
                           <Database size={18} strokeWidth={2} aria-hidden="true" />
                           <span>
-                            formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e
-                            desenvolvimento de produtos, sempre de acordo com a Lei Geral de Proteção de Dados (LGPD).
+                            Formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e
+                            desenvolvimento de produtos, sempre de acordo com a Lei Geral de Proteção de Dados (LGPD)
                           </span>
                         </li>
                       </S.PrivacyGateList>
@@ -327,9 +322,6 @@ export function CadastroUsuarioBiteplaner() {
             </S.OnboardingCard>
           )}
 
-          {!onboardingCompleted && onboardingForms.length === 0 && !formsLoading && !formsError ? (
-            <S.Banner role="status">O cadastro Biteplaner ainda não foi liberado para este pedido.</S.Banner>
-          ) : null}
         </S.Content>
       ) : null}
     </S.Page>

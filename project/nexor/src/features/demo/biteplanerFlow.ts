@@ -10,6 +10,7 @@ export type AccessOption = {
   allowed: boolean;
   highlighted: boolean;
   reason: string | null;
+  status?: string;
 };
 
 export type AccessOptionsResponse = {
@@ -108,6 +109,32 @@ export type DemoPracticeLocationSelection = {
     lat: number;
     lng: number;
   };
+};
+
+export type PracticeLocationApiRecord = {
+  id: string;
+  name: string;
+  phone: string | null;
+  is_active?: boolean | null;
+  address?: {
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    district?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip_code?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
+  dentist?: {
+    id: string;
+    full_name?: string | null;
+    status?: string | null;
+    approval_status?: string | null;
+    license_status?: string | null;
+    training_status?: string | null;
+  } | null;
 };
 
 export type DemoLicensedLabSelection = {
@@ -415,6 +442,37 @@ export function getAthletePrimaryOrder(orders: DemoOrderSummary[]) {
   })[0] ?? null;
 }
 
+export function isCustomerPreConsultationIntakeComplete(form: DemoWorkflowForm) {
+  if (form.templateKey !== 'customer_pre_consultation_intake') {
+    return false;
+  }
+
+  if (form.roleState) {
+    return form.roleState.customer === 'submitted' || form.roleState.customer === 'locked';
+  }
+
+  return form.status === 'submitted';
+}
+
+export function getEffectiveAthleteOrder(
+  order: DemoOrderSummary | null,
+  forms: DemoWorkflowForm[] = []
+): DemoOrderSummary | null {
+  if (
+    order?.status === 'registration_started' &&
+    forms.some(isCustomerPreConsultationIntakeComplete)
+  ) {
+    return {
+      ...order,
+      status: 'awaiting_scheduling',
+      statusLabel: 'Aguardando consulta inicial',
+      stage: 'awaiting_initial_consultation',
+    };
+  }
+
+  return order;
+}
+
 export function getAthleteNextPath(order: DemoOrderSummary | null) {
   if (!order) {
     return '/painel/biteplaner/jornada';
@@ -449,6 +507,10 @@ export async function fetchAccessOptions(token?: string) {
 
 export async function fetchOrders(mode: AccessMode, token?: string) {
   return api.get<{ orders: DemoOrderSummary[] }>(`/v1/orders?as=${mode}`, token);
+}
+
+export async function fetchPracticeLocations(token?: string) {
+  return api.get<{ practiceLocations: PracticeLocationApiRecord[] }>('/v1/practice-locations', token);
 }
 
 export async function fetchPartnerOverview(token?: string) {
@@ -654,6 +716,10 @@ export async function fetchTimeline(orderId: string, token?: string) {
 
 export async function fetchWorkflowForms(orderId: string, token?: string) {
   return api.get<{ forms: DemoWorkflowForm[] }>(`/v1/orders/${orderId}/workflow-forms`, token);
+}
+
+export async function fetchWorkflowForm(orderId: string, workflowFormId: string, token?: string) {
+  return api.get<DemoWorkflowForm>(`/v1/orders/${orderId}/workflow-forms/${workflowFormId}`, token);
 }
 
 export async function submitWorkflowForm(

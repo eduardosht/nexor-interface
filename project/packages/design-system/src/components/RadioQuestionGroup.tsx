@@ -68,12 +68,18 @@ const Hint = styled.p<{ $tokens: BrandTokens }>`
   line-height: 1.45;
 `;
 
-const ErrorText = styled.span<{ $tokens: BrandTokens }>`
-  grid-column: 1 / -1;
+const ErrorText = styled.span<{ $tokens: BrandTokens; $inline: boolean; $variant: RadioQuestionVariant }>`
+  grid-column-start: 1;
+  grid-column-end: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '2' : '-1')};
   color: ${({ $tokens }) => $tokens.colors.danger};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
+
+  @media (max-width: 640px) {
+    grid-column-start: 1;
+    grid-column-end: -1;
+  }
 `;
 
 const Options = styled.div<{
@@ -284,7 +290,11 @@ export function RadioQuestionGroup({
           );
         })}
       </Options>
-      {error ? <ErrorText $tokens={tokens} role="alert">{error}</ErrorText> : null}
+      {error ? (
+        <ErrorText $tokens={tokens} $inline={inline} $variant={variant} role="alert">
+          {error}
+        </ErrorText>
+      ) : null}
     </Wrapper>
   );
 }

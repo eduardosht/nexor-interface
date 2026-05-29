@@ -30,15 +30,13 @@ export const PageHeader = styled.header`
 
 export const PageTitle = styled.h1`
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
   color: ${({ theme }) => theme.colors.textPrimary};
 
   @media (max-width: 768px) {
-    font-size: clamp(1.5rem, 7vw, 1.75rem);
+    font-size: 1.75rem;
     font-weight: 700;
-    letter-spacing: 0;
     line-height: 1.15;
   }
 `;
@@ -46,12 +44,11 @@ export const PageTitle = styled.h1`
 export const PageSubtitle = styled.p`
   margin: 0;
   max-width: none;
-  font-size: 14px;
+  font-size: 1rem;
   line-height: 1.65;
   color: ${({ theme }) => theme.colors.textSecondary};
 
   @media (max-width: 768px) {
-    font-size: 13px;
     line-height: 1.5;
   }
 `;
@@ -490,8 +487,9 @@ export const EmptyStateLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 12px 20px;
+  min-height: 46px;
+  max-width: 100%;
+  padding: 12px 22px;
   border-radius: 4px;
   background: ${({ theme }) => theme.colors.textPrimary};
   color: ${({ theme }) => theme.colors.bgBase};
@@ -499,15 +497,18 @@ export const EmptyStateLink = styled(Link)`
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
+  line-height: 1.2;
   text-decoration: none;
   text-transform: uppercase;
+  white-space: nowrap;
 
   &:hover {
     opacity: 0.88;
   }
 
   @media (max-width: 768px) {
-    font-size: 12px;
+    width: 100%;
+    font-size: 14px;
     font-weight: 600;
   }
 `;

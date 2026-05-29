@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const SectionOuter = styled.div`
   ${fullBleedSection}
@@ -10,12 +10,12 @@ export const SectionOuter = styled.div`
 `;
 
 export const Section = styled.section`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
-  padding: 120px 48px;
+  ${pageContainer}
+  padding: 120px 0;
 
   @media (max-width: 768px) {
-    padding: 80px 24px;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 `;
 

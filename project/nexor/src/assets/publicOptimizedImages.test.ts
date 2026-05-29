@@ -9,6 +9,7 @@ describe('publicOptimizedImages', () => {
     expect(publicOptimizedImages.home.product.desktop.webp).toMatch(/\.webp$/);
     expect(publicOptimizedImages.biteplaner.hero.desktop.avif).toMatch(/\.avif$/);
     expect(publicOptimizedImages.biteplaner.process.mobile.webp).toMatch(/\.webp$/);
+    expect(publicOptimizedImages.biteplaner).not.toHaveProperty('education');
     expect(publicOptimizedImages.biteplaner.finalCta.desktop.avif).toMatch(/\.avif$/);
     expect(publicOptimizedImages.biteplaner.faqProduct.webp).toMatch(/\.webp$/);
     expect(publicOptimizedImages.shared.nexorLogo.webp).toMatch(/\.webp$/);

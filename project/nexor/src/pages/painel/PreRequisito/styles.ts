@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   display: grid;
@@ -160,14 +161,14 @@ export const OnboardingMainTitle = styled.h1`
   gap: 24px;
   margin: 0;
   color: #07152f;
-  font-size: 52px;
+  font-size: 2rem;
   font-weight: 950;
-  line-height: 0.98;
+  line-height: 1.1;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 14px;
-    font-size: 34px;
+    font-size: 1.75rem;
     line-height: 1.05;
   }
 `;
@@ -176,7 +177,7 @@ export const OnboardingHeroLead = styled.p`
   max-width: 610px;
   margin: 0;
   color: #334155;
-  font-size: 18px;
+  font-size: 1rem;
   line-height: 1.55;
 
   strong {
@@ -184,8 +185,61 @@ export const OnboardingHeroLead = styled.p`
   }
 
   @media (max-width: 640px) {
-    font-size: 15px;
+    line-height: 1.5;
   }
+`;
+
+export const PrerequisiteHero = styled.header`
+  display: grid;
+  gap: 20px;
+  max-width: 980px;
+
+  ${OnboardingMainTitle} {
+    max-width: 760px;
+  }
+
+  ${OnboardingHeroLead} {
+    max-width: 760px;
+  }
+`;
+
+export const PrerequisiteMetaGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 920px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PrerequisiteMetaItem = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+`;
+
+export const PrerequisiteMetaLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 700;
+`;
+
+export const PrerequisiteMetaValue = styled.span`
+  min-width: 0;
+  color: #07152f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+`;
+
+export const PrerequisiteStatus = styled(PrerequisiteMetaValue)`
+  color: #008d3f;
 `;
 
 export const OnboardingInfoCallout = styled.div`
@@ -200,7 +254,7 @@ export const OnboardingInfoCallout = styled.div`
   border-radius: 14px;
   background: linear-gradient(90deg, rgba(240, 253, 244, 0.96) 0%, rgba(248, 255, 251, 0.88) 100%);
   color: #07152f;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.62;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 
@@ -531,37 +585,8 @@ export const PrivacyGateText = styled.p`
 
 export const PrivacyGateAction = styled.button`
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 22px;
-  min-height: 52px;
-  padding: 0 22px 0 30px;
-  border: 1px solid #15803d;
-  border-radius: 8px;
-  background: #15803d;
-  color: #f8fbff;
-  box-shadow: 0 14px 30px rgba(21, 128, 61, 0.24);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-
-  &:not(:disabled):hover {
-    transform: translateY(-1px);
-    background: #166534;
-    box-shadow: 0 18px 38px rgba(21, 128, 61, 0.28);
-  }
-
-  &:disabled {
-    border-color: ${({ theme }) => theme.colors.borderDefault};
-    background: ${({ theme }) => theme.colors.bgInset};
-    color: ${({ theme }) => theme.colors.textMuted};
-    box-shadow: none;
-    cursor: not-allowed;
-  }
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
 `;
 
 export const OnboardingCompletion = styled.div`

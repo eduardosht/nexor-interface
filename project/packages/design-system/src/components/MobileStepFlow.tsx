@@ -38,7 +38,7 @@ const Progress = styled.span<{ $tokens: BrandTokens }>`
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
   color: ${({ $tokens }) => $tokens.colors.textMuted};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 `;
 

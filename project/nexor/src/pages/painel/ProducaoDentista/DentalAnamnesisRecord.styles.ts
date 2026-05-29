@@ -246,7 +246,7 @@ export const QuickItem = styled.div`
 
 export const QuickLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -346,7 +346,7 @@ export const Card = styled.details`
 
 export const CardSummary = styled.summary`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 16px;
@@ -360,27 +360,6 @@ export const CardSummary = styled.summary`
   @media (max-width: 1280px) {
     gap: 10px;
     padding: 12px;
-  }
-`;
-
-export const SectionIcon = styled.span`
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #eef4ff;
-  color: #0f2f57;
-
-  @media (max-width: 1280px) {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
   }
 `;
 
@@ -440,7 +419,7 @@ export const DataField = styled.div<{ $important?: boolean }>`
 
 export const DataLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -524,7 +503,7 @@ export const ModernTable = styled.table`
   th {
     background: ${({ theme }) => theme.colors.bgInset};
     color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.06em;

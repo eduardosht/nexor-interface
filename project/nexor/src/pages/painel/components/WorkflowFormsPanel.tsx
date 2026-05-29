@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
-import { BarChart3, ClipboardPlus, Database, Frown, Info, LockKeyhole, ShieldCheck, Star, UserRound, Users, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Frown, Info, PencilLine, Send, ShieldCheck, Star, UserRound, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
@@ -8,6 +9,7 @@ import {
   Field,
   RadioQuestionGroup,
   Select,
+  SliderField,
   StatusIndicator,
   TagAutocompleteField,
   formatDocumentValue,
@@ -18,11 +20,14 @@ import {
   sanitizePhoneValue,
 } from '@nexor/design-system';
 import {
+  fetchWorkflowForm,
   fetchWorkflowForms,
   formatDate,
   submitWorkflowForm,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
+import { ApiError } from '../../../lib/api';
 import {
   BITEPLANER_REVIEW_TEMPLATES,
   type BiteplanerReviewFieldDefinition,
@@ -128,6 +133,8 @@ const TEMPLATE_DEFINITIONS: Record<string, FormDefinition> = {
   ),
 };
 
+const REQUIRED_FIELDS_TOOLTIP = 'Preencha todos os campos obrigatórios para continuar.';
+
 const STATUS_PRESENTATION: Record<DemoWorkflowForm['status'], { label: string; color: string }> = {
   pending: { label: 'Pendente', color: '#D18A00' },
   draft: { label: 'Rascunho', color: '#2563EB' },
@@ -203,7 +210,7 @@ function getOnboardingDisplaySections(sections: VisibleSharedSection[]): Display
     makeGroup(
       'satisfaction-improvements',
       'SEÇÃO 3 - PESQUISA DE SATISFAÇÃO E MELHORIAS',
-      'Esta seção é voltada a pesquisas, melhorias e, se você desejar, comunicações e ações comerciais. Tudo aqui é opcional. Seu cadastro e seu cuidado não serão prejudicados caso você não marque as opções abaixo',
+      'Esta seção é voltada a pesquisas e melhorias. Se você desejar, comunicações e ações comerciais. Tudo aqui é opcional. Seu cadastro e seu cuidado não serão prejudicados caso você não marque as opções abaixo',
       ['consents', 'feedback']
     ),
   ].filter(Boolean) as DisplaySharedSection[];
@@ -211,6 +218,17 @@ function getOnboardingDisplaySections(sections: VisibleSharedSection[]): Display
 
 function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): DisplaySharedSection[] {
   const sectionByKey = Object.fromEntries(sections.map((section) => [section.key, section]));
+  const deviceExperienceSection = sectionByKey['device-experience'];
+  const satisfactionCheckboxFields =
+    sectionByKey['satisfaction-improvements']?.fields.filter((field) => field.type === 'checkbox-group') ?? [];
+  const satisfactionSection: VisibleSharedSection | null = deviceExperienceSection
+    ? {
+        key: 'clinical-satisfaction-fields',
+        title: 'Pesquisa de satisfação',
+        description: 'Expectativas, percepções e autorizações opcionais relacionadas à NEXOR e ao BITEPLANER.',
+        fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields],
+      }
+    : null;
   const makeGroup = (
     key: string,
     title: string,
@@ -246,18 +264,7 @@ function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): D
       'Informações clínicas, odontológicas, orofaciais, sintomas atuais e hábitos de vida usadas para seu cuidado.',
       ['medical-history', 'dental-orofacial-history', 'current-pain-function', 'life-habits']
     ),
-    makeGroup(
-      'clinical-device-experience',
-      'Experiência com o dispositivo',
-      'Expectativas e percepções sobre a NEXOR e o BITEPLANER para alinhar cuidado, produto e suporte.',
-      ['device-experience']
-    ),
-    makeGroup(
-      'clinical-satisfaction',
-      'Pesquisa de satisfação',
-      'Pesquisa opcional de satisfação e melhorias. Seu cuidado não será prejudicado caso não responda.',
-      ['satisfaction-improvements']
-    ),
+    satisfactionSection,
   ].filter(Boolean) as DisplaySharedSection[];
 }
 
@@ -321,9 +328,28 @@ function getInitialPayload(
   actorRole: WorkflowFormActorRole
 ) {
   const fields = getDefinitionFields(definition);
-  const payloadSource = definition.sharedIntake && definition.payloadMode !== 'flat'
-    ? ((form.payload?.[getSharedIntakePayloadKey(actorRole)] as Record<string, unknown> | undefined) ?? {})
-    : form.payload ?? {};
+  const payloadSource = (() => {
+    if (!definition.sharedIntake || definition.payloadMode === 'flat') {
+      return form.payload ?? {};
+    }
+
+    const actorPayload = (form.payload?.[getSharedIntakePayloadKey(actorRole)] as Record<string, unknown> | undefined) ?? {};
+
+    if (actorRole !== 'dentist') {
+      return {
+        ...(form.payload ?? {}),
+        ...actorPayload,
+      };
+    }
+
+    const customerPayload = (form.payload?.customer as Record<string, unknown> | undefined) ?? {};
+
+    return {
+      ...(form.payload ?? {}),
+      ...customerPayload,
+      ...actorPayload,
+    };
+  })();
 
   return Object.fromEntries(
     fields.map((field) => {
@@ -391,6 +417,12 @@ function isSharedNumberField(
   return isSharedField(field) && field.type === 'number';
 }
 
+function isSharedDateField(
+  field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
+): field is SharedIntakeFieldDefinition & { type: 'date' } {
+  return isSharedField(field) && field.type === 'date';
+}
+
 function isHealthConditionalField(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
 ) {
@@ -440,6 +472,14 @@ const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
   expectedUseBenefitOther: 'expectedUseBenefit',
   imaginedUseBarriersOther: 'imaginedUseBarriers',
 };
+
+const SLIDER_SCORE_FIELD_KEYS = new Set([
+  'sleepQualityScore',
+  'previousTreatmentSatisfactionDental',
+  'previousTreatmentSatisfactionTherapies',
+  'stressLevel',
+  'subjectiveSleepQuality',
+]);
 
 function payloadHasCheckboxValue(payload: Record<string, string>, fieldKey: string, value: string) {
   return (payload[fieldKey] ?? '').split('|').includes(value);
@@ -603,16 +643,43 @@ function isRadioChoiceField(
   return isSharedField(field) && field.type === 'select' && (field.key === 'sleepBruxismStatus' || field.displayAs === 'radio');
 }
 
+function isSliderScoreField(
+  field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
+): field is SharedIntakeFieldDefinition & { type: 'score' } {
+  return isSharedField(field) && field.type === 'score' && SLIDER_SCORE_FIELD_KEYS.has(field.key);
+}
+
 function isConsentCheckboxField(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
 ): boolean {
   return isSharedField(field) && field.type === 'checkbox-group' && field.key.endsWith('Consent');
 }
 
+function isConsentCoveredByBiteplanerGate(
+  field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
+  templateKey: string,
+  actorRole: WorkflowFormActorRole
+) {
+  return (
+    templateKey === 'customer_pre_consultation_intake' &&
+    actorRole === 'user' &&
+    isSharedField(field) &&
+    field.key === 'clinicalPrivacyConsent'
+  );
+}
+
 function isTagAutocompleteCheckboxField(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
 ): boolean {
-  return isSharedField(field) && field.type === 'checkbox-group' && ['currentSports', 'pastSports', 'accessories'].includes(field.key);
+  return (
+    isSharedField(field) &&
+    field.type === 'checkbox-group' &&
+    ['currentSports', 'pastSports', 'trainingLocations', 'trainingSupport', 'accessories', 'trainingGoals'].includes(field.key)
+  );
+}
+
+function allowsCustomTagValue(field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition) {
+  return isSharedField(field) && ['currentSports', 'pastSports', 'trainingLocations', 'trainingSupport', 'trainingGoals'].includes(field.key);
 }
 
 function getConsentLabel(field: SharedIntakeFieldDefinition, fallbackLabel: string) {
@@ -703,6 +770,17 @@ function getReadOnlyValue(value: unknown, field: SharedIntakeFieldDefinition) {
   return String(value);
 }
 
+function getReadOnlyFieldSource(form: DemoWorkflowForm, field: SharedIntakeFieldDefinition) {
+  const payload = form.payload ?? {};
+  const rolePayload = payload[getSharedIntakePayloadKey(field.ownerRole)];
+
+  if (rolePayload && typeof rolePayload === 'object' && !Array.isArray(rolePayload)) {
+    return rolePayload as Record<string, unknown>;
+  }
+
+  return payload;
+}
+
 function renderSectionDescription(description?: string) {
   if (!description) {
     return null;
@@ -744,7 +822,7 @@ function getSharedIntakeCanSubmit(form: DemoWorkflowForm, actorRole: WorkflowFor
   const roleState = getSharedRoleState(form);
 
   if (actorRole === 'user') {
-    return roleState.customer !== 'locked' && !form.dentistReviewStartedAt;
+    return roleState.customer === 'pending' && form.status !== 'submitted' && !form.dentistReviewStartedAt;
   }
 
   if (actorRole === 'dentist') {
@@ -758,7 +836,7 @@ function hasMissingRequiredValue(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
   payload: Record<string, string>
 ) {
-  if (!field.required) {
+  if (!isFieldRequiredForPayload(field, payload)) {
     return false;
   }
 
@@ -777,6 +855,22 @@ function hasMissingRequiredValue(
   }
 
   return !payload[field.key]?.trim();
+}
+
+function isFieldRequiredForPayload(
+  field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
+  payload: Record<string, string>
+) {
+  if (field.required) {
+    return true;
+  }
+
+  if (!isSharedField(field)) {
+    return false;
+  }
+
+  const parentKey = getConditionalDetailParentKey(field.key);
+  return Boolean(parentKey && payload[parentKey] === 'yes');
 }
 
 function isValidCpfValue(value: string) {
@@ -998,6 +1092,28 @@ function normalizeBirthDateValue(value: string) {
   return `${digits.slice(4, 8)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function mergePayloadExtras(basePayload: Record<string, unknown>, extras?: Record<string, unknown>) {
+  if (!extras) {
+    return basePayload;
+  }
+
+  return Object.entries(extras).reduce<Record<string, unknown>>((result, [key, value]) => {
+    const currentValue = result[key];
+
+    if (isPlainRecord(currentValue) && isPlainRecord(value)) {
+      result[key] = { ...currentValue, ...value };
+      return result;
+    }
+
+    result[key] = value;
+    return result;
+  }, { ...basePayload });
+}
+
 function getFieldPlaceholder(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
 ) {
@@ -1041,6 +1157,10 @@ function normalizeNumericInputValue(field: SharedIntakeFieldDefinition, rawValue
 
 function getFieldSpan(field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition) {
   if (isSharedField(field)) {
+    if (field.key === 'consultationDate') {
+      return 12;
+    }
+
     if (field.key === 'expectedUseBenefitOther' || field.key === 'imaginedUseBarriersOther') {
       return 12;
     }
@@ -1073,7 +1193,7 @@ function getFieldSpan(field: IntakeFieldDefinition | BiteplanerReviewFieldDefini
       return 12;
     }
 
-    if (field.type === 'select' || field.type === 'number') {
+    if (field.type === 'select' || field.type === 'number' || field.type === 'date') {
       return 3;
     }
   }
@@ -1193,7 +1313,16 @@ function FormItem({
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false);
   const formCardRef = useRef<HTMLElement | null>(null);
   const presentation = STATUS_PRESENTATION[form.status];
-  const fields = getDefinitionFields(definition);
+
+  useEffect(() => {
+    setPayload(getInitialPayload(form, definition, defaultValues, actorRole));
+    setFieldErrors({});
+    setStepError('');
+  }, [actorRole, defaultValues, definition, form.id, form.payload]);
+
+  const fields = getDefinitionFields(definition).filter(
+    (field) => !isConsentCoveredByBiteplanerGate(field, form.templateKey, actorRole)
+  );
   const isSharedIntake = Boolean(definition.sharedIntake);
   const isReviewSurvey = !isSharedIntake && isReviewTemplate(form.templateKey);
   const hasRequiredReviewFields = isReviewSurvey && fields.some((field) => field.required);
@@ -1203,17 +1332,21 @@ function FormItem({
     definition.sharedIntake?.sections
       .map((section) => ({
         ...section,
-        fields: section.fields.filter((field) => field.visibleTo.includes(actorRole)),
+        fields: section.fields.filter(
+          (field) =>
+            field.visibleTo.includes(actorRole) &&
+            !isConsentCoveredByBiteplanerGate(field, form.templateKey, actorRole)
+        ),
       }))
       .filter((section) => section.fields.length > 0) ?? [];
   const displaySharedSections: DisplaySharedSection[] =
     form.templateKey === 'customer_pre_consultation_intake' && actorRole === 'dentist'
       ? getClinicalDentistDisplaySections(visibleSharedSections)
       : form.templateKey === 'customer_pre_consultation_intake' && actorRole === 'user'
-      ? getClinicalCustomerDisplaySections(visibleSharedSections)
-      : form.templateKey === 'customer_new_user_onboarding' && actorRole === 'user'
-      ? getOnboardingDisplaySections(visibleSharedSections)
-      : visibleSharedSections;
+        ? getClinicalCustomerDisplaySections(visibleSharedSections)
+        : form.templateKey === 'customer_new_user_onboarding' && actorRole === 'user'
+          ? getOnboardingDisplaySections(visibleSharedSections)
+          : visibleSharedSections;
   const canEditSubmittedSharedIntake =
     isSharedIntake &&
     actorRole === 'dentist' &&
@@ -1234,7 +1367,12 @@ function FormItem({
     ? displaySharedSections.findIndex((section) => section.key === activeSharedSection.key)
     : 0;
   const isClinicalCustomerIntake = form.templateKey === 'customer_pre_consultation_intake' && actorRole === 'user';
+  const isClinicalDentistIntake = form.templateKey === 'customer_pre_consultation_intake' && actorRole === 'dentist';
   const isCustomerOnboarding = form.templateKey === 'customer_new_user_onboarding' && actorRole === 'user';
+  const useOnboardingProgressPresentation =
+    isCustomerOnboarding ||
+    isClinicalDentistIntake ||
+    (formPresentation === 'flat' && !showFormHeader && actorRole === 'user');
   const isClinicalPrivacyStep = isClinicalCustomerIntake && activeSharedSection?.key === 'clinical-privacy';
   const payloadBlockerMessage = isClinicalCustomerIntake ? getPayloadBlockerMessage(payload) : '';
   const navigationSharedSections =
@@ -1252,6 +1390,9 @@ function FormItem({
   const canGoBackToPreviousSharedSection = isClinicalCustomerIntake
     ? navigationSharedSectionIndex > 0
     : activeSharedSectionIndex > 0;
+  const activeSectionHasMissingRequiredFields = activeSharedSection
+    ? getEditableFieldsForSection(activeSharedSection).some((field) => hasMissingRequiredValue(field, payload))
+    : false;
   const submitIsMissingRequiredFields = isSharedIntake
     ? getFirstMissingSectionIndex() >= 0
     : fields.some((field) => hasMissingRequiredValue(field, payload));
@@ -1428,7 +1569,6 @@ function FormItem({
 
     if (hasMissingRequiredField) {
       validateFieldsLocally(getEditableFieldsForSection(activeSharedSection));
-      setStepError('Preencha os campos obrigatórios desta etapa para continuar.');
       return;
     }
 
@@ -1441,7 +1581,9 @@ function FormItem({
     }
 
     goToSection(Math.min(activeSharedSectionIndex + 1, displaySharedSections.length - 1));
-    formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (typeof formCardRef.current?.scrollIntoView === 'function') {
+      formCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1520,7 +1662,7 @@ function FormItem({
     const normalizedPayload = isSharedIntake && definition.payloadMode !== 'flat'
       ? { [getSharedIntakePayloadKey(actorRole)]: normalizedValues }
       : normalizedValues;
-    const payloadToSubmit = payloadExtras ? { ...normalizedPayload, ...payloadExtras } : normalizedPayload;
+    const payloadToSubmit = mergePayloadExtras(normalizedPayload, payloadExtras);
 
     try {
       const nextForm = await submitWorkflowForm(form.orderId, form.id, payloadToSubmit, token);
@@ -1528,8 +1670,12 @@ function FormItem({
       setIsEditingSubmitted(false);
       setSurveyOpen(false);
       setFeedback('Formulário enviado.');
-    } catch {
-      setError('Não foi possível enviar este formulário agora.');
+    } catch (submitError) {
+      if (submitError instanceof ApiError && submitError.status === 409) {
+        setError('Este formulário já foi enviado ou não está mais disponível para edição. Atualize a página para ver o status mais recente.');
+      } else {
+        setError('Não foi possível enviar este formulário agora.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1578,13 +1724,10 @@ function FormItem({
             return (
               <S.OnboardingProgressStep
                 key={section.key}
-                type="button"
-                disabled={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
                 $active={section.key === activeSharedSection?.key}
                 $complete={displayIndex < activeSharedSectionIndex}
-                onClick={() => goToSection(displayIndex)}
+                $blocked={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
                 aria-current={section.key === activeSharedSection?.key ? 'step' : undefined}
-                aria-label={compactTitle}
               >
                 <S.OnboardingStepNumber
                   $active={section.key === activeSharedSection?.key}
@@ -1631,12 +1774,6 @@ function FormItem({
             </S.ProgressTrack>
           </S.SectionProgressPill>
         </S.SectionOverviewHeader>
-        <S.TrustBadgeStrip aria-label="Garantias de privacidade e governança">
-          <S.TrustBadge><LockKeyhole size={24} /><span>Segurança de dados</span></S.TrustBadge>
-          <S.TrustBadge><ShieldCheck size={24} /><span>Privacidade protegida</span></S.TrustBadge>
-          <S.TrustBadge><Users size={24} /><span>Uso ético e responsável</span></S.TrustBadge>
-          <S.TrustBadge><BarChart3 size={24} /><span>Análises agregadas e anonimizadas</span></S.TrustBadge>
-        </S.TrustBadgeStrip>
       </S.SectionOverviewCard>
     );
   }
@@ -1670,7 +1807,7 @@ function FormItem({
       {isSharedIntake ? (
         <>
           {!isClinicalPrivacyStep ? (
-            isCustomerOnboarding ? (
+            useOnboardingProgressPresentation ? (
               <>
                 {renderOnboardingSectionOverview()}
                 {renderOnboardingProgress()}
@@ -1757,15 +1894,15 @@ function FormItem({
                           <S.PrivacyPurposeList aria-label="Finalidades principais">
                             <S.PrivacyPurposeItem>
                               <UserRound size={16} />
-                              <span>viabilizar seu cadastro, atendimento clínico e uso dos serviços e dispositivos da NEXOR;</span>
+                              <span>Viabilizar seu cadastro, atendimento clínico e uso dos serviços e dispositivos da NEXOR</span>
                             </S.PrivacyPurposeItem>
                             <S.PrivacyPurposeItem>
                               <ShieldCheck size={16} />
-                              <span>registrar informações necessárias para seu cuidado, segurança e acompanhamento ao longo do tempo;</span>
+                              <span>Registrar informações necessárias para seu cuidado, segurança e acompanhamento ao longo do tempo</span>
                             </S.PrivacyPurposeItem>
                             <S.PrivacyPurposeItem>
                               <Database size={16} />
-                              <span>formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e desenvolvimento de produtos conforme a LGPD.</span>
+                              <span>Formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e desenvolvimento de produtos conforme a LGPD</span>
                             </S.PrivacyPurposeItem>
                           </S.PrivacyPurposeList>
                           <S.PrivacyInfoBox>
@@ -1778,7 +1915,13 @@ function FormItem({
                       </S.PrivacyConsentArea>
 
                       <S.PrivacyActions>
-                        <Button type="button" onClick={handleNextSection}>
+                        <Button
+                          type="button"
+                          disabled={activeSectionHasMissingRequiredFields || Boolean(payloadBlockerMessage)}
+                          title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+                          onClick={handleNextSection}
+                          trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                        >
                           Continuar
                         </Button>
                         {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
@@ -1820,10 +1963,7 @@ function FormItem({
                           {readonlyChildFields.length > 0 ? (
                             <S.ReadOnlyGrid>
                               {readonlyChildFields.map((field) => {
-                                const source =
-                                  form.payload?.[getSharedIntakePayloadKey(field.ownerRole)] as
-                                    | Record<string, unknown>
-                                    | undefined;
+                                const source = getReadOnlyFieldSource(form, field);
 
                                 return (
                                   <S.ReadOnlyItem key={field.key}>
@@ -1877,12 +2017,22 @@ function FormItem({
                       <form onSubmit={handleSubmit}>
                         <S.Actions>
                           {canGoBackToPreviousSharedSection ? (
-                            <Button type="button" variant="secondary" onClick={() => goToSection(activeSharedSectionIndex - 1)}>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
+                              onClick={() => goToSection(activeSharedSectionIndex - 1)}
+                            >
                               Voltar etapa
                             </Button>
                           ) : null}
                           {isLastSharedSection || section.key === submitSectionKey ? (
-                            <Button type="submit" disabled={submitting || submitIsMissingRequiredFields || Boolean(payloadBlockerMessage)}>
+                            <Button
+                              type="submit"
+                              disabled={submitting || submitIsMissingRequiredFields || Boolean(payloadBlockerMessage)}
+                              title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+                              trailingIcon={<Send size={16} aria-hidden="true" />}
+                            >
                               {submitting
                                 ? 'Enviando...'
                                 : actorRole === 'dentist'
@@ -1890,7 +2040,13 @@ function FormItem({
                                   : 'Enviar formulário'}
                             </Button>
                           ) : payloadBlockerMessage ? null : (
-                            <Button type="button" onClick={handleNextSection}>
+                            <Button
+                              type="button"
+                              disabled={activeSectionHasMissingRequiredFields}
+                              title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+                              onClick={handleNextSection}
+                              trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                            >
                               Próxima etapa
                             </Button>
                           )}
@@ -1900,16 +2056,32 @@ function FormItem({
                     ) : (
                       <S.Actions>
                         {canEditSubmittedSharedIntake && !isEditingSubmitted ? (
-                          <Button type="button" variant="secondary" onClick={handleEditSubmittedSharedIntake}>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            leadingIcon={<PencilLine size={16} aria-hidden="true" />}
+                            onClick={handleEditSubmittedSharedIntake}
+                          >
                             Editar
                           </Button>
                         ) : canGoBackToPreviousSharedSection ? (
-                          <Button type="button" variant="secondary" onClick={() => goToSection(activeSharedSectionIndex - 1)}>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
+                            onClick={() => goToSection(activeSharedSectionIndex - 1)}
+                          >
                             Voltar etapa
                           </Button>
                         ) : null}
                         {!isLastSharedSection ? (
-                          <Button type="button" onClick={handleNextSection}>
+                          <Button
+                            type="button"
+                            disabled={activeSectionHasMissingRequiredFields}
+                            title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+                            onClick={handleNextSection}
+                            trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                          >
                             Próxima etapa
                           </Button>
                         ) : null}
@@ -1946,6 +2118,7 @@ function FormItem({
             </div>
             <Button
               type="button"
+              trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
               onClick={() => {
                 setError('');
                 setFeedback('');
@@ -2053,10 +2226,21 @@ function FormItem({
                   ))}
                   {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
                   <S.ModalActions>
-                    <Button type="button" variant="secondary" onClick={() => setSurveyOpen(false)} disabled={submitting}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
+                      onClick={() => setSurveyOpen(false)}
+                      disabled={submitting}
+                    >
                       Responder depois
                     </Button>
-                    <Button type="submit" disabled={submitting}>
+                    <Button
+                      type="submit"
+                      disabled={submitting || submitIsMissingRequiredFields}
+                      title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+                      trailingIcon={<Send size={16} aria-hidden="true" />}
+                    >
                       {submitting ? 'Enviando...' : 'Enviar survey'}
                     </Button>
                   </S.ModalActions>
@@ -2094,7 +2278,12 @@ function FormItem({
             })}
           </S.Fields>
           <S.Actions>
-            <Button type="submit" disabled={submitting}>
+            <Button
+              type="submit"
+              disabled={submitting || submitIsMissingRequiredFields}
+              title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
+              trailingIcon={<Send size={16} aria-hidden="true" />}
+            >
               {submitting ? 'Enviando...' : 'Enviar formulário'}
             </Button>
             {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
@@ -2117,6 +2306,8 @@ function renderFieldControl(
   onFieldChange: () => void = () => undefined,
   context: RenderFieldControlContext = {}
 ) {
+  const required = isFieldRequiredForPayload(field, payload);
+
   if (isHealthConditionalField(field)) {
     const answer = getHealthAnswer(payload, field.key);
     const showDescription = answer === 'yes';
@@ -2130,7 +2321,7 @@ function renderFieldControl(
           <RadioQuestionGroup
             name={field.key}
             label={field.label}
-            required={field.required}
+            required={required}
             value={answer}
             inline
             onBlur={onFieldBlur}
@@ -2177,7 +2368,7 @@ function renderFieldControl(
         <RadioQuestionGroup
           name={field.key}
           label={field.label}
-          required={field.required}
+          required={required}
           value={payload[field.key] ?? ''}
           inline
           onBlur={onFieldBlur}
@@ -2217,7 +2408,7 @@ function renderFieldControl(
         <RadioQuestionGroup
           name={field.key}
           label={field.label}
-          required={field.required}
+          required={required}
           value={payload[field.key] ?? ''}
           onBlur={onFieldBlur}
           error={fieldError}
@@ -2240,7 +2431,7 @@ function renderFieldControl(
         label={field.label}
         value={payload[field.key] ?? ''}
         placeholder="Selecione"
-        required={field.required}
+        required={required}
         onChange={(value) => {
           onFieldChange();
           setPayload((current) => ({ ...current, [field.key]: value }));
@@ -2256,10 +2447,35 @@ function renderFieldControl(
     );
   }
 
+  if (isSliderScoreField(field)) {
+    const min = field.min ?? 0;
+    const max = field.max ?? 10;
+    const fallbackValue = payload[field.key] === '' || payload[field.key] === undefined ? min : payload[field.key];
+
+    return (
+      <SliderField
+        label={field.label}
+        value={fallbackValue}
+        min={min}
+        max={max}
+        minLabel="Pior caso"
+        maxLabel="Melhor caso"
+        required={required}
+        hint={field.helpText}
+        error={fieldError}
+        onBlur={onFieldBlur}
+        onChange={(nextValue) => {
+          onFieldChange();
+          setPayload((current) => ({ ...current, [field.key]: String(nextValue) }));
+        }}
+      />
+    );
+  }
+
   if (isSharedField(field) && field.type === 'score') {
     return (
       <S.FieldShell as="fieldset" onBlur={onFieldBlur}>
-        <legend>{getRequiredLabel(field.label, field.required)}</legend>
+        <legend>{getRequiredLabel(field.label, required)}</legend>
         {field.helpText ? <S.Meta>{field.helpText}</S.Meta> : null}
         <S.ScoreOptions role="radiogroup" aria-label={field.label}>
           {(field.options ?? []).map((option) => {
@@ -2301,7 +2517,7 @@ function renderFieldControl(
           label={field.label}
           value={payload[field.key] ?? ''}
           placeholder="Selecione"
-          required={field.required}
+          required={required}
           onChange={(value) => {
             onFieldChange();
             setPayload((current) => ({ ...current, [field.key]: value }));
@@ -2333,11 +2549,14 @@ function renderFieldControl(
         <TagAutocompleteField
           label={field.label}
           value={Array.from(selected)}
-          options={(field.options ?? []).map((option) => ({
-            value: String(option.value),
-            label: option.label,
-          }))}
-          required={field.required}
+          options={(field.options ?? [])
+            .filter((option) => !allowsCustomTagValue(field) || option.value !== 'other')
+            .map((option) => ({
+              value: String(option.value),
+              label: option.label,
+            }))}
+          allowCustomValue={allowsCustomTagValue(field)}
+          required={required}
           placeholder="Buscar e adicionar..."
           hint={field.helpText}
           error={fieldError}
@@ -2366,9 +2585,9 @@ function renderFieldControl(
           }}
           onBlur={onFieldBlur}
           error={fieldError}
-          label={getRequiredLabel(field.label, field.required)}
-          badge={field.required ? 'Obrigatório' : 'Opcional'}
-          badgeTone={field.required ? 'required' : 'optional'}
+          label={getRequiredLabel(field.label, required)}
+          badge={required ? 'Obrigatório' : 'Opcional'}
+          badgeTone={required ? 'required' : 'optional'}
         />
       );
     }
@@ -2386,16 +2605,16 @@ function renderFieldControl(
           }}
           onBlur={onFieldBlur}
           error={fieldError}
-          label={getRequiredLabel(getConsentLabel(field, singleOption.label), field.required)}
-          badge={field.required ? 'Obrigatório' : 'Opcional'}
-          badgeTone={field.required ? 'required' : 'optional'}
+          label={getRequiredLabel(getConsentLabel(field, singleOption.label), required)}
+          badge={required ? 'Obrigatório' : 'Opcional'}
+          badgeTone={required ? 'required' : 'optional'}
         />
       );
     }
 
     return (
       <S.FieldShell as="fieldset" onBlur={onFieldBlur}>
-        <legend>{getRequiredLabel(field.label, field.required)}</legend>
+        <legend>{getRequiredLabel(field.label, required)}</legend>
         <S.CheckboxGroup>
           {(field.options ?? []).map((option) => (
             <label key={option.value}>
@@ -2432,6 +2651,7 @@ function renderFieldControl(
   const isResidenceCepField = isSharedField(field) && field.key === 'residenceCep';
   const isCurrencyInputField = isCurrencyField(field);
   const isSystemDentistField = isSharedField(field) && SYSTEM_DENTIST_FIELD_KEYS.has(field.key);
+  const isConsultationDateField = isSharedField(field) && field.key === 'consultationDate';
   const displayedFieldError = isResidenceCepField
     ? fieldError || context.residenceCepLookupError
     : fieldError;
@@ -2440,11 +2660,11 @@ function renderFieldControl(
       as={isTextareaField(field) ? 'textarea' : 'input'}
       label={field.label}
       value={payload[field.key] ?? ''}
-      required={field.required}
+      required={required}
       error={displayedFieldError}
       hint={field.helpText}
       disabled={isSystemDentistField || (isTrainingLocationField && Boolean(context.trainingSameAsResidence))}
-      type={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' || isResidenceCepField ? 'tel' : isSharedNumberField(field) && !isCurrencyInputField ? 'number' : 'text'}
+      type={isSharedDateField(field) ? 'date' : field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' || isResidenceCepField ? 'tel' : isSharedNumberField(field) && !isCurrencyInputField ? 'number' : 'text'}
       inputMode={field.key === 'phone' || field.key === 'cpf' || field.key === 'birthDate' || isResidenceCepField ? 'numeric' : isSharedNumberField(field) ? 'decimal' : undefined}
       min={isSharedNumberField(field) && !isCurrencyInputField ? field.min : undefined}
       max={isSharedNumberField(field) && !isCurrencyInputField ? field.max : undefined}
@@ -2469,11 +2689,13 @@ function renderFieldControl(
               ? formatBirthDateValue(event.target.value)
               : isResidenceCepField
                 ? formatCepValue(event.target.value)
-              : isCurrencyInputField
-                ? formatCurrencyInputValue(event.target.value)
-          : isSharedNumberField(field)
-            ? normalizeNumericInputValue(field, event.target.value)
-            : event.target.value;
+                : isCurrencyInputField
+                  ? formatCurrencyInputValue(event.target.value)
+                    : isSharedDateField(field)
+                      ? event.target.value
+                      : isSharedNumberField(field)
+                        ? normalizeNumericInputValue(field, event.target.value)
+                        : event.target.value;
         setPayload((current) => ({ ...current, [field.key]: value }));
       }}
     />
@@ -2506,6 +2728,10 @@ function renderFieldControl(
     );
   }
 
+  if (isConsultationDateField) {
+    return <S.HighlightedClinicalDateField>{fieldControl}</S.HighlightedClinicalDateField>;
+  }
+
   return fieldControl;
 }
 
@@ -2527,6 +2753,7 @@ export function WorkflowFormsPanel({
   formsLocked = false,
   payloadExtras,
 }: WorkflowFormsPanelProps) {
+  const queryClient = useQueryClient();
   const [loadedForms, setLoadedForms] = useState<DemoWorkflowForm[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -2560,7 +2787,11 @@ export function WorkflowFormsPanel({
 
     async function loadForms() {
       try {
-        const response = await fetchWorkflowForms(currentOrderId, token);
+        const response = await queryClient.fetchQuery({
+          queryKey: biteplanerQueryKeys.workflowForms(currentOrderId),
+          queryFn: () => fetchWorkflowForms(currentOrderId, token),
+          staleTime: 5 * 60_000,
+        });
 
         if (active) {
           setLoadedForms(response.forms);
@@ -2581,7 +2812,83 @@ export function WorkflowFormsPanel({
     return () => {
       active = false;
     };
-  }, [forms, orderId, token]);
+  }, [forms, orderId, queryClient, Boolean(token)]);
+
+  useEffect(() => {
+    if (!orderId || !token) {
+      return;
+    }
+
+    const formsMissingPayload = formsSource.filter(
+      (form) =>
+        form.canViewPayload &&
+        form.payload === null &&
+        (!templateFilter || templateFilter.includes(form.templateKey))
+    );
+
+    if (formsMissingPayload.length === 0) {
+      return;
+    }
+
+    let active = true;
+    const currentOrderId = orderId;
+    setLoading(true);
+    setError('');
+
+    async function hydrateForms() {
+      try {
+        const hydratedForms = await Promise.all(
+          formsMissingPayload.map((form) =>
+            queryClient.fetchQuery({
+              queryKey: biteplanerQueryKeys.workflowForm(currentOrderId, form.id),
+              queryFn: () => fetchWorkflowForm(currentOrderId, form.id, token),
+              staleTime: 10 * 60_000,
+            })
+          )
+        );
+
+        if (active) {
+          const hydratedFormById = new Map(
+            hydratedForms
+              .filter((hydratedForm): hydratedForm is DemoWorkflowForm => Boolean(hydratedForm?.id))
+              .map((hydratedForm) => [hydratedForm.id, hydratedForm])
+          );
+
+          if (hydratedFormById.size > 0) {
+            updateForms((current) => {
+              let changed = false;
+              const nextForms = current.map((form) => {
+                const hydratedForm = hydratedFormById.get(form.id);
+
+                if (!hydratedForm || hydratedForm === form) {
+                  return form;
+                }
+
+                changed = true;
+                return hydratedForm;
+              });
+
+              return changed ? nextForms : current;
+            });
+          }
+        }
+      } catch {
+        if (active) {
+          setError('Não foi possível carregar os dados completos deste formulário.');
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void hydrateForms();
+
+    return () => {
+      active = false;
+    };
+  }, [formsSource, orderId, queryClient, templateFilter, Boolean(token)]);
 
   const visibleForms = useMemo(
     () => formsSource.filter((form) => !templateFilter || templateFilter.includes(form.templateKey)),

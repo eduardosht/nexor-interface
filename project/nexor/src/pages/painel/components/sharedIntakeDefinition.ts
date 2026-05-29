@@ -4,6 +4,7 @@ export type SharedIntakeEditableWhen = 'customer_intake' | 'dentist_review';
 
 export type SharedIntakeFieldType =
   | 'text'
+  | 'date'
   | 'textarea'
   | 'select'
   | 'number'
@@ -1511,6 +1512,16 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
         'Campos preenchidos pelo dentista licenciado durante ou após a consulta. Estes dados integram o prontuário e devem ser baixados/armazenados conforme normas éticas e legais.',
       fields: [
         {
+          key: 'consultationDate',
+          label: 'Data da consulta',
+          required: true,
+          type: 'date',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          helpText: 'Preencha a data real da consulta para que a anamnese exportada saia com esta informação correta.',
+        },
+        {
           key: 'painlessMaxOpeningMm',
           label: 'Abertura máxima sem dor (mm)',
           required: false,
@@ -1699,8 +1710,8 @@ DISPOSITIVOS FUTUROS
       title: 'Feedback',
       fields: [
         { key: 'productDevelopmentAdvice', label: 'Um conselho para a equipe que está criando o produto', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
-        { key: 'nexorMostImportantHelp', label: 'Qual a coisa MAIS IMPORTANTE que a NEXOR precisa te auxiliar?', required: true, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Em uma frase: “A NEXOR precisa me ajudar a .”' },
-        { key: 'finalOpenFeedback', label: 'Tem alguma dúvida, preocupação ou sugestão que não perguntamos?', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Opcional – campo aberto para o que você desejar falar. Não inclua dados pessoais de outras pessoas e evite detalhes médicos muito específicos que não deseje compartilhar' },
+        { key: 'nexorMostImportantHelp', label: 'Qual a coisa MAIS IMPORTANTE que a NEXOR precisa te auxiliar?', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Em uma frase: “A NEXOR precisa me ajudar a .”' },
+        { key: 'finalOpenFeedback', label: 'Tem alguma dúvida, preocupação ou sugestão que não perguntamos?', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Não inclua dados pessoais de outras pessoas e evite detalhes médicos muito específicos que não deseje compartilhar' },
       ],
     },
   ],

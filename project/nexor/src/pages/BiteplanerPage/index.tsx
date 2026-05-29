@@ -9,45 +9,13 @@ import {
   Star,
   Target,
   Trophy,
-  Volleyball,
   Zap,
 } from 'lucide-react';
-import { useState, type SVGProps } from 'react';
+import { useState } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
-
-type InlineIconProps = SVGProps<SVGSVGElement> & {
-  size?: number | string;
-  strokeWidth?: number | string;
-};
-
-function BoxingGloveIcon({ size = 24, strokeWidth = 2, ...props }: InlineIconProps) {
-  return (
-    <svg
-      {...props}
-      data-testid="biteplaner-combat-glove-icon"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M9.4 3.2h3.8c3.4 0 6.1 2.7 6.1 6.1v2.3c0 2.5-2 4.5-4.5 4.5h-4.7c-3.1 0-5.6-2.5-5.6-5.6V8.1c0-2.7 2.2-4.9 4.9-4.9Z" />
-      <path d="M9.5 3.3v7.5" />
-      <path d="M12.8 3.3v7.5" />
-      <path d="M16.1 4.6v6.2" />
-      <path d="M14.8 10.8h2.7c1 0 1.8.8 1.8 1.8" />
-      <path d="M8.7 16v3.2c0 .9.7 1.6 1.6 1.6h5.2c.9 0 1.6-.7 1.6-1.6V16" />
-      <path d="M8.9 18.6h8" />
-    </svg>
-  );
-}
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 34, scale: 0.98 },
@@ -62,35 +30,6 @@ const cardVariants: Variants = {
     },
   }),
 };
-
-const HERO_PROOFS = [
-  { icon: ShieldCheck, title: 'Avaliação antes da compra' },
-  { icon: BadgeCheck, title: 'Produção personalizada' },
-  { icon: ShieldCheck, title: 'Protocolo e acompanhamento profissional' },
-];
-
-const USE_CASES = [
-  {
-    icon: BoxingGloveIcon,
-    iconTestId: 'biteplaner-combat-glove-icon',
-    title: 'Esportes de combate',
-    body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
-  },
-  {
-    icon: Dumbbell,
-    iconTestId: 'biteplaner-strength-dumbbell-icon',
-    secondaryIcon: Zap,
-    secondaryIconTestId: 'biteplaner-strength-zap-icon',
-    title: 'Força e alta intensidade',
-    body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
-  },
-  {
-    icon: Volleyball,
-    iconTestId: 'biteplaner-team-sport-icon',
-    title: 'Esportes coletivos',
-    body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
-  },
-];
 
 const JOURNEY_STEPS = [
   {
@@ -266,7 +205,7 @@ const COMPARISON = [
 
 const EDUCATION = [
   {
-    icon: ShieldCheck,
+    icon: Activity,
     title: 'Impacto e apertamento',
     body: 'Treinos intensos podem envolver contato, tensão e apertamento mandibular. Entender esse contexto ajuda a decidir com clareza.',
   },
@@ -276,7 +215,7 @@ const EDUCATION = [
     body: 'Um produto que pode auxiliar no conforto e prevenção, trazendo mais segurança e longevidade.',
   },
   {
-    icon: Target,
+    icon: ShieldCheck,
     title: 'Limites claros',
     body: 'Biteplaner não promete resultados imediatos. A proposta é clareza, diagnóstico, personalização, adaptação e acompanhamento.',
   },
@@ -353,13 +292,12 @@ export function BiteplanerPage() {
     <S.Page id="main-content" tabIndex={-1}>
       <S.HeroSection>
         <S.HeroCopy>
-          <S.ProductLabel>Biteplaner</S.ProductLabel>
           <S.HeroTitle>
-            Segurança
+            Segurança.
             <br />
-            Conforto
+            <span style={{ color: '#1c5e3a' }}>Conforto.</span>
             <br />
-            Performance
+            Performance.
           </S.HeroTitle>
           <S.HeroSubtitle>
             Dispositivo intraoral personalizado para atletas e praticantes de esportes construído através de uma
@@ -372,54 +310,49 @@ export function BiteplanerPage() {
             <S.SecondaryCta href="#como-funciona">Ver como funciona</S.SecondaryCta>
           </S.HeroActions>
         </S.HeroCopy>
-
-        <S.HeroProof aria-label="Resumo da jornada Biteplaner">
-          {HERO_PROOFS.map(({ icon: Icon, title }) => (
-            <S.ProofItem key={title}>
-              <Icon aria-hidden="true" size={28} strokeWidth={1.8} />
-              <span>{title}</span>
-            </S.ProofItem>
-          ))}
-        </S.HeroProof>
       </S.HeroSection>
 
-      <S.SplitSection>
-        <S.SectionIntro>
-          <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-          <S.SectionTitle>Feito para a rotina real<br />de treinos e competições</S.SectionTitle>
-          <S.SectionLead>
-            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e
-            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O
-            Biteplaner modula as sobrecargas através de um processo tecnológico e avaliações periódicas.
-          </S.SectionLead>
-        </S.SectionIntro>
-        <S.CardGrid>
-          {USE_CASES.map(({ icon: Icon, iconTestId, secondaryIcon: SecondaryIcon, secondaryIconTestId, title, body }, index) => (
-            <S.FeatureCard
+      <S.TrustOuter>
+        <S.TrustHero>
+          <S.TrustIntro>
+            <S.SectionLabel>Comparação</S.SectionLabel>
+            <S.TrustTitle>Educação para decidir <S.TrustTitleAccent>melhor</S.TrustTitleAccent></S.TrustTitle>
+            <S.TrustLead>
+              Informações e tecnologia para transformar performance em decisões mais inteligentes.
+            </S.TrustLead>
+          </S.TrustIntro>
+        </S.TrustHero>
+
+        <S.EducationRail>
+          {EDUCATION.map(({ icon: Icon, title, body }, index) => (
+            <S.EducationItem
               key={title}
+              data-testid="education-layout-item"
               custom={index}
               variants={cardVariants}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.34 }}
             >
-              <S.CardIcon>
-                <Icon aria-hidden="true" data-testid={iconTestId} size={48} strokeWidth={1.6} />
-                {SecondaryIcon ? (
-                  <SecondaryIcon
-                    aria-hidden="true"
-                    data-testid={secondaryIconTestId}
-                    size={48}
-                    strokeWidth={1.6}
-                  />
-                ) : null}
-              </S.CardIcon>
-              <S.CardTitle>{title}</S.CardTitle>
-              <S.CardBody>{body}</S.CardBody>
-            </S.FeatureCard>
+              <S.EducationIcon data-testid="education-icon">
+                <Icon aria-hidden="true" size={34} strokeWidth={1.7} />
+              </S.EducationIcon>
+              <S.EducationCopy>
+                <S.EducationTitle>{title}</S.EducationTitle>
+                <S.EducationBody>{body}</S.EducationBody>
+              </S.EducationCopy>
+            </S.EducationItem>
           ))}
-        </S.CardGrid>
-      </S.SplitSection>
+        </S.EducationRail>
+        <S.TrustRail>
+          {TRUST_POINTS.map(({ icon: Icon, title }) => (
+            <S.TrustPoint key={title} data-testid="trust-rail-item">
+              <Icon aria-hidden="true" size={30} strokeWidth={1.6} />
+              <span>{title}</span>
+            </S.TrustPoint>
+          ))}
+        </S.TrustRail>
+      </S.TrustOuter>
 
       <S.ProcessOuter id="como-funciona">
         <S.SplitSection>
@@ -435,6 +368,7 @@ export function BiteplanerPage() {
             {JOURNEY_STEPS.map(({ icon: Icon, ...step }, index) => (
               <S.StepCard
                 key={step.n}
+                data-step-number={step.n}
                 custom={index}
                 variants={cardVariants}
                 initial="hidden"
@@ -458,11 +392,26 @@ export function BiteplanerPage() {
         </S.SplitSection>
       </S.ProcessOuter>
 
+      <S.RealRoutineSection>
+        <S.RealRoutineContent>
+          <S.SectionIntro>
+            <S.SectionLabel>Contexto esportivo</S.SectionLabel>
+            <S.SectionTitle>Feito para a rotina real de treinos e competições</S.SectionTitle>
+          </S.SectionIntro>
+          <S.RealRoutineLead>
+            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e
+            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O
+            Biteplaner® modula as sobrecargas através de um processo tecnológico e avaliações periódicas.
+          </S.RealRoutineLead>
+        </S.RealRoutineContent>
+        <S.RealRoutineVisual aria-hidden="true" />
+      </S.RealRoutineSection>
+
       <S.ComparisonSection>
         <S.ComparisonHeader>
           <S.SectionIntro>
             <S.SectionLabel>Comparação</S.SectionLabel>
-            <S.ComparisonTitle>Genérico vs <S.ComparisonTitleAccent>Biteplaner</S.ComparisonTitleAccent></S.ComparisonTitle>
+            <S.ComparisonTitle>Protetores Bucais vs <S.ComparisonTitleAccent>Biteplaner</S.ComparisonTitleAccent></S.ComparisonTitle>
             <S.ComparisonLead>
               Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
             </S.ComparisonLead>
@@ -489,7 +438,7 @@ export function BiteplanerPage() {
                 <th>Critério</th>
                 <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Genérico</S.ColumnHeaderContent></th>
                 <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Tradicional</S.ColumnHeaderContent></th>
-                <th data-highlighted-column="true"><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.7} />BITEPLANER</S.ColumnHeaderContent></th>
+                <th data-highlighted-column="true" style={{ fontSize: 18 }}><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.7} />BITEPLANER</S.ColumnHeaderContent></th>
               </tr>
             </thead>
             <tbody>
@@ -517,53 +466,6 @@ export function BiteplanerPage() {
           </S.ComparisonToggleButton>
         ) : null}
       </S.ComparisonSection>
-
-      <S.TrustOuter>
-        <S.TrustHero>
-          <S.TrustIntro>
-            <S.SectionLabel>Confiança</S.SectionLabel>
-            <S.TrustTitle>Educação para decidir <S.TrustTitleAccent>melhor</S.TrustTitleAccent></S.TrustTitle>
-          </S.TrustIntro>
-          <S.TrustProductVisual>
-            <picture>
-              <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
-              <img
-                src={publicOptimizedImages.biteplaner.faqProduct.webp}
-                alt="Dispositivo Biteplaner na seção de confiança"
-                loading="lazy"
-              />
-            </picture>
-          </S.TrustProductVisual>
-        </S.TrustHero>
-
-        <S.EducationRail>
-            {EDUCATION.map(({ icon: Icon, title, body }, index) => (
-              <S.EducationItem
-                key={title}
-                data-testid="education-layout-item"
-                custom={index}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.34 }}
-              >
-                <S.EducationIcon><Icon aria-hidden="true" size={42} strokeWidth={1.7} /></S.EducationIcon>
-                <S.EducationCopy>
-                  <S.EducationTitle>{title}</S.EducationTitle>
-                  <S.EducationBody>{body}</S.EducationBody>
-                </S.EducationCopy>
-              </S.EducationItem>
-            ))}
-        </S.EducationRail>
-        <S.TrustRail>
-          {TRUST_POINTS.map(({ icon: Icon, title }) => (
-            <S.TrustPoint key={title} data-testid="trust-rail-item">
-              <Icon aria-hidden="true" size={30} strokeWidth={1.6} />
-              <span>{title}</span>
-            </S.TrustPoint>
-          ))}
-        </S.TrustRail>
-      </S.TrustOuter>
 
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
@@ -605,8 +507,8 @@ export function BiteplanerPage() {
         </S.FaqMedia>
         <S.FaqContent>
           <S.FaqList>
-            {FAQ.map((item, index) => (
-              <Collapse key={item.q} trigger={item.q} defaultOpen={index === FAQ.length - 1}>
+            {FAQ.map((item) => (
+              <Collapse key={item.q} trigger={item.q} defaultOpen={item.q === FAQ[0].q}>
                 {item.a}
               </Collapse>
             ))}
@@ -615,19 +517,21 @@ export function BiteplanerPage() {
       </S.FaqSection>
 
       <S.FinalCtaOuter>
-        <S.FinalCtaMedia aria-hidden="true" />
-        <S.FinalCtaContent>
-          <S.FinalCtaTitle>Comece pela elegibilidade</S.FinalCtaTitle>
-          <S.FinalCtaBody>
-            Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
-            qualquer pagamento do produto.
-          </S.FinalCtaBody>
-        </S.FinalCtaContent>
-        <S.FinalCtaAction>
-          <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
-            Iniciar elegibilidade <span aria-hidden="true">→</span>
-          </S.FinalButton>
-        </S.FinalCtaAction>
+        <S.FinalCtaInner>
+          <S.FinalCtaMedia aria-hidden="true" />
+          <S.FinalCtaContent>
+            <S.FinalCtaTitle>Comece pela elegibilidade</S.FinalCtaTitle>
+            <S.FinalCtaBody>
+              Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
+              qualquer pagamento do produto.
+            </S.FinalCtaBody>
+          </S.FinalCtaContent>
+          <S.FinalCtaAction>
+            <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+              Iniciar elegibilidade <span aria-hidden="true">→</span>
+            </S.FinalButton>
+          </S.FinalCtaAction>
+        </S.FinalCtaInner>
       </S.FinalCtaOuter>
     </S.Page>
   );
