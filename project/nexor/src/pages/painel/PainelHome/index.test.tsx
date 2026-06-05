@@ -254,6 +254,30 @@ describe('PainelHome', () => {
     expect(screen.getAllByText(/perfil de dentista/i).length).toBeGreaterThanOrEqual(2);
   });
 
+  it('hides the laboratory request link when the account already has an active lab registration', async () => {
+    renderPage(
+      {
+        backendUser: {
+          email: 'eduardoshoitifujiwara123@gmail.com',
+          roles: ['lab'],
+          productRoles: [],
+        },
+      },
+      {
+        productRoles: [
+          { productKey: 'biteplaner', role: 'lab', status: 'active' },
+        ],
+        orders: [],
+      }
+    );
+
+    const labCard = (await screen.findByText(/solicitar cadastro de laborat.rio/i)).closest('article');
+
+    expect(labCard).toBeInTheDocument();
+    expect(within(labCard as HTMLElement).getByText(/ativo/i)).toBeInTheDocument();
+    expect(within(labCard as HTMLElement).queryByRole('button', { name: /solicitar cadastro/i })).not.toBeInTheDocument();
+  });
+
   it('shows active demo profile banner when using mock persona', async () => {
     renderPage({ isMockMode: true, demoPersona: 'partner' });
 

@@ -618,7 +618,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
           )}
           <S.LogoutBtn
             $collapsed={collapsed}
-            onClick={() => { void signOut(); void navigate('/'); }}
+            onClick={() => { void signOut(); void navigate('/entrar'); }}
             title={collapsed ? 'Sair' : undefined}
           >
             <LogOut size={16} />

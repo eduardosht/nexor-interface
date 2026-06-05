@@ -1,3 +1,9 @@
+import {
+  readStorageJson,
+  removeStorageValue,
+  writeStorageJson,
+} from './browser-storage';
+
 export type PendingRegistration = {
   email: string;
   fullName: string;
@@ -11,23 +17,13 @@ export type PendingRegistration = {
 const STORAGE_KEY = 'nexor_pending_registration';
 
 export function savePendingRegistration(payload: PendingRegistration) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  writeStorageJson(STORAGE_KEY, payload, 'session');
 }
 
 export function loadPendingRegistration(): PendingRegistration | null {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as PendingRegistration;
-  } catch {
-    sessionStorage.removeItem(STORAGE_KEY);
-    return null;
-  }
+  return readStorageJson<PendingRegistration>(STORAGE_KEY, 'session');
 }
 
 export function clearPendingRegistration() {
-  sessionStorage.removeItem(STORAGE_KEY);
+  removeStorageValue(STORAGE_KEY, 'session');
 }

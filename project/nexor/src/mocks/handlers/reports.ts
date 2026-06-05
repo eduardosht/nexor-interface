@@ -65,6 +65,16 @@ function paymentStatusFor(orderStatus: string) {
   return 'Nao aplicavel';
 }
 
+function formatOrderDisplayId(order: { id: string; displayId?: string; display_number?: number | string | null; displayNumber?: number | string | null }) {
+  if (order.displayId?.trim()) return order.displayId.trim();
+
+  const displayNumber = order.display_number ?? order.displayNumber;
+  if (typeof displayNumber === 'number' && Number.isFinite(displayNumber)) return `#${displayNumber}`;
+  if (typeof displayNumber === 'string' && /^\d+$/.test(displayNumber.trim())) return `#${displayNumber.trim()}`;
+
+  return order.id;
+}
+
 export function getBiteplanerReportOrders(filters: {
   purpose?: string | string[];
   status?: string | string[];
@@ -85,13 +95,13 @@ export function getBiteplanerReportOrders(filters: {
     .filter((order) => !dateTo || order.created_at.slice(0, 10) <= dateTo)
     .map((order) => {
       const baseRow: Record<string, string | null> = {
-        orderId: order.id,
+        orderId: formatOrderDisplayId(order),
         customerName: order.customer.full_name,
         customerEmail: order.customer.email,
         orderStatus: order.statusLabel || order.status,
         stage: order.stage,
         paymentStatus: paymentStatusFor(order.status),
-        createdAt: order.created_at.slice(0, 10),
+        createdAt: order.created_at,
         practiceLocation: order.practice_location?.name ?? null,
         currentTrainingHealthLimitations: 'Campo sensivel liberado apenas para finalidade clinica no mock.',
       };

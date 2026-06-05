@@ -1,12 +1,23 @@
 import {
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Sparkles,
   Stethoscope,
-  Upload,
 } from 'lucide-react';
 import type { ChangeEvent, ReactNode } from 'react';
-import { formatDate, type DemoOrderSummary, type DemoWorkflowForm, type ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
+import {
+  formatDate,
+  getOrderDisplayId,
+  type DemoOrderSummary,
+  type DemoWorkflowForm,
+  type ProductionRequestDraft,
+} from '../../../features/demo/biteplanerFlow';
+import {
+  SHARED_INITIAL_EVALUATION_INTAKE,
+  type SharedIntakeFieldDefinition,
+  type SharedIntakeSectionDefinition,
+} from '../components/sharedIntakeDefinition';
 import * as S from './DentalAnamnesisRecord.styles';
 
 type DentalAnamnesisRecordProps = {
@@ -24,7 +35,54 @@ type SectionConfig = {
   content: ReactNode;
 };
 
+const ANAMNESIS_SECTION_KEYS = new Set([
+  'initial-data',
+  'medical-history',
+  'dental-orofacial-history',
+  'current-pain-function',
+  'life-habits',
+  'biteplaner-experience',
+  'dentist-clinical-complement',
+]);
+
+const HIDDEN_SUMMARY_FIELD_KEYS = new Set(['dentistClinicalDeclaration']);
+
 const missingValue = 'Não informado no fluxo atual';
+
+const CLINICAL_DETAIL_PARENT_BY_KEY: Record<string, string> = {
+  relevantMedicalDiagnosisDetails: 'hasRelevantMedicalDiagnosis',
+  currentMedicationDetails: 'currentMedicationUse',
+  longTermPainOrSleepMedicationDetails: 'longTermPainOrSleepMedicationUse',
+  headNeckSpineSurgeryDetails: 'headNeckSpineSurgeryHistory',
+  faceJawTraumaDetails: 'faceJawTraumaHistory',
+  headNeckSpineAccidentDetails: 'headNeckSpineAccidentHistory',
+  tmdDiagnosisDetails: 'hasTmdDiagnosis',
+  regularDentistCityNeighborhood: 'regularDentistVisit',
+  caffeineStimulantsUse: 'usesCaffeineStimulants',
+  openingMidlineDeviationSide: 'openingMidlineDeviation',
+};
+
+const CURRENT_PAIN_DETAIL_KEYS = new Set([
+  'painLocations',
+  'painPatternDetails',
+  'averagePainLastWeek',
+  'worstPainLastWeek',
+  'painAggravatingFactors',
+  'painReliefFactors',
+  'hasMouthOpeningDifficulty',
+  'mandibularFunctionSymptoms',
+  'jointClickFrequency',
+  'trainingTeethClenching',
+  'trainingJawTensionMoment',
+  'trainingInterruptedByPain',
+  'trainingPerformanceImpact',
+  'missedTrainingDuePain',
+]);
+
+const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
+  expectedUseBenefitOther: 'expectedUseBenefit',
+  imaginedUseBarriersOther: 'imaginedUseBarriers',
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -33,6 +91,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getPayloadSection(form: DemoWorkflowForm | undefined, key: 'customer' | 'dentist') {
   const payload = isRecord(form?.payload) ? form.payload : {};
   const section = payload[key];
+
+  if (key === 'customer') {
+    return isRecord(section) ? { ...payload, ...section } : payload;
+  }
+
   return isRecord(section) ? section : {};
 }
 
@@ -56,6 +119,24 @@ function formatValue(value: unknown) {
   return String(value);
 }
 
+function hasFilledValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== null && value !== undefined && value !== '';
+}
+
+function payloadHasCheckboxValue(payload: Record<string, unknown>, fieldKey: string, value: string) {
+  const rawValue = payload[fieldKey];
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.some((item) => String(item) === value);
+  }
+
+  return String(rawValue ?? '').split('|').includes(value);
+}
+
 function formatClinicalDate(value: unknown) {
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split('-');
@@ -63,18 +144,6 @@ function formatClinicalDate(value: unknown) {
   }
 
   return typeof value === 'string' && value.trim() ? formatDate(value) : missingValue;
-}
-
-function valueTone(value: unknown): 'success' | 'warning' | 'neutral' {
-  if (value === 'yes' || value === true) {
-    return 'warning';
-  }
-
-  if (value === 'no' || value === false) {
-    return 'success';
-  }
-
-  return 'neutral';
 }
 
 function getInitials(name: string) {
@@ -88,6 +157,10 @@ function getInitials(name: string) {
 }
 
 function calculateCompletion(values: unknown[]) {
+  if (values.length === 0) {
+    return 0;
+  }
+
   const filled = values.filter((value) => {
     if (Array.isArray(value)) {
       return value.length > 0;
@@ -110,258 +183,192 @@ function FieldItem({ label, value, important = false }: { label: string; value: 
   );
 }
 
-function YesNoItem({ label, value }: { label: string; value: unknown }) {
-  return (
-    <S.Tag $tone={valueTone(value) === 'success' ? 'green' : valueTone(value) === 'warning' ? 'amber' : 'gray'}>
-      {label}: {formatValue(value)}
-    </S.Tag>
-  );
+function getOptionLabel(field: SharedIntakeFieldDefinition, value: unknown) {
+  const option = field.options?.find((candidate) => String(candidate.value) === String(value));
+  return option?.label ?? formatValue(value);
+}
+
+function formatFieldValue(field: SharedIntakeFieldDefinition, value: unknown) {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.map((item) => getOptionLabel(field, item)).join(', ') : missingValue;
+  }
+
+  if (field.type === 'date') {
+    return formatClinicalDate(value);
+  }
+
+  if (field.options?.length) {
+    return getOptionLabel(field, value);
+  }
+
+  return formatValue(value);
+}
+
+function getFieldPayloadValue(field: SharedIntakeFieldDefinition, customer: Record<string, unknown>, dentist: Record<string, unknown>) {
+  return field.ownerRole === 'dentist' ? dentist[field.key] : customer[field.key];
+}
+
+function isFieldVisibleForPayload(
+  field: SharedIntakeFieldDefinition,
+  customer: Record<string, unknown>,
+  dentist: Record<string, unknown>
+) {
+  if (HIDDEN_SUMMARY_FIELD_KEYS.has(field.key)) {
+    return false;
+  }
+
+  const payload = field.ownerRole === 'dentist' ? dentist : customer;
+  const parentKey = CLINICAL_DETAIL_PARENT_BY_KEY[field.key];
+
+  if (parentKey) {
+    return payload[parentKey] === 'yes';
+  }
+
+  if (CURRENT_PAIN_DETAIL_KEYS.has(field.key)) {
+    return customer.hasCurrentPain === 'yes';
+  }
+
+  const checkboxOtherParentKey = CHECKBOX_OTHER_DETAIL_BY_KEY[field.key];
+
+  if (checkboxOtherParentKey) {
+    return payloadHasCheckboxValue(payload, checkboxOtherParentKey, 'other');
+  }
+
+  if (payload.orthodonticTreatmentStatus === 'active' && field.key === 'needsAdaptedClinic') {
+    return false;
+  }
+
+  return true;
+}
+
+function getSectionStatus(section: SharedIntakeSectionDefinition) {
+  const hasDentistFields = section.fields.some((field) => field.ownerRole === 'dentist');
+  const hasCustomerFields = section.fields.some((field) => field.ownerRole === 'user');
+
+  if (hasDentistFields && hasCustomerFields) {
+    return 'Paciente / Profissional';
+  }
+
+  return hasDentistFields ? 'Profissional' : 'Paciente';
+}
+
+function sentenceCase(value: string) {
+  const normalized = value.trim().toLocaleLowerCase('pt-BR');
+  return normalized ? `${normalized.charAt(0).toLocaleUpperCase('pt-BR')}${normalized.slice(1)}` : value;
+}
+
+function formatSectionTitle(title: string) {
+  return sentenceCase(title.replace(/^SEÇÃO\s*\d+\s*[-–—]\s*/i, ''));
+}
+
+function buildPayloadSection(
+  section: SharedIntakeSectionDefinition,
+  customer: Record<string, unknown>,
+  dentist: Record<string, unknown>,
+  extraItems: ReactNode[] = []
+): SectionConfig | null {
+  const fieldItems = section.fields
+    .filter((field) => isFieldVisibleForPayload(field, customer, dentist))
+    .map((field) => {
+      const rawValue = getFieldPayloadValue(field, customer, dentist);
+
+      if (!hasFilledValue(rawValue) && !field.required) {
+        return null;
+      }
+
+      return (
+        <FieldItem
+          key={field.key}
+          label={field.label}
+          value={formatFieldValue(field, rawValue)}
+          important={field.key === 'fullName' || field.key === 'consultationDate' || (field.required && !hasFilledValue(rawValue))}
+        />
+      );
+    })
+    .filter(Boolean);
+
+  const contentItems = [...extraItems, ...fieldItems];
+
+  if (contentItems.length === 0) {
+    return null;
+  }
+
+  return {
+    id: section.key,
+    title: formatSectionTitle(section.title),
+    description: section.description ?? 'Resumo dos campos preenchidos neste trecho do formulario clinico.',
+    status: getSectionStatus(section),
+    content: <S.Grid>{contentItems}</S.Grid>,
+  };
 }
 
 export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChange }: DentalAnamnesisRecordProps) {
-  const customer = getPayloadSection(intakeForm, 'customer');
+  const payloadCustomer = getPayloadSection(intakeForm, 'customer');
+  const customer: Record<string, unknown> = {
+    ...payloadCustomer,
+    ...(!hasFilledValue(payloadCustomer.fullName) && hasFilledValue(order.customer?.full_name)
+      ? { fullName: order.customer?.full_name }
+      : {}),
+    ...(!hasFilledValue(payloadCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
+    ...(!hasFilledValue(payloadCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
+  };
   const dentist = getPayloadSection(intakeForm, 'dentist');
   const patientName = formatValue(customer.fullName) !== missingValue
     ? formatValue(customer.fullName)
     : order.customer?.full_name ?? 'Paciente não identificado';
   const appointmentDate = dentist.consultationDate ?? intakeForm?.dentistSubmittedAt ?? intakeForm?.submittedAt ?? order.created_at;
-  const painScore = Number(customer.averagePainLastWeek ?? 0);
-  const stressScore = Number(customer.stressLevel ?? 0);
-  const sleepScore = Number(customer.sleepQualityScore ?? 0);
   const hasDentistReview = Object.keys(dentist).length > 0;
-  const completion = calculateCompletion([
-    customer.fullName,
-    order.customer?.phone,
-    order.customer?.email,
-    customer.hasRelevantMedicalDiagnosis,
-    customer.hasCurrentPain,
-    customer.averagePainLastWeek,
-    customer.sportRoutine,
-    customer.sleepQualityScore,
-    dentist.painlessMaxOpeningMm,
-    hasDentistReview,
-    draft.anamnesisSummary,
-    draft.lgpdConfirmed,
-  ]);
+  const summaryCompletionValues = SHARED_INITIAL_EVALUATION_INTAKE.sections
+    .filter((section) => ANAMNESIS_SECTION_KEYS.has(section.key))
+    .flatMap((section) =>
+      section.fields
+        .filter((field) => isFieldVisibleForPayload(field, customer, dentist))
+        .map((field) => ({
+          field,
+          value: getFieldPayloadValue(field, customer, dentist),
+        }))
+        .filter(({ field, value }) => field.required || hasFilledValue(value))
+        .map(({ value }) => value)
+    );
+  const completion = calculateCompletion(summaryCompletionValues);
+
+  const payloadSections = SHARED_INITIAL_EVALUATION_INTAKE.sections
+    .filter((section) => ANAMNESIS_SECTION_KEYS.has(section.key))
+    .map((section) => {
+      const extraItems =
+        section.key === 'initial-data'
+          ? [
+              !hasFilledValue(customer.fullName) && hasFilledValue(order.customer?.full_name) ? (
+                <FieldItem key="order-full-name" label="Nome no pedido" value={order.customer?.full_name} important />
+              ) : null,
+              !hasFilledValue(customer.phone) && hasFilledValue(order.customer?.phone) ? (
+                <FieldItem key="order-phone" label="Telefone" value={order.customer?.phone} />
+              ) : null,
+              !hasFilledValue(customer.email) && hasFilledValue(order.customer?.email) ? (
+                <FieldItem key="order-email" label="Email" value={order.customer?.email} />
+              ) : null,
+            ].filter(Boolean)
+          : [];
+
+      return buildPayloadSection(section, customer, dentist, extraItems);
+    })
+    .filter((section): section is SectionConfig => Boolean(section));
 
   const sections: SectionConfig[] = [
+    ...payloadSections,
     {
-      id: 'identificacao',
-      title: 'Identificacao do paciente',
-      description: 'Dados de cadastro e contexto básico do paciente vindos do pedido e do intake.',
-      status: 'Paciente',
+      id: 'rastreabilidade',
+      title: 'Rastreabilidade e guarda',
+      description: 'Dados operacionais de data, ordem e responsabilidade de guarda do registro clínico.',
+      status: 'Governanca',
       content: (
         <S.Grid>
-          <FieldItem label="Nome" value={patientName} important />
-          <FieldItem label="Data de nascimento" value={customer.dataNascimento} />
-          <FieldItem label="CPF" value={customer.cpf} />
-          <FieldItem label="RG" value={customer.rg} />
-          <FieldItem label="Telefone" value={order.customer?.phone ?? customer.phone} />
-          <FieldItem label="Email" value={order.customer?.email} />
-          <FieldItem label="Endereço" value={customer.endereco} />
-          <FieldItem label="Convenio" value={customer.convenio} />
-          <FieldItem label="Profissão" value={customer.profissão} />
-          <FieldItem label="Contato de emergencia" value={customer.contatoEmergencia} />
-          <FieldItem label="Idade calculada" value={customer.idadeCalculada} />
-          <FieldItem label="Status clínico" value={hasDentistReview ? 'Revisado pelo dentista' : 'Em revisão'} />
+          <FieldItem label="Data da consulta" value={formatClinicalDate(appointmentDate)} />
+          <FieldItem label="Ordem" value={getOrderDisplayId(order)} />
+          <FieldItem label="Profissional responsável" value={formatValue(dentist.dentistName) !== missingValue ? dentist.dentistName : 'Dentista licenciado Biteplaner'} />
+          <FieldItem label="Guarda do registro" value="Responsabilidade do dentista" />
+          <FieldItem label="LGPD operacional da produção" value={draft.lgpdConfirmed ? 'Ciente' : 'Pendente'} />
         </S.Grid>
-      ),
-    },
-    {
-      id: 'queixa',
-      title: 'Queixa principal',
-      description: 'Motivacao principal, sintomas e tags automaticas derivadas das respostas do paciente.',
-      status: 'Paciente',
-      content: (
-        <>
-          <FieldItem label="Texto livre da queixa" value={customer.initialMotivation} important />
-          <FieldItem label="Observações" value={customer.relevantMedicalDiagnosisDetails} />
-          <S.TagRow>
-            <YesNoItem label="Dor atual" value={customer.hasCurrentPain} />
-            <YesNoItem label="Dificuldade de abertura" value={customer.hasMouthOpeningDifficulty} />
-            <S.Tag $tone="blue">Sintomas: {formatValue(customer.painLocations)}</S.Tag>
-          </S.TagRow>
-        </>
-      ),
-    },
-    {
-      id: 'condicao',
-      title: 'Historico da condicao atual',
-      description: 'Evolucao da dor, intensidade e impacto sobre treino e rotina.',
-      status: 'Paciente',
-      content: (
-        <S.Grid>
-          <FieldItem label="Inicio dos sintomas" value={customer.inicioSintomas} />
-          <FieldItem label="Frequencia" value={customer.jointClickFrequency} />
-          <S.DataField>
-            <S.DataLabel>Intensidade de dor</S.DataLabel>
-            <S.Intensity>
-              <S.DataValue>{Number.isFinite(painScore) ? `${painScore}/10` : missingValue}</S.DataValue>
-              <S.Slider $value={Math.max(0, Math.min(100, painScore * 10))} />
-            </S.Intensity>
-          </S.DataField>
-          <FieldItem label="Piora durante atividade" value={customer.trainingJawTensionMoment} />
-          <FieldItem label="Tratamento anterior" value={customer.tratamentoAnterior} />
-          <FieldItem label="Medicacoes relacionadas" value={customer.currentMedicationUse} />
-        </S.Grid>
-      ),
-    },
-    {
-      id: 'medico',
-      title: 'Histórico médico',
-      description: 'Condicoes sistemicas, alergias, medicamentos e cirurgias relevantes.',
-      status: 'Paciente',
-      content: (
-        <>
-          <S.TagRow>
-            <YesNoItem label="Diabetes" value={customer.diabetes} />
-            <YesNoItem label="Hipertensão" value={customer.hipertensão} />
-            <YesNoItem label="Cardiopatias" value={customer.cardiopatias} />
-            <YesNoItem label="Ansiedade" value={customer.ansiedade} />
-            <YesNoItem label="Epilepsia" value={customer.epilepsia} />
-            <YesNoItem label="Diagnóstico médico relevante" value={customer.hasRelevantMedicalDiagnosis} />
-          </S.TagRow>
-          <S.ModernTable>
-            <thead>
-              <tr>
-                <th>Medicamento</th>
-                <th>Dosagem</th>
-                <th>Frequencia</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>{formatValue(customer.currentMedicationName)}</td>
-                <td>{formatValue(customer.currentMedicationDosage)}</td>
-                <td>{formatValue(customer.currentMedicationFrequency)}</td>
-              </tr>
-            </tbody>
-          </S.ModernTable>
-          <S.TagRow>
-            <S.Tag $tone="amber">Alergias: {formatValue(customer.alergias)}</S.Tag>
-            <S.Tag $tone="gray">Cirurgias: {formatValue(customer.cirurgiasAnteriores)}</S.Tag>
-          </S.TagRow>
-        </>
-      ),
-    },
-    {
-      id: 'odontológico',
-      title: 'Historico odontológico',
-      description: 'Uso de aparelho, bruxismo, ATM, protetores e histórico oral.',
-      status: 'Paciente',
-      content: (
-        <S.TagRow>
-          <YesNoItem label="Usa aparelho" value={customer.usesOrthodonticAppliance} />
-          <YesNoItem label="Implantes" value={customer.implantes} />
-          <YesNoItem label="Canal" value={customer.canal} />
-          <YesNoItem label="Bruxismo" value={customer.relevantMedicalDiagnosisDetails} />
-          <YesNoItem label="Dores ATM" value={customer.hasTmdDiagnosis} />
-          <YesNoItem label="Trauma facial" value={customer.traumaFacial} />
-          <YesNoItem label="Usa protetor bucal" value={customer.usaProtetorBucal} />
-          <YesNoItem label="Protese dental" value={customer.hasDentalProsthesis} />
-        </S.TagRow>
-      ),
-    },
-    {
-      id: 'hábitos',
-      title: 'Habitos e rotina',
-      description: 'Rotina esportiva, sono, nicotina e fatores de estilo de vida.',
-      status: 'Paciente',
-      content: (
-        <S.Grid>
-          <FieldItem label="Fuma" value={customer.nicotineUse} />
-          <FieldItem label="Alcool" value={customer.alcool} />
-          <FieldItem label="Cafeina" value={customer.cafeina} />
-          <S.DataField>
-            <S.DataLabel>Sono</S.DataLabel>
-            <S.Intensity>
-              <S.DataValue>{Number.isFinite(sleepScore) ? `${sleepScore}/10` : missingValue}</S.DataValue>
-              <S.Slider $value={Math.max(0, Math.min(100, sleepScore * 10))} />
-            </S.Intensity>
-          </S.DataField>
-          <FieldItem label="Atividade fisica" value={customer.sportRoutine} />
-          <FieldItem label="Modalidade esportiva" value={customer.sportRoutine} />
-          <FieldItem label="Frequencia treino" value={customer.frequenciaTreino} />
-          <S.DataField>
-            <S.DataLabel>Estresse percebido</S.DataLabel>
-            <S.Intensity>
-              <S.DataValue>{Number.isFinite(stressScore) ? `${stressScore}/10` : missingValue}</S.DataValue>
-              <S.Slider $value={Math.max(0, Math.min(100, stressScore * 10))} />
-            </S.Intensity>
-          </S.DataField>
-        </S.Grid>
-      ),
-    },
-    {
-      id: 'clínica',
-      title: 'Avaliação clínica',
-      description: 'Area profissional para achados clínicos e indicadores de prioridade.',
-      status: 'Profissional',
-      content: (
-        <>
-          <S.ModernTable>
-            <thead>
-              <tr>
-                <th>Indicador</th>
-                <th>Registro</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Oclusão</td>
-                <td>{formatValue(dentist.occlusion)}</td>
-                <td>{formatValue(dentist.riskStatus ?? 'A revisar')}</td>
-              </tr>
-              <tr>
-                <td>Abertura sem dor</td>
-                <td>{formatValue(dentist.painlessMaxOpeningMm)} mm</td>
-                <td>Mensuracao clínica</td>
-              </tr>
-              <tr>
-                <td>Abertura com dor</td>
-                <td>{formatValue(dentist.painfulMaxOpeningMm)} mm</td>
-                <td>Mensuracao clínica</td>
-              </tr>
-              <tr>
-                <td>Observações</td>
-                <td>{formatValue(dentist.clinicalSectionNotes)}</td>
-                <td>{formatValue(dentist.priority ?? 'Normal')}</td>
-              </tr>
-            </tbody>
-          </S.ModernTable>
-        </>
-      ),
-    },
-    {
-      id: 'plano',
-      title: 'Plano de tratamento',
-      description: 'Conduta sugerida e etapas operacionais para continuidade do cuidado.',
-      status: 'Profissional',
-      content: (
-        <S.Timeline>
-          <S.TimelineItem>
-            <S.TimelineDot />
-            <div>
-              <S.DataValue>Revisão e complemento da avaliação inicial</S.DataValue>
-              <S.PatientHint>{hasDentistReview ? 'Concluído' : 'Pendente'}</S.PatientHint>
-            </div>
-          </S.TimelineItem>
-          <S.TimelineItem>
-            <S.TimelineDot />
-            <div>
-              <S.DataValue>Solicitação de produção e anexos obrigatórios</S.DataValue>
-              <S.PatientHint>{draft.productionRequestSummary ? 'Em preenchimento' : 'Aguardando preenchimento'}</S.PatientHint>
-            </div>
-          </S.TimelineItem>
-          <S.TimelineItem>
-            <S.TimelineDot />
-            <div>
-              <S.DataValue>Envio ao laboratório licenciado</S.DataValue>
-              <S.PatientHint>{draft.selectedLabId ? 'Laboratório selecionado' : 'Aguardando seleção'}</S.PatientHint>
-            </div>
-          </S.TimelineItem>
-        </S.Timeline>
       ),
     },
     {
@@ -370,35 +377,13 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       description: 'Campo amplo para registrar anamnese final e notas essenciais ao prontuario.',
       status: 'Profissional',
       content: (
-        <>
-          <S.TextArea
-            aria-label="Resumo da avaliação inicial / anamnese"
-            maxLength={1200}
-            placeholder="Registre apenas achados clínicos necessários para avaliação, aptidão e produção. Não inclua dados de terceiros."
-            value={draft.anamnesisSummary}
-            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onSummaryChange(event.target.value)}
-          />
-          <S.UploadBox>
-            <span>Anexos e imagens clínicas poderao ser vinculados aqui em uma etapa futura.</span>
-            <Upload size={18} />
-          </S.UploadBox>
-        </>
-      ),
-    },
-    {
-      id: 'consentimento',
-      title: 'Consentimento',
-      description: 'Aceites, responsabilidade profissional e rastreabilidade da ficha.',
-      status: 'Governanca',
-      content: (
-        <S.Grid>
-          <FieldItem label="LGPD operacional" value={draft.lgpdConfirmed ? 'Ciente' : 'Pendente'} />
-          <FieldItem label="Aceite digital" value={draft.lgpdConfirmed ? 'Registrado no fluxo' : missingValue} />
-          <FieldItem label="Assinatura" value={missingValue} />
-          <FieldItem label="Data" value={formatClinicalDate(appointmentDate)} />
-          <FieldItem label="Profissional responsável" value="Dentista licenciado Biteplaner" />
-          <FieldItem label="Guarda do registro" value="Responsabilidade do dentista" />
-        </S.Grid>
+        <S.TextArea
+          aria-label="Resumo da avaliação inicial / anamnese"
+          maxLength={1200}
+          placeholder="Registre apenas achados clínicos necessários para avaliação, aptidão e produção. Não inclua dados de terceiros."
+          value={draft.anamnesisSummary}
+          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onSummaryChange(event.target.value)}
+        />
       ),
     },
   ];
@@ -416,7 +401,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
               <S.Title>Ficha de anamnese odontológica</S.Title>
               <S.Subtitle>
                 Documento clínico digital para revisão, complemento profissional e geração do registro final da ordem
-                {` ${order.id}`}.
+                {` ${getOrderDisplayId(order)}`}.
               </S.Subtitle>
             </S.TitleGroup>
           </S.Brand>
@@ -460,7 +445,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
             </S.QuickItem>
             <S.QuickItem>
               <S.QuickLabel>Ordem</S.QuickLabel>
-              <S.QuickValue>{order.id}</S.QuickValue>
+              <S.QuickValue>{getOrderDisplayId(order)}</S.QuickValue>
             </S.QuickItem>
           </S.PatientStrip>
         </S.StickySummary>
@@ -478,13 +463,18 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
 
         <S.Sections>
           {sections.map((section, index) => (
-            <S.Card key={section.id} id={`anamnese-${section.id}`} open>
+            <S.Card key={section.id} id={`anamnese-${section.id}`}>
               <S.CardSummary>
                 <div>
                   <S.SectionTitle>{index + 1}. {section.title}</S.SectionTitle>
                   <S.SectionDescription>{section.description}</S.SectionDescription>
                 </div>
-                <S.Badge>{section.status}</S.Badge>
+                <S.CardSummaryMeta>
+                  <S.Badge>{section.status}</S.Badge>
+                  <S.ExpandIcon aria-hidden="true">
+                    <ChevronDown size={18} />
+                  </S.ExpandIcon>
+                </S.CardSummaryMeta>
               </S.CardSummary>
               <S.CardContent>{section.content}</S.CardContent>
             </S.Card>

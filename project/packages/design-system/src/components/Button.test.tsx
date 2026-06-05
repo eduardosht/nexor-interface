@@ -16,12 +16,23 @@ describe('Button', () => {
     render(<Button>Salvar complemento do dentista com um texto muito longo</Button>);
 
     expect(screen.getByRole('button')).toHaveStyle({
-      maxWidth: '100%',
-      minWidth: '0',
+      width: 'auto',
+      maxWidth: 'none',
+      minWidth: 'max-content',
       minHeight: '46px',
       fontSize: '14px',
       whiteSpace: 'nowrap',
       overflowWrap: 'normal',
+    });
+  });
+
+  it('only stretches to the container when fullWidth is enabled', () => {
+    render(<Button fullWidth>Salvar</Button>);
+
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveStyle({
+      width: '100%',
+      maxWidth: '100%',
+      minWidth: '0',
     });
   });
 

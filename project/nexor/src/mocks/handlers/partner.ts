@@ -1,7 +1,7 @@
 // project/frontend/nexor/src/mocks/handlers/partner.ts
 import type { Server } from 'miragejs';
 import { Response } from 'miragejs';
-import { DemoStateError, createPartnerInviteLink, getPartnerInviteLinks, inspectPartnerInviteToken } from '../demoState';
+import { DemoStateError, createPartnerInviteLink, getPartnerInviteLinks, inspectPartnerInviteToken, removePartnerInviteLink } from '../demoState';
 
 function parseBody(request: { requestBody: string }) {
   if (!request.requestBody) {
@@ -55,4 +55,8 @@ export function partnerHandlers(server: Server) {
       ).inviteLink
     };
   }));
+
+  server.patch('/v1/partner/invite-links/:inviteLinkId/remove', withDemoErrors((_schema, request) =>
+    removePartnerInviteLink(request.params.inviteLinkId, { requestHeaders: request.requestHeaders })
+  ));
 }

@@ -4,9 +4,13 @@ export const biteplanerButtonSurfaceStyles = css`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  max-width: 100%;
-  min-width: 0;
+  flex: 0 0 max-content;
+  box-sizing: border-box;
+  inline-size: max-content;
+  width: max-content;
+  max-width: none;
+  min-inline-size: max-content;
+  min-width: max-content;
   min-height: 52px;
   padding: 0 22px 0 30px;
   border: 1px solid #15803d;
@@ -18,11 +22,13 @@ export const biteplanerButtonSurfaceStyles = css`
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   text-align: center;
   text-transform: none;
-  white-space: normal;
+  white-space: nowrap;
+  text-wrap: nowrap;
   cursor: pointer;
+  gap: 0;
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -31,12 +37,20 @@ export const biteplanerButtonSurfaceStyles = css`
     color 180ms ease;
 
   > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     gap: 22px;
-    max-width: 100%;
-    min-width: 0;
+    flex: 0 0 max-content;
+    inline-size: max-content;
+    width: max-content;
+    max-width: none;
+    min-inline-size: max-content;
+    min-width: max-content;
     line-height: inherit;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
     white-space: inherit;
+    text-wrap: inherit;
   }
 
   svg {
@@ -63,18 +77,18 @@ export const biteplanerButtonHoverStyles = css`
 `;
 
 export const biteplanerFormButtonStyles = css`
-  button {
+  && button {
     ${biteplanerButtonSurfaceStyles}
   }
 
-  button[data-variant='secondary'] {
+  && button[data-variant='secondary'] {
     border-color: #15803d;
     background: transparent;
     color: #15803d;
     box-shadow: none;
   }
 
-  button:not(:disabled):hover {
+  && button:not(:disabled):hover {
     transform: translateY(-1px);
     border-color: #166534;
     background: #166534;
@@ -82,20 +96,20 @@ export const biteplanerFormButtonStyles = css`
     box-shadow: 0 18px 38px rgba(21, 128, 61, 0.28);
   }
 
-  button[data-variant='secondary']:not(:disabled):hover {
+  && button[data-variant='secondary']:not(:disabled):hover {
     border-color: #166534;
     background: rgba(21, 128, 61, 0.08);
     color: #166534;
     box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
   }
 
-  button[data-variant='secondary']:not(:disabled):active {
+  && button[data-variant='secondary']:not(:disabled):active {
     background: rgba(21, 128, 61, 0.14);
     color: #14532d;
     box-shadow: none;
   }
 
-  button:disabled {
+  && button:disabled {
     border-color: ${({ theme }) => theme.colors.borderDefault};
     background: ${({ theme }) => theme.colors.bgInset};
     color: ${({ theme }) => theme.colors.textMuted};
@@ -104,14 +118,23 @@ export const biteplanerFormButtonStyles = css`
   }
 
   @media (max-width: 760px) {
-    button {
-      width: 100%;
-      min-width: 0;
+    && button {
+      inline-size: max-content;
+      width: max-content;
+      max-width: none;
+      min-inline-size: max-content;
+      min-width: max-content;
       gap: 12px;
       padding: 12px 14px;
+      white-space: nowrap;
 
       > span {
         gap: 12px;
+        inline-size: max-content;
+        width: max-content;
+        max-width: none;
+        min-inline-size: max-content;
+        min-width: max-content;
       }
     }
   }

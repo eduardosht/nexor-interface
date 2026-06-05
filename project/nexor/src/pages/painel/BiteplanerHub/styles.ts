@@ -2057,6 +2057,11 @@ export const IconActionButton = styled.button`
     background: ${({ theme }) => theme.colors.bgElevated};
     border-color: ${({ theme }) => theme.colors.textPrimary};
   }
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;
 
 export const ModalOverlay = styled.div`
@@ -2184,17 +2189,17 @@ export const ModalSecondaryButton = styled.button`
   ${biteplanerButtonSurfaceStyles}
   min-height: 44px;
   padding: 0 18px;
-  border-color: #15803d;
-  background: transparent;
-  color: #15803d;
+  border-color: #b91c1c;
+  background: #fff1f2;
+  color: #b91c1c;
   box-shadow: none;
 
   &:not(:disabled):hover {
     transform: translateY(-1px);
-    border-color: #166534;
-    background: rgba(21, 128, 61, 0.08);
-    color: #166534;
-    box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
+    border-color: #991b1b;
+    background: #fee2e2;
+    color: #991b1b;
+    box-shadow: 0 10px 22px rgba(185, 28, 28, 0.12);
   }
 `;
 
@@ -2268,6 +2273,41 @@ export const DocumentationValue = styled.p`
   font-size: 13px;
   line-height: 1.55;
   overflow-wrap: anywhere;
+`;
+
+export const DocumentationValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+
+  ${DocumentationValue} {
+    min-width: 0;
+  }
+`;
+
+export const DocumentationIconLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.accent};
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    background: rgba(22, 101, 52, 0.08);
+  }
 `;
 
 export const DocumentationDownloadLink = styled.a`

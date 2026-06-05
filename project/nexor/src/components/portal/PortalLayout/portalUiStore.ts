@@ -1,13 +1,10 @@
 import { create } from 'zustand';
+import { readStorageValue, writeStorageValue } from '../../../lib/browser-storage';
 
 const SIDEBAR_STORAGE_KEY = 'nexor-sidebar-collapsed';
 
 function readSidebarCollapsed() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return window.localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
+  return readStorageValue(SIDEBAR_STORAGE_KEY) === 'true';
 }
 
 interface PortalUiState {
@@ -23,16 +20,12 @@ export const usePortalUiStore = create<PortalUiState>((set, get) => ({
     set({ sidebarCollapsed: readSidebarCollapsed() });
   },
   setSidebarCollapsed: (collapsed) => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
-    }
+    writeStorageValue(SIDEBAR_STORAGE_KEY, String(collapsed));
     set({ sidebarCollapsed: collapsed });
   },
   toggleSidebarCollapsed: () => {
     const next = !get().sidebarCollapsed;
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next));
-    }
+    writeStorageValue(SIDEBAR_STORAGE_KEY, String(next));
     set({ sidebarCollapsed: next });
   },
 }));

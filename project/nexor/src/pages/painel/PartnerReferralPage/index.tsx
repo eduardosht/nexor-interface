@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Button, DataTable, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
-import { BarChart3, Check, Eye, Link2, Mail, MessageCircle, UserRound } from 'lucide-react';
+import { BarChart3, Check, Eye, Link2, Mail, MessageCircle, Trash2, UserRound } from 'lucide-react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -8,6 +8,7 @@ import {
   fetchPartnerOverview,
   formatDate,
   getAuthToken,
+  removePartnerInviteLink,
   type PartnerOverviewResponse,
 } from '../../../features/demo/biteplanerFlow';
 import * as S from '../BiteplanerHub/styles';
@@ -135,6 +136,23 @@ export function PartnerReferralPage() {
     }
   }
 
+  async function handleRemoveLink(inviteLink: PartnerOverviewResponse['inviteLinks'][number]) {
+    setError('');
+    setNotice('');
+    setActiveAction(`partner:remove-link:${inviteLink.id}`);
+
+    try {
+      await removePartnerInviteLink(inviteLink.id, token);
+      setNotice('Link individual removido.');
+      if (selectedInviteLink?.id === inviteLink.id) {
+        setSelectedInviteLink(null);
+      }
+      await loadOverview();
+    } finally {
+      setActiveAction('');
+    }
+  }
+
   const linkColumns: DataTableColumn<PartnerOverviewResponse['inviteLinks'][number]>[] = [
     { key: 'token', label: 'Token', render: (row) => row.token },
     { key: 'customer', label: 'Cliente qualificado', render: (row) => row.intendedCustomerName ?? 'Não informado' },
@@ -152,11 +170,23 @@ export function PartnerReferralPage() {
     { key: 'created', label: 'Gerado em', render: (row) => formatDate(row.created_at) },
     {
       key: 'actions',
-      label: 'Visualizar',
+      label: 'Ações',
       render: (row) => (
-        <S.IconActionButton type="button" aria-label={`Visualizar link ${row.intendedCustomerName ?? row.token}`} onClick={() => setSelectedInviteLink(row)}>
-          <Eye size={16} aria-hidden />
-        </S.IconActionButton>
+        <S.TableActionRow>
+          <S.IconActionButton type="button" aria-label={`Visualizar link ${row.intendedCustomerName ?? row.token}`} onClick={() => setSelectedInviteLink(row)}>
+            <Eye size={16} aria-hidden />
+          </S.IconActionButton>
+          <S.IconActionButton
+            type="button"
+            aria-label={`Remover link ${row.intendedCustomerName ?? row.token}`}
+            disabled={activeAction === `partner:remove-link:${row.id}`}
+            onClick={() => {
+              void handleRemoveLink(row);
+            }}
+          >
+            <Trash2 size={16} aria-hidden />
+          </S.IconActionButton>
+        </S.TableActionRow>
       ),
     },
   ];

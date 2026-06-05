@@ -42,6 +42,19 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
   });
 
+  it('layers the decorative hero item above the background and below the hero copy', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(pageSource).toContain("import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png'");
+    expect(pageSource).toContain('<S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />');
+    expect(stylesSource).toContain('export const HeroForegroundItem = styled.img');
+    expect(stylesSource).toContain('right: -90px;');
+    expect(stylesSource).toContain('bottom: -200px;');
+    expect(stylesSource).toContain('z-index: 1;');
+    expect(stylesSource).toContain('z-index: 2;');
+  });
+
   it('renders the approved journey with payment after clinical eligibility', () => {
     renderPage();
     expect(screen.getAllByText('Conta Nexor').length).toBeGreaterThan(0);
@@ -89,7 +102,7 @@ describe('BiteplanerPage', () => {
     expect(screen.queryByTestId('biteplaner-strength-dumbbell-icon')).not.toBeInTheDocument();
     expect(screen.queryByTestId('biteplaner-strength-zap-icon')).not.toBeInTheDocument();
     expect(screen.queryByTestId('biteplaner-team-sport-icon')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /genérico vs biteplaner/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /protetores bucais vs biteplaner/i })).toBeInTheDocument();
     expect(screen.getByText(/adequação para treinos e competições de lutas/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^alta$/i).length).toBeGreaterThan(0);
   });

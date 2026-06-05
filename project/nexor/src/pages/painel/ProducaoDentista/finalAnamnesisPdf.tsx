@@ -1,5 +1,10 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
-import type { DemoOrderSummary, DemoWorkflowForm, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
+import {
+  getOrderDisplayId,
+  type DemoOrderSummary,
+  type DemoWorkflowForm,
+  type ProductionRequestDraft,
+} from '../../../features/demo/biteplanerFlow';
 
 const missingValue = 'Não informado';
 const navy = '#0b3566';
@@ -12,6 +17,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function getPayloadSection(form: DemoWorkflowForm | undefined, key: 'customer' | 'dentist') {
   const payload = isRecord(form?.payload) ? form.payload : {};
   const section = payload[key];
+
+  if (key === 'customer') {
+    return isRecord(section) ? { ...payload, ...section } : payload;
+  }
+
   return isRecord(section) ? section : {};
 }
 
@@ -41,6 +51,14 @@ function dateValue(rawValue: unknown): string {
 
 function checkText(raw: unknown) {
   return value(raw) === 'Sim' ? '(x) Sim   ( ) Não' : value(raw) === 'Não' ? '( ) Sim   (x) Não' : '( ) Sim   ( ) Não';
+}
+
+function hasFilledValue(rawValue: unknown) {
+  if (Array.isArray(rawValue)) {
+    return rawValue.length > 0;
+  }
+
+  return rawValue !== null && rawValue !== undefined && rawValue !== '';
 }
 
 const styles = StyleSheet.create({
@@ -338,14 +356,22 @@ function FinalAnamnesisDocument({
   intakeForm: DemoWorkflowForm | undefined;
   draft: ProductionRequestDraft;
 }) {
-  const customer = getPayloadSection(intakeForm, 'customer');
+  const payloadCustomer = getPayloadSection(intakeForm, 'customer');
+  const customer: Record<string, unknown> = {
+    ...payloadCustomer,
+    ...(!hasFilledValue(payloadCustomer.fullName) && hasFilledValue(order.customer?.full_name)
+      ? { fullName: order.customer?.full_name }
+      : {}),
+    ...(!hasFilledValue(payloadCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
+    ...(!hasFilledValue(payloadCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
+  };
   const dentist = getPayloadSection(intakeForm, 'dentist');
   const consultationDate = dateValue(dentist.consultationDate);
   const generatedAt = consultationDate !== missingValue ? consultationDate : new Date().toLocaleDateString('pt-BR');
   const patientName = value(customer.fullName ?? order.customer?.full_name);
 
   return (
-    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${order.id}`}>
+    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${getOrderDisplayId(order)}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.brand}>
@@ -371,8 +397,8 @@ function FinalAnamnesisDocument({
           <View style={styles.column}>
             <Section number={1} title="IDENTIFICACAO DO PACIENTE">
               <FillLine label="Nome completo:">{patientName}</FillLine>
-              <FillLine label="Telefone:">{value(order.customer?.phone ?? customer.phone)}</FillLine>
-              <FillLine label="E-mail:">{value(order.customer?.email)}</FillLine>
+              <FillLine label="Telefone:">{value(customer.phone ?? order.customer?.phone)}</FillLine>
+              <FillLine label="E-mail:">{value(customer.email ?? order.customer?.email)}</FillLine>
               <FillLine label="Modalidade principal:">{value(customer.sportRoutine)}</FillLine>
               <FillLine label="Convenio:">{missingValue}</FillLine>
             </Section>
@@ -471,7 +497,7 @@ function FinalAnamnesisDocument({
             Suas informações estão protegidas. Está ficha segue diretrizes de privacidade e segurança clínica da jornada Biteplaner.
           </Text>
           <Text style={styles.footerText}>
-            Ordem {order.id} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
+            Ordem {getOrderDisplayId(order)} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
           </Text>
         </View>
       </Page>

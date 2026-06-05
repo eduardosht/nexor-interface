@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { writeStorageValue } from '../../lib/browser-storage';
 import { redirectToExternal, resolvePostLoginPath } from '../../lib/navigation';
 import {
   Alert,
@@ -101,7 +102,7 @@ export function Login() {
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
-      sessionStorage.setItem('nexor_referral_ref', ref);
+      writeStorageValue('nexor_referral_ref', ref, 'session');
     }
   }, [searchParams]);
 

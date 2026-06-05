@@ -1,4 +1,4 @@
-import type { DemoLicensedLabSelection } from './biteplanerFlow';
+import type { DemoLicensedLabSelection } from '../biteplaner/labs/labs.types';
 
 export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
@@ -17,7 +17,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
     id: 'lab-demo-002',
     name: 'Lab Demo Centro',
-    address: 'Rua Augusta, 450 - Consolacao, São Paulo - SP',
+    address: 'Rua Augusta, 450 - Consolação, São Paulo - SP',
     cep: '01305-000',
     phone: '(11) 4000-2000',
     reviewScore: 4,
@@ -43,7 +43,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
     id: 'lab-demo-004',
     name: 'Lab Demo Zona Oeste',
-    address: 'Rua Funchal, 375 - Vila Olimpia, São Paulo - SP',
+    address: 'Rua Funchal, 375 - Vila Olímpia, São Paulo - SP',
     cep: '04551-060',
     phone: '(11) 4000-4000',
     reviewScore: 5,
@@ -56,7 +56,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
     id: 'lab-demo-005',
     name: 'Lab Demo Paulista Norte',
-    address: 'Rua Haddock Lobo, 980 - Cerqueira Cesar, São Paulo - SP',
+    address: 'Rua Haddock Lobo, 980 - Cerqueira César, São Paulo - SP',
     cep: '01414-002',
     phone: '(11) 4000-5000',
     reviewScore: 3,
@@ -69,7 +69,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
     id: 'lab-demo-006',
     name: 'Lab Demo Clínico',
-    address: 'Av. Reboucas, 1450 - Pinheiros, São Paulo - SP',
+    address: 'Av. Rebouças, 1450 - Pinheiros, São Paulo - SP',
     cep: '05402-100',
     phone: '(11) 4000-6000',
     reviewScore: 5,
@@ -82,7 +82,7 @@ export const DEMO_LAB_LOCATIONS: DemoLicensedLabSelection[] = [
   {
     id: 'lab-demo-007',
     name: 'Lab Demo Centro Expandido',
-    address: 'Rua da Consolacao, 2100 - Consolacao, São Paulo - SP',
+    address: 'Rua da Consolação, 2100 - Consolação, São Paulo - SP',
     cep: '01302-001',
     phone: '(11) 4000-7000',
     reviewScore: 4,

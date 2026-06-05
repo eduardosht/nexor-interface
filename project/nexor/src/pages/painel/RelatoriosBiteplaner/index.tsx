@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
+import { AdminDataTable, AdminMetricGrid, type AdminDataTableColumn, type AdminMetric } from '@nexor/design-system';
 import { api } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import * as S from './styles';
@@ -62,11 +63,61 @@ function buildReportPath(purpose: ReportPurpose, filters: { status: string; date
   return `/v1/reports/biteplaner/orders?${params.toString()}`;
 }
 
-function classificationLabel(value: ReportField['classification']) {
-  if (value === 'personal') return 'Pessoal';
-  if (value === 'sensitive') return 'Sensível';
-  if (value === 'financial') return 'Financeiro';
-  return 'Operacional';
+const reportFieldLabels: Record<string, string> = {
+  orderId: 'ID da ordem',
+  orderStatus: 'Status da ordem',
+  createdAt: 'Criado em',
+};
+
+const orderStatusLabels: Record<string, string> = {
+  registration_started: 'Cadastro iniciado',
+  awaiting_payment: 'Aguardando pagamento',
+  payment_confirmed: 'Pagamento confirmado',
+  awaiting_scheduling: 'Aguardando agendamento',
+  awaiting_initial_appointment_acceptance: 'Aguardando aceite do dentista',
+  appointment_confirmed: 'Consulta confirmada',
+  in_progress: 'Consulta em andamento',
+  treatment_required: 'Tratamento prévio pendente',
+  clinical_decision_pending: 'Aguardando decisão clínica',
+  dentist_forms_pending: 'Aguardando preenchimento dentista',
+  lab_processing: 'Em produção no laboratório',
+  lab_production: 'Em produção no laboratório',
+  lab_acceptance_pending: 'Aguardando aceite do laboratório',
+  dentist_adjustment_required: 'Ajuste de produção',
+  product_received_by_clinic: 'Produto recebido pela clínica',
+  awaiting_adaptation: 'Aguardando adaptação',
+  follow_up: 'Acompanhamento',
+  completed: 'Concluído',
+  ineligible_refund: 'Inapto / reembolso',
+  cancelled: 'Cancelado',
+};
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function formatOrderId(value: string | null | undefined) {
+  if (!value) return '-';
+  if (value.startsWith('#')) return value;
+  if (/^\d+$/.test(value)) return `#${value}`;
+  return value;
+}
+
+function formatReportValue(fieldKey: string, value: string | null | undefined) {
+  if (fieldKey === 'orderId') return formatOrderId(value);
+  if (fieldKey === 'orderStatus') return orderStatusLabels[value ?? ''] ?? value ?? '-';
+  if (fieldKey === 'createdAt') return formatDateTime(value);
+  return value ?? '-';
 }
 
 export function RelatoriosBiteplaner() {
@@ -132,6 +183,24 @@ export function RelatoriosBiteplaner() {
   );
   const exportRequiresReason = personalFieldCount > 0 || sensitiveFieldCount > 0;
   const hasReportRows = report.rows.length > 0;
+  const metrics = useMemo<AdminMetric[]>(
+    () => [
+      { label: 'Registros retornados', value: loading ? '...' : report.rows.length, tone: 'success' },
+      { label: 'Campos liberados', value: report.fields.length, tone: 'success' },
+      { label: 'Campos sensíveis visíveis', value: sensitiveFieldCount, tone: sensitiveFieldCount > 0 ? 'danger' : 'success' },
+    ],
+    [loading, report.fields.length, report.rows.length, sensitiveFieldCount]
+  );
+  const reportColumns = useMemo<AdminDataTableColumn<Record<string, string | null>>[]>(
+    () =>
+      report.fields.map((field) => ({
+        key: field.key,
+        label: reportFieldLabels[field.key] ?? field.label,
+        sortValue: (row) => row[field.key] ?? '',
+        render: (row) => formatReportValue(field.key, row[field.key]),
+      })),
+    [report.fields]
+  );
 
   async function handleExport() {
     if (!token || !hasReportRows || (exportRequiresReason && !exportReason.trim())) {
@@ -210,67 +279,25 @@ export function RelatoriosBiteplaner() {
           </S.FieldGroup>
         </S.FilterGrid>
 
-        <S.SummaryGrid>
-          <S.SummaryCard>
-            <S.SummaryValue>{loading ? '...' : report.rows.length}</S.SummaryValue>
-            <S.SummaryLabel>Registros retornados</S.SummaryLabel>
-          </S.SummaryCard>
-          <S.SummaryCard>
-            <S.SummaryValue>{report.fields.length}</S.SummaryValue>
-            <S.SummaryLabel>Campos liberados</S.SummaryLabel>
-          </S.SummaryCard>
-          <S.SummaryCard>
-            <S.SummaryValue>{sensitiveFieldCount}</S.SummaryValue>
-            <S.SummaryLabel>Campos sensíveis visíveis</S.SummaryLabel>
-          </S.SummaryCard>
-        </S.SummaryGrid>
+        <AdminMetricGrid metrics={metrics} />
 
         {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
 
-        <S.TableWrap>
-          <S.Table>
-            <thead>
-              <tr>
-                {report.fields.map((field) => (
-                  <S.Th key={field.key}>
-                    {field.label}
-                    <br />
-                    <S.Classification $tone={field.classification}>
-                      {classificationLabel(field.classification)}
-                    </S.Classification>
-                  </S.Th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, rowIndex) => (
-                  <tr key={`report-skeleton-${rowIndex}`}>
-                    {Array.from({ length: Math.max(report.fields.length, 1) }).map((__, columnIndex) => (
-                      <S.Td key={`report-skeleton-${rowIndex}-${columnIndex}`}>
-                        <S.TableSkeleton data-testid="report-table-skeleton" />
-                      </S.Td>
-                    ))}
-                  </tr>
-                ))
-              ) : report.rows.length === 0 ? (
-                <tr>
-                  <S.Td colSpan={Math.max(report.fields.length, 1)}>
-                    {loading ? 'Carregando relatório...' : 'Nenhum registro encontrado para os filtros atuais.'}
-                  </S.Td>
-                </tr>
-              ) : (
-                report.rows.map((row, rowIndex) => (
-                  <tr key={`${row.orderId ?? 'row'}-${rowIndex}`}>
-                    {report.fields.map((field) => (
-                      <S.Td key={field.key}>{row[field.key] ?? '-'}</S.Td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </S.Table>
-        </S.TableWrap>
+        {loading ? (
+          <S.TableWrap>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <S.TableSkeleton data-testid="report-table-skeleton" key={`report-table-skeleton-${index}`} />
+            ))}
+          </S.TableWrap>
+        ) : (
+          <AdminDataTable
+            data={report.rows}
+            columns={reportColumns}
+            keyExtractor={(row, index) => `${row.orderId ?? 'row'}-${index}`}
+            emptyMessage="Nenhum registro encontrado para os filtros atuais."
+            testId="report-table"
+          />
+        )}
 
         <S.Actions>
           <S.FieldGroup>

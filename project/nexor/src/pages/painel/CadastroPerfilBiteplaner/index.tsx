@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Building2, ChevronRight, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Button, CheckboxField, Field, RadioQuestionGroup, Select, Snackbar, SnackbarStack } from '@nexor/design-system';
+import {
+  Button,
+  CheckboxField,
+  Field,
+  RadioQuestionGroup,
+  Select,
+  Snackbar,
+  SnackbarStack,
+  TagAutocompleteField,
+} from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import * as S from './styles';
@@ -9,6 +18,7 @@ import * as S from './styles';
 type RouteRole = 'parceiro' | 'dentista' | 'laboratório';
 type ApiRole = 'partner' | 'dentist' | 'lab';
 type PartnerDocumentType = 'cpf' | 'cnpj';
+type PartnerType = 'coach_personal' | 'academy';
 type Values = Record<string, string>;
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
 type ClinicValues = {
@@ -104,6 +114,16 @@ const BRAZILIAN_STATE_OPTIONS = BRAZILIAN_STATES.map((state) => ({
 const PARTNER_DOCUMENT_OPTIONS = [
   { value: 'cnpj', label: 'CNPJ' },
   { value: 'cpf', label: 'CPF' },
+];
+
+const PARTNER_TYPE_OPTIONS = [
+  { value: 'coach_personal', label: 'Coach/Personal' },
+  { value: 'academy', label: 'Academia' },
+];
+
+const PARTNER_SERVICE_LOCATION_OPTIONS = [
+  { value: 'Academia', label: 'Academia' },
+  { value: 'Box de Crossfit', label: 'Box de Crossfit' },
 ];
 
 let clinicIdSequence = 0;
@@ -256,13 +276,18 @@ export function CadastroPerfilBiteplaner() {
   const [error, setError] = useState('');
   const [cepLookupErrors, setCepLookupErrors] = useState<Record<string, string>>({});
   const partnerDocumentType: PartnerDocumentType = values.documentType === 'cpf' ? 'cpf' : 'cnpj';
+  const partnerType = values.partnerType as PartnerType | undefined;
+  const partnerServiceLocations = useMemo(
+    () => (values.serviceLocations ?? '').split('|').map((item) => item.trim()).filter(Boolean),
+    [values.serviceLocations]
+  );
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [role]);
 
   async function lookupClinicCep(clinicId: string) {
-    if ((config?.apiRole !== 'dentist' && config?.apiRole !== 'lab') || typeof fetch !== 'function') {
+    if ((config?.apiRole !== 'dentist' && config?.apiRole !== 'lab' && config?.apiRole !== 'partner') || typeof fetch !== 'function') {
       return;
     }
 
@@ -318,11 +343,19 @@ export function CadastroPerfilBiteplaner() {
     }
 
     if (config.apiRole === 'partner') {
+      const academyLocation = clinics[0];
+      const hasAcademyLocation = Boolean(
+        academyLocation?.cep.trim() &&
+        academyLocation.city.trim() &&
+        academyLocation.state.trim() &&
+        academyLocation.address.trim()
+      );
+
       return Boolean(
         values.name?.trim() &&
         isValidPartnerDocument(partnerDocumentType, values.documentNumber ?? '') &&
-        values.contactEmail?.trim() &&
-        values.cityState?.trim()
+        partnerType &&
+        (partnerType === 'academy' ? hasAcademyLocation : partnerServiceLocations.length > 0)
       );
     }
 
@@ -370,7 +403,7 @@ export function CadastroPerfilBiteplaner() {
     }
 
     return false;
-  }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerDocumentType, values]);
+  }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerDocumentType, partnerServiceLocations.length, partnerType, values]);
 
   if (!config) {
     return <Navigate to="/painel/home" replace />;
@@ -417,13 +450,28 @@ export function CadastroPerfilBiteplaner() {
 
   function buildPayload() {
     if (config.apiRole === 'partner') {
+      const academyLocation = clinics[0];
+
       return {
         name: values.name.trim(),
         documentType: partnerDocumentType,
         documentNumber: values.documentNumber.trim(),
-        contactEmail: emptyToUndefined(values.contactEmail),
-        cityState: values.cityState.trim(),
-        channels: emptyToUndefined(values.channels),
+        partnerType,
+        ...(partnerType === 'academy' && academyLocation
+          ? {
+            location: {
+              cep: academyLocation.cep.trim(),
+              address: academyLocation.address.trim(),
+              city: academyLocation.city.trim(),
+              state: academyLocation.state.trim(),
+              ...(emptyToUndefined(academyLocation.complement)
+                ? { complement: emptyToUndefined(academyLocation.complement) }
+                : {}),
+            },
+          }
+          : {
+            serviceLocations: partnerServiceLocations,
+          }),
       };
     }
 
@@ -642,28 +690,102 @@ export function CadastroPerfilBiteplaner() {
                       partnerDocumentType === 'cpf' ? formatCpf : formatCnpj
                     )}
                   />
-                  <Field
-                    label="E-mail de contato"
-                    type="email"
-                    value={values.contactEmail ?? ''}
-                    required
-                    onChange={updateField('contactEmail')}
-                  />
-                  <Field
-                    label="Cidade e estado"
-                    value={values.cityState ?? ''}
-                    required
-                    onChange={updateField('cityState')}
-                  />
                   <S.FullField>
-                    <Field
-                      as="textarea"
-                      label="Canais de atuação"
-                      value={values.channels ?? ''}
-                      hint="Campo preliminar para detalhamento futuro."
-                      onChange={updateField('channels')}
+                    <RadioQuestionGroup
+                      name="partner-type"
+                      label="Tipo de parceiro"
+                      value={partnerType ?? ''}
+                      required
+                      inline
+                      options={PARTNER_TYPE_OPTIONS}
+                      onChange={(value) => {
+                        const nextType: PartnerType = value === 'academy' ? 'academy' : 'coach_personal';
+                        setValues((current) => ({ ...current, partnerType: nextType }));
+                      }}
                     />
                   </S.FullField>
+                  {partnerType === 'academy' ? (
+                    <S.FullField>
+                      <S.ClinicSection>
+                        <S.ClinicSectionHeader>
+                          <div>
+                            <S.ClinicSectionTitle>Localização</S.ClinicSectionTitle>
+                            <S.ClinicSectionIntro>
+                              Informe o CEP da academia para preencher a localização automaticamente.
+                            </S.ClinicSectionIntro>
+                          </div>
+                        </S.ClinicSectionHeader>
+                        {clinics.slice(0, 1).map((clinic) => (
+                          <S.ClinicCard key={clinic.id}>
+                            <S.FieldsGrid>
+                              <Field
+                                label="CEP"
+                                value={clinic.cep}
+                                required
+                                inputMode="numeric"
+                                maxLength={9}
+                                hint={
+                                  cepLookupErrors[clinic.id] ||
+                                  'Preenchemos cidade, estado e endereço automaticamente.'
+                                }
+                                onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
+                                onBlur={() => lookupClinicCep(clinic.id)}
+                              />
+                              <Field
+                                label="Cidade"
+                                value={clinic.city}
+                                required
+                                onChange={updateClinicField(clinic.id, 'city')}
+                              />
+                              <Select
+                                label="Estado"
+                                value={clinic.state}
+                                placeholder="Selecione um estado"
+                                onChange={(value) => {
+                                  setClinics((current) =>
+                                    current.map((item) =>
+                                      item.id === clinic.id ? { ...item, state: value } : item
+                                    )
+                                  );
+                                }}
+                                options={BRAZILIAN_STATE_OPTIONS}
+                              />
+                              <S.FullField>
+                                <Field
+                                  label="Endereço"
+                                  value={clinic.address}
+                                  required
+                                  onChange={updateClinicField(clinic.id, 'address')}
+                                />
+                              </S.FullField>
+                              <Field
+                                label="Complemento"
+                                value={clinic.complement}
+                                hint="Opcional"
+                                onChange={updateClinicField(clinic.id, 'complement')}
+                              />
+                            </S.FieldsGrid>
+                          </S.ClinicCard>
+                        ))}
+                      </S.ClinicSection>
+                    </S.FullField>
+                  ) : null}
+                  {partnerType === 'coach_personal' ? (
+                    <S.FullField>
+                      <TagAutocompleteField
+                        label="Locais de atuação"
+                        value={partnerServiceLocations}
+                        required
+                        options={PARTNER_SERVICE_LOCATION_OPTIONS}
+                        allowCustomValue
+                        placeholder="Digite ou selecione um local"
+                        hint="Use Enter para adicionar uma opção personalizada."
+                        onChange={(nextValue) => {
+                          setValues((current) => ({ ...current, serviceLocations: nextValue.join('|') }));
+                        }}
+                      />
+                    </S.FullField>
+                  ) : null}
                 </>
               ) : null}
 

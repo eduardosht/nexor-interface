@@ -1,6 +1,10 @@
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
-import { biteplanerFormButtonStyles } from '../styles/biteplanerFormButton';
+import {
+  biteplanerButtonHoverStyles,
+  biteplanerButtonSurfaceStyles,
+  biteplanerFormButtonStyles,
+} from '../styles/biteplanerFormButton';
 
 const sadPulse = keyframes`
   0%, 100% {
@@ -140,6 +144,10 @@ export const FieldShell = styled.label`
   }
 `;
 
+export const FieldAnchor = styled.div`
+  min-width: 0;
+`;
+
 export const HighlightedClinicalDateField = styled.div`
   display: grid;
   gap: 8px;
@@ -156,31 +164,31 @@ export const HighlightedClinicalDateField = styled.div`
 
 export const RadioQuestionSlot = styled.div`
   > fieldset {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
     justify-content: space-between;
     min-height: 44px;
     gap: 16px;
   }
 
   > fieldset > legend {
-    float: left;
-    display: flex;
-    align-items: center;
-    min-height: 44px;
+    display: contents;
+    min-height: auto;
     margin: 0;
     padding: 0;
     line-height: 1.35;
   }
 
   > fieldset > div {
-    flex: 0 0 auto;
     align-items: center;
+    min-height: 44px;
   }
 
   @media (max-width: 640px) {
     > fieldset {
       display: grid;
+      grid-template-columns: 1fr;
       align-items: start;
       justify-content: stretch;
     }
@@ -192,6 +200,11 @@ export const RadioQuestionSlot = styled.div`
 
     > fieldset > legend {
       min-height: auto;
+    }
+
+    > fieldset > [role='alert'] {
+      grid-column: 1;
+      grid-row: auto;
     }
   }
 `;
@@ -266,6 +279,71 @@ export const Feedback = styled.span<{ $tone: 'success' | 'error' }>`
   font-weight: 700;
 `;
 
+export const FormActionButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+
+  &[data-variant='secondary'] {
+    border-color: #15803d;
+    background: transparent;
+    color: #15803d;
+    box-shadow: none;
+  }
+
+  &[data-variant='secondary']:not(:disabled):hover {
+    border-color: #166534;
+    background: rgba(21, 128, 61, 0.08);
+    color: #166534;
+    box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
+  }
+
+  &[data-variant='secondary']:not(:disabled):active {
+    background: rgba(21, 128, 61, 0.14);
+    color: #14532d;
+    box-shadow: none;
+  }
+
+  @media (max-width: 760px) {
+    gap: 12px;
+    padding: 12px 14px;
+
+    > span {
+      gap: 12px;
+    }
+  }
+`;
+
+export const FormActionButtonContent = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  flex: 0 0 max-content;
+  inline-size: max-content;
+  width: max-content;
+  max-width: none;
+  min-inline-size: max-content;
+  min-width: max-content;
+  line-height: inherit;
+  white-space: nowrap;
+  text-wrap: nowrap;
+
+  svg {
+    flex: 0 0 auto;
+  }
+`;
+
+export const FormActionButtonLabel = styled.span`
+  display: inline-block;
+  flex: 0 0 auto;
+  inline-size: max-content;
+  width: max-content;
+  max-width: none;
+  min-inline-size: max-content;
+  min-width: max-content;
+  white-space: nowrap;
+`;
+
 export const Actions = styled.div`
   display: flex;
   align-items: center;
@@ -278,13 +356,100 @@ export const Actions = styled.div`
   ${biteplanerFormButtonStyles}
 
   @media (max-width: 760px) {
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: flex-end;
     gap: 14px;
 
-    > * {
+    > button {
+      flex: 0 0 max-content;
+    }
+
+    > ${Feedback} {
       flex: 1 1 100%;
     }
+  }
+`;
+
+export const PendingRequiredLegend = styled.aside`
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(203, 213, 225, 0.58);
+  border-radius: 6px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PendingRequiredTitle = styled.strong`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+`;
+
+export const PendingRequiredList = styled.ul`
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+export const PendingRequiredItem = styled.li`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(203, 213, 225, 0.42);
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+
+  span {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+`;
+
+export const PendingRequiredButton = styled.button`
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease;
+
+  &:hover {
+    background: rgba(148, 163, 184, 0.14);
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(79, 147, 99, 0.28);
+    outline-offset: 2px;
   }
 `;
 
@@ -937,11 +1102,11 @@ export const PrivacyActions = styled.div`
   ${biteplanerFormButtonStyles}
 
   @media (max-width: 760px) {
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    justify-content: flex-end;
 
-    > * {
-      flex: 1 1 100%;
+    > button {
+      flex: 0 0 max-content;
     }
   }
 `;
@@ -988,26 +1153,98 @@ export const ReadOnlyValue = styled.span`
 
 export const CheckboxGroup = styled.div`
   display: grid;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 6px;
-  background: ${({ theme }) => theme.colors.bgElevated};
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 42px;
+  row-gap: 13px;
 
   label {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 13px;
-    font-weight: 600;
-    line-height: 1.4;
+    font-weight: 500;
+    line-height: 1.45;
+    cursor: pointer;
   }
 
   input {
-    width: 16px;
-    height: 16px;
+    position: relative;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
     accent-color: ${({ theme }) => theme.colors.textPrimary};
+    appearance: none;
+    margin: 0;
+    border: 1px solid rgba(148, 163, 184, 0.54);
+    border-radius: 4px;
+    background: #fbfdff;
+    cursor: pointer;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  input:checked {
+    border-color: #4f9363;
+    background: #4f9363;
+  }
+
+  input:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid #fbfdff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  input:focus-visible {
+    outline: 2px solid rgba(79, 147, 99, 0.28);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    row-gap: 12px;
+  }
+`;
+
+export const CheckboxFieldShell = styled.fieldset`
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  margin: 0;
+  padding: 26px 28px;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 8px;
+  background: #fbfdff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.035);
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  legend {
+    float: left;
+    width: 100%;
+    margin: 0 0 18px;
+    padding: 0;
+    color: #17213a;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  @media (max-width: 1280px) {
+    padding: 22px 24px;
+  }
+
+  @media (max-width: 720px) {
+    gap: 16px;
+    padding: 20px 16px;
   }
 `;
 

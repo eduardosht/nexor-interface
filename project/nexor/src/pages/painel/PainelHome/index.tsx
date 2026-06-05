@@ -364,7 +364,7 @@ export function PainelHome() {
                   ? 'Acompanhar ordem'
                   : action.buttonLabel;
               const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
-              const shouldShowActionButton = !isPending;
+              const shouldShowActionButton = !isPending && !(isActive && !isCustomer);
 
               return (
                 <S.RoleActionCard

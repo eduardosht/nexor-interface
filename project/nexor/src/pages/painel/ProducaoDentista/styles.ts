@@ -319,6 +319,13 @@ export const SearchActionSlot = styled.div`
   }
 `;
 
+export const SearchActionsGroup = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+`;
+
 export const StepStatusRow = styled.div`
   display: flex;
   justify-content: space-between;
@@ -339,6 +346,41 @@ export const LabLayout = styled.div`
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
+`;
+
+export const MapCard = styled.section`
+  position: relative;
+  z-index: 0;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const SideCard = styled.section`
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const SectionTitle = styled.h2`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const Description = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const AttachmentGrid = styled.div`
@@ -420,6 +462,39 @@ export const RatingBadge = styled.span`
   border: 1px solid rgba(245, 158, 11, 0.28);
   background: rgba(245, 158, 11, 0.12);
   color: #b45309;
+`;
+
+export const DetailList = styled.dl`
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 110px) minmax(0, 1fr);
+  gap: 10px 14px;
+`;
+
+export const DetailTerm = styled.dt`
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+`;
+
+export const DetailValue = styled.dd`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const GuidanceCard = styled.div`
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  font-size: 14px;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 export const EmptyState = styled.div`

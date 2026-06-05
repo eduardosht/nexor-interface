@@ -8,6 +8,7 @@ import {
   readReferralInviteToken,
   saveReferralInviteToken,
 } from '../../lib/referral-cookie';
+import { writeStorageValue } from '../../lib/browser-storage';
 import { supabase } from '../../lib/supabase';
 import { validatePartnerInviteToken } from '../../features/demo/biteplanerFlow';
 import {
@@ -81,7 +82,7 @@ export function Cadastro() {
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
-      sessionStorage.setItem('nexor_referral_ref', ref);
+      writeStorageValue('nexor_referral_ref', ref, 'session');
     }
 
     const invite = searchParams.get('invite') ?? ref ?? '';

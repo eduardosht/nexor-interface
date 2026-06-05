@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
+import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
@@ -291,6 +292,7 @@ export function BiteplanerPage() {
   return (
     <S.Page id="main-content" tabIndex={-1}>
       <S.HeroSection>
+        <S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />
         <S.HeroCopy>
           <S.HeroTitle>
             Segurança.

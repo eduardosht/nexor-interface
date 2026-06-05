@@ -1,11 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Select } from '@nexor/design-system';
+﻿import { useEffect, useMemo, useState } from 'react';
+import {
+  AdminModal,
+  AdminModalAction,
+  AdminModalActions,
+  AdminModalDetailCard,
+  AdminModalDetailContent,
+  AdminModalDetailGrid,
+  AdminModalDetailIcon,
+  AdminModalDetailLabel,
+  AdminModalDetailValue,
+  AdminModalTextArea,
+  AdminModalTextAreaGroup,
+  AdminModalTextAreaLabel,
+  AdminPagination,
+  Button,
+  Select,
+} from '@nexor/design-system';
 import {
   ArrowUpDown,
   CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
   Eye,
   Filter,
@@ -17,7 +30,6 @@ import {
   ShieldCheck,
   UserRoundCheck,
   Clock3 as ClockIcon,
-  X,
   XCircle,
 } from 'lucide-react';
 import styled from 'styled-components';
@@ -44,7 +56,7 @@ const statusLabel: Record<string, string> = {
 
 const workflowLabel: Record<string, string> = {
   admin_review_pending: 'Aguardando análise',
-  approved_pending_payment: 'Aguardando pagamento',
+  approved_pending_payment: 'Licenciado',
   payment_confirmed_pending_intention_contract: 'Pagamento confirmado',
   course_in_progress: 'Curso em andamento',
   licensing_contract_pending: 'Contrato final pendente',
@@ -68,7 +80,7 @@ type SortKey = 'dentist' | 'cro' | 'clinics' | 'status' | 'workflow' | 'submitte
 type SortDirection = 'asc' | 'desc';
 
 function getStatusColor(status: string) {
-  if (status === 'active' || status === 'licensed') return '#15803d';
+  if (status === 'active' || status === 'licensed' || status === 'approved_pending_payment') return '#15803d';
   if (status === 'rejected' || status === 'admin_rejected') return '#b91c1c';
   return '#d18a00';
 }
@@ -133,7 +145,9 @@ export function AdminDentistLicensing() {
     const query = search.trim().toLowerCase();
     const visibleByStatus = requests.filter((request) => {
       if (statusFilter === 'all') return true;
-      if (statusFilter === 'licensed') return request.workflowStatus === 'licensed';
+      if (statusFilter === 'licensed') {
+        return request.workflowStatus === 'licensed' || request.workflowStatus === 'approved_pending_payment';
+      }
       return request.status === statusFilter;
     });
 
@@ -180,7 +194,9 @@ export function AdminDentistLicensing() {
       { label: 'Recusados', value: requests.filter((item) => item.status === 'rejected').length, Icon: XCircle },
       {
         label: 'Licenciados',
-        value: requests.filter((item) => item.workflowStatus === 'licensed').length,
+        value: requests.filter(
+          (item) => item.workflowStatus === 'licensed' || item.workflowStatus === 'approved_pending_payment'
+        ).length,
         Icon: ShieldCheck,
       },
     ],
@@ -400,164 +416,122 @@ export function AdminDentistLicensing() {
             )}
 
             {!loading ? (
-              <TableFooter>
-                <ResultsText>
-                  {sortedRequests.length === 0
-                    ? 'Nenhum resultado'
-                    : `Mostrando ${rangeStart} a ${rangeEnd} de ${sortedRequests.length} resultados`}
-                </ResultsText>
-                <PaginationGroup aria-label="Paginação de solicitações">
-                  <PagerButton
-                    type="button"
-                    aria-label="Página anterior"
-                    disabled={safePage === 1}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                  >
-                    <ChevronLeft size={16} aria-hidden />
-                  </PagerButton>
-                  <CurrentPage aria-current="page">{safePage}</CurrentPage>
-                  <PagerButton
-                    type="button"
-                    aria-label="Próxima página"
-                    disabled={safePage === totalPages}
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                  >
-                    <ChevronRight size={16} aria-hidden />
-                  </PagerButton>
-                </PaginationGroup>
-                <PageSizeControl>
-                  <PageSizeSelect
-                    aria-label="Resultados por página"
-                    value={pageSize}
-                    onChange={(event) => updatePageSize(Number(event.target.value))}
-                  >
-                    {pageSizeOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option} por página
-                      </option>
-                    ))}
-                  </PageSizeSelect>
-                  <ChevronDown size={16} aria-hidden />
-                </PageSizeControl>
-              </TableFooter>
+              <AdminPagination
+                page={safePage}
+                totalPages={totalPages}
+                totalItems={sortedRequests.length}
+                rangeStart={rangeStart}
+                rangeEnd={rangeEnd}
+                pageSize={pageSize}
+                pageSizeOptions={pageSizeOptions}
+                ariaLabel="Paginação de solicitações"
+                onPageChange={setPage}
+                onPageSizeChange={updatePageSize}
+              />
             ) : null}
           </RequestsPanel>
         </>
       ) : null}
 
-      {selectedRequest ? (
-        <ModalOverlay
-          role="dialog"
-          aria-modal="true"
-          aria-label="Dados enviados pelo dentista"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setSelectedRequest(null);
-            }
-          }}
-        >
-          <ModalBox>
-            <ModalHeader>
-              <ModalTitleGroup>
-                <ModalHeroIcon aria-hidden>
-                  <UserRoundCheck size={32} />
-                </ModalHeroIcon>
-                <div>
-                  <ModalTitle>Dados enviados pelo dentista</ModalTitle>
-                  <ModalSubtitle>
-                    {selectedRequest.dentistName}
-                    <InlineDot aria-hidden />
-                    {selectedRequest.croNumber}
-                  </ModalSubtitle>
-                </div>
-              </ModalTitleGroup>
-              <CloseButton type="button" aria-label="Fechar dados do dentista" onClick={() => setSelectedRequest(null)}>
-                <X size={16} aria-hidden />
-              </CloseButton>
-            </ModalHeader>
-
-            <DetailGrid>
-              <DetailItem $layout="inline">
-                <DetailIcon aria-hidden>
+      <AdminModal
+        open={Boolean(selectedRequest)}
+        title="Dados enviados pelo dentista"
+        ariaLabel="Dados enviados pelo dentista"
+        icon={<UserRoundCheck size={32} />}
+        subtitle={
+          selectedRequest ? (
+            <>
+              {selectedRequest.dentistName}
+              <InlineDot aria-hidden />
+              {selectedRequest.croNumber}
+            </>
+          ) : null
+        }
+        onClose={() => setSelectedRequest(null)}
+        footer={
+          selectedRequest ? (
+            <AdminModalActions>
+              <AdminModalAction
+                type="button"
+                actionTone="attention"
+                disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
+                onClick={handleReject}
+              >
+                {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
+              </AdminModalAction>
+              <AdminModalAction
+                type="button"
+                disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                onClick={handleApprove}
+              >
+                {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
+              </AdminModalAction>
+            </AdminModalActions>
+          ) : null
+        }
+      >
+        {selectedRequest ? (
+          <>
+            <AdminModalDetailGrid>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
                   <FileText size={24} />
-                </DetailIcon>
-                <DetailContent>
-                  <DetailLabel>Resumo profissional</DetailLabel>
-                  <DetailValue>{selectedRequest.professionalSummary || 'Não informado'}</DetailValue>
-                </DetailContent>
-              </DetailItem>
-              <DetailItem $layout="inline">
-                <DetailIcon aria-hidden>
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
+                  <AdminModalDetailLabel>Resumo profissional</AdminModalDetailLabel>
+                  <AdminModalDetailValue>{selectedRequest.professionalSummary || 'Não informado'}</AdminModalDetailValue>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
                   <HeartPulse size={24} />
-                </DetailIcon>
-                <DetailContent>
-                  <DetailLabel>Status do fluxo</DetailLabel>
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
+                  <AdminModalDetailLabel>Status do fluxo</AdminModalDetailLabel>
                   <StatusPill $color={getStatusColor(selectedRequest.status)}>
                     <StatusDot $color={getStatusColor(selectedRequest.status)} />
                     {workflowLabel[selectedRequest.workflowStatus] ?? selectedRequest.workflowStatus}
                   </StatusPill>
-                </DetailContent>
-              </DetailItem>
-            </DetailGrid>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+            </AdminModalDetailGrid>
 
-            <ClinicList>
-              {selectedRequest.practiceLocations.map((clinic) => (
-                <ClinicItem key={`${clinic.name}:${clinic.cep}`}>
-                  <DetailIcon aria-hidden>
-                    <MapPin size={26} />
-                  </DetailIcon>
-                  <DetailContent>
-                    <DetailLabel>{clinic.name}</DetailLabel>
-                    <ClinicText>{clinic.address}</ClinicText>
-                    <ClinicText>{clinic.city} {clinic.state ? `- ${clinic.state}` : ''} - {clinic.cep}</ClinicText>
-                    <ClinicMeta>
-                      <ClinicMetaItem>
-                        <Phone size={16} aria-hidden />
-                        {clinic.phone ?? 'Telefone não informado'}
-                      </ClinicMetaItem>
-                      <InlineDot aria-hidden />
-                      <ClinicMetaItem>
-                        <ClockIcon size={16} aria-hidden />
-                        {clinic.serviceHours}
-                      </ClinicMetaItem>
-                    </ClinicMeta>
-                  </DetailContent>
-                </ClinicItem>
-              ))}
-            </ClinicList>
+            {selectedRequest.practiceLocations.map((clinic) => (
+              <AdminModalDetailCard key={`${clinic.name}:${clinic.cep}`}>
+                <AdminModalDetailIcon aria-hidden>
+                  <MapPin size={26} />
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
+                  <AdminModalDetailLabel>{clinic.name}</AdminModalDetailLabel>
+                  <AdminModalDetailValue>{clinic.address}</AdminModalDetailValue>
+                  <AdminModalDetailValue>{clinic.city} {clinic.state ? `- ${clinic.state}` : ''} - {clinic.cep}</AdminModalDetailValue>
+                  <ClinicMeta>
+                    <ClinicMetaItem>
+                      <Phone size={16} aria-hidden />
+                      {clinic.phone ?? 'Telefone não informado'}
+                    </ClinicMetaItem>
+                    <InlineDot aria-hidden />
+                    <ClinicMetaItem>
+                      <ClockIcon size={16} aria-hidden />
+                      {clinic.serviceHours}
+                    </ClinicMetaItem>
+                  </ClinicMeta>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+            ))}
 
-            <RejectFieldGroup>
-              <RejectLabel htmlFor="dentist-reject-reason">Motivo da recusa</RejectLabel>
-              <RejectTextarea
+            <AdminModalTextAreaGroup>
+              <AdminModalTextAreaLabel htmlFor="dentist-reject-reason">Motivo da recusa</AdminModalTextAreaLabel>
+              <AdminModalTextArea
                 id="dentist-reject-reason"
                 placeholder="Obrigatório apenas para recusar."
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
               />
-            </RejectFieldGroup>
-
-            <ModalActions>
-              <DangerButton
-                type="button"
-                variant="secondary"
-                disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
-                onClick={handleReject}
-                leadingIcon={<XCircle size={18} aria-hidden />}
-              >
-                {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
-              </DangerButton>
-              <ApproveButton
-                type="button"
-                disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
-                onClick={handleApprove}
-                leadingIcon={<CheckCircle2 size={20} aria-hidden />}
-              >
-                {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
-              </ApproveButton>
-            </ModalActions>
-          </ModalBox>
-        </ModalOverlay>
-      ) : null}
+            </AdminModalTextAreaGroup>
+          </>
+        ) : null}
+      </AdminModal>
     </PageStack>
   );
 }
@@ -628,7 +602,7 @@ const AdminSubtitle = styled.p`
 const MetricsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
+  gap: 16px;
 
   @media (max-width: 1180px) {
     gap: 14px;
@@ -642,8 +616,8 @@ const MetricsGrid = styled.div`
 
 const MetricCard = styled.article`
   min-width: 0;
-  min-height: 140px;
-  padding: 30px 22px 22px;
+  min-height: 96px;
+  padding: 18px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -651,18 +625,18 @@ const MetricCard = styled.article`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 22px;
+  gap: 14px;
 `;
 
 const MetricBody = styled.div`
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
 `;
 
 const MetricIcon = styled.div`
-  width: 56px;
-  height: 56px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
@@ -677,7 +651,7 @@ const MetricText = styled.div`
 
 const MetricValue = styled.strong`
   display: block;
-  font-size: 34px;
+  font-size: 28px;
   line-height: 1;
   font-weight: 800;
   color: ${({ theme }) => theme.colors.green};
@@ -685,8 +659,8 @@ const MetricValue = styled.strong`
 
 const MetricLabel = styled.span`
   display: block;
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: 6px;
+  font-size: 13px;
   line-height: 1.35;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
@@ -696,7 +670,7 @@ const RequestsPanel = styled.section`
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 24px;
+  padding: 18px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 14px;
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -709,8 +683,8 @@ const RequestsPanel = styled.section`
 
 const SearchGroup = styled.div`
   display: grid;
-  gap: 14px;
-  margin-bottom: 22px;
+  gap: 10px;
+  margin-bottom: 16px;
 `;
 
 const SearchLabel = styled.label`
@@ -792,13 +766,13 @@ const RequestsTable = styled.table`
 
   th,
   td {
-    padding: 16px 18px;
+    padding: 10px 14px;
     text-align: left;
     vertical-align: middle;
   }
 
   th {
-    height: 48px;
+    height: 42px;
     box-sizing: border-box;
     font-size: 12px;
     line-height: 1.2;
@@ -808,7 +782,7 @@ const RequestsTable = styled.table`
   }
 
   td {
-    height: 64px;
+    height: 54px;
     box-sizing: border-box;
     border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
     font-size: 14px;
@@ -929,11 +903,11 @@ const StatusPill = styled.span<{ $color: string }>`
   align-items: center;
   gap: 10px;
   max-width: 100%;
-  padding: 6px 10px;
+  padding: 5px 8px;
   border-radius: 7px;
   color: ${({ $color }) => $color};
   background: ${({ $color }) => `${$color}12`};
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.2;
 `;
 
@@ -985,322 +959,12 @@ const EmptyCell = styled.td`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-const TableFooter = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 28px;
-  align-items: center;
-  padding-top: 22px;
-
-  @media (max-width: 760px) {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-`;
-
-const ResultsText = styled.span`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const PaginationGroup = styled.nav`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-`;
-
-const PagerButton = styled.button`
-  width: 36px;
-  height: 36px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 7px;
-  display: inline-grid;
-  place-items: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  background: ${({ theme }) => theme.colors.bgElevated};
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`;
-
-const CurrentPage = styled.span`
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: inline-grid;
-  place-items: center;
-  color: ${({ theme }) => theme.colors.bgElevated};
-  background: ${({ theme }) => theme.colors.green};
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 10px 20px rgba(21, 128, 61, 0.22);
-`;
-
-const PageSizeControl = styled.label`
-  width: 132px;
-  min-height: 40px;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 7px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 760px) {
-    width: 100%;
-  }
-`;
-
-const PageSizeSelect = styled.select`
-  width: 100%;
-  height: 40px;
-  padding: 0 36px 0 12px;
-  border: 0;
-  appearance: none;
-  color: inherit;
-  background: transparent;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-
-  &:focus {
-    outline: 2px solid rgba(21, 128, 61, 0.18);
-    outline-offset: 2px;
-  }
-
-  + svg {
-    position: absolute;
-    right: 12px;
-    pointer-events: none;
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  padding: 24px;
-  display: grid;
-  place-items: center;
-  background: rgba(23, 23, 23, 0.58);
-  backdrop-filter: blur(3px);
-
-  @media (max-width: 1280px) {
-    padding: 16px;
-  }
-`;
-
-const ModalBox = styled.div`
-  width: min(900px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  padding: 28px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 32px 90px rgba(23, 23, 23, 0.28);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  @media (max-width: 1280px) {
-    max-height: calc(100vh - 32px);
-    gap: 16px;
-    padding: 20px;
-  }
-
-  @media (max-width: 680px) {
-    padding: 16px;
-    border-radius: 12px;
-  }
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
-
-  @media (max-width: 1280px) {
-    gap: 12px;
-    padding-bottom: 16px;
-  }
-`;
-
-const ModalTitleGroup = styled.div`
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-
-  @media (max-width: 680px) {
-    gap: 14px;
-  }
-`;
-
-const ModalHeroIcon = styled.div`
-  width: 58px;
-  height: 58px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: ${({ theme }) => theme.colors.green};
-  background: rgba(21, 128, 61, 0.1);
-
-  @media (max-width: 680px) {
-    width: 48px;
-    height: 48px;
-  }
-`;
-
-const ModalTitle = styled.h2`
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.12;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-
-  @media (max-width: 680px) {
-    font-size: 20px;
-  }
-`;
-
-const ModalSubtitle = styled.p`
-  margin: 6px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  font-size: 16px;
-  line-height: 1.35;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 680px) {
-    gap: 8px;
-    font-size: 15px;
-  }
-`;
-
 const InlineDot = styled.span`
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.green};
-`;
-
-const CloseButton = styled(IconButton)`
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.bgInset};
-
-  &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.borderSubtle};
-  }
-`;
-
-const DetailGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-
-  @media (max-width: 680px) {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-`;
-
-const DetailItem = styled.div<{ $layout?: 'inline' }>`
-  min-width: 0;
-  padding: 18px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 11px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  display: ${({ $layout }) => ($layout === 'inline' ? 'flex' : 'block')};
-  align-items: center;
-  gap: 16px;
-
-  @media (max-width: 680px) {
-    padding: 14px;
-    gap: 12px;
-  }
-`;
-
-const DetailIcon = styled.div`
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: ${({ theme }) => theme.colors.green};
-  background: rgba(21, 128, 61, 0.1);
-`;
-
-const DetailContent = styled.div`
-  min-width: 0;
-  display: grid;
-  gap: 6px;
-`;
-
-const DetailLabel = styled.strong`
-  display: block;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.25;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-
-  @media (max-width: 680px) {
-    font-size: 14px;
-  }
-`;
-
-const DetailValue = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const ClinicList = styled.div`
-  display: grid;
-  gap: 12px;
-`;
-
-const ClinicItem = styled(DetailItem)`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  @media (max-width: 680px) {
-    align-items: flex-start;
-    gap: 14px;
-  }
-`;
-
-const ClinicText = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 680px) {
-    font-size: 14px;
-  }
 `;
 
 const ClinicMeta = styled.div`
@@ -1325,96 +989,5 @@ const ClinicMetaItem = styled.span`
 
   svg {
     color: ${({ theme }) => theme.colors.green};
-  }
-`;
-
-const RejectFieldGroup = styled.div`
-  display: grid;
-  gap: 8px;
-`;
-
-const RejectLabel = styled.label`
-  font-size: 14px;
-  line-height: 1.3;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const RejectTextarea = styled.textarea`
-  width: 100%;
-  min-height: 104px;
-  box-sizing: border-box;
-  padding: 14px;
-  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 10px;
-  resize: vertical;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font: inherit;
-  font-size: 14px;
-  line-height: 1.5;
-
-  &::placeholder {
-    color: ${({ theme }) => theme.colors.textSecondary};
-  }
-
-  &:focus {
-    outline: 3px solid rgba(21, 128, 61, 0.16);
-    border-color: rgba(21, 128, 61, 0.54);
-  }
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-
-  @media (max-width: 680px) {
-    gap: 10px;
-
-    > button {
-      width: 100%;
-    }
-  }
-`;
-
-const DangerButton = styled(Button)`
-  flex: 0 0 auto;
-  min-width: 218px;
-  min-height: 48px;
-  padding: 0 20px;
-  border: 1px solid ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 9px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-
-  &:disabled {
-    opacity: 0.5;
-  }
-
-  @media (max-width: 680px) {
-    min-width: 0;
-  }
-`;
-
-const ApproveButton = styled(Button)`
-  flex: 0 0 auto;
-  min-width: 236px;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: 9px;
-  background: ${({ theme }) => theme.colors.green};
-  color: ${({ theme }) => theme.colors.bgElevated};
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  box-shadow: 0 12px 24px rgba(21, 128, 61, 0.22);
-
-  @media (max-width: 680px) {
-    min-width: 0;
   }
 `;

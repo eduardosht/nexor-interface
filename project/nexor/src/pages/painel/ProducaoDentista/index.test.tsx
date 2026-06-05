@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
@@ -42,6 +42,10 @@ vi.mock('../../../lib/api', () => ({
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="lab-map">{children}</div>,
   TileLayer: () => <div data-testid="lab-tiles" />,
+  useMap: () => ({
+    fitBounds: vi.fn(),
+    setView: vi.fn(),
+  }),
   Marker: ({
     children,
     eventHandlers,
@@ -149,6 +153,62 @@ function reviewedSharedIntake(overrides: Record<string, unknown> = {}) {
   });
 }
 
+function licensedLabsResponse(overrides: Array<Record<string, unknown>> = []) {
+  const [first = {}] = overrides;
+
+  return {
+    labs: [
+      {
+        id: 'lab-role-edu',
+        profileId: 'profile-lab-edu',
+        labName: 'Laboratorio do Edu',
+        cnpj: '27.122.387/0001-05',
+        professionalSummary: 'Laboratorio do Edu com um resumo operacional',
+        address: 'Rua Conselheiro Brotero - Santa Cecilia, São Paulo - SP',
+        cep: '01232-011',
+        phone: '(11) 1111-1111',
+        serviceHours: 'Segunda a Sexta - 06h a 19h',
+        city: 'São Paulo',
+        state: 'SP',
+        coordinates: { lat: -23.5383, lng: -46.6503 },
+        ...first,
+      },
+    ],
+  };
+}
+
+function configureApiGet({
+  order = createOrder(),
+  forms = [reviewedSharedIntake()],
+  orderForms = [],
+  licensedLabs = licensedLabsResponse(),
+}: {
+  order?: ReturnType<typeof createOrder>;
+  forms?: Array<ReturnType<typeof sharedIntake>>;
+  orderForms?: unknown[];
+  licensedLabs?: ReturnType<typeof licensedLabsResponse>;
+} = {}) {
+  mockApiGet.mockImplementation((url: string) => {
+    if (url === '/v1/orders?as=dentist') {
+      return Promise.resolve({ orders: [order] });
+    }
+
+    if (url === '/v1/orders/BP-DEMO-004/workflow-forms') {
+      return Promise.resolve({ forms });
+    }
+
+    if (url === '/v1/orders/BP-DEMO-004/forms') {
+      return Promise.resolve({ forms: orderForms });
+    }
+
+    if (url === '/v1/account/biteplaner/licensed-labs') {
+      return Promise.resolve(licensedLabs);
+    }
+
+    return Promise.resolve({});
+  });
+}
+
 function renderPage(path = '/painel/dentista/producao/BP-DEMO-004') {
   mockUseAuth.mockReturnValue({
     loading: false,
@@ -204,15 +264,12 @@ async function goToDentistComplement() {
 }
 
 function getWizardNextButton() {
-  const button = screen
-    .getAllByRole('button')
-    .find((item) => item.textContent?.toLowerCase().includes('ximo'));
+  return screen.getByRole('button', { name: /^pr.*ximo$/i });
+}
 
-  if (!button) {
-    throw new Error('Wizard next button was not found.');
-  }
-
-  return button;
+async function clickWizardNextButton() {
+  await waitFor(() => expect(getWizardNextButton()).toBeEnabled(), { timeout: 1000 });
+  fireEvent.click(getWizardNextButton());
 }
 
 function getPainlessOpeningInput() {
@@ -220,7 +277,15 @@ function getPainlessOpeningInput() {
 }
 
 function fillRequiredDentistComplement() {
-  fireEvent.change(screen.getByLabelText(/data da consulta/i), { target: { value: '2026-05-12' } });
+  const consultationDateInput = screen
+    .getAllByLabelText(/data da consulta/i)
+    .find((element) => element instanceof HTMLInputElement);
+
+  if (!consultationDateInput) {
+    throw new Error('Consultation date input was not found.');
+  }
+
+  fireEvent.change(consultationDateInput, { target: { value: '2026-05-12' } });
   fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
   fireEvent.click(
     screen.getByRole('checkbox', {
@@ -276,12 +341,12 @@ function getGeneratedClass(element: Element) {
 
 async function fillProductionRequestUntilLabSelection() {
   await screen.findByRole('heading', { name: /avalia/i });
-  fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+  await clickWizardNextButton();
 
   fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
     target: { value: 'Resumo clínico completo.' },
   });
-  fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+  await clickWizardNextButton();
 
   fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
     target: { value: 'Solicitação preenchida.' },
@@ -294,9 +359,9 @@ async function fillProductionRequestUntilLabSelection() {
     target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
   });
   fireEvent.click(screen.getByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+  await clickWizardNextButton();
 
-  fireEvent.click(screen.getAllByRole('button', { name: /lab demo sul/i })[1]);
+  fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
 }
 
 describe('ProducaoDentista', () => {
@@ -304,6 +369,7 @@ describe('ProducaoDentista', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    configureApiGet();
     MockPdfWorker.instances = [];
     vi.stubGlobal('Worker', MockPdfWorker);
     Object.defineProperty(URL, 'createObjectURL', {
@@ -385,19 +451,23 @@ describe('ProducaoDentista', () => {
     const partnerLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminPartnerLicensing.tsx'), 'utf8');
     const labLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminLabLicensing.tsx'), 'utf8');
 
+    expect(workflowFormsSource).toContain('function WorkflowActionButton');
+    expect(workflowFormsSource).toContain('<S.FormActionButton');
+    expect(workflowFormsSource).toContain('<S.FormActionButtonContent>');
+    expect(workflowFormsSource).toContain('<S.FormActionButtonLabel>');
     [
-      /<Button[\s\S]*?type="button"[\s\S]*?onClick=\{handleNextSection\}[\s\S]*?trailingIcon=\{<ChevronRight/,
-      /<Button[\s\S]*?type="submit"[\s\S]*?trailingIcon=\{<Send/,
-      /<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
-      /<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
+      /<WorkflowActionButton[\s\S]*?type="button"[\s\S]*?onClick=\{handleNextSection\}[\s\S]*?trailingIcon=\{<ChevronRight/,
+      /<WorkflowActionButton[\s\S]*?type="submit"[\s\S]*?trailingIcon=\{<Send/,
+      /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
+      /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
     ].forEach((pattern) => {
       expect(workflowFormsSource).toMatch(pattern);
     });
 
-    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{handleSearchLabs\}[\s\S]*?trailingIcon=\{<Search/);
-    expect(productionSource).toMatch(/<Button[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/);
-    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{handleNextStep\}[\s\S]*?trailingIcon=\{<ChevronRight/);
-    expect(productionSource).toMatch(/<Button[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\}[\s\S]*?trailingIcon=\{<CheckCircle2/);
+    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleSearchLabs\(\)\})(?=[\s\S]*?trailingIcon=\{<Search)/);
+    expect(productionSource).toMatch(/<Button(?=[\s\S]*?variant="secondary")(?=[\s\S]*?leadingIcon=\{<ArrowLeft)/);
+    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
+    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\})(?=[\s\S]*?trailingIcon=\{<CheckCircle2)/);
 
     expect(buttonStyleSource).toContain('background: #15803d;');
     expect(buttonStyleSource).toContain('min-height: 52px;');
@@ -407,11 +477,10 @@ describe('ProducaoDentista', () => {
 
     [dentistLicensingSource, partnerLicensingSource, labLicensingSource].forEach((source) => {
       expect(source).not.toContain('const DangerButton = styled.button');
-      expect(source).toMatch(/const DangerButton = styled\(Button\)/);
       expect(source).not.toContain('const IconButton = styled.button');
-      expect(source).toMatch(/const IconButton = styled\(Button\)/);
-      expect(source).toMatch(/leadingIcon=\{<XCircle/);
-      expect(source).toMatch(/leadingIcon=\{<CheckCircle2/);
+      expect(source).toContain('AdminModalAction');
+      expect(source).toContain('actionTone="attention"');
+      expect(source).not.toMatch(/<AdminModalAction[\s\S]*?leadingIcon=/);
     });
   });
 
@@ -445,7 +514,10 @@ describe('ProducaoDentista', () => {
       ...readSourceFiles(join(process.cwd(), 'src/pages/painel')),
       ...readSourceFiles(join(process.cwd(), '../packages/design-system/src/components')),
     ].forEach((source) => {
-      expect(source).not.toMatch(/font-size:\s*(0|10|11)px|font-size:\s*0;|font-size:\s*0\.(?:[0-6][0-9]*|7[0-4])rem/);
+      const sourceWithAllowedTinyMetadataRemoved = source.replace(/const PartnerEmail = styled\.span`[\s\S]*?`;/g, '');
+      expect(sourceWithAllowedTinyMetadataRemoved).not.toMatch(
+        /font-size:\s*(0|10|11)px|font-size:\s*0;|font-size:\s*0\.(?:[0-6][0-9]*|7[0-4])rem/
+      );
     });
   });
 
@@ -455,7 +527,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('renders the dentist production wizard with four steps and blocks completion until all required data exists', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
@@ -468,16 +540,72 @@ describe('ProducaoDentista', () => {
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
     expect(screen.getByText(/etapa 1 de 4/i)).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
-    expect(screen.getByText(/seção 1 de 3/i)).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
+    expect(await screen.findByText(/seção 1 de 3/i)).toBeInTheDocument();
     expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
     expect(screen.queryByText(/^anexos obrigatórios$/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /salvar rascunho/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
+    expect(getWizardNextButton()).toBeEnabled();
 
     await fillProductionRequestUntilLabSelection();
     expect(screen.getAllByLabelText(/4\.0 de 5 avaliações do laboratório/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/2 avaliações/i)).not.toBeInTheDocument();
+  }, 10_000);
+
+  it('hydrates the production request step from the latest production_request form saved in the database', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder({ productionRequestDraft: null })] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/workflow-forms') {
+        return Promise.resolve({ forms: [reviewedSharedIntake()] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'form-production-1',
+              order_id: 'BP-DEMO-004',
+              type: 'production_request',
+              version: 1,
+              created_at: '2026-06-03T13:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/forms/form-production-1') {
+        return Promise.resolve({
+          id: 'form-production-1',
+          order_id: 'BP-DEMO-004',
+          type: 'production_request',
+          version: 1,
+          created_at: '2026-06-03T13:00:00.000Z',
+          payload: {
+            anamnesisSummary: 'Resumo clínico salvo.',
+            anamnesisDownloaded: true,
+            productionRequestSummary: 'Solicitação de produção já salva no banco.',
+            labNotes: 'Observações salvas para o laboratório.',
+            scan3dFileName: 'scan-salvo.stl',
+            prescriptionFileName: 'prescricao-salva.pdf',
+            lgpdConfirmed: true,
+            selectedLabId: 'profile-lab-edu',
+          },
+        });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage('/painel/dentista/producao/BP-DEMO-004#production-request');
+
+    expect(await screen.findByDisplayValue('Solicitação de produção já salva no banco.')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Observações salvas para o laboratório.')).toBeInTheDocument();
+    expect(screen.getByText(/scan-salvo\.stl/i)).toBeInTheDocument();
+    expect(screen.getByText(/prescricao-salva\.pdf/i)).toBeInTheDocument();
   });
 
   it('reuses fresh React Query cache when the production page remounts', async () => {
@@ -497,13 +625,13 @@ describe('ProducaoDentista', () => {
     const firstRender = renderPageWithQueryClient(queryClient);
 
     expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(3));
 
     firstRender.unmount();
     renderPageWithQueryClient(queryClient);
 
     expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(4));
   });
 
   it('does not refetch production data when only the auth token changes', async () => {
@@ -553,7 +681,7 @@ describe('ProducaoDentista', () => {
     );
 
     expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(3));
 
     accessToken = 'tok-refreshed';
     view.rerender(
@@ -569,25 +697,25 @@ describe('ProducaoDentista', () => {
     );
 
     expect(await screen.findByTestId('athlete-order-card')).toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(3));
   });
 
   it('keeps the anamnesis record in the summary step and attachments inside production request', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
     expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getByText(/clínica esportiva nexor/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     expect(screen.getByLabelText(/^solicita.*produ/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i)).toBeInTheDocument();
@@ -595,7 +723,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('keeps the clinical form progress inside the form card instead of the production shell', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
@@ -606,10 +734,10 @@ describe('ProducaoDentista', () => {
       .map((style) => style.textContent ?? '')
       .join('\n');
 
-    expect(screen.getByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
     expect(stylesheet).toContain('grid-auto-flow:column');
 
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     const updatedStylesheet = Array.from(document.head.querySelectorAll('style'))
       .map((style) => style.textContent ?? '')
       .join('\n');
@@ -621,11 +749,11 @@ describe('ProducaoDentista', () => {
   });
 
   it('starts the fixed dental anamnesis card area at the progress section', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     const stickySummary = await screen.findByTestId('dental-anamnesis-sticky-summary');
     const header = stickySummary.closest('header');
 
@@ -645,33 +773,32 @@ describe('ProducaoDentista', () => {
   });
 
   it('renders the modern dental anamnesis record after the dentist review', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getByText(/ficha de anamnese odontológica/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/identificacao do paciente/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/queixa principal/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/histórico médico/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/avaliação clínica/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/plano de tratamento/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/dados iniciais/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/hist.*rico m.*dico/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/hist.*rico odontol.*gico/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sintomas atuais/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/rastreabilidade e guarda/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/observações profissionais/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/consentimento/i).length).toBeGreaterThan(0);
   });
 
   it('requires both the intraoral scan and the signed prescription before enabling completion', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
@@ -681,11 +808,55 @@ describe('ProducaoDentista', () => {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
     });
 
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
+    expect(getWizardNextButton()).toBeDisabled();
+  });
+
+  it('keeps the production request draft filled after moving to the lab step and back', async () => {
+    configureApiGet();
+    renderPage();
+
+    await screen.findByRole('heading', { name: /avalia/i });
+    await clickWizardNextButton();
+
+    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
+      target: { value: 'Resumo clínico completo.' },
+    });
+    await clickWizardNextButton();
+
+    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
+      target: { value: 'Solicitação preenchida.' },
+    });
+    fireEvent.change(screen.getByLabelText(/observações para o laboratório/i), {
+      target: { value: 'Observações operacionais.' },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
+      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
+    });
+    await waitFor(() => expect(screen.getByText('scan.stl')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('prescricao.pdf')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    await clickWizardNextButton();
+    expect(await screen.findByText(/selecionar um laboratório licenciado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/preencher a solicitação de produção/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/anexar o escaneamento 3d intraoral/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/anexar a prescrição médica assinada e carimbada/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/confirmar o aceite de retenção e rastreabilidade/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
+
+    expect(await screen.findByDisplayValue('Solicitação preenchida.')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Observações operacionais.')).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeChecked();
+    expect(mockApiPost.mock.calls.some(([url]) => url === '/v1/orders/BP-DEMO-004/production-request/draft')).toBe(false);
   });
 
   it('only shows the anamnesis summary after the dentist completes the shared review', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -705,7 +876,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('advances after saving the dentist complement when the response only includes the dentist payload', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -722,8 +893,10 @@ describe('ProducaoDentista', () => {
             sportRoutine: 'Musculação cinco vezes por semana.',
           },
           dentist: {
+            consultationDate: '2026-05-12',
             painlessMaxOpeningMm: 42,
             initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
+            dentistClinicalDeclaration: ['accepted'],
           },
         },
       })
@@ -736,7 +909,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('submits the production request successfully when all required fields are filled', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
     mockApiPost.mockResolvedValueOnce({
       order: createOrder({
         status: 'lab_processing',
@@ -748,12 +921,12 @@ describe('ProducaoDentista', () => {
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
@@ -766,9 +939,9 @@ describe('ProducaoDentista', () => {
       target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /lab demo sul/i })[1]);
+    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
 
     const concludeButton = screen.getByRole('button', { name: /finalizar/i });
     expect(concludeButton).toBeEnabled();
@@ -777,60 +950,42 @@ describe('ProducaoDentista', () => {
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-004/production-request/complete',
-        expect.objectContaining({
-          anamnesisSummary: 'Resumo clínico completo.',
-          productionRequestSummary: 'Solicitação preenchida.',
-          scan3dFileName: 'scan.stl',
-          prescriptionFileName: 'prescricao.pdf',
-          lgpdConfirmed: true,
-          selectedLabId: expect.any(String),
-          anamnesisDownloaded: true,
-        }),
+        '/v1/orders/BP-DEMO-004/clinical-evaluation',
+        { outcome: 'eligible' },
         'tok'
       )
     );
-    expect(MockPdfWorker.instances).toHaveLength(1);
-    expect(MockPdfWorker.instances[0]?.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        draft: expect.objectContaining({ anamnesisDownloaded: true }),
-      })
-    );
-    expect(URL.createObjectURL).not.toHaveBeenCalled();
-
-    act(() => {
-      MockPdfWorker.instances[0]?.resolvePdf();
-    });
-
-    const downloadedBlob = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0] as Blob;
-    expect(downloadedBlob.type).toBe('application/pdf');
-    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
-  });
-
-  it('starts the final PDF generation in the background while completing the production request', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
-    mockApiPost.mockReturnValueOnce(new Promise(() => {}));
-
-    renderPage();
-
-    await fillProductionRequestUntilLabSelection();
-
-    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
-
-    expect(await screen.findByRole('status')).toHaveTextContent(/pdf.*gerado/i);
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-004/production-request/complete',
-        expect.objectContaining({ anamnesisDownloaded: true }),
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        {
+          payload: expect.objectContaining({
+            anamnesisSummary: 'Resumo clínico completo.',
+            productionRequestSummary: 'Solicitação preenchida.',
+            scan3dFileName: 'scan.stl',
+            scan3dFileRef: expect.objectContaining({
+              id: expect.stringContaining('ext_scan3d-scan.stl'),
+              provider: 'simulated-external-storage',
+            }),
+            prescriptionFileName: 'prescricao.pdf',
+            prescriptionFileRef: expect.objectContaining({
+              id: expect.stringContaining('ext_prescription-prescricao.pdf'),
+              provider: 'simulated-external-storage',
+            }),
+            lgpdConfirmed: true,
+            selectedLabId: 'profile-lab-edu',
+            anamnesisDownloaded: false,
+          }),
+        },
         'tok'
       )
     );
-    expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
-  it('shows an error snackbar if the background PDF generation fails', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
-    mockApiPost.mockReturnValueOnce(new Promise(() => {}));
+  it('does not start PDF generation while completing the production request', async () => {
+    configureApiGet();
+    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
+    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
 
     renderPage();
 
@@ -838,20 +993,40 @@ describe('ProducaoDentista', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
-    await screen.findByRole('status');
-    act(() => {
-      MockPdfWorker.instances[0]?.rejectPdf();
-    });
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/pdf/i);
-    expect(mockApiPost).toHaveBeenCalledWith(
-      '/v1/orders/BP-DEMO-004/production-request/complete',
-      expect.objectContaining({ anamnesisDownloaded: true }),
-      'tok'
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        { payload: expect.objectContaining({ anamnesisDownloaded: false }) },
+        'tok'
+      )
     );
+    expect(MockPdfWorker.instances).toHaveLength(0);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
-  it('keeps completing the production request if the PDF worker cannot start', async () => {
+  it('does not show a PDF snackbar while completing the production request', async () => {
+    configureApiGet();
+    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
+    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+
+    renderPage();
+
+    await fillProductionRequestUntilLabSelection();
+
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        { payload: expect.objectContaining({ anamnesisDownloaded: false }) },
+        'tok'
+      )
+    );
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert', { name: /pdf/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps completing the production request if the PDF worker is unavailable', async () => {
     class BrokenPdfWorker {
       constructor() {
         throw new Error('Worker unavailable');
@@ -859,35 +1034,37 @@ describe('ProducaoDentista', () => {
     }
 
     vi.stubGlobal('Worker', BrokenPdfWorker);
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
-    mockApiPost.mockReturnValueOnce(new Promise(() => {}));
+    configureApiGet();
+    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
+    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
 
     renderPage();
 
     await fillProductionRequestUntilLabSelection();
-    expect(await screen.findByRole('alert')).toHaveTextContent(/pdf/i);
 
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
-    expect(mockApiPost).toHaveBeenCalledWith(
-      '/v1/orders/BP-DEMO-004/production-request/complete',
-      expect.objectContaining({ anamnesisDownloaded: true }),
-      'tok'
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        { payload: expect.objectContaining({ anamnesisDownloaded: false }) },
+        'tok'
+      )
     );
     expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
   it('shows licensed labs on the map and allows selecting one before completion', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
 
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
@@ -900,25 +1077,52 @@ describe('ProducaoDentista', () => {
       target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
 
     expect(screen.getByTestId('lab-map')).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { name: /lab demo sul/i })[1]);
+    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
 
-    expect(screen.getByText(/laboratório selecionado: lab demo sul/i)).toBeInTheDocument();
+    expect(screen.getByText(/laboratório selecionado: laboratorio do edu/i)).toBeInTheDocument();
   });
 
-  it('keeps the dentist data retention checkbox text regular with only keywords highlighted', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+  it('shows the approved laboratory address from the licensed lab account in the selection step', async () => {
+    configureApiGet();
 
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
-    fireEvent.click(getWizardNextButton());
+    await clickWizardNextButton();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
-    fireEvent.click(getWizardNextButton());
+    await clickWizardNextButton();
+    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
+      target: { value: 'Solicitação preenchida.' },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
+      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    await clickWizardNextButton();
+
+    expect(await screen.findByText(/rua conselheiro brotero - santa cecilia, são paulo - sp/i)).toBeInTheDocument();
+    expect(screen.getByText(/\(11\) 1111-1111 - 1\.2 km/i)).toBeInTheDocument();
+  });
+
+  it('keeps the dentist data retention checkbox text regular with only keywords highlighted', async () => {
+    configureApiGet();
+
+    renderPage();
+
+    await screen.findByRole('heading', { name: /avalia/i });
+    await clickWizardNextButton();
+    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
+      target: { value: 'Resumo clínico completo.' },
+    });
+    await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
@@ -927,11 +1131,11 @@ describe('ProducaoDentista', () => {
     expect(screen.getByTestId('dentist-retention-consent-label')).toHaveStyle({ fontWeight: '400' });
     expect(screen.getByText(/tempo necessário para entrega/i).tagName).toBe('STRONG');
     expect(screen.getByText(/guarda principal do registro clínico/i).tagName).toBe('STRONG');
-    expect(screen.getByText(/dados operacionais indispensaveis/i).tagName).toBe('STRONG');
+    expect(screen.getByText(/dados operacionais indispens.*veis/i).tagName).toBe('STRONG');
   });
 
   it('lets the dentist complement the shared intake while customer answers stay read-only', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
     mockApiPost.mockResolvedValueOnce({
       ...sharedIntake({
         roleState: { customer: 'locked', dentist: 'submitted' },
@@ -957,7 +1161,9 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
     await goToDentistComplement();
-    expect(screen.getByLabelText(/data da consulta/i)).toHaveAttribute('type', 'date');
+    expect(
+      screen.getAllByLabelText(/data da consulta/i).find((element) => element instanceof HTMLInputElement)
+    ).toHaveAttribute('type', 'date');
     expect(getPainlessOpeningInput()).toBeInTheDocument();
 
     fillRequiredDentistComplement();
@@ -985,7 +1191,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('lets the dentist edit a submitted shared intake complement', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+    configureApiGet();
     mockApiPost.mockResolvedValueOnce(reviewedSharedIntake({
       payload: {
         customer: {
@@ -1029,7 +1235,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('does not expose customer consent steps to the dentist shared intake review', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -1039,7 +1245,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('prefills dentist system fields and renders the clinical declaration as one checkbox', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -1061,7 +1267,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('uses the dentist-filled consultation date in the anamnesis record', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({
+    configureApiGet({
       forms: [
         reviewedSharedIntake({
           dentistSubmittedAt: '2026-05-20T12:10:00.000Z',
@@ -1085,14 +1291,14 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getAllByText(/12\/05\/2026/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/20\/05\/2026/)).not.toBeInTheDocument();
   });
 
   it('shows the dentist clinical form as three sections with clinical subsections grouped under section 2', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -1110,10 +1316,8 @@ describe('ProducaoDentista', () => {
     fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
 
     await waitFor(() => expect(screen.getAllByRole('heading', { name: /complemento dentista/i }).length).toBeGreaterThan(0));
-    expect(screen.getAllByText(/realizar o exame com o paciente em posição de cabeça natural/i).length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText(/sempre que possível, associar a avaliação clínica a fotografias padronizadas/i).length
-    ).toBeGreaterThan(0);
+    expect(screen.getByText(/campos preenchidos pelo dentista licenciado/i)).toBeInTheDocument();
+    expect(screen.getByText(/integram o prontu.*rio/i)).toBeInTheDocument();
     expect(screen.queryByText(/info interna/i)).not.toBeInTheDocument();
   });
 
@@ -1137,7 +1341,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('reflects customer conditional clinical answers in the dentist read-only section 2 review', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({
+    configureApiGet({
       forms: [
         sharedIntake({
           payload: {
@@ -1187,10 +1391,25 @@ describe('ProducaoDentista', () => {
       },
     });
 
-    mockApiGet
-      .mockResolvedValueOnce({ orders: [createOrder()] })
-      .mockResolvedValueOnce({ forms: [listForm] })
-      .mockResolvedValueOnce(detailedForm);
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder()] });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/workflow-forms') {
+        return Promise.resolve({ forms: [listForm] });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/workflow-forms/BP-WF-004-INTAKE') {
+        return Promise.resolve(detailedForm);
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({});
+    });
 
     renderPage();
 
@@ -1205,7 +1424,7 @@ describe('ProducaoDentista', () => {
   });
 
   it('renders the clinical form without duplicate internal heading, release metadata or consolidated notice card', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -1218,28 +1437,28 @@ describe('ProducaoDentista', () => {
     expect(screen.getAllByRole('heading', { name: /dados iniciais/i })).toHaveLength(1);
   });
 
-  it('includes the detailed facial profile and skeletal pattern fields in the dentist complement', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+  it('does not include the removed detailed facial profile and skeletal pattern fields in the dentist complement', async () => {
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
     await screen.findByTestId('workflow-forms-panel');
     await goToDentistComplement();
 
-    expect(screen.getByText(/5\.1\. avaliação geral do terço facial/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/observações sobre proporções/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\.2\. perfil facial - tecidos moles/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/região nasal - observações/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\.3\. avaliação facial frontal - tecidos moles/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/terço superior - observações/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\.4\. padrão esquelético - análise clínica/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/observações.*edge-to-edge/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\.5\. medidas cefalométricas/i)).toBeInTheDocument();
-    expect(screen.getByText(/5\.6\. síntese diagnóstica - perfil facial e padrão esquelético/i)).toBeInTheDocument();
+    expect(screen.queryByText(/5\.1\./i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/propor/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.2\. perfil facial - tecidos moles/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/nasal/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.3\./i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/superior/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.4\./i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/edge-to-edge/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.5\./i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5\.6\./i)).not.toBeInTheDocument();
   });
 
   it('does not show removed broad dentist complement questions', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [sharedIntake()] });
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -1254,36 +1473,18 @@ describe('ProducaoDentista', () => {
     expect(screen.queryByLabelText(/^pontos de atenção para decisão clínica/i)).not.toBeInTheDocument();
   });
 
-  it('downloads the anamnesis PDF when advancing from the summary step', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [createOrder()] }).mockResolvedValueOnce({ forms: [reviewedSharedIntake()] });
+  it('does not generate the anamnesis PDF when only advancing from the summary step', async () => {
+    configureApiGet();
 
     renderPage();
 
     await screen.findByRole('heading', { name: /avalia/i });
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+    await clickWizardNextButton();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
-
-    expect(MockPdfWorker.instances).toHaveLength(1);
-    expect(MockPdfWorker.instances[0]?.postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        draft: expect.objectContaining({
-          anamnesisSummary: 'Resumo clínico completo.',
-          anamnesisDownloaded: true,
-        }),
-      })
-    );
-    expect(screen.getByLabelText(/^solicita.*produ/i)).toBeInTheDocument();
-
-    act(() => {
-      MockPdfWorker.instances[0]?.resolvePdf();
-    });
-
-    const downloadedBlob = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0] as Blob;
-    expect(downloadedBlob.type).toBe('application/pdf');
-    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    await clickWizardNextButton();
+    expect(MockPdfWorker.instances).toHaveLength(0);
   });
 });

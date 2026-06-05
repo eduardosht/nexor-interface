@@ -1,3 +1,9 @@
+import {
+  readStorageValue,
+  removeStorageValue,
+  writeStorageValue,
+} from '../../lib/browser-storage';
+
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
@@ -87,26 +93,14 @@ export function isDemoPersona(value: string | null | undefined): value is DemoPe
 }
 
 export function readActiveDemoPersona() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const value = window.localStorage.getItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
+  const value = readStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
   return isDemoPersona(value) ? value : null;
 }
 
 export function writeActiveDemoPersona(persona: DemoPersona) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY, persona);
+  writeStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY, persona);
 }
 
 export function clearActiveDemoPersona() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.removeItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
+  removeStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
 }

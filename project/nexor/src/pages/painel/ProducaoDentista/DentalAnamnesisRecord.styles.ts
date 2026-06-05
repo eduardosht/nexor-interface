@@ -363,6 +363,33 @@ export const CardSummary = styled.summary`
   }
 `;
 
+export const CardSummaryMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
+export const ExpandIcon = styled.span`
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.bgInset};
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+
+  ${Card}[open] & {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    transform: rotate(180deg);
+  }
+`;
+
 export const SectionTitle = styled.h4`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -562,24 +589,5 @@ export const TextArea = styled.textarea`
   &:focus {
     border-color: #0f2f57;
     box-shadow: 0 0 0 3px rgba(15, 47, 87, 0.12);
-  }
-`;
-
-export const UploadBox = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border: 1px dashed ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.bgInset};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  font-weight: 400;
-
-  @media (max-width: 1280px) {
-    gap: 8px;
-    padding: 10px;
   }
 `;

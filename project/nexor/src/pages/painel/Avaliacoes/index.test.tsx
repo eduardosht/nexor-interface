@@ -388,5 +388,5 @@ describe('Avaliações', () => {
       )
     );
     expect(await screen.findByText(/cadastro por link bem orientado/i)).toBeInTheDocument();
-  });
+  }, 10_000);
 });

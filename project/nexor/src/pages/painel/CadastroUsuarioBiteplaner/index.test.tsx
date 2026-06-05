@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 
 const { mockUseAuth, mockApiGet, mockApiPost, mockNavigate } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -83,7 +84,7 @@ function onboardingForm(status: 'pending' | 'submitted' = 'pending', summary: Re
     summary,
     releasedAt: '2026-05-01T10:00:00.000Z',
     submittedAt: status === 'submitted' ? '2026-05-01T10:15:00.000Z' : null,
-    payload: null,
+    payload: {},
   };
 }
 
@@ -105,21 +106,42 @@ function renderPage() {
 
   return render(
     <MemoryRouter>
-      <ThemeProvider theme={lightTheme}>
-        <CadastroUsuarioBiteplaner />
-      </ThemeProvider>
+      <TestQueryClientProvider>
+        <ThemeProvider theme={lightTheme}>
+          <CadastroUsuarioBiteplaner />
+        </ThemeProvider>
+      </TestQueryClientProvider>
     </MemoryRouter>
   );
 }
 
 function selectDropdown(label: RegExp, optionName: RegExp | string) {
-  fireEvent.click(screen.getByLabelText(label));
+  const trigger = screen
+    .getAllByLabelText(label)
+    .find((element) => element.getAttribute('aria-haspopup') === 'listbox');
+  if (!trigger) {
+    throw new Error(`Dropdown not found for ${String(label)}`);
+  }
+
+  fireEvent.click(trigger);
   fireEvent.click(screen.getByRole('option', { name: optionName }));
 }
 
 function selectTagOption(label: RegExp, search: string, optionName: RegExp | string) {
-  fireEvent.change(screen.getByLabelText(label), { target: { value: search } });
+  fireEvent.change(getTextField(label), { target: { value: search } });
   fireEvent.click(screen.getByRole('option', { name: optionName }));
+}
+
+function getTextField(label: RegExp) {
+  return screen.getByLabelText(label, { selector: 'input, textarea' });
+}
+
+function queryTextField(label: RegExp) {
+  return screen.queryByLabelText(label, { selector: 'input, textarea' });
+}
+
+function findTextField(label: RegExp) {
+  return screen.findByLabelText(label, { selector: 'input, textarea' });
 }
 
 async function clickEnabledNextStep() {
@@ -130,18 +152,18 @@ async function clickEnabledNextStep() {
 async function advanceFromClinicalToFinancialSection() {
   await acceptInitialPrivacyGateIfNeeded();
 
-  fireEvent.change(screen.getByLabelText(/cpf/i), { target: { value: '52998224725' } });
-  fireEvent.change(screen.getByLabelText(/data de nascimento/i), { target: { value: '10011990' } });
-  fireEvent.change(screen.getByLabelText(/^cep/i), { target: { value: '01001000' } });
-  fireEvent.change(screen.getByLabelText(/^endere.*o/i), { target: { value: 'Praça da Sé - Sé' } });
-  fireEvent.change(screen.getByLabelText(/complemento/i), { target: { value: 'lado ímpar' } });
-  fireEvent.change(screen.getByLabelText(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
-  fireEvent.change(screen.getByLabelText(/^estado \(\*\)$/i), { target: { value: 'SP' } });
-  fireEvent.change(screen.getByLabelText(/profiss.*o/i), { target: { value: 'Atleta' } });
+  fireEvent.change(getTextField(/cpf/i), { target: { value: '52998224725' } });
+  fireEvent.change(getTextField(/data de nascimento/i), { target: { value: '10011990' } });
+  fireEvent.change(getTextField(/^cep/i), { target: { value: '01001000' } });
+  fireEvent.change(getTextField(/^endere.*o/i), { target: { value: 'Praça da Sé - Sé' } });
+  fireEvent.change(getTextField(/complemento/i), { target: { value: 'lado ímpar' } });
+  fireEvent.change(getTextField(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
+  fireEvent.change(getTextField(/^estado \(\*\)$/i), { target: { value: 'SP' } });
+  fireEvent.change(getTextField(/profiss.*o/i), { target: { value: 'Atleta' } });
   selectDropdown(/sexo biol.*gico/i, 'Masculino');
   selectDropdown(/lateralidade predominante/i, 'Destro');
-  fireEvent.change(screen.getByLabelText(/massa corporal/i), { target: { value: '70.5' } });
-  fireEvent.change(screen.getByLabelText(/altura/i), { target: { value: '1.70' } });
+  fireEvent.change(getTextField(/massa corporal/i), { target: { value: '70.5' } });
+  fireEvent.change(getTextField(/altura/i), { target: { value: '1.70' } });
   selectTagOption(/esportes\/atividades atuais/i, 'corr', /^corrida$/i);
   selectDropdown(/h.* quanto tempo/i, '2 a 5 anos');
   fireEvent.click(screen.getByLabelText(/mesmo local da resid/i));
@@ -160,7 +182,7 @@ async function acceptInitialPrivacyGateIfNeeded() {
   await waitFor(() => {
     expect(
       screen.queryByLabelText(/declaro que li e entendi/i) ??
-        screen.queryByLabelText(/cpf/i)
+        queryTextField(/cpf/i)
     ).toBeTruthy();
   });
 
@@ -172,7 +194,7 @@ async function acceptInitialPrivacyGateIfNeeded() {
 
   fireEvent.click(privacyCheckbox);
   fireEvent.click(await screen.findByRole('button', { name: /continuar/i }));
-  expect(await screen.findByLabelText(/cpf/i)).toBeInTheDocument();
+  expect(await findTextField(/cpf/i)).toBeInTheDocument();
 }
 
 async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '10011990' } = {}) {
@@ -181,33 +203,33 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   expect(screen.getByDisplayValue('joao@nexor.dev')).toBeInTheDocument();
   expect(screen.getByDisplayValue('(11) 99999-9999')).toBeInTheDocument();
 
-  expect(screen.getByLabelText(/telefone/i)).toHaveAttribute('placeholder', '(11) 99999-9999');
-  const cpfInput = screen.getByLabelText(/cpf/i);
-  const birthDateInput = screen.getByLabelText(/data de nascimento/i);
+  expect(getTextField(/telefone/i)).toHaveAttribute('placeholder', '(11) 99999-9999');
+  const cpfInput = getTextField(/cpf/i);
+  const birthDateInput = getTextField(/data de nascimento/i);
   expect(cpfInput).toHaveAttribute('placeholder', '000.000.000-00');
   expect(birthDateInput).toHaveAttribute('placeholder', 'DD/MM/AAAA');
   fireEvent.change(cpfInput, { target: { value: cpf } });
   fireEvent.change(birthDateInput, { target: { value: birthDate } });
   expect(cpfInput).toHaveValue(cpf === '52998224725' ? '529.982.247-25' : '123.456.789-01');
   expect(birthDateInput).toHaveValue(birthDate === '10011990' ? '10/01/1990' : '10/01/2010');
-  fireEvent.change(screen.getByLabelText(/^cep/i), { target: { value: '01001000' } });
-  fireEvent.change(screen.getByLabelText(/^endere.*o/i), { target: { value: 'Praça da Sé - Sé' } });
-  fireEvent.change(screen.getByLabelText(/complemento/i), { target: { value: 'lado ímpar' } });
-  fireEvent.change(screen.getByLabelText(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
-  fireEvent.change(screen.getByLabelText(/^estado \(\*\)$/i), { target: { value: 'SP' } });
-  fireEvent.change(screen.getByLabelText(/profiss.*o/i), { target: { value: 'Atleta' } });
+  fireEvent.change(getTextField(/^cep/i), { target: { value: '01001000' } });
+  fireEvent.change(getTextField(/^endere.*o/i), { target: { value: 'Praça da Sé - Sé' } });
+  fireEvent.change(getTextField(/complemento/i), { target: { value: 'lado ímpar' } });
+  fireEvent.change(getTextField(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
+  fireEvent.change(getTextField(/^estado \(\*\)$/i), { target: { value: 'SP' } });
+  fireEvent.change(getTextField(/profiss.*o/i), { target: { value: 'Atleta' } });
   selectDropdown(/sexo biol.*gico/i, 'Masculino');
   selectDropdown(/lateralidade predominante/i, 'Destro');
   expect(screen.getByText('Exemplo: 70,5')).toBeInTheDocument();
   expect(screen.getByText('Exemplo: 1,70')).toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText(/massa corporal/i), { target: { value: '70.5' } });
-  fireEvent.change(screen.getByLabelText(/altura/i), { target: { value: '1.70' } });
+  fireEvent.change(getTextField(/massa corporal/i), { target: { value: '70.5' } });
+  fireEvent.change(getTextField(/altura/i), { target: { value: '1.70' } });
 
   selectTagOption(/esportes\/atividades atuais/i, 'corr', /^corrida$/i);
   selectDropdown(/h.* quanto tempo/i, '2 a 5 anos');
   fireEvent.click(screen.getByLabelText(/mesmo local da resid/i));
-  expect(screen.getByLabelText(/cidade\/bairro onde treina/i)).toBeDisabled();
-  expect(screen.getByLabelText(/cidade\/bairro onde treina/i)).toHaveValue('Praça da Sé - Sé, lado ímpar, São Paulo - SP');
+  expect(getTextField(/cidade\/bairro onde treina/i)).toBeDisabled();
+  expect(getTextField(/cidade\/bairro onde treina/i)).toHaveValue('Praça da Sé - Sé, lado ímpar, São Paulo - SP');
   selectTagOption(/local de treinamento/i, 'acad', /^academia$/i);
   selectTagOption(/quem direciona\/acompanha seu treinamento/i, 'personal', /personal trainer/i);
   selectTagOption(/acess.*rios de seguran.*a/i, 'rel', /rel.*gios sensores/i);
@@ -217,12 +239,12 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   fireEvent.click(screen.getAllByLabelText(/^Não$/i)[1]);
   await clickEnabledNextStep();
 
-  fireEvent.change(screen.getByLabelText(/locais de treinamento/i), { target: { value: '20000' } });
-  expect(screen.getByLabelText(/locais de treinamento/i)).toHaveValue('R$ 200,00');
+  fireEvent.change(getTextField(/locais de treinamento/i), { target: { value: '20000' } });
+  expect(getTextField(/locais de treinamento/i)).toHaveValue('R$ 200,00');
   selectDropdown(/renda mensal/i, /R\$ 5\.001 a R\$ 10\.000/);
 
-  fireEvent.change(screen.getByLabelText(/maior objetivo/i), { target: { value: 'Melhorar performance' } });
-  fireEvent.change(screen.getByLabelText(/maior preocupa.*o/i), { target: { value: 'Evitar lesões' } });
+  fireEvent.change(getTextField(/maior objetivo/i), { target: { value: 'Melhorar performance' } });
+  fireEvent.change(getTextField(/maior preocupa.*o/i), { target: { value: 'Evitar lesões' } });
   selectDropdown(/trabalho afeta/i, 'Não afeta');
 
   expect(screen.queryByText(/novo sistema integrado \(SIN\)/i)).not.toBeInTheDocument();
@@ -234,7 +256,7 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   expect(screen.queryByLabelText(/pol.*tica de privacidade/i)).not.toBeInTheDocument();
   expect(screen.getByText(/A NEXOR precisa me ajudar a/i)).toBeInTheDocument();
 
-  fireEvent.change(screen.getByLabelText(/mais importante.*nexor/i), { target: { value: 'A treinar com segurança' } });
+  fireEvent.change(getTextField(/mais importante.*nexor/i), { target: { value: 'A treinar com segurança' } });
 }
 
 describe('CadastroUsuarioBiteplaner', () => {
@@ -280,7 +302,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.click(screen.getByLabelText(/declaro que li e entendi/i));
     expect(screen.getByRole('button', { name: /continuar/i })).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
-    expect(await screen.findByLabelText(/cpf/i)).toBeInTheDocument();
+    expect(await findTextField(/cpf/i)).toBeInTheDocument();
     const progressCard = screen.getByLabelText(/seu progresso/i);
     expect(within(progressCard).getByText(/dados cl.nicos/i)).toBeInTheDocument();
     expect(within(progressCard).getByText(/perfil financeiro/i)).toBeInTheDocument();
@@ -299,7 +321,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(screen.queryByLabelText(/menor de idade/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/app de mensagens/i)).not.toBeInTheDocument();
     await fillRequiredOnboardingFields();
-    expect(screen.getByLabelText(/mais importante.*nexor/i)).toBeInTheDocument();
+    expect(getTextField(/mais importante.*nexor/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /enviar formul.*rio/i }));
 
     await waitFor(() =>
@@ -366,7 +388,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    const cpfInput = await screen.findByLabelText(/cpf/i);
+    const cpfInput = await findTextField(/cpf/i);
     fireEvent.change(cpfInput, { target: { value: '12345678901' } });
     fireEvent.blur(cpfInput);
 
@@ -382,8 +404,8 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    const cpfInput = await screen.findByLabelText(/cpf/i);
-    expect(await screen.findByLabelText(/cpf \(\*\)/i)).toBe(cpfInput);
+    const cpfInput = await findTextField(/cpf/i);
+    expect(await findTextField(/cpf \(\*\)/i)).toBe(cpfInput);
 
     fireEvent.blur(cpfInput);
     expect(await screen.findByText('Campo obrigatório')).toBeInTheDocument();
@@ -401,7 +423,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    const birthDateInput = await screen.findByLabelText(/data de nascimento/i);
+    const birthDateInput = await findTextField(/data de nascimento/i);
     fireEvent.change(birthDateInput, { target: { value: '01019990' } });
     fireEvent.blur(birthDateInput);
 
@@ -432,7 +454,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     await acceptInitialPrivacyGateIfNeeded();
     expect(screen.queryByRole('button', { name: /hist.*rico esportivo/i })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /esportes\/atividades passados/i })).toBeInTheDocument();
-    const sportsInput = await screen.findByLabelText(/esportes\/atividades atuais/i);
+    const sportsInput = await findTextField(/esportes\/atividades atuais/i);
     fireEvent.focus(sportsInput);
     expect(screen.getByRole('option', { name: /voleibol/i })).toBeInTheDocument();
     fireEvent.change(sportsInput, { target: { value: 'corr' } });
@@ -451,7 +473,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.change(trainingSupportInput, { target: { value: 'Equipe multidisciplinar' } });
     fireEvent.keyDown(trainingSupportInput, { key: 'Enter' });
 
-    const accessoriesInput = screen.getByLabelText(/acess.*rios de seguran.*a/i);
+    const accessoriesInput = getTextField(/acess.*rios de seguran.*a/i);
     accessoriesInput.focus();
     fireEvent.change(accessoriesInput, { target: { value: 'rel' } });
     fireEvent.click(screen.getByRole('option', { name: /rel.*gios sensores/i }));
@@ -471,7 +493,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    const sportsInput = await screen.findByLabelText(/esportes\/atividades atuais/i);
+    const sportsInput = await findTextField(/esportes\/atividades atuais/i);
 
     fireEvent.blur(sportsInput);
     expect(await screen.findByText('Campo obrigatório')).toBeInTheDocument();
@@ -508,7 +530,7 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     await acceptInitialPrivacyGateIfNeeded();
 
-    const currentSportsInput = await screen.findByLabelText(/esportes\/atividades atuais/i);
+    const currentSportsInput = await findTextField(/esportes\/atividades atuais/i);
     fireEvent.focus(currentSportsInput);
     expect(screen.queryByRole('option', { name: /^outro$/i })).not.toBeInTheDocument();
     fireEvent.change(currentSportsInput, { target: { value: 'Beach Tennis' } });
@@ -516,7 +538,7 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     expect(screen.getByRole('button', { name: /remover beach tennis/i })).toBeInTheDocument();
 
-    const pastSportsInput = screen.getByLabelText(/esportes\/atividades passados/i);
+    const pastSportsInput = getTextField(/esportes\/atividades passados/i);
     fireEvent.change(pastSportsInput, { target: { value: 'Escalada indoor' } });
     fireEvent.blur(pastSportsInput);
 
@@ -532,7 +554,7 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     await advanceFromClinicalToFinancialSection();
 
-    const trainingGoalsInput = screen.getByLabelText(/objetivos pessoais em rela.*o aos treinos/i);
+    const trainingGoalsInput = getTextField(/objetivos pessoais em rela.*o aos treinos/i);
     fireEvent.focus(trainingGoalsInput);
     expect(screen.queryByRole('option', { name: /^outro$/i })).not.toBeInTheDocument();
     fireEvent.change(trainingGoalsInput, { target: { value: 'Voltar a competir sem dor' } });
@@ -549,12 +571,12 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    fireEvent.change(await screen.findByLabelText(/^endere.*o/i), {
+    fireEvent.change(await findTextField(/^endere.*o/i), {
       target: { value: 'Praça da Sé - Sé' },
     });
     fireEvent.change(screen.getByLabelText(/^cidade \(\*\)$/i), { target: { value: 'São Paulo' } });
-    fireEvent.change(screen.getByLabelText(/^estado \(\*\)$/i), { target: { value: 'SP' } });
-    const trainingLocationInput = screen.getByLabelText(/cidade\/bairro onde treina/i);
+    fireEvent.change(getTextField(/^estado \(\*\)$/i), { target: { value: 'SP' } });
+    const trainingLocationInput = getTextField(/cidade\/bairro onde treina/i);
     fireEvent.click(screen.getByLabelText(/mesmo local da resid/i));
 
     expect(trainingLocationInput).toBeDisabled();
@@ -569,10 +591,10 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     await acceptInitialPrivacyGateIfNeeded();
-    expect(screen.queryByLabelText(/qual les.*o\/problema atual/i)).not.toBeInTheDocument();
+    expect(queryTextField(/qual les.*o\/problema atual/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByLabelText(/^Sim$/i)[0]);
-    const currentDescription = screen.getByLabelText(/qual les.*o\/problema atual/i);
+    const currentDescription = getTextField(/qual les.*o\/problema atual/i);
     expect(currentDescription).toBeInTheDocument();
 
     fireEvent.blur(currentDescription);
@@ -582,7 +604,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(currentDescription).toHaveValue('Dor no joelho direito');
 
     fireEvent.click(screen.getAllByLabelText(/^Não$/i)[0]);
-    expect(screen.queryByLabelText(/qual les.*o\/problema atual/i)).not.toBeInTheDocument();
+    expect(queryTextField(/qual les.*o\/problema atual/i)).not.toBeInTheDocument();
   });
 
   it('formats financial fields as Brazilian currency cents while typing and deleting', async () => {
@@ -594,8 +616,8 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     await advanceFromClinicalToFinancialSection();
 
-    const locationSpendInput = screen.getByLabelText(/locais de treinamento/i);
-    const accessorySpendInput = screen.getByLabelText(/gasto anual com acess.*rios/i);
+    const locationSpendInput = getTextField(/locais de treinamento/i);
+    const accessorySpendInput = getTextField(/gasto anual com acess.*rios/i);
 
     fireEvent.change(locationSpendInput, { target: { value: '2' } });
     expect(locationSpendInput).toHaveValue('R$ 0,02');
@@ -663,16 +685,16 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     await acceptInitialPrivacyGateIfNeeded();
 
-    expect(screen.queryByLabelText(/cidade\/bairro onde reside/i)).not.toBeInTheDocument();
+    expect(queryTextField(/cidade\/bairro onde reside/i)).not.toBeInTheDocument();
 
-    fireEvent.change(await screen.findByLabelText(/^cep/i), {
+    fireEvent.change(await findTextField(/^cep/i), {
       target: { value: '01001000' },
     });
 
-    expect(screen.getByLabelText(/^cep/i)).toHaveValue('01001-000');
+    expect(getTextField(/^cep/i)).toHaveValue('01001-000');
     expect(fetchMock).not.toHaveBeenCalled();
 
-    fireEvent.blur(screen.getByLabelText(/^cep/i));
+    fireEvent.blur(getTextField(/^cep/i));
 
     await waitFor(() => {
       expect(screen.getByLabelText(/^endere.*o/i)).toHaveValue('Praça da Sé - Sé');
@@ -681,6 +703,6 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
     expect(screen.getByLabelText(/complemento/i)).toHaveValue('lado ímpar');
     expect(screen.getByLabelText(/^cidade \(\*\)$/i)).toHaveValue('São Paulo');
-    expect(screen.getByLabelText(/^estado \(\*\)$/i)).toHaveValue('SP');
+    expect(getTextField(/^estado \(\*\)$/i)).toHaveValue('SP');
   });
 });

@@ -54,6 +54,50 @@ export function orderHandlers(server: Server) {
     getAppointments(request.params.orderId, { requestHeaders: request.requestHeaders })
   ));
 
+  server.post('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const type = body.type === 'initial' || body.type === 'adaptation' || body.type === 'follow_up'
+      ? body.type
+      : 'adaptation';
+
+    return new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        {
+          type: 'create-appointment',
+          appointmentType: type,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : new Date().toISOString()
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
+
+  server.patch('/v1/orders/:orderId/appointments/:appointmentId', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const status = body.status === 'scheduled' || body.status === 'rescheduled' || body.status === 'cancelled'
+      ? body.status
+      : 'rescheduled';
+
+    return new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        {
+          type: 'update-appointment',
+          appointmentId: request.params.appointmentId,
+          status,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : undefined,
+          reason: typeof body.reason === 'string' ? body.reason : undefined
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
+
   server.get('/v1/orders/:orderId/timeline', withDemoErrors((_schema, request) =>
     getTimelineEvents(request.params.orderId, { requestHeaders: request.requestHeaders })
   ));
@@ -333,8 +377,16 @@ export function orderHandlers(server: Server) {
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
             labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
+            scan3dFileRef:
+              body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
+                ? body.scan3dFileRef as Record<string, unknown>
+                : null,
             prescriptionFileName:
               typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
+            prescriptionFileRef:
+              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
+                ? body.prescriptionFileRef as Record<string, unknown>
+                : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
             selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
           },
@@ -361,10 +413,57 @@ export function orderHandlers(server: Server) {
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
             labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
+            scan3dFileRef:
+              body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
+                ? body.scan3dFileRef as Record<string, unknown>
+                : null,
             prescriptionFileName:
               typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
+            prescriptionFileRef:
+              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
+                ? body.prescriptionFileRef as Record<string, unknown>
+                : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
             selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
+          },
+          { requestHeaders: request.requestHeaders }
+        )
+      }
+    );
+  }));
+
+  server.post('/v1/orders/:orderId/forms/production-request', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const payload = body.payload && typeof body.payload === 'object'
+      ? body.payload as Record<string, unknown>
+      : {};
+
+    return new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(
+          request.params.orderId,
+          {
+            type: 'complete-production-request',
+            anamnesisSummary: typeof payload.anamnesisSummary === 'string' ? payload.anamnesisSummary : '',
+            anamnesisDownloaded: payload.anamnesisDownloaded === true,
+            productionRequestSummary:
+              typeof payload.productionRequestSummary === 'string' ? payload.productionRequestSummary : '',
+            labNotes: typeof payload.labNotes === 'string' ? payload.labNotes : '',
+            scan3dFileName: typeof payload.scan3dFileName === 'string' ? payload.scan3dFileName : '',
+            scan3dFileRef:
+              payload.scan3dFileRef && typeof payload.scan3dFileRef === 'object'
+                ? payload.scan3dFileRef as Record<string, unknown>
+                : null,
+            prescriptionFileName:
+              typeof payload.prescriptionFileName === 'string' ? payload.prescriptionFileName : '',
+            prescriptionFileRef:
+              payload.prescriptionFileRef && typeof payload.prescriptionFileRef === 'object'
+                ? payload.prescriptionFileRef as Record<string, unknown>
+                : null,
+            lgpdConfirmed: payload.lgpdConfirmed === true,
+            selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null
           },
           { requestHeaders: request.requestHeaders }
         )
@@ -441,6 +540,24 @@ export function orderHandlers(server: Server) {
   server.post('/v1/orders/:orderId/clinical-decision', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
     const action = parseClinicalDecisionPayload(body);
+
+    return new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(request.params.orderId, action, {
+          requestHeaders: request.requestHeaders
+        })
+      }
+    );
+  }));
+
+  server.post('/v1/orders/:orderId/clinical-evaluation', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const outcome = body.outcome;
+    const action = parseClinicalDecisionPayload({
+      decision: outcome === 'eligible' || outcome === 'ineligible' ? outcome : undefined
+    });
 
     return new Response(
       200,

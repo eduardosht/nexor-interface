@@ -106,7 +106,7 @@ function sharedIntake(status: 'pending' | 'submitted' = 'pending') {
         : null,
     releasedAt: '2026-05-01T10:05:00.000Z',
     submittedAt: status === 'submitted' ? '2026-05-01T11:20:00.000Z' : null,
-    payload: status === 'submitted' ? { customer: { fullName: 'Joao Demo', clinicalPrivacyConsent: ['accepted'] } } : null,
+    payload: status === 'submitted' ? { customer: { fullName: 'Joao Demo', clinicalPrivacyConsent: ['accepted'] } } : {},
   };
 }
 
@@ -117,6 +117,25 @@ function sharedIntakeWithClinicalPayload(payload: Record<string, unknown>) {
       customer: payload,
     },
   };
+}
+
+function getDropdown(label: RegExp) {
+  const trigger = screen
+    .getAllByLabelText(label)
+    .find((element) => element.getAttribute('aria-haspopup') === 'listbox');
+  if (!trigger) {
+    throw new Error(`Dropdown not found for ${String(label)}`);
+  }
+
+  return trigger;
+}
+
+function findDropdown(label: RegExp) {
+  return waitFor(() => getDropdown(label));
+}
+
+function findField(label: RegExp) {
+  return screen.findByLabelText(label, { selector: 'input, textarea' });
 }
 
 function completeClinicalSectionPayload(overrides: Record<string, unknown> = {}) {
@@ -224,7 +243,7 @@ describe('PreRequisito', () => {
 
     expect(await screen.findByText(/preencheu este formulário/i)).toBeInTheDocument();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /enviar formulÃ¡rio/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enviar formulário/i })).not.toBeInTheDocument();
   });
 
   it('keeps the prerequisite customer flow with three visual steps and moves satisfaction checkboxes into the third step', () => {
@@ -281,7 +300,7 @@ describe('PreRequisito', () => {
 
     renderPage();
 
-    expect(await screen.findByLabelText(/está em tratamento ortodôntico/i)).toBeInTheDocument();
+    expect(await findDropdown(/está em tratamento ortodôntico/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
   });
 
@@ -316,10 +335,10 @@ describe('PreRequisito', () => {
     });
 
     const view = renderPageWithQueryClient(queryClient);
-    const orthodonticSelect = await screen.findByLabelText(/está em tratamento ortodôntico/i);
+    const orthodonticSelect = await findDropdown(/está em tratamento ortodôntico/i);
     await user.click(orthodonticSelect);
     await user.click(await screen.findByRole('option', { name: /^não$/i }));
-    const fullNameInput = await screen.findByLabelText(/nome completo/i);
+    const fullNameInput = await findField(/nome completo/i);
     await user.clear(fullNameInput);
     await user.type(fullNameInput, 'Maria Digitando');
 
@@ -335,8 +354,8 @@ describe('PreRequisito', () => {
     );
 
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
-    expect(screen.getByLabelText(/está em tratamento ortodôntico/i)).toHaveTextContent(/^Não$/);
-    expect(screen.getByLabelText(/nome completo/i)).toHaveValue('Maria Digitando');
+    expect(getDropdown(/está em tratamento ortodôntico/i)).toHaveTextContent(/^Não$/);
+    expect(await findField(/nome completo/i)).toHaveValue('Maria Digitando');
   });
 
   it('requires a visible conditional clinical field before advancing from clinical data', async () => {
@@ -358,7 +377,7 @@ describe('PreRequisito', () => {
 
     await user.click(await screen.findByRole('button', { name: /próxima etapa/i }));
 
-    expect(await screen.findByLabelText(/quais diagnósticos ou condições/i)).toBeInTheDocument();
+    expect(await findField(/quais diagnósticos ou condições/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /próxima etapa/i })).toBeDisabled();
   });
 

@@ -337,7 +337,7 @@ describe('Jornada', () => {
           {
             id: 'BP-DEMO-003',
             status: 'in_progress',
-            statusLabel: 'Aguardando confirmacao de consulta',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -374,7 +374,7 @@ describe('Jornada', () => {
     renderPage();
 
     const notice = await screen.findByTestId('journey-step-notice');
-    expect(notice).toHaveTextContent(/acao pendente para o usuario/i);
+    expect(notice).toHaveTextContent(/ação pendente para o usuário/i);
     expect(notice).not.toHaveTextContent(/aguarde as confirma/i);
 
     const pendingAction = await screen.findByTestId('journey-pending-user-action');
@@ -398,7 +398,7 @@ describe('Jornada', () => {
           {
             id: 'BP-DEMO-003',
             status: 'in_progress',
-            statusLabel: 'Aguardando confirmacao de consulta',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Eduardo Demo', email: 'eduardohoitifujiwara@gmail.com', phone: null },
@@ -424,8 +424,8 @@ describe('Jornada', () => {
     renderPage();
 
     const notice = await screen.findByTestId('journey-step-notice');
-    expect(notice).toHaveTextContent(/acao esta com o dentista/i);
-    expect(notice).not.toHaveTextContent(/acao pendente para o usuario/i);
+    expect(notice).toHaveTextContent(/ação está com o dentista/i);
+    expect(notice).not.toHaveTextContent(/ação pendente para o usuário/i);
     expect(screen.queryByTestId('journey-pending-user-action')).not.toBeInTheDocument();
     expectNoEmbeddedStepContent();
   });
@@ -445,7 +445,7 @@ describe('Jornada', () => {
           {
             id: 'BP-DEMO-003',
             status: 'in_progress',
-            statusLabel: 'Aguardando confirmacao de consulta',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-02T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },

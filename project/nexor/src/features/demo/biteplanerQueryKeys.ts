@@ -1,4 +1,5 @@
 import type { AccessMode } from './biteplanerFlow';
+import { orderQueryKeys } from '../biteplaner/orders/orderQueryKeys';
 
 export const accountQueryKeys = {
   all: ['account'] as const,
@@ -7,10 +8,13 @@ export const accountQueryKeys = {
 
 export const biteplanerQueryKeys = {
   all: ['biteplaner'] as const,
-  orders: (mode: AccessMode, ownerId: string) => [...biteplanerQueryKeys.all, 'orders', mode, ownerId] as const,
+  orders: (mode: AccessMode, ownerId: string) => orderQueryKeys.list(mode, ownerId),
+  licensedLabs: (ownerId: string) => [...biteplanerQueryKeys.all, 'licensed-labs', ownerId] as const,
   reviews: (mode: AccessMode, ownerId: string) => [...biteplanerQueryKeys.all, 'reviews', mode, ownerId] as const,
-  appointments: (orderId: string) => [...biteplanerQueryKeys.all, 'appointments', orderId] as const,
-  workflowForms: (orderId: string) => [...biteplanerQueryKeys.all, 'workflow-forms', orderId] as const,
+  appointments: (orderId: string) => orderQueryKeys.appointments(orderId),
+  workflowForms: (orderId: string) => orderQueryKeys.workflowForms(orderId),
   workflowForm: (orderId: string, workflowFormId: string) =>
-    [...biteplanerQueryKeys.workflowForms(orderId), workflowFormId] as const,
+    orderQueryKeys.workflowForm(orderId, workflowFormId),
+  orderForms: (orderId: string) => orderQueryKeys.forms(orderId),
+  orderForm: (orderId: string, formId: string) => orderQueryKeys.form(orderId, formId),
 };

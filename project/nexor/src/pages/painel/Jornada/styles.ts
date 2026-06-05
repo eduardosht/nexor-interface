@@ -31,11 +31,11 @@ export const Banner = styled.div`
 
 const disclaimerTone = {
   info: {
-    border: 'rgba(14, 116, 144, 0.22)',
-    bg: 'linear-gradient(135deg, rgba(236, 254, 255, 0.92), rgba(255, 255, 255, 0.98))',
-    iconBg: 'rgba(14, 116, 144, 0.1)',
-    iconColor: '#0e7490',
-    title: '#0f172a',
+    border: 'rgba(37, 99, 235, 0.16)',
+    bg: 'linear-gradient(135deg, rgba(239, 247, 255, 0.96), rgba(255, 255, 255, 0.98))',
+    iconBg: 'rgba(59, 130, 246, 0.08)',
+    iconColor: '#2563eb',
+    title: '#091235',
   },
   warning: {
     border: 'rgba(217, 119, 6, 0.26)',
@@ -63,13 +63,13 @@ const disclaimerTone = {
 export const StepDisclaimer = styled.div<{ $tone?: keyof typeof disclaimerTone }>`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: flex-start;
-  gap: 14px;
-  padding: 18px 20px;
-  border-radius: 14px;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 28px;
+  border-radius: 12px;
   border: 1px solid ${({ $tone = 'info' }) => disclaimerTone[$tone].border};
   background: ${({ $tone = 'info' }) => disclaimerTone[$tone].bg};
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
   color: ${({ theme }) => theme.colors.textSecondary};
 
   @media (max-width: 560px) {
@@ -82,8 +82,8 @@ export const StepDisclaimerIcon = styled.span<{ $tone?: keyof typeof disclaimerT
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   background: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconBg};
   color: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconColor};
@@ -97,7 +97,7 @@ export const StepDisclaimerContent = styled.div`
 
 export const StepDisclaimerTitle = styled.strong<{ $tone?: keyof typeof disclaimerTone }>`
   color: ${({ $tone = 'info' }) => disclaimerTone[$tone].title};
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 850;
   line-height: 1.35;
 `;
@@ -153,14 +153,15 @@ export const PendingActionButton = styled.button`
 
 export const StepFlow = styled.section`
   display: grid;
-  gap: 26px;
-  padding: 34px 42px 28px;
+  gap: 34px;
+  padding: 48px 58px 46px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 14px;
+  border-radius: 16px;
   background:
-    linear-gradient(180deg, rgba(247, 255, 249, 0.72) 0%, rgba(255, 255, 255, 0) 36%),
+    radial-gradient(circle at 0% 0%, rgba(205, 252, 221, 0.5), rgba(255, 255, 255, 0) 15%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 253, 255, 0.98)),
     ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 22px 62px rgba(15, 23, 42, 0.07);
 
   @media (max-width: 920px) {
     padding: 24px;
@@ -173,14 +174,26 @@ export const StepFlow = styled.section`
 
 export const SectionHeader = styled.div`
   display: grid;
-  gap: 12px;
-  max-width: 900px;
+  gap: 18px;
+  max-width: 760px;
+
+  &::after {
+    content: '';
+    width: 56px;
+    height: 2px;
+    background: #15803d;
+    order: 1;
+  }
+
+  ${Description} {
+    order: 2;
+  }
 `;
 
 export const SectionTitle = styled.h2`
   margin: 0;
-  color: #07142e;
-  font-size: 22px;
+  color: #091235;
+  font-size: 32px;
   font-weight: 850;
   line-height: 1.15;
 `;
@@ -191,14 +204,14 @@ export const StepList = styled.ol`
   padding: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 28px;
-  min-width: 1040px;
+  gap: 0;
+  min-width: 1120px;
 `;
 
 export const StepScroll = styled.div`
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 16px 8px 10px;
+  padding: 8px 0 0;
 `;
 
 export const StepFormsSection = styled.div`
@@ -231,11 +244,11 @@ export const StepItem = styled.li<{ $tone: StepTone }>`
   &:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 24px;
-    left: calc(50% + 52px);
-    width: calc(100% - 76px);
+    top: 26px;
+    left: calc(50% + 22px);
+    width: calc(100% - 44px);
     height: 1px;
-    background: ${({ theme }) => theme.colors.borderDefault};
+    background: ${({ $tone }) => ($tone === 'upcoming' ? 'repeating-linear-gradient(90deg, #d6dbe3 0 5px, transparent 5px 9px)' : '#15803d')};
   }
 `;
 
@@ -243,65 +256,97 @@ export const StepPanel = styled.div<{ $tone: StepTone }>`
   display: grid;
   justify-items: center;
   align-content: start;
-  gap: 14px;
-  min-height: 250px;
-  opacity: ${({ $tone }) => ($tone === 'upcoming' ? 0.48 : 1)};
+  grid-template-rows: 54px 82px minmax(132px, auto) 38px;
+  gap: 12px;
+  min-height: 304px;
+  padding: 0 16px;
+  opacity: ${({ $tone }) => ($tone === 'upcoming' ? 0.7 : 1)};
 `;
 
 export const StepBadge = styled.span<{ $tone: StepTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
-  background: ${({ $tone, theme }) =>
-    $tone === 'current' || $tone === 'complete' ? theme.colors.textPrimary : theme.colors.bgInset};
-  color: ${({ $tone, theme }) =>
-    $tone === 'complete' || $tone === 'current' ? theme.colors.bgBase : theme.colors.textPrimary};
-  box-shadow: ${({ $tone }) => ($tone === 'current' ? '0 8px 18px rgba(0, 0, 0, 0.18)' : 'none')};
+  border: 1.5px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
+  background: #ffffff;
+  color: ${({ $tone }) => ($tone === 'upcoming' ? '#343b49' : '#101828')};
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 0;
 `;
 
+export const StepIconBox = styled.span<{ $tone: StepTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  align-self: end;
+  border-radius: 10px;
+  background: ${({ $tone }) =>
+    $tone === 'upcoming'
+      ? 'linear-gradient(180deg, #f4f4f5, #ededee)'
+      : 'linear-gradient(180deg, rgba(205, 252, 221, 0.58), rgba(234, 247, 239, 0.78))'};
+  color: ${({ $tone }) => ($tone === 'upcoming' ? '#5f6672' : '#2f8650')};
+`;
+
+export const StepText = styled.div`
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  min-width: 0;
+`;
+
 export const StepName = styled.h3`
   margin: 0;
-  font-size: 17px;
+  max-width: 210px;
+  font-size: 18px;
   font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  line-height: 1.18;
+  color: #101828;
 `;
 
 export const StepCopy = styled.p`
   margin: 0;
-  max-width: 190px;
+  max-width: 182px;
   font-size: 14px;
-  line-height: 1.55;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.65;
+  color: #586174;
 `;
 
 export const StepStatus = styled.span<{ $tone: StepTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: fit-content;
   justify-self: center;
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: ${({ $tone, theme }) => ($tone === 'current' ? `1px solid ${theme.colors.borderDefault}` : '0')};
-  background: ${({ $tone, theme }) =>
-    $tone === 'complete' ? theme.colors.bgInset : $tone === 'current' ? theme.colors.bgBase : theme.colors.bgInset};
-  color: ${({ $tone, theme }) =>
-    $tone === 'current' ? theme.colors.textPrimary : theme.colors.textSecondary};
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 7px;
+  border: 0;
+  background: ${({ $tone }) => ($tone === 'complete' ? 'rgba(21, 128, 61, 0.1)' : '#f0f0f1')};
+  color: ${({ $tone }) => ($tone === 'complete' ? '#2f6f45' : '#666d7a')};
   font-size: 12px;
   font-weight: 800;
 `;
 
 export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: fit-content;
   justify-self: center;
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: ${({ theme }) => `1px solid ${theme.colors.borderDefault}`};
-  background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  min-height: 32px;
+  padding: 0 13px;
+  border-radius: 7px;
+  border: 1px solid rgba(21, 128, 61, 0.24);
+  background: rgba(21, 128, 61, 0.1);
+  color: #2f6f45;
   font-size: 12px;
   font-weight: 800;
   text-decoration: none;

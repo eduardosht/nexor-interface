@@ -184,263 +184,6 @@ const userVisible: WorkflowFormActorRole[] = ['user', 'dentist', 'admin'];
 const customerConsentVisible: WorkflowFormActorRole[] = ['user', 'admin'];
 const dentistVisible: WorkflowFormActorRole[] = ['dentist', 'admin'];
 
-function dentistText(
-  key: string,
-  label: string,
-  type: Extract<SharedIntakeFieldType, 'text' | 'textarea' | 'number'> = 'text',
-  helpText?: string
-): SharedIntakeFieldDefinition {
-  return {
-    key,
-    label,
-    required: false,
-    type,
-    ownerRole: 'dentist',
-    visibleTo: dentistVisible,
-    editableWhen: 'dentist_review',
-    helpText,
-  };
-}
-
-function dentistChoice(
-  key: string,
-  label: string,
-  options: SharedIntakeFieldOption[],
-  helpText?: string
-): SharedIntakeFieldDefinition {
-  return {
-    key,
-    label,
-    required: false,
-    type: 'select',
-    ownerRole: 'dentist',
-    visibleTo: dentistVisible,
-    editableWhen: 'dentist_review',
-    helpText,
-    options,
-  };
-}
-
-function dentistMultiChoice(
-  key: string,
-  label: string,
-  options: SharedIntakeFieldOption[],
-  helpText?: string
-): SharedIntakeFieldDefinition {
-  return {
-    key,
-    label,
-    required: false,
-    type: 'checkbox-group',
-    ownerRole: 'dentist',
-    visibleTo: dentistVisible,
-    editableWhen: 'dentist_review',
-    helpText,
-    options,
-  };
-}
-
-const DENTIST_FACIAL_SKELETAL_FIELDS: SharedIntakeFieldDefinition[] = [
-  dentistChoice('facialThirdProportion', '5.1. Avaliação Geral do Terço Facial - proporção dos terços faciais', [
-    { value: 'harmonic', label: 'Harmônica (1/3 superior ≈ 1/3 médio ≈ 1/3 inferior)' },
-    { value: 'upper_increased', label: 'Terço superior aumentado' },
-    { value: 'upper_decreased', label: 'Terço superior diminuído' },
-    { value: 'middle_increased', label: 'Terço médio aumentado' },
-    { value: 'middle_decreased', label: 'Terço médio diminuído' },
-    { value: 'lower_increased', label: 'Terço inferior aumentado (face longa)' },
-    { value: 'lower_decreased', label: 'Terço inferior diminuído (face curta)' },
-  ], 'Proporções verticais da face (análise clínica).'),
-  dentistText('facialThirdProportionNotes', 'Observações sobre proporções (simetria, discrepâncias, impressão geral)', 'textarea'),
-  dentistChoice('facialWidthPredominance', 'Largura facial - largura predominante', [
-    { value: 'balanced', label: 'Equilibrada' },
-    { value: 'wide', label: 'Face larga (tendência braquifacial)' },
-    { value: 'narrow', label: 'Face estreita (tendência dolicofacial)' },
-  ], 'Largura facial (impressão clínica).'),
-  dentistText('facialWidthNotes', 'Observações (malar, mandíbula, assimetrias, contorno geral)', 'textarea'),
-
-  dentistChoice('softTissueProfileType', '5.2. Perfil Facial - Tecidos Moles (visão lateral) - tipo geral de perfil facial', [
-    { value: 'straight', label: 'Perfil reto' },
-    { value: 'mild_convex', label: 'Perfil convexo leve' },
-    { value: 'marked_convex', label: 'Perfil convexo acentuado' },
-    { value: 'mild_concave', label: 'Perfil côncavo leve' },
-    { value: 'marked_concave', label: 'Perfil côncavo acentuado' },
-  ], 'Em relação à linha vertical de referência (glabella-subnasal-ponto mais anterior do mento).'),
-  dentistText('softTissueProfileNotes', 'Observações (harmonia global do perfil, transição entre terços)', 'textarea'),
-  dentistText('nasalRegionNotes', 'Região nasal - observações (projeção nasal, formato, desvio, impacto na percepção do perfil)', 'textarea'),
-  dentistText('upperLipLengthMm', 'Lábio superior - medida Subnasal-Ponto labial superior (mm, se realizada)', 'number'),
-  dentistChoice('upperLipLengthImpression', 'Impressão clínica do comprimento do lábio superior', [
-    { value: 'normal', label: 'Normal' },
-    { value: 'increased', label: 'Aumentado' },
-    { value: 'decreased', label: 'Diminuído' },
-  ]),
-  dentistText('upperLipELineDistanceMm', 'Distância lábio superior-E-line (mm)', 'number'),
-  dentistChoice('upperLipPosition', 'Classificação da posição do lábio superior', [
-    { value: 'normal', label: 'Dentro da normalidade' },
-    { value: 'protruded', label: 'Protruído' },
-    { value: 'retruded', label: 'Retruído' },
-  ]),
-  dentistChoice('restingDentalExposure', 'Exposição dentária em repouso', [
-    { value: 'one_to_three_mm', label: '1-3 mm' },
-    { value: 'more_than_three_mm', label: '> 3 mm' },
-    { value: 'zero_mm', label: '0 mm (sem exposição)' },
-  ]),
-  dentistText('upperLipNotes', 'Observações do lábio superior (tonicidade, incompetência labial, assimetria, selamento)', 'textarea'),
-  dentistText('lowerLipELineDistanceMm', 'Lábio inferior - distância lábio inferior-E-line (mm)', 'number'),
-  dentistChoice('lowerLipPosition', 'Classificação da posição do lábio inferior', [
-    { value: 'normal', label: 'Dentro da normalidade' },
-    { value: 'protruded', label: 'Protruído' },
-    { value: 'retruded', label: 'Retruído' },
-  ]),
-  dentistChoice('lipRelationshipAtRest', 'Relação lábio inferior-superior em repouso', [
-    { value: 'passive_seal', label: 'Contato suave, selamento labial passivo' },
-    { value: 'effort_seal', label: 'Selamento labial com esforço muscular' },
-    { value: 'incompetence', label: 'Incompetência labial (dificuldade em manter contato)' },
-  ]),
-  dentistText('lowerLipNotes', 'Observações do lábio inferior (sulco mentolabial, tonicidade muscular, assimetrias)', 'textarea'),
-  dentistChoice('chinProjection', 'Região do mento - projeção do mento (impressão clínica)', [
-    { value: 'proportional', label: 'Proporcional' },
-    { value: 'retruded', label: 'Retruído (queixo para trás)' },
-    { value: 'protruded', label: 'Protruído (queixo para frente)' },
-  ]),
-  dentistChoice('mentolabialSulcusContour', 'Contorno do sulco mentolabial', [
-    { value: 'normal', label: 'Normal' },
-    { value: 'marked', label: 'Acentuado' },
-    { value: 'reduced', label: 'Diminuído' },
-  ]),
-  dentistChoice('chinLowerLipHarmony', 'Harmonia mento-lábio inferior (linha vertical)', [
-    { value: 'harmonious', label: 'Harmoniosa' },
-    { value: 'chin_retruded', label: 'Mento muito recuado em relação ao lábio inferior' },
-    { value: 'chin_advanced', label: 'Mento muito avançado em relação ao lábio inferior' },
-  ]),
-  dentistText('chinRegionNotes', 'Observações do mento (hipertonicidade do músculo mentual, irregularidades, textura)', 'textarea'),
-  dentistChoice('cervicomentalAngle', 'Contorno do pescoço e ângulo cérvico-mentoniano - impressão clínica', [
-    { value: 'defined', label: 'Bem definido' },
-    { value: 'reduced', label: 'Diminuído (pescoço mais preenchido)' },
-    { value: 'increased', label: 'Aumentado' },
-  ]),
-  dentistText('neckContourNotes', 'Observações (postura de cabeça, acúmulo de tecido, impacto na percepção do perfil)', 'textarea'),
-
-  dentistChoice('frontalFacialSymmetry', '5.3. Avaliação Facial Frontal - Tecidos Moles - simetria global', [
-    { value: 'satisfactory', label: 'Simetria satisfatória' },
-    { value: 'mild_asymmetry', label: 'Assimetria discreta' },
-    { value: 'moderate_asymmetry', label: 'Assimetria moderada' },
-    { value: 'marked_asymmetry', label: 'Assimetria acentuada' },
-  ]),
-  dentistMultiChoice('frontalAffectedRegions', 'Regiões mais acometidas', [
-    { value: 'upper_third', label: 'Terço superior (testa, supercílios)' },
-    { value: 'middle_third', label: 'Terço médio (região malar, nariz)' },
-    { value: 'lower_third', label: 'Terço inferior (lábios, queixo, mandíbula)' },
-  ]),
-  dentistText('frontalSymmetryNotes', 'Observações (desvio de linha média facial, inclinações, assimetrias musculares)', 'textarea'),
-  dentistText('upperThirdNotes', 'Terço superior - observações (formato da testa, simetria das arcadas superciliares, impacto estético)', 'textarea'),
-  dentistChoice('malarProminence', 'Terço médio - proeminência malar', [
-    { value: 'harmonious', label: 'Harmoniosa' },
-    { value: 'increased', label: 'Aumentada' },
-    { value: 'decreased', label: 'Diminuída' },
-  ]),
-  dentistChoice('zygomaticSymmetry', 'Simetria da região zigomática', [
-    { value: 'symmetric', label: 'Simétrica' },
-    { value: 'asymmetric', label: 'Assimétrica' },
-  ]),
-  dentistChoice('nasalDorsumDeviation', 'Desvio do dorso nasal (vista frontal)', [
-    { value: 'none', label: 'Sem desvio aparente' },
-    { value: 'right', label: 'Desvio para a direita' },
-    { value: 'left', label: 'Desvio para a esquerda' },
-  ]),
-  dentistText('middleThirdNotes', 'Observações adicionais do terço médio', 'textarea'),
-  dentistChoice('facialMidline', 'Terço inferior - linha média facial', [
-    { value: 'coincident', label: 'Coincidente' },
-    { value: 'right', label: 'Desviada para a direita' },
-    { value: 'left', label: 'Desviada para a esquerda' },
-  ]),
-  dentistChoice('mandibularContourPattern', 'Padrão geral do contorno mandibular e ângulo mandibular (vista frontal)', [
-    { value: 'defined', label: 'Bem definido' },
-    { value: 'poorly_defined', label: 'Pouco definido' },
-    { value: 'asymmetric', label: 'Assimétrico (um lado mais marcado)' },
-  ]),
-  dentistText('lowerThirdNotes', 'Observações (inclinação do plano oclusal, sorriso oblíquo, desvios)', 'textarea'),
-
-  dentistChoice('skeletalAnteroposteriorPattern', '5.4. Padrão Esquelético - Análise Clínica - relação maxila/mandíbula', [
-    { value: 'class_i', label: 'Padrão esquelético Classe I (relação maxilo-mandibular equilibrada)' },
-    { value: 'class_ii', label: 'Padrão esquelético Classe II (mandíbula retruída em relação à maxila)' },
-    { value: 'class_ii_right', label: 'Classe II subdivisão direita' },
-    { value: 'class_ii_left', label: 'Classe II subdivisão esquerda' },
-    { value: 'class_iii', label: 'Padrão esquelético Classe III (mandíbula protruída em relação à maxila)' },
-    { value: 'class_iii_functional', label: 'Classe III funcional suspeita (melhora em manipulação)' },
-  ]),
-  dentistText('anteroposteriorPatternNotes', 'Observações (contato anterior, relação em topo a topo, edge-to-edge, overjet)', 'textarea'),
-  dentistChoice('verticalGrowthPattern', 'Padrão vertical de crescimento - tendência de padrão vertical', [
-    { value: 'mesofacial', label: 'Meso facial (equilibrado)' },
-    { value: 'dolicofacial', label: 'Dólicofacial (face longa, tendência à rotação mandibular horária)' },
-    { value: 'braquifacial', label: 'Braquifacial (face curta, tendência à rotação mandibular anti-horária)' },
-  ]),
-  dentistMultiChoice('verticalAssociatedFindings', 'Achados associados', [
-    { value: 'maxillary_vertical_excess', label: 'Excesso vertical maxilar' },
-    { value: 'mandibular_vertical_excess', label: 'Excesso vertical mandibular' },
-    { value: 'maxillary_vertical_reduction', label: 'Redução vertical maxilar' },
-    { value: 'mandibular_vertical_reduction', label: 'Redução vertical mandibular' },
-  ]),
-  dentistText('verticalPatternNotes', 'Observações (sorriso gengival, exposição dentária, padrão de selamento labial)', 'textarea'),
-  dentistChoice('mandibularAsymmetry', 'Assimetria esquelética - avaliação da assimetria mandibular', [
-    { value: 'absent_or_mild', label: 'Ausente ou discreta' },
-    { value: 'right_deviation', label: 'Desvio mandibular para direita' },
-    { value: 'left_deviation', label: 'Desvio mandibular para esquerda' },
-  ]),
-  dentistChoice('maxillaryAsymmetry', 'Avaliação da assimetria maxilar', [
-    { value: 'absent', label: 'Ausente' },
-    { value: 'suspected', label: 'Suspeita clínica de assimetria maxilar' },
-  ], 'Inclinação do plano oclusal, exposição gengival assimétrica.'),
-  dentistText('skeletalAsymmetryNotes', 'Observações (necessidade de avaliação complementar em imagem 3D)', 'textarea'),
-  dentistChoice('headPosture', 'Relação com base do crânio - postura de cabeça', [
-    { value: 'neutral', label: 'Neutra' },
-    { value: 'protracted', label: 'Protraída' },
-    { value: 'retracted', label: 'Retraída' },
-    { value: 'right_tilt', label: 'Inclinação lateral direita' },
-    { value: 'left_tilt', label: 'Inclinação lateral esquerda' },
-  ]),
-  dentistText('headPostureNotes', 'Observações (possível compensação postural para discrepâncias esqueléticas)', 'textarea'),
-
-  dentistText('fmaAngleDegrees', '5.5. Medidas Cefalométricas - FMA (Frankfurt-mandíbula), graus', 'number'),
-  dentistChoice('fmaPattern', 'Classificação FMA', [
-    { value: 'mesofacial', label: 'Padrão mesofacial' },
-    { value: 'dolicofacial', label: 'Padrão dolicofacial' },
-    { value: 'braquifacial', label: 'Padrão braquifacial' },
-  ]),
-  dentistText('otherCephalometricMeasures', 'Outras medidas cefalométricas relevantes', 'textarea'),
-  dentistText('cephalometryClinicalNotes', 'Observações da cefalometria correlacionando com a clínica', 'textarea'),
-
-  dentistChoice('diagnosticSoftTissueProfile', '5.6. Síntese Diagnóstica - Perfil Facial e Padrão Esquelético - tipo de perfil predominante', [
-    { value: 'straight', label: 'Reto' },
-    { value: 'convex', label: 'Convexo' },
-    { value: 'concave', label: 'Côncavo' },
-  ]),
-  dentistMultiChoice('diagnosticProfileMainFeatures', 'Características principais', [
-    { value: 'lip_protrusion', label: 'Protrusão de lábios' },
-    { value: 'lip_retrusion', label: 'Retrusão de lábios' },
-    { value: 'retruded_chin', label: 'Mento retruído' },
-    { value: 'protruded_chin', label: 'Mento protruído' },
-    { value: 'lip_incompetence', label: 'Incompetência labial' },
-    { value: 'gummy_smile', label: 'Sorriso gengival' },
-    { value: 'satisfactory_symmetry', label: 'Simetria global satisfatória' },
-    { value: 'significant_asymmetry', label: 'Assimetria facial significativa' },
-  ]),
-  dentistText('diagnosticFacialProfileDescription', 'Descrição sucinta do perfil facial', 'textarea'),
-  dentistChoice('diagnosticAnteroposteriorPattern', 'Padrão esquelético - padrão ântero-posterior', [
-    { value: 'class_i', label: 'Classe I esquelética' },
-    { value: 'class_ii', label: 'Classe II esquelética' },
-    { value: 'class_iii', label: 'Classe III esquelética' },
-  ]),
-  dentistChoice('diagnosticVerticalPattern', 'Padrão esquelético - padrão vertical', [
-    { value: 'mesofacial', label: 'Meso facial' },
-    { value: 'dolicofacial', label: 'Dólicofacial' },
-    { value: 'braquifacial', label: 'Braquifacial' },
-  ]),
-  dentistChoice('diagnosticSkeletalAsymmetry', 'Padrão esquelético - assimetria esquelética', [
-    { value: 'absent_or_mild', label: 'Ausente / discreta' },
-    { value: 'present', label: 'Presente (descrever abaixo)' },
-  ]),
-];
-
 export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
   label: 'Formulário clínico Biteplaner',
   description:
@@ -1541,14 +1284,27 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
         },
         {
           key: 'openingMidlineDeviation',
-          label: 'Desvio da linha média ao abrir? Para qual lado?',
+          label: 'Desvio da linha média ao abrir?',
           required: false,
-          type: 'text',
+          type: 'select',
           ownerRole: 'dentist',
           visibleTo: dentistVisible,
           editableWhen: 'dentist_review',
+          options: yesNoOptions,
         },
-        ...DENTIST_FACIAL_SKELETAL_FIELDS,
+        {
+          key: 'openingMidlineDeviationSide',
+          label: 'Para qual lado?',
+          required: false,
+          type: 'select',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          options: [
+            { value: 'right', label: 'Direita' },
+            { value: 'left', label: 'Esquerda' },
+          ],
+        },
         {
           key: 'dentistClinicalDeclaration',
           label:

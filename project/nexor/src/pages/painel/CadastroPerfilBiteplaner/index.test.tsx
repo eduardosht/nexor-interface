@@ -241,7 +241,7 @@ describe('CadastroPerfilBiteplaner', () => {
       target: { value: 'Dentista com foco em performance esportiva.' },
     });
     fireEvent.change(screen.getByLabelText(/nome da cl.nica/i), {
-      target: { value: 'ClÃ­nica Esportiva Nexor' },
+      target: { value: 'Clínica Esportiva Nexor' },
     });
     fireEvent.change(screen.getByLabelText(/dia e hor.rio de atendimento/i), {
       target: { value: 'Segunda a sexta, 8h as 18h' },
@@ -466,12 +466,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'contato@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Box de Crossfit' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Campinas, SP' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -483,8 +482,8 @@ describe('CadastroPerfilBiteplaner', () => {
           name: 'Performance Partners',
           documentType: 'cnpj',
           documentNumber: '19.131.243/0001-97',
-          contactEmail: 'contato@partner.test',
-          cityState: 'Campinas, SP',
+          partnerType: 'coach_personal',
+          serviceLocations: ['Box de Crossfit'],
         },
         'tok'
       );
@@ -555,12 +554,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cpf/i), {
       target: { value: '52998224725' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'coach@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Parque de treino' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Rio de Janeiro, RJ' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -572,8 +570,8 @@ describe('CadastroPerfilBiteplaner', () => {
           name: 'Coach Performance',
           documentType: 'cpf',
           documentNumber: '529.982.247-25',
-          contactEmail: 'coach@partner.test',
-          cityState: 'Rio de Janeiro, RJ',
+          partnerType: 'coach_personal',
+          serviceLocations: ['Parque de treino'],
         }),
         'tok'
       );
@@ -590,12 +588,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '11111111111111' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'contato@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Academia' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Campinas, SP' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
 
@@ -610,6 +607,58 @@ describe('CadastroPerfilBiteplaner', () => {
 
     expect(screen.getByLabelText(/^cpf/i)).toHaveValue('111.111.111-11');
     expect(submit).toBeDisabled();
+  });
+
+  it('submits an academy partner request with location filled from CEP', async () => {
+    const fetchMock = mockCepLookup();
+    mockApiPost.mockResolvedValue({
+      productRole: { productKey: 'biteplaner', role: 'partner', status: 'pending' },
+    });
+    renderPage('/painel/biteplaner/cadastro/parceiro');
+
+    fireEvent.change(screen.getByLabelText(/nome da empresa ou parceiro/i), {
+      target: { value: 'Performance Academy' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+
+    const partnerTypeGroup = screen.getByRole('group', { name: /tipo de parceiro/i });
+    fireEvent.click(within(partnerTypeGroup).getByLabelText(/academia/i));
+
+    expect(screen.getByRole('heading', { name: /localização/i })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^cep/i), {
+      target: { value: '01001000' },
+    });
+    fireEvent.blur(screen.getByLabelText(/^cep/i));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/endereço/i)).toHaveValue('Praça da Sé - Sé, São Paulo - SP');
+    });
+
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/política de privacidade/i));
+    fireEvent.click(screen.getByRole('button', { name: /enviar solicita/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/products/biteplaner/roles/partner',
+        expect.objectContaining({
+          name: 'Performance Academy',
+          documentType: 'cnpj',
+          documentNumber: '19.131.243/0001-97',
+          partnerType: 'academy',
+          location: expect.objectContaining({
+            cep: '01001-000',
+            address: 'Praça da Sé - Sé, São Paulo - SP',
+            city: 'São Paulo',
+            state: 'SP',
+          }),
+        }),
+        'tok'
+      );
+    });
   });
 
   it('requires valid CNPJ and laboratory location data before submitting laboratory onboarding', async () => {

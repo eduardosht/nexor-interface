@@ -1,7 +1,21 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
-import { AlertTriangle, Check, Clock3, Info } from 'lucide-react';
+import {
+  AlertTriangle,
+  Box,
+  Check,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock3,
+  CreditCard,
+  FlaskConical,
+  HandHelping,
+  Info,
+  Stethoscope,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -13,6 +27,7 @@ import {
   getAuthToken,
   getEffectiveAthleteOrder,
   getAthleteNextPath,
+  getOrderDisplayId,
   getStageLabel,
   type DemoOrderSummary,
   type DemoAppointment,
@@ -27,38 +42,45 @@ type JourneyStep = {
   key: JourneyStepKey;
   title: string;
   description: string;
+  icon: LucideIcon;
 };
 
 const JOURNEY_STEPS: JourneyStep[] = [
   {
     key: 'prerequisite',
     title: 'Pre-requisito',
-    description: 'Completar a triagem inicial e liberar a continuidade da jornada.'
+    description: 'Completar a triagem inicial e liberar a continuidade da jornada.',
+    icon: ClipboardCheck,
   },
   {
     key: 'consultation',
     title: 'Consulta inicial',
-    description: 'Escolha o consultório para ser atendido e aguarde a confirmação.'
+    description: 'Escolha o consultório para ser atendido e aguarde a confirmação.',
+    icon: UserRound,
   },
   {
     key: 'clinical_decision',
     title: 'Decisão clínica',
-    description: 'O dentista define se o atleta está apto, inapto ou precisa de tratamento prévio.'
+    description: 'O dentista define se o atleta está apto, inapto ou precisa de tratamento prévio.',
+    icon: Stethoscope,
   },
   {
     key: 'purchase',
     title: 'Compra',
-    description: 'Pagamento mock confirmado apenas quando o caso está apto clínicamente.'
+    description: 'Pagamento mock confirmado apenas quando o caso está apto clinicamente.',
+    icon: CreditCard,
   },
   {
     key: 'laboratory',
     title: 'Laboratório',
-    description: 'Ordem liberada para produção, retorno por ajuste ou conclusão laboratorial.'
+    description: 'Ordem liberada para produção, retorno por ajuste ou conclusão laboratorial.',
+    icon: FlaskConical,
   },
   {
     key: 'follow_up',
     title: 'Adaptação e acompanhamento',
-    description: 'Entrega, encaixe e retornos periodicos após a produção.'
+    description: 'Entrega, encaixe e retornos periódicos após a produção.',
+    icon: Box,
   }
 ];
 
@@ -139,10 +161,10 @@ function getCurrentStepNotice(
     }
 
     if (initialAppointment.user_confirmed_at) {
-      return 'Consulta realizada confirmada pelo usuario. Agora a acao esta com o dentista para validar a realizacao da consulta.';
+      return 'Consulta realizada confirmada pelo usuário. Agora a ação está com o dentista para validar a realização da consulta.';
     }
 
-    return 'Ha uma acao pendente para o usuario: confirme que a consulta agendada foi realizada para liberar a proxima etapa da jornada.';
+    return 'Há uma ação pendente para o usuário: confirme que a consulta agendada foi realizada para liberar a próxima etapa da jornada.';
   }
 
   if (!currentStep) {
@@ -150,15 +172,15 @@ function getCurrentStepNotice(
   }
 
   if (order.status === 'awaiting_dentist_acceptance') {
-    return `A consulta inicial foi solicitada. Agora Ã© preciso aguardar o aceite do dentista para seguir na etapa ${currentStep.title}.`;
+    return `A consulta inicial foi solicitada. Agora é preciso aguardar o aceite do dentista para seguir na etapa ${currentStep.title}.`;
   }
 
   if (order.status === 'in_progress') {
-    return `A consulta inicial estÃ¡ em andamento. Aguarde as confirmaÃ§Ãµes necessÃ¡rias para liberar a prÃ³xima etapa.`;
+    return `A consulta inicial está em andamento. Aguarde as confirmações necessárias para liberar a próxima etapa.`;
   }
 
   if (order.status === 'appointment_confirmed') {
-    return `Consulta confirmada. A jornada aguarda a decisÃ£o clÃ­nica do dentista para liberar a prÃ³xima aÃ§Ã£o.`;
+    return `Consulta confirmada. A jornada aguarda a decisão clínica do dentista para liberar a próxima ação.`;
   }
 
   if (order.status === 'payment_confirmed' || order.status === 'awaiting_dentist_forms') {
@@ -166,11 +188,11 @@ function getCurrentStepNotice(
   }
 
   if (order.status === 'lab_processing') {
-    return `O Biteplaner estÃ¡ em etapa laboratorial. Acompanhe o progresso por aqui enquanto o laboratÃ³rio conclui a produÃ§Ã£o.`;
+    return `O Biteplaner está em etapa laboratorial. Acompanhe o progresso por aqui enquanto o laboratório conclui a produção.`;
   }
 
   if (order.status === 'awaiting_adaptation') {
-    return `Produto recebido pela clÃ­nica. Aguarde as orientaÃ§Ãµes para adaptaÃ§Ã£o e acompanhamento.`;
+    return `Produto recebido pela clínica. Aguarde as orientações para adaptação e acompanhamento.`;
   }
 
   return null;
@@ -180,7 +202,7 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
   if (order.status === 'in_progress' && initialAppointment?.user_confirmed_at) {
     return {
       tone: 'info' as const,
-      title: 'Acao com o dentista',
+      title: 'Ação com o dentista',
       icon: <Clock3 size={18} aria-hidden />,
     };
   }
@@ -188,7 +210,7 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
   if (order.status === 'in_progress') {
     return {
       tone: 'warning' as const,
-      title: 'Acao pendente do usuario',
+      title: 'Ação pendente do usuário',
       icon: <AlertTriangle size={18} aria-hidden />,
     };
   }
@@ -204,7 +226,7 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
   if (order.status === 'appointment_confirmed') {
     return {
       tone: 'info' as const,
-      title: 'Aguardando decisao clinica',
+      title: 'Aguardando decisão clínica',
       icon: <Info size={18} aria-hidden />,
     };
   }
@@ -228,14 +250,14 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
   if (order.status === 'awaiting_adaptation') {
     return {
       tone: 'info' as const,
-      title: 'Aguardando adaptacao',
+      title: 'Aguardando adaptação',
       icon: <Info size={18} aria-hidden />,
     };
   }
 
   return {
     tone: 'info' as const,
-    title: 'Atualizacao da etapa',
+    title: 'Atualização da etapa',
     icon: <Info size={18} aria-hidden />,
   };
 }
@@ -279,7 +301,7 @@ export function Jornada() {
   const error = ordersQuery.isError ? 'Não foi possível carregar a jornada compartilhada agora.' : '';
   const workflowFormsError = workflowFormsQuery.isError ? 'Não foi possível carregar os formulários desta ordem.' : '';
   const visibleAppointmentError = appointmentError ||
-    (appointmentsQuery.isError ? 'Nao foi possivel carregar a consulta agendada desta ordem.' : '');
+    (appointmentsQuery.isError ? 'Não foi possível carregar a consulta agendada desta ordem.' : '');
   const selectedFormsOrder = useMemo(
     () => getEffectiveAthleteOrder(primaryOrder, workflowForms),
     [primaryOrder, workflowForms]
@@ -325,9 +347,9 @@ export function Jornada() {
           ),
         })
       );
-      setAppointmentNotice('Sua confirmacao de consulta realizada foi registrada.');
+      setAppointmentNotice('Sua confirmação de consulta realizada foi registrada.');
     } catch {
-      setAppointmentError('Nao foi possivel confirmar a consulta realizada agora.');
+      setAppointmentError('Não foi possível confirmar a consulta realizada agora.');
     } finally {
       setAppointmentAction('');
     }
@@ -353,7 +375,7 @@ export function Jornada() {
           <S.SectionHeader>
             <S.SectionTitle as="h1">Fluxo visual da jornada</S.SectionTitle>
             <S.Description>
-              Os passos abaixo mostram em que ponto a jornada {selectedFormsOrder.id} está. As etapas são apenas informativas e a visualização permanece na etapa atual.
+              Os passos abaixo mostram em que ponto a jornada {getOrderDisplayId(selectedFormsOrder)} está. As etapas são apenas informativas e a visualização permanece na etapa atual.
             </S.Description>
           </S.SectionHeader>
           <S.StepScroll>
@@ -361,19 +383,27 @@ export function Jornada() {
               {JOURNEY_STEPS.map((step, index) => {
                 const tone =
                   index < currentStepIndex ? 'complete' : index === currentStepIndex ? 'current' : 'upcoming';
+                const StepIcon = step.icon;
                 const content = (
                   <>
                     <S.StepBadge $tone={tone}>{index + 1}</S.StepBadge>
-                    <div>
+                    <S.StepIconBox $tone={tone}>
+                      <StepIcon size={24} aria-hidden />
+                    </S.StepIconBox>
+                    <S.StepText>
                       <S.StepName>{step.title}</S.StepName>
                       <S.StepCopy>{step.description}</S.StepCopy>
-                    </div>
+                    </S.StepText>
                     {tone === 'current' ? (
                       <S.StepStatusLink $tone={tone} to={currentStepActionPath}>
+                        <HandHelping size={14} aria-hidden />
                         {getStepStatusLabel(tone)}
                       </S.StepStatusLink>
                     ) : (
-                      <S.StepStatus $tone={tone}>{getStepStatusLabel(tone)}</S.StepStatus>
+                      <S.StepStatus $tone={tone}>
+                        {tone === 'complete' ? <CheckCircle2 size={14} aria-hidden /> : null}
+                        {getStepStatusLabel(tone)}
+                      </S.StepStatus>
                     )}
                   </>
                 );
@@ -417,9 +447,9 @@ export function Jornada() {
           {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
             <S.PendingActionCard data-testid="journey-pending-user-action">
               <S.PendingActionCopy>
-                <S.PendingActionTitle>Acao pendente do usuario</S.PendingActionTitle>
+                <S.PendingActionTitle>Ação pendente do usuário</S.PendingActionTitle>
                 <S.Description>
-                  Confirme que a consulta agendada foi realizada para que a jornada possa seguir para a validacao do dentista.
+                  Confirme que a consulta agendada foi realizada para que a jornada possa seguir para a validação do dentista.
                 </S.Description>
               </S.PendingActionCopy>
               <S.PendingActionButton

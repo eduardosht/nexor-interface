@@ -6,6 +6,11 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import {
+  readStorageValue,
+  removeStorageValue,
+  writeStorageValue,
+} from '../../lib/browser-storage';
 
 export type AdminProductId = 'biteplaner';
 
@@ -46,11 +51,7 @@ const AdminPortalContext = createContext<AdminPortalContextValue>({
 });
 
 function readStoredSelection(): AdminProductId | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const value = window.localStorage.getItem(STORAGE_KEY);
+  const value = readStorageValue(STORAGE_KEY);
   return value === 'biteplaner' ? value : null;
 }
 
@@ -59,16 +60,12 @@ export function AdminPortalProvider({ children }: PropsWithChildren) {
 
   const setSelectedProductId = useCallback((productId: AdminProductId) => {
     setSelectedProductIdState(productId);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, productId);
-    }
+    writeStorageValue(STORAGE_KEY, productId);
   }, []);
 
   const clearSelectedProduct = useCallback(() => {
     setSelectedProductIdState(null);
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
+    removeStorageValue(STORAGE_KEY);
   }, []);
 
   const value = useMemo<AdminPortalContextValue>(() => {

@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ComponentPropsWithoutRef, type FormEvent, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Frown, Info, PencilLine, Send, ShieldCheck, Star, UserRound, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
-  Button,
   CheckboxField,
   Field,
   RadioQuestionGroup,
@@ -40,6 +39,11 @@ import {
   type SharedIntakeFieldDefinition,
   type WorkflowFormActorRole,
 } from './sharedIntakeDefinition';
+import {
+  WorkflowFormsPendingRequiredLegend,
+  type PendingRequiredField,
+} from './WorkflowFormsPendingRequiredLegend';
+import { canHydrateWorkflowFormPayload } from './WorkflowFormsPanel.access';
 
 type IntakeFieldDefinition = {
   key: string;
@@ -134,6 +138,39 @@ const TEMPLATE_DEFINITIONS: Record<string, FormDefinition> = {
 };
 
 const REQUIRED_FIELDS_TOOLTIP = 'Preencha todos os campos obrigatórios para continuar.';
+
+type WorkflowActionButtonProps = ComponentPropsWithoutRef<'button'> & {
+  variant?: 'primary' | 'secondary';
+  leadingIcon?: ReactNode;
+  trailingIcon?: ReactNode;
+  loading?: boolean;
+};
+
+function WorkflowActionButton({
+  variant = 'primary',
+  type = 'button',
+  leadingIcon,
+  trailingIcon,
+  loading = false,
+  disabled,
+  children,
+  ...rest
+}: WorkflowActionButtonProps) {
+  return (
+    <S.FormActionButton
+      data-variant={variant}
+      type={type}
+      disabled={disabled || loading}
+      {...rest}
+    >
+      <S.FormActionButtonContent>
+        {leadingIcon}
+        <S.FormActionButtonLabel>{loading ? 'Carregando...' : children}</S.FormActionButtonLabel>
+        {trailingIcon}
+      </S.FormActionButtonContent>
+    </S.FormActionButton>
+  );
+}
 
 const STATUS_PRESENTATION: Record<DemoWorkflowForm['status'], { label: string; color: string }> = {
   pending: { label: 'Pendente', color: '#D18A00' },
@@ -269,12 +306,10 @@ function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): D
 }
 
 const DENTIST_COMPLEMENT_DESCRIPTION =
-  'Este item \u00e9 exclusivo para avalia\u00e7\u00e3o do perfil facial (tecidos moles) e do padr\u00e3o esquel\u00e9tico.\n\n' +
-  'Realizar o exame com o paciente em posi\u00e7\u00e3o de cabe\u00e7a natural, olhando para o horizonte, em oclus\u00e3o habitual, l\u00e1bios em repouso, em ambiente bem iluminado.\n\n' +
-  'Sempre que poss\u00edvel, associar a avalia\u00e7\u00e3o cl\u00ednica a fotografias padronizadas (frontal, perfil, 3/4) e exames complementares (telerradiografia em norma lateral, tomografia, quando indicados).\n\n' +
-  'Utilizar instrumentos de medi\u00e7\u00e3o quando necess\u00e1rio (r\u00e9gua milimetrada, paqu\u00edmetro, goni\u00f4metro, software de an\u00e1lise cefalom\u00e9trica).\n\n' +
-  'Preencher todos os campos com aten\u00e7\u00e3o \u00e0s assimetrias, propor\u00e7\u00f5es e desvios discretos, registrando observa\u00e7\u00f5es qualitativas e quantitativas.\n\n' +
-  'Em caso de d\u00favida entre categorias, descrever o achado em Observa\u00e7\u00f5es e, se poss\u00edvel, informar medidas cefalom\u00e9tricas.';
+  'Este complemento deve registrar apenas os dados objetivos da consulta solicitados neste fluxo.\n\n' +
+  'Informe a data real da consulta, a abertura m\u00e1xima sem dor e com dor em mil\u00edmetros, quando avaliadas.\n\n' +
+  'Caso haja desvio da linha m\u00e9dia durante a abertura, marque Sim e indique se o desvio ocorre para a direita ou para a esquerda.\n\n' +
+  'Ao final, confirme a declara\u00e7\u00e3o de que as informa\u00e7\u00f5es foram coletadas por exame cl\u00ednico e, quando aplic\u00e1vel, complementadas por exames.';
 
 function getClinicalDentistDisplaySections(sections: VisibleSharedSection[]): DisplaySharedSection[] {
   const sectionByKey = Object.fromEntries(sections.map((section) => [section.key, section]));
@@ -439,6 +474,7 @@ const CLINICAL_DETAIL_PARENT_BY_KEY: Record<string, string> = {
   tmdDiagnosisDetails: 'hasTmdDiagnosis',
   regularDentistCityNeighborhood: 'regularDentistVisit',
   caffeineStimulantsUse: 'usesCaffeineStimulants',
+  openingMidlineDeviationSide: 'openingMidlineDeviation',
 };
 
 const SYSTEM_DENTIST_FIELD_KEYS = new Set([
@@ -1177,6 +1213,10 @@ function getFieldSpan(field: IntakeFieldDefinition | BiteplanerReviewFieldDefini
       return 12;
     }
 
+    if (field.key === 'dentistClinicalDeclaration') {
+      return 12;
+    }
+
     if (isTagAutocompleteCheckboxField(field)) {
       return 6;
     }
@@ -1396,6 +1436,7 @@ function FormItem({
   const submitIsMissingRequiredFields = isSharedIntake
     ? getFirstMissingSectionIndex() >= 0
     : fields.some((field) => hasMissingRequiredValue(field, payload));
+  const pendingRequiredFields = getPendingRequiredFields();
 
   useEffect(() => {
     setActiveSectionIndex(0);
@@ -1533,6 +1574,59 @@ function FormItem({
     }, {});
     setFieldErrors(nextErrors);
     return nextErrors;
+  }
+
+  function getPendingRequiredFields(): PendingRequiredField[] {
+    if (isSharedIntake) {
+      if (!activeSharedSection) {
+        return [];
+      }
+
+      return getEditableFieldsForSection(activeSharedSection)
+        .filter((field) => hasMissingRequiredValue(field, payload))
+        .map((field) => ({
+          key: field.key,
+          label: field.label,
+          sectionIndex: activeSharedSectionIndex,
+        }));
+    }
+
+    return fields
+      .filter((field) => hasMissingRequiredValue(field, payload))
+      .map((field) => ({
+        key: field.key,
+        label: field.label,
+        sectionIndex: -1,
+      }));
+  }
+
+  function focusPendingField(fieldKey: string) {
+    window.setTimeout(() => {
+      const fieldElement = formCardRef.current?.querySelector<HTMLElement>(`[data-workflow-field-key="${fieldKey}"]`);
+
+      if (!fieldElement) {
+        return;
+      }
+
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const focusTarget = fieldElement.querySelector<HTMLElement>(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      focusTarget?.focus({ preventScroll: true });
+    }, 80);
+  }
+
+  function handlePendingFieldClick(field: PendingRequiredField) {
+    if (field.sectionIndex >= 0 && field.sectionIndex !== activeSharedSectionIndex) {
+      setActiveSectionIndex(field.sectionIndex);
+    }
+
+    const targetField = fields.find((candidate) => candidate.key === field.key);
+    if (targetField) {
+      setFieldValidationError(targetField);
+    }
+
+    focusPendingField(field.key);
   }
 
   function goToSection(index: number) {
@@ -1890,7 +1984,11 @@ function FormItem({
 
                       <S.PrivacyConsentArea>
                         <S.PrivacyConsentContent>
-                          {privacyControl}
+                          {privacyField ? (
+                            <S.FieldAnchor data-workflow-field-key={privacyField.key}>
+                              {privacyControl}
+                            </S.FieldAnchor>
+                          ) : null}
                           <S.PrivacyPurposeList aria-label="Finalidades principais">
                             <S.PrivacyPurposeItem>
                               <UserRound size={16} />
@@ -1915,7 +2013,7 @@ function FormItem({
                       </S.PrivacyConsentArea>
 
                       <S.PrivacyActions>
-                        <Button
+                        <WorkflowActionButton
                           type="button"
                           disabled={activeSectionHasMissingRequiredFields || Boolean(payloadBlockerMessage)}
                           title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
@@ -1923,9 +2021,13 @@ function FormItem({
                           trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                         >
                           Continuar
-                        </Button>
+                        </WorkflowActionButton>
                         {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                       </S.PrivacyActions>
+                      <WorkflowFormsPendingRequiredLegend
+                        items={pendingRequiredFields}
+                        onFieldClick={handlePendingFieldClick}
+                      />
                     </S.PrivacyGate>
                   </S.AnimatedStep>
                 );
@@ -1995,7 +2097,7 @@ function FormItem({
                                 );
 
                                 return (
-                                  <S.FieldSlot key={field.key} $span={span}>
+                                  <S.FieldSlot key={field.key} $span={span} data-workflow-field-key={field.key}>
                                     {fieldControl}
                                   </S.FieldSlot>
                                 );
@@ -2017,17 +2119,17 @@ function FormItem({
                       <form onSubmit={handleSubmit}>
                         <S.Actions>
                           {canGoBackToPreviousSharedSection ? (
-                            <Button
+                            <WorkflowActionButton
                               type="button"
                               variant="secondary"
                               leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                               onClick={() => goToSection(activeSharedSectionIndex - 1)}
                             >
                               Voltar etapa
-                            </Button>
+                            </WorkflowActionButton>
                           ) : null}
                           {isLastSharedSection || section.key === submitSectionKey ? (
-                            <Button
+                            <WorkflowActionButton
                               type="submit"
                               disabled={submitting || submitIsMissingRequiredFields || Boolean(payloadBlockerMessage)}
                               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
@@ -2038,9 +2140,9 @@ function FormItem({
                                 : actorRole === 'dentist'
                                   ? 'Salvar complemento do dentista'
                                   : 'Enviar formulário'}
-                            </Button>
+                            </WorkflowActionButton>
                           ) : payloadBlockerMessage ? null : (
-                            <Button
+                            <WorkflowActionButton
                               type="button"
                               disabled={activeSectionHasMissingRequiredFields}
                               title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
@@ -2048,34 +2150,38 @@ function FormItem({
                               trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                             >
                               Próxima etapa
-                            </Button>
+                            </WorkflowActionButton>
                           )}
                           {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                         </S.Actions>
+                        <WorkflowFormsPendingRequiredLegend
+                          items={pendingRequiredFields}
+                          onFieldClick={handlePendingFieldClick}
+                        />
                       </form>
                     ) : (
                       <S.Actions>
                         {canEditSubmittedSharedIntake && !isEditingSubmitted ? (
-                          <Button
+                          <WorkflowActionButton
                             type="button"
                             variant="secondary"
                             leadingIcon={<PencilLine size={16} aria-hidden="true" />}
                             onClick={handleEditSubmittedSharedIntake}
                           >
                             Editar
-                          </Button>
+                          </WorkflowActionButton>
                         ) : canGoBackToPreviousSharedSection ? (
-                          <Button
+                          <WorkflowActionButton
                             type="button"
                             variant="secondary"
                             leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                             onClick={() => goToSection(activeSharedSectionIndex - 1)}
                           >
                             Voltar etapa
-                          </Button>
+                          </WorkflowActionButton>
                         ) : null}
                         {!isLastSharedSection ? (
-                          <Button
+                          <WorkflowActionButton
                             type="button"
                             disabled={activeSectionHasMissingRequiredFields}
                             title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
@@ -2083,7 +2189,7 @@ function FormItem({
                             trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                           >
                             Próxima etapa
-                          </Button>
+                          </WorkflowActionButton>
                         ) : null}
                       </S.Actions>
                     )}
@@ -2116,7 +2222,7 @@ function FormItem({
                   : 'Disponível para registrar esta interação da jornada.'}
               </S.Meta>
             </div>
-            <Button
+            <WorkflowActionButton
               type="button"
               trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
               onClick={() => {
@@ -2127,7 +2233,7 @@ function FormItem({
               aria-label={hasRequiredReviewFields ? 'Responder survey obrigatório' : 'Responder survey'}
             >
               {hasRequiredReviewFields ? 'Responder survey obrigatório' : 'Responder survey'}
-            </Button>
+            </WorkflowActionButton>
           </S.SurveyPrompt>
           {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
           {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
@@ -2226,7 +2332,7 @@ function FormItem({
                   ))}
                   {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
                   <S.ModalActions>
-                    <Button
+                    <WorkflowActionButton
                       type="button"
                       variant="secondary"
                       leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
@@ -2234,15 +2340,15 @@ function FormItem({
                       disabled={submitting}
                     >
                       Responder depois
-                    </Button>
-                    <Button
+                    </WorkflowActionButton>
+                    <WorkflowActionButton
                       type="submit"
                       disabled={submitting || submitIsMissingRequiredFields}
                       title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                       trailingIcon={<Send size={16} aria-hidden="true" />}
                     >
                       {submitting ? 'Enviando...' : 'Enviar survey'}
-                    </Button>
+                    </WorkflowActionButton>
                   </S.ModalActions>
                 </S.ModalForm>
               </S.Modal>
@@ -2271,24 +2377,28 @@ function FormItem({
               );
 
               return (
-                <S.FieldSlot key={field.key} $span={span}>
+                <S.FieldSlot key={field.key} $span={span} data-workflow-field-key={field.key}>
                   {fieldControl}
                 </S.FieldSlot>
               );
             })}
           </S.Fields>
           <S.Actions>
-            <Button
+            <WorkflowActionButton
               type="submit"
               disabled={submitting || submitIsMissingRequiredFields}
               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
               trailingIcon={<Send size={16} aria-hidden="true" />}
             >
               {submitting ? 'Enviando...' : 'Enviar formulário'}
-            </Button>
+            </WorkflowActionButton>
             {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
             {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
           </S.Actions>
+          <WorkflowFormsPendingRequiredLegend
+            items={pendingRequiredFields}
+            onFieldClick={handlePendingFieldClick}
+          />
         </form>
       ) : (
         <S.Meta>{form.status === 'submitted' ? 'Registro salvo no histórico da ordem.' : 'Formulário sem campos configurados para esta demo.'}</S.Meta>
@@ -2613,7 +2723,7 @@ function renderFieldControl(
     }
 
     return (
-      <S.FieldShell as="fieldset" onBlur={onFieldBlur}>
+      <S.CheckboxFieldShell onBlur={onFieldBlur}>
         <legend>{getRequiredLabel(field.label, required)}</legend>
         <S.CheckboxGroup>
           {(field.options ?? []).map((option) => (
@@ -2643,7 +2753,7 @@ function renderFieldControl(
           ))}
         </S.CheckboxGroup>
         {fieldError ? <S.FieldError role="alert">{fieldError}</S.FieldError> : null}
-      </S.FieldShell>
+      </S.CheckboxFieldShell>
     );
   }
 
@@ -2821,7 +2931,7 @@ export function WorkflowFormsPanel({
 
     const formsMissingPayload = formsSource.filter(
       (form) =>
-        form.canViewPayload &&
+        canHydrateWorkflowFormPayload(form, actorRole) &&
         form.payload === null &&
         (!templateFilter || templateFilter.includes(form.templateKey))
     );

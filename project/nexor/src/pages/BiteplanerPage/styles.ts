@@ -31,6 +31,26 @@ const commentsMarquee = keyframes`
   }
 `;
 
+const comparisonLogoRipple = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+
+  18% {
+    opacity: 0.34;
+  }
+
+  72% {
+    opacity: 0.12;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.16);
+  }
+`;
+
 export const Page = styled.main`
   background: #ffffff;
   color: #172033;
@@ -64,8 +84,30 @@ export const HeroSection = styled.section`
 export const HeroCopy = styled.div`
   ${pageContainer}
   position: relative;
-  z-index: 1;
+  z-index: 2;
   color: #eee;
+`;
+
+export const HeroForegroundItem = styled.img`
+  position: absolute;
+  right: -90px;
+  bottom: -200px;
+  z-index: 1;
+  width: min(80vw, 1020px);
+  pointer-events: none;
+  user-select: none;
+
+  @media (max-width: 980px) {
+    width: min(56vw, 430px);
+    opacity: 0.82;
+  }
+
+  @media (max-width: 720px) {
+    right: -28px;
+    bottom: -14px;
+    width: min(72vw, 360px);
+    opacity: 0.5;
+  }
 `;
 
 export const HeroTitle = styled.h1`
@@ -751,16 +793,34 @@ export const ComparisonProductVisual = styled.div`
   display: grid;
   place-items: center;
   isolation: isolate;
+  padding: 24px;
 
   &::before {
     content: '';
     position: absolute;
-    width: min(74%, 360px);
+    width: min(78%, 390px);
     aspect-ratio: 1;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(28, 94, 58, 0.1), rgba(28, 94, 58, 0.04) 54%, transparent 70%);
-    border: 1px solid rgba(28, 94, 58, 0.14);
     z-index: -1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(66%, 320px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 1px solid rgba(10, 132, 82, 0.18);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.34),
+      inset 0 0 28px rgba(16, 185, 129, 0.05);
+    transform: translate(-50%, -50%) scale(0.72);
+    opacity: 0;
+    animation: ${comparisonLogoRipple} 5.4s ease-out infinite;
+    z-index: -1;
+    pointer-events: none;
   }
 
   picture,
@@ -769,9 +829,15 @@ export const ComparisonProductVisual = styled.div`
     width: min(92%, 440px);
   }
 
+  picture {
+    position: relative;
+    border-radius: 22px;
+    padding: 14px 18px;
+  }
+
   img {
     height: auto;
-    filter: drop-shadow(0 28px 32px rgba(7, 16, 29, 0.22));
+    filter: drop-shadow(0 18px 24px rgba(53, 60, 57, 0.18));
   }
 
   @media (max-width: 900px) {
@@ -781,6 +847,14 @@ export const ComparisonProductVisual = styled.div`
     picture,
     img {
       width: min(76vw, 360px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+      opacity: 0.18;
+      transform: translate(-50%, -50%) scale(1.08);
     }
   }
 `;

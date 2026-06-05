@@ -189,8 +189,8 @@ const StyledButton = styled.button<{
   justify-content: center;
   gap: 8px;
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
-  max-width: 100%;
-  min-width: 0;
+  max-width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'none')};
+  min-width: ${({ $fullWidth }) => ($fullWidth ? '0' : 'max-content')};
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   font-family: ${({ $tokens }) => $tokens.fonts.display};
   font-weight: 400;
@@ -235,7 +235,7 @@ const Content = styled.span`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  max-width: 100%;
+  max-width: none;
   min-width: 0;
   line-height: inherit;
   overflow-wrap: normal;

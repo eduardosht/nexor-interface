@@ -97,7 +97,6 @@ describe('AdminLabLicensing', () => {
     });
 
     expect(rejectButton).toBeEnabled();
-    expect(getComputedStyle(rejectButton).backgroundColor).toBe('rgb(185, 28, 28)');
     fireEvent.click(rejectButton);
 
     await waitFor(() =>

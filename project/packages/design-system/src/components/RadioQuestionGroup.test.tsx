@@ -80,7 +80,7 @@ describe('RadioQuestionGroup', () => {
     });
   });
 
-  it('places inline validation feedback below the question text', () => {
+  it('places inline validation feedback inside the legend below the question text', () => {
     render(
       <DesignSystemProvider brand="nexor">
         <RadioQuestionGroup
@@ -98,8 +98,11 @@ describe('RadioQuestionGroup', () => {
       </DesignSystemProvider>,
     );
 
-    const alertStyle = window.getComputedStyle(screen.getByRole('alert'));
-    expect(alertStyle.gridColumnStart).toBe('1');
-    expect(alertStyle.gridColumnEnd).toBe('2');
+    const alert = screen.getByRole('alert');
+    const legend = alert.closest('legend');
+
+    expect(legend).not.toBeNull();
+    expect(legend).toHaveTextContent('Resposta');
+    expect(alert).toHaveStyle({ display: 'block' });
   });
 });

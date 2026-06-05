@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ACTIVE_DEMO_PERSONA_STORAGE_KEY,
   DemoStateError,
+  approveLabLicenseRequest,
   applyOrderAction,
   createProductRole,
   getAccessOptions,
@@ -50,6 +51,21 @@ describe('shared Biteplaner demo state', () => {
     );
 
     expect(result.orders.length).toBeGreaterThan(0);
+  });
+
+  it('licenses the laboratory immediately after admin approval without awaiting payment', () => {
+    const context = { requestHeaders: { authorization: 'Bearer demo-athleteRegistered-token' } };
+    const productRole = createProductRole(context, 'lab', {
+      labName: 'Lab Sem Pagamento',
+      cnpj: '12.345.678/0001-90'
+    });
+
+    const approved = approveLabLicenseRequest(productRole.id);
+    const snapshot = getDemoStateSnapshot();
+    const workflow = snapshot.dentistLicensingWorkflows.find((item) => item.productRoleId === productRole.id);
+
+    expect(approved.request.workflowStatus).toBe('licensed');
+    expect(workflow?.status).toBe('licensed');
   });
 
   it('returns a valid auth payload for the active persona and fixes the partner role', () => {

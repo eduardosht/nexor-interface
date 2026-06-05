@@ -578,4 +578,22 @@ describe('PortalLayout navigation', () => {
     expect(screen.queryByRole('dialog', { name: /selecionar acesso ao biteplaner/i })).not.toBeInTheDocument();
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner');
   });
+
+  it('redirects to the login page when signing out from the portal', () => {
+    const signOut = vi.fn();
+    renderLayout('/painel/admin/home', {
+      signOut,
+      backendUser: {
+        email: 'admin@nexor.dev',
+        roles: ['admin'],
+        productRoles: [{ productKey: 'biteplaner', role: 'admin', status: 'active' }],
+      },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^sair$/i }));
+
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/entrar');
+  });
 });

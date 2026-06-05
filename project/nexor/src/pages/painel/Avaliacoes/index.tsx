@@ -9,6 +9,7 @@ import {
   fetchWorkflowForms,
   formatDate,
   getAuthToken,
+  getOrderDisplayId,
   submitWorkflowForm,
   type AccessMode,
   type DemoOrderSummary,
@@ -206,19 +207,21 @@ function getEmptyPayload(template: BiteplanerReviewTemplateDefinition) {
 }
 
 function getPendingSurveyContext(form: DemoWorkflowForm, order: DemoOrderSummary) {
+  const orderLabel = getOrderDisplayId(order);
+
   if (form.templateKey === 'partner_review_by_customer') {
     return 'Cadastro via link de recomendação do parceiro';
   }
 
   if (form.templateKey === 'dentist_review_by_customer') {
-    return `Ordem ${order.id} | feedback pós-atendimento`;
+    return `Ordem ${orderLabel} | feedback pós-atendimento`;
   }
 
   if (form.templateKey === 'lab_review_by_dentist') {
-    return `Ordem ${order.id} | laboratório ${order.practice_location?.name ?? 'selecionado'}`;
+    return `Ordem ${orderLabel} | laboratório ${order.practice_location?.name ?? 'selecionado'}`;
   }
 
-  return `Ordem ${order.id} | dentista ${order.dentist?.full_name ?? 'responsável'}`;
+  return `Ordem ${orderLabel} | dentista ${order.dentist?.full_name ?? 'responsável'}`;
 }
 
 export function Avaliacoes() {
@@ -684,7 +687,7 @@ export function Avaliacoes() {
                               <div>
                                 <S.ReviewerName>{row.reviewer}</S.ReviewerName>
                                 <S.ReviewMeta>
-                                  {row.direction} | Ordem {row.order.id} |{' '}
+                                  {row.direction} | Ordem {getOrderDisplayId(row.order)} |{' '}
                                   {row.form.submittedAt ? formatDate(row.form.submittedAt) : 'Data pendente'}
                                 </S.ReviewMeta>
                               </div>

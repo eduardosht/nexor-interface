@@ -1,5 +1,12 @@
 import { api } from '../../lib/api';
 import type { DemoPersona } from './persona';
+export {
+  getOrderDisplayId,
+  getOrderStatusPresentation,
+  getStageLabel,
+  STAGE_LABELS,
+  type StatusPresentation,
+} from '../biteplaner/orders/orderPresenter';
 
 export type AccessMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
 
@@ -28,6 +35,8 @@ export type AccessOptionsResponse = {
 export type DemoOrderSummary = {
   id: string;
   displayId?: string;
+  display_number?: number | string | null;
+  displayNumber?: number | string | null;
   checkoutOrderId?: string;
   status: string;
   statusLabel?: string;
@@ -36,6 +45,7 @@ export type DemoOrderSummary = {
   customer_profile_id?: string | null;
   user_profile_id?: string | null;
   practice_location_id?: string | null;
+  lab_profile_id?: string | null;
   customer?: {
     id?: string | null;
     full_name: string | null;
@@ -65,15 +75,42 @@ export type DemoOrderSummary = {
   } | null;
 };
 
+export type ExternalFileReference = {
+  id: string;
+  fileName: string;
+  provider: 'simulated-external-storage';
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+};
+
 export type ProductionRequestDraft = {
   anamnesisSummary: string;
   anamnesisDownloaded: boolean;
   productionRequestSummary: string;
   labNotes: string;
   scan3dFileName: string;
+  scan3dFileRef?: ExternalFileReference | null;
   prescriptionFileName: string;
+  prescriptionFileRef?: ExternalFileReference | null;
   lgpdConfirmed: boolean;
   selectedLabId: string | null;
+};
+
+export type OrderFormSummary = {
+  id: string;
+  order_id?: string;
+  type: 'anamnesis' | 'production_request' | 'follow_up';
+  version: number;
+  dentist_id?: string | null;
+  clinic_id?: string | null;
+  practice_location_id?: string | null;
+  created_at: string;
+};
+
+export type OrderFormDetail = OrderFormSummary & {
+  profile_id?: string;
+  payload: Record<string, unknown>;
 };
 
 export type BiteplanerPrerequisitePayload = {
@@ -139,13 +176,38 @@ export type PracticeLocationApiRecord = {
 
 export type DemoLicensedLabSelection = {
   id: string;
+  profileId?: string;
   name: string;
+  cnpj?: string;
+  professionalSummary?: string;
   address: string;
   cep: string;
   phone: string;
+  serviceHours?: string;
+  city?: string;
+  state?: string;
   reviewScore: number;
   distanceKm: number;
   coordinates: {
+    lat: number;
+    lng: number;
+  };
+};
+
+export type LicensedLabSelectionApiRecord = {
+  id: string;
+  profileId: string;
+  labName: string;
+  cnpj: string;
+  professionalSummary: string;
+  address: string;
+  cep: string;
+  phone: string;
+  email?: string;
+  serviceHours: string;
+  city?: string;
+  state?: string;
+  coordinates?: {
     lat: number;
     lng: number;
   };
@@ -230,6 +292,7 @@ export type PartnerOverviewResponse = {
     leadsCaptured: number;
     convertedToAccount: number;
     activeOrders: number;
+    finishedOrders?: number;
   };
 };
 
@@ -285,6 +348,15 @@ export type PartnerRequest = {
   partnerName: string;
   documentType: 'cpf' | 'cnpj' | string;
   documentNumber: string;
+  partnerType?: string;
+  location?: {
+    cep?: string;
+    address?: string;
+    complement?: string;
+    city?: string;
+    state?: string;
+  } | null;
+  serviceLocations?: string[];
   contactEmail: string;
   cityState: string;
   channels: string;
@@ -326,32 +398,6 @@ export type DentistLicensingResponse = {
 
 export type LabLicensingResponse = DentistLicensingResponse;
 
-export type StatusPresentation = {
-  color: string;
-  label: string;
-};
-
-export const STAGE_LABELS: Record<string, string> = {
-  pre_requisite_pending: 'Pre-requisito',
-  awaiting_initial_consultation: 'Consulta inicial',
-  dentist_acceptance_pending: 'Aceite do dentista',
-  consultation_linked: 'Consulta vinculada',
-  consultation_confirmed: 'Consulta confirmada',
-  awaiting_clinical_decision: 'Decisão clínica',
-  awaiting_payment: 'Pagamento',
-  awaiting_dentist_forms: 'Preenchimento do dentista',
-  awaiting_lab_start: 'Inicio da produção',
-  treatment_required: 'Tratamento prévio',
-  ready_for_lab: 'Liberado para laboratório',
-  lab_production: 'Laboratório',
-  dentist_adjustment_required: 'Ajuste do dentista',
-  product_received_by_clinic: 'Recebimento pelo dentista',
-  awaiting_adaptation: 'Adaptacao',
-  follow_up: 'Acompanhamento',
-  closed_ineligible: 'Encerrado',
-  cancelled: 'Cancelado'
-};
-
 export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athleteRegistered: 'user',
   athlete: 'user',
@@ -386,42 +432,6 @@ export function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function getStageLabel(order: DemoOrderSummary) {
-  return STAGE_LABELS[order.stage] ?? order.stage;
-}
-
-export function getOrderStatusPresentation(order: Pick<DemoOrderSummary, 'status' | 'statusLabel'>): StatusPresentation {
-  const label = order.statusLabel ?? order.status;
-
-  if (
-    order.status === 'registration_started' ||
-    order.status === 'awaiting_scheduling' ||
-    order.status === 'awaiting_dentist_acceptance' ||
-    order.status === 'awaiting_payment' ||
-    order.status === 'awaiting_dentist_forms' ||
-    order.status === 'awaiting_lab_start' ||
-    order.status === 'product_received_by_clinic' ||
-    order.status === 'awaiting_adaptation' ||
-    order.status === 'treatment_required'
-  ) {
-    return { color: '#D18A00', label };
-  }
-
-  if (order.status === 'payment_confirmed' || order.status === 'follow_up') {
-    return { color: '#15803D', label };
-  }
-
-  if (order.status === 'lab_processing' || order.status === 'in_progress' || order.status === 'appointment_confirmed') {
-    return { color: '#2563EB', label };
-  }
-
-  if (order.status === 'ineligible_refund' || order.status === 'cancelled') {
-    return { color: '#B91C1C', label };
-  }
-
-  return { color: '#737373', label };
-}
-
 export function getAthletePrimaryOrder(orders: DemoOrderSummary[]) {
   const priority = [
     'registration_started',
@@ -430,6 +440,9 @@ export function getAthletePrimaryOrder(orders: DemoOrderSummary[]) {
     'awaiting_scheduling',
     'awaiting_dentist_acceptance',
     'in_progress',
+    'awaiting_lab_start',
+    'lab_processing',
+    'product_received_by_clinic',
     'awaiting_adaptation',
     'follow_up',
     'payment_confirmed'
@@ -607,6 +620,18 @@ export async function fetchLabLicensing(token?: string) {
   return api.get<LabLicensingResponse>('/v1/account/biteplaner/lab-licensing', token);
 }
 
+export async function markAccountNotificationRead(notificationId: string, token?: string) {
+  return api.patch<{ notification: AccountNotification }>(
+    `/v1/account/notifications/${notificationId}/read`,
+    {},
+    token
+  );
+}
+
+export async function fetchLicensedLabs(token?: string) {
+  return api.get<{ labs: LicensedLabSelectionApiRecord[] }>('/v1/account/biteplaner/licensed-labs', token);
+}
+
 export async function confirmDentistLicensingPayment(token?: string) {
   return api.post<{ workflow: DentistLicensingWorkflow }>(
     '/v1/account/biteplaner/dentist-licensing/payment-confirmed',
@@ -682,8 +707,33 @@ export async function createPartnerInviteLink(
   );
 }
 
+export async function removePartnerInviteLink(inviteLinkId: string, token?: string) {
+  return api.patch<{ inviteLink: PartnerOverviewResponse['inviteLinks'][number] }>(
+    `/v1/partner/invite-links/${encodeURIComponent(inviteLinkId)}/remove`,
+    {},
+    token
+  );
+}
+
 export async function fetchAppointments(orderId: string, token?: string) {
   return api.get<{ appointments: DemoAppointment[] }>(`/v1/orders/${orderId}/appointments`, token);
+}
+
+export async function createAppointment(
+  orderId: string,
+  payload: { type: 'initial' | 'adaptation' | 'follow_up'; scheduledAt: string },
+  token?: string
+) {
+  return api.post<DemoAppointment>(`/v1/orders/${orderId}/appointments`, payload, token);
+}
+
+export async function updateAppointment(
+  orderId: string,
+  appointmentId: string,
+  payload: { status: 'scheduled' | 'rescheduled' | 'cancelled'; scheduledAt?: string; reason?: string },
+  token?: string
+) {
+  return api.patch<DemoAppointment>(`/v1/orders/${orderId}/appointments/${appointmentId}`, payload, token);
 }
 
 export async function confirmAppointmentByUser(
@@ -720,6 +770,14 @@ export async function fetchWorkflowForms(orderId: string, token?: string) {
 
 export async function fetchWorkflowForm(orderId: string, workflowFormId: string, token?: string) {
   return api.get<DemoWorkflowForm>(`/v1/orders/${orderId}/workflow-forms/${workflowFormId}`, token);
+}
+
+export async function fetchOrderForms(orderId: string, token?: string) {
+  return api.get<{ forms: OrderFormSummary[] }>(`/v1/orders/${orderId}/forms`, token);
+}
+
+export async function fetchOrderForm(orderId: string, formId: string, token?: string) {
+  return api.get<OrderFormDetail>(`/v1/orders/${orderId}/forms/${formId}`, token);
 }
 
 export async function submitWorkflowForm(
@@ -803,11 +861,20 @@ export async function registerClinicalDecision(
   decision: 'eligible' | 'ineligible' | 'treatment_required',
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/clinical-decision`,
-    { decision },
+  if (decision === 'treatment_required') {
+    return api.post<{ order: DemoOrderSummary }>(
+      `/v1/orders/${orderId}/clinical-decision`,
+      { decision },
+      token
+    );
+  }
+
+  const order = await api.post<DemoOrderSummary>(
+    `/v1/orders/${orderId}/clinical-evaluation`,
+    { outcome: decision },
     token
   );
+  return { order };
 }
 
 export async function sendToLab(orderId: string, token?: string) {
@@ -853,7 +920,7 @@ export async function completeProductionRequest(
   payload: ProductionRequestDraft,
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/production-request/complete`, payload, token);
+  return api.post<unknown>(`/v1/orders/${orderId}/forms/production-request`, { payload }, token);
 }
 
 export async function returnToDentist(orderId: string, reason: string, token?: string) {
@@ -886,4 +953,8 @@ export async function confirmProductReceived(orderId: string, token?: string) {
     {},
     token
   );
+}
+
+export async function completeAdaptation(orderId: string, token?: string) {
+  return api.post<DemoOrderSummary>(`/v1/orders/${orderId}/adaptation-completed`, {}, token);
 }

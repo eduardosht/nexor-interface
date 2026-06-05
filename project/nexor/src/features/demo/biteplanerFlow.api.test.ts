@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../lib/api';
 import {
+  completeProductionRequest,
   createCheckoutSession,
   confirmPayment,
+  registerClinicalDecision,
   scheduleInitialConsultation,
   selectPracticeLocation,
   type DemoOrderSummary,
@@ -76,6 +78,40 @@ describe('biteplanerFlow backend route adapters', () => {
     expect(apiPost).toHaveBeenCalledWith(
       '/v1/orders/order-1/practice-location-selection',
       { practiceLocationId: 'practice-1' },
+      'token'
+    );
+  });
+
+  it('submits the production request through the backend clinical form route', async () => {
+    const payload = {
+      anamnesisSummary: 'Resumo clínico.',
+      anamnesisDownloaded: true,
+      productionRequestSummary: 'Solicitação preenchida.',
+      labNotes: 'Observação operacional.',
+      scan3dFileName: 'scan.stl',
+      prescriptionFileName: 'prescricao.pdf',
+      lgpdConfirmed: true,
+      selectedLabId: 'lab-1',
+    };
+    apiPost.mockResolvedValue({ id: 'form-1' });
+
+    await expect(completeProductionRequest(order.id, payload, 'token')).resolves.toEqual({ id: 'form-1' });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/forms/production-request',
+      { payload },
+      'token'
+    );
+  });
+
+  it('registers clinical eligibility through the backend clinical evaluation route', async () => {
+    apiPost.mockResolvedValue(order);
+
+    await expect(registerClinicalDecision(order.id, 'eligible', 'token')).resolves.toEqual({ order });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/clinical-evaluation',
+      { outcome: 'eligible' },
       'token'
     );
   });
