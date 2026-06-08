@@ -262,6 +262,20 @@ function formatClinicAddress(data: {
   return [streetLine, cityState].filter(Boolean).join(', ');
 }
 
+async function fetchCepCoordinates(cep: string) {
+  const response = await fetch(`https://cep.awesomeapi.com.br/json/${cep}`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  const lat = Number(String(data.lat ?? '').replace(',', '.'));
+  const lng = Number(String(data.lng ?? '').replace(',', '.'));
+
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
 export function CadastroPerfilBiteplaner() {
   const { role } = useParams();
   const navigate = useNavigate();
@@ -309,6 +323,8 @@ export function CadastroPerfilBiteplaner() {
         throw new Error('CEP not found');
       }
 
+      const coordinates = await fetchCepCoordinates(cep).catch(() => null);
+
       setClinics((current) =>
         current.map((item) => {
           if (item.id !== clinicId || onlyDigits(item.cep) !== cep) {
@@ -329,6 +345,17 @@ export function CadastroPerfilBiteplaner() {
           };
         })
       );
+      setValues((current) => {
+        if (!coordinates) {
+          return current;
+        }
+
+        return {
+          ...current,
+          [`clinicLatitude:${clinicId}`]: String(coordinates.lat),
+          [`clinicLongitude:${clinicId}`]: String(coordinates.lng),
+        };
+      });
     } catch {
       setCepLookupErrors((current) => ({
         ...current,
@@ -516,18 +543,31 @@ export function CadastroPerfilBiteplaner() {
       };
     }
 
-    const locations = clinics.map((clinic) => ({
-      name: clinic.name.trim(),
-      address: clinic.address.trim(),
-      cep: clinic.cep.trim(),
-      ...(emptyToUndefined(clinic.complement)
-        ? { complement: emptyToUndefined(clinic.complement) }
-        : {}),
-      phone: clinic.phone.trim(),
-      serviceHours: clinic.serviceHours.trim(),
-      city: clinic.city.trim(),
-      state: clinic.state.trim(),
-    }));
+    const locations = clinics.map((clinic) => {
+      const latitude = emptyToUndefined(values[`clinicLatitude:${clinic.id}`]);
+      const longitude = emptyToUndefined(values[`clinicLongitude:${clinic.id}`]);
+      const coordinates =
+        latitude && longitude
+          ? {
+            lat: parseCoordinate(latitude),
+            lng: parseCoordinate(longitude),
+          }
+          : undefined;
+
+      return {
+        name: clinic.name.trim(),
+        address: clinic.address.trim(),
+        cep: clinic.cep.trim(),
+        ...(emptyToUndefined(clinic.complement)
+          ? { complement: emptyToUndefined(clinic.complement) }
+          : {}),
+        phone: clinic.phone.trim(),
+        serviceHours: clinic.serviceHours.trim(),
+        city: clinic.city.trim(),
+        state: clinic.state.trim(),
+        ...(coordinates ? { coordinates } : {}),
+      };
+    });
 
     return {
       labName: values.labName.trim(),

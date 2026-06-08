@@ -9,6 +9,7 @@ import {
   fetchOrders,
   fetchWorkflowForms,
   getAuthToken,
+  isCustomerOnboardingComplete,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
@@ -18,6 +19,7 @@ import * as S from './styles';
 
 const SUCCESS_REDIRECT_DELAY_MS = 700;
 const INTAKE_TEMPLATE_KEY = 'customer_pre_consultation_intake';
+const EMPTY_WORKFLOW_DEFAULT_VALUES: Record<string, string> = {};
 const BITEPLANER_CONSENT_PAYLOAD = {
   customer: {
     serviceConsent: ['accepted'],
@@ -96,13 +98,6 @@ export function PreRequisito() {
   const formsLoading = Boolean(order?.id) && workflowFormsQuery.isLoading;
   const formsError = workflowFormsQuery.isError ? 'Não foi possível carregar a avaliação inicial compartilhada.' : '';
   const loadError = ordersQuery.isError ? 'Não foi possível carregar o pedido do pre-requisito.' : '';
-  const workflowDefaultValues = useMemo(
-    () => ({
-      fullName: order?.customer?.full_name ?? '',
-    }),
-    [order?.customer?.full_name]
-  );
-
   useEffect(() => {
     return () => {
       if (redirectTimeoutRef.current) {
@@ -115,10 +110,29 @@ export function PreRequisito() {
     () => workflowForms.filter((form) => form.templateKey === INTAKE_TEMPLATE_KEY),
     [workflowForms]
   );
+  const onboardingForms = useMemo(
+    () => workflowForms.filter((form) => form.templateKey === 'customer_new_user_onboarding'),
+    [workflowForms]
+  );
+  const shouldRedirectToOnboarding = Boolean(
+    order?.id &&
+    !formsLoading &&
+    !formsError &&
+    intakeForms.length === 0 &&
+    onboardingForms.some((form) => !isCustomerOnboardingComplete(form))
+  );
   const completedIntake = useMemo(
     () => intakeForms.find(customerIntakeIsComplete) ?? null,
     [intakeForms]
   );
+
+  useEffect(() => {
+    if (!shouldRedirectToOnboarding) {
+      return;
+    }
+
+    navigate('/painel/biteplaner/onboarding', { replace: true });
+  }, [navigate, shouldRedirectToOnboarding]);
 
   function handleSubmittedIntake(form: DemoWorkflowForm) {
     if (!order || order.status !== 'registration_started' || redirectTimeoutRef.current) {
@@ -252,7 +266,7 @@ export function PreRequisito() {
                     title="Avaliação inicial compartilhada Biteplaner"
                     description="Preencha esta avaliação em etapas para liberar a próxima fase da jornada Biteplaner."
                     templateFilter={[INTAKE_TEMPLATE_KEY]}
-                    defaultValues={workflowDefaultValues}
+                    defaultValues={EMPTY_WORKFLOW_DEFAULT_VALUES}
                     forms={workflowForms}
                     onFormsChange={handleWorkflowFormsChange}
                     payloadExtras={BITEPLANER_CONSENT_PAYLOAD}
@@ -263,7 +277,7 @@ export function PreRequisito() {
                     />
                   )}
 
-                  {intakeForms.length === 0 && !completedIntake && !formsLoading && !formsError ? (
+                  {intakeForms.length === 0 && !completedIntake && !formsLoading && !formsError && !shouldRedirectToOnboarding ? (
                     <S.Banner role="status">A avaliação inicial compartilhada ainda não foi liberada para este pedido.</S.Banner>
                   ) : null}
 

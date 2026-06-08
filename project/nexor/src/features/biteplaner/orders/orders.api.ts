@@ -10,8 +10,10 @@ import type {
   ProductionRequestDraft,
 } from './orders.types';
 
+const buildOrdersPath = (mode: AccessMode) => (mode === 'admin' ? '/v1/orders' : `/v1/orders?as=${mode}`);
+
 export const fetchOrders = (mode: AccessMode, token?: string) =>
-  api.get<{ orders: DemoOrderSummary[] }>(`/v1/orders?as=${mode}`, token);
+  api.get<{ orders: DemoOrderSummary[] }>(buildOrdersPath(mode), token);
 
 export const fetchAppointments = (orderId: string, token?: string) =>
   api.get<{ appointments: DemoAppointment[] }>(`/v1/orders/${orderId}/appointments`, token);

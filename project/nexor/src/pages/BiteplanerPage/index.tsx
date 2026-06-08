@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   Dumbbell,
   Heart,
+  Image as ImageIcon,
   Quote,
   ShieldCheck,
   SlidersHorizontal,
@@ -74,6 +75,27 @@ const JOURNEY_STEPS = [
     label: 'Uso real',
     title: 'Adaptação e acompanhamento',
     body: 'A instalação inicial do dispositivo será feita pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
+  },
+];
+
+const SPORT_CONTEXT_CARDS = [
+  {
+    icon: Target,
+    imagePosition: 'left' as const,
+    title: 'Esportes de combate',
+    body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
+  },
+  {
+    icon: Dumbbell,
+    imagePosition: 'center' as const,
+    title: 'Força e alta intensidade',
+    body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
+  },
+  {
+    icon: Trophy,
+    imagePosition: 'right' as const,
+    title: 'Esportes coletivos',
+    body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
   },
 ];
 
@@ -396,17 +418,27 @@ export function BiteplanerPage() {
 
       <S.RealRoutineSection>
         <S.RealRoutineContent>
-          <S.SectionIntro>
-            <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-            <S.SectionTitle>Feito para a rotina real de treinos e competições</S.SectionTitle>
-          </S.SectionIntro>
+          <S.RealRoutineTitle>
+            Feito para a rotina real de <span>treinos e competições</span>
+          </S.RealRoutineTitle>
           <S.RealRoutineLead>
             Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e
             competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O
             Biteplaner® modula as sobrecargas através de um processo tecnológico e avaliações periódicas.
           </S.RealRoutineLead>
         </S.RealRoutineContent>
-        <S.RealRoutineVisual aria-hidden="true" />
+        <S.RealRoutineVisual>
+          {SPORT_CONTEXT_CARDS.map(({ icon: Icon, ...card }) => (
+            <S.RealRoutineCard key={card.title} $imagePosition={card.imagePosition}>
+              <S.RealRoutineCardIcon aria-hidden="true">
+                <Icon size={24} strokeWidth={1.8} />
+              </S.RealRoutineCardIcon>
+              <S.RealRoutineCardAccent aria-hidden="true" />
+              <S.RealRoutineCardTitle>{card.title}</S.RealRoutineCardTitle>
+              <S.RealRoutineCardBody>{card.body}</S.RealRoutineCardBody>
+            </S.RealRoutineCard>
+          ))}
+        </S.RealRoutineVisual>
       </S.RealRoutineSection>
 
       <S.ComparisonSection>

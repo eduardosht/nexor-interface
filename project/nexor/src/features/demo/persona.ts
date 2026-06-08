@@ -45,7 +45,7 @@ export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
   athleteLabProduction: 'Cliente - Laboratorio',
   athleteAdaptation: 'Cliente - Adaptacao',
   athleteFollowUp: 'Cliente - Acompanhamento',
-  athleteIneligible: 'Cliente - Encerrado inapto',
+  athleteIneligible: 'Cliente - Inapto para reavaliação',
   athleteCancelled: 'Cliente - Cancelado',
   partner: 'Parceiro',
   dentist: 'Dentista',

@@ -363,9 +363,22 @@ describe('CadastroUsuarioBiteplaner', () => {
       )
     );
     expect(await screen.findByText(/agradecemos sua disponibilidade e confian.*a/i)).toBeInTheDocument();
-    expect(screen.getByText(/voc.* ser.* redirecionado em/i)).toBeInTheDocument();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada'), { timeout: 8000 });
+    expect(screen.getByText(/redirecionando para a pr.*xima etapa/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
   }, 20000);
+
+  it('redirects without rendering the onboarding form when it was already submitted', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [onboardingForm('submitted', { blocked: false, responseCount: 1 })] });
+
+    renderPage();
+
+    expect(await screen.findByText(/cadastro j.* enviado/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enviar formul.*rio/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
+  });
 
   it('does not show an unavailable-registration message when onboarding form is absent', async () => {
     mockApiGet

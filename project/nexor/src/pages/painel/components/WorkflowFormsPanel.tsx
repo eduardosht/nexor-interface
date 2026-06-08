@@ -40,6 +40,11 @@ import {
   type WorkflowFormActorRole,
 } from './sharedIntakeDefinition';
 import {
+  getWorkflowFormPayloadSection,
+  hasWorkflowPayloadValue,
+  isAffirmativeWorkflowValue,
+} from './workflowFormFieldDictionary';
+import {
   WorkflowFormsPendingRequiredLegend,
   type PendingRequiredField,
 } from './WorkflowFormsPendingRequiredLegend';
@@ -98,6 +103,16 @@ type VisibleSharedSection = {
 
 type DisplaySharedSection = VisibleSharedSection & {
   childSections?: VisibleSharedSection[];
+};
+
+const DENTIST_PATIENT_FULL_NAME_FIELD: SharedIntakeFieldDefinition = {
+  key: 'fullName',
+  label: 'Nome completo do paciente',
+  required: false,
+  type: 'text',
+  ownerRole: 'user',
+  visibleTo: ['dentist'],
+  editableWhen: 'customer_intake',
 };
 
 const INTAKE_DEFINITION: FormDefinition = {
@@ -176,6 +191,8 @@ const STATUS_PRESENTATION: Record<DemoWorkflowForm['status'], { label: string; c
   pending: { label: 'Pendente', color: '#D18A00' },
   draft: { label: 'Rascunho', color: '#2563EB' },
   submitted: { label: 'Enviado', color: '#15803D' },
+  superseded: { label: 'Substituído', color: '#737373' },
+  cancelled: { label: 'Cancelado', color: '#B91C1C' },
 };
 
 function getDefinition(templateKey: string) {
@@ -517,8 +534,14 @@ const SLIDER_SCORE_FIELD_KEYS = new Set([
   'subjectiveSleepQuality',
 ]);
 
-function payloadHasCheckboxValue(payload: Record<string, string>, fieldKey: string, value: string) {
-  return (payload[fieldKey] ?? '').split('|').includes(value);
+function payloadHasCheckboxValue(payload: Record<string, unknown>, fieldKey: string, value: string) {
+  const rawValue = payload[fieldKey];
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.some((item) => String(item) === value);
+  }
+
+  return String(rawValue ?? '').split('|').includes(value);
 }
 
 function onlyDigits(value?: string) {
@@ -569,7 +592,7 @@ function getConditionalDetailKeysForParent(parentKey: string) {
 
 function isFieldVisibleForPayload(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
-  payload: Record<string, string>
+  payload: Record<string, unknown>
 ) {
   if (!isSharedField(field)) {
     return true;
@@ -578,11 +601,15 @@ function isFieldVisibleForPayload(
   const parentKey = getConditionalDetailParentKey(field.key);
 
   if (parentKey) {
-    return payload[parentKey] === 'yes';
+    return isAffirmativeWorkflowValue(payload[parentKey]) || hasWorkflowPayloadValue(payload[field.key]);
   }
 
   if (CURRENT_PAIN_DETAIL_KEYS.has(field.key)) {
-    return payload.hasCurrentPain === 'yes';
+    return isAffirmativeWorkflowValue(payload.hasCurrentPain) || hasWorkflowPayloadValue(payload[field.key]);
+  }
+
+  if (field.key === 'ineligibilityDescriptionForCustomer') {
+    return payload.biteplannerEligible === 'no' || hasWorkflowPayloadValue(payload[field.key]);
   }
 
   const checkboxOtherParentKey = getCheckboxOtherDetailParentKey(field.key);
@@ -601,7 +628,7 @@ function isFieldVisibleForPayload(
 function isFieldVisibleInSection(
   section: DisplaySharedSection,
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
-  payload: Record<string, string>
+  payload: Record<string, unknown>
 ) {
   if (!isFieldVisibleForPayload(field, payload)) {
     return false;
@@ -611,7 +638,7 @@ function isFieldVisibleInSection(
     return true;
   }
 
-  const orthodonticAnswer = payload.orthodonticTreatmentStatus;
+  const orthodonticAnswer = String(payload.orthodonticTreatmentStatus ?? '');
 
   if (!orthodonticAnswer || orthodonticAnswer === 'active') {
     return field.key === 'orthodonticTreatmentStatus';
@@ -795,6 +822,16 @@ function getReadOnlyValue(value: unknown, field: SharedIntakeFieldDefinition) {
     return labels.length > 0 ? labels.join(', ') : 'Não informado';
   }
 
+  if (field.type === 'checkbox-group' && typeof value === 'string' && value.includes('|')) {
+    const labels = value
+      .split('|')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map((item) => field.options?.find((option) => option.value === item)?.label ?? item);
+
+    return labels.length > 0 ? labels.join(', ') : 'Não informado';
+  }
+
   if (value === null || value === undefined || value === '') {
     return 'Não informado';
   }
@@ -806,15 +843,96 @@ function getReadOnlyValue(value: unknown, field: SharedIntakeFieldDefinition) {
   return String(value);
 }
 
-function getReadOnlyFieldSource(form: DemoWorkflowForm, field: SharedIntakeFieldDefinition) {
-  const payload = form.payload ?? {};
-  const rolePayload = payload[getSharedIntakePayloadKey(field.ownerRole)];
+function isActiveWorkflowForm(form: DemoWorkflowForm) {
+  return form.status !== 'superseded' && form.status !== 'cancelled';
+}
 
-  if (rolePayload && typeof rolePayload === 'object' && !Array.isArray(rolePayload)) {
-    return rolePayload as Record<string, unknown>;
+function calculateAgeYearsFromBirthDate(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) {
+    return undefined;
   }
 
-  return payload;
+  const birthDate = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(birthDate.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : undefined;
+}
+
+function buildCustomerOnboardingReadOnlyFallback(forms: DemoWorkflowForm[]) {
+  const onboardingForm = forms.find((item) => item.templateKey === 'customer_new_user_onboarding');
+  const onboardingPayload = getWorkflowFormPayloadSection(onboardingForm?.payload, 'customer_new_user_onboarding', 'root');
+  const fallback: Record<string, unknown> = { ...onboardingPayload };
+
+  if (!hasWorkflowPayloadValue(fallback.heightMeters) && hasWorkflowPayloadValue(onboardingPayload.heightM)) {
+    fallback.heightMeters = onboardingPayload.heightM;
+  }
+
+  if (!hasWorkflowPayloadValue(fallback.ageYears)) {
+    const ageYears = calculateAgeYearsFromBirthDate(onboardingPayload.birthDate);
+
+    if (typeof ageYears === 'number') {
+      fallback.ageYears = ageYears;
+    }
+  }
+
+  return fallback;
+}
+
+function getReadOnlyFieldSource(
+  form: DemoWorkflowForm,
+  field: SharedIntakeFieldDefinition,
+  relatedForms: DemoWorkflowForm[] = []
+) {
+  const roleKey = getSharedIntakePayloadKey(field.ownerRole);
+
+  if (roleKey === 'customer' || roleKey === 'dentist') {
+    const source = getWorkflowFormPayloadSection(form.payload, form.templateKey, roleKey);
+
+    if (form.templateKey === 'customer_pre_consultation_intake' && roleKey === 'customer') {
+      return {
+        ...buildCustomerOnboardingReadOnlyFallback(relatedForms),
+        ...source,
+      };
+    }
+
+    return source;
+  }
+
+  return getWorkflowFormPayloadSection(form.payload, form.templateKey, 'root');
+}
+
+function getReadOnlyFieldsForDisplay({
+  childSection,
+  readonlyFields,
+  form,
+  actorRole,
+}: {
+  childSection: VisibleSharedSection;
+  readonlyFields: SharedIntakeFieldDefinition[];
+  form: DemoWorkflowForm;
+  actorRole: WorkflowFormActorRole;
+}) {
+  if (
+    form.templateKey === 'customer_pre_consultation_intake' &&
+    actorRole === 'dentist' &&
+    childSection.key === 'initial-data' &&
+    !readonlyFields.some((field) => field.key === DENTIST_PATIENT_FULL_NAME_FIELD.key)
+  ) {
+    return [DENTIST_PATIENT_FULL_NAME_FIELD, ...readonlyFields];
+  }
+
+  return readonlyFields;
 }
 
 function renderSectionDescription(description?: string) {
@@ -906,7 +1024,10 @@ function isFieldRequiredForPayload(
   }
 
   const parentKey = getConditionalDetailParentKey(field.key);
-  return Boolean(parentKey && payload[parentKey] === 'yes');
+  return Boolean(
+    (parentKey && payload[parentKey] === 'yes') ||
+      (field.key === 'ineligibilityDescriptionForCustomer' && payload.biteplannerEligible === 'no')
+  );
 }
 
 function isValidCpfValue(value: string) {
@@ -1325,6 +1446,7 @@ function FormItem({
   showFormHeader,
   showFormHeaderStatus,
   payloadExtras,
+  relatedForms,
 }: {
   form: DemoWorkflowForm;
   token?: string;
@@ -1335,6 +1457,7 @@ function FormItem({
   showFormHeader: boolean;
   showFormHeaderStatus: boolean;
   payloadExtras?: Record<string, unknown>;
+  relatedForms?: DemoWorkflowForm[];
 }) {
   const definition = useMemo(() => getDefinition(form.templateKey), [form.templateKey]);
   const [payload, setPayload] = useState<Record<string, string>>(() =>
@@ -2048,11 +2171,17 @@ function FormItem({
                       const readonlyChildFields = childSection.fields.filter((field) =>
                         readonlySectionFields.includes(field)
                       );
+                      const readonlyChildFieldsForDisplay = getReadOnlyFieldsForDisplay({
+                        childSection,
+                        readonlyFields: readonlyChildFields,
+                        form,
+                        actorRole,
+                      });
                       const shouldShowSubsectionHeading =
                         Boolean(section.childSections) &&
                         (section.childSections?.length !== 1 || childSection.title !== section.title);
 
-                      if (editableChildFields.length === 0 && readonlyChildFields.length === 0) {
+                      if (editableChildFields.length === 0 && readonlyChildFieldsForDisplay.length === 0) {
                         return null;
                       }
 
@@ -2062,10 +2191,10 @@ function FormItem({
                             <S.SubsectionHeading>{childSection.title}</S.SubsectionHeading>
                           ) : null}
                           {renderSectionDescription(childSection.description)}
-                          {readonlyChildFields.length > 0 ? (
+                          {readonlyChildFieldsForDisplay.length > 0 ? (
                             <S.ReadOnlyGrid>
-                              {readonlyChildFields.map((field) => {
-                                const source = getReadOnlyFieldSource(form, field);
+                              {readonlyChildFieldsForDisplay.map((field) => {
+                                const source = getReadOnlyFieldSource(form, field, relatedForms);
 
                                 return (
                                   <S.ReadOnlyItem key={field.key}>
@@ -2931,6 +3060,7 @@ export function WorkflowFormsPanel({
 
     const formsMissingPayload = formsSource.filter(
       (form) =>
+        isActiveWorkflowForm(form) &&
         canHydrateWorkflowFormPayload(form, actorRole) &&
         form.payload === null &&
         (!templateFilter || templateFilter.includes(form.templateKey))
@@ -3001,7 +3131,7 @@ export function WorkflowFormsPanel({
   }, [formsSource, orderId, queryClient, templateFilter, Boolean(token)]);
 
   const visibleForms = useMemo(
-    () => formsSource.filter((form) => !templateFilter || templateFilter.includes(form.templateKey)),
+    () => formsSource.filter((form) => isActiveWorkflowForm(form) && (!templateFilter || templateFilter.includes(form.templateKey))),
     [formsSource, templateFilter]
   );
 
@@ -3033,6 +3163,7 @@ export function WorkflowFormsPanel({
               showFormHeader={showFormHeader}
               showFormHeaderStatus={showFormHeaderStatus}
               payloadExtras={payloadExtras}
+              relatedForms={formsSource}
               onSubmitted={(nextForm) =>
                 updateForms((current) => current.map((item) => (item.id === nextForm.id ? nextForm : item)))
               }

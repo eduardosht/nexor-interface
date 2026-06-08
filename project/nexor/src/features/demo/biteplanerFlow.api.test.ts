@@ -5,6 +5,7 @@ import {
   createCheckoutSession,
   confirmPayment,
   registerClinicalDecision,
+  reconcileCheckoutSession,
   scheduleInitialConsultation,
   selectPracticeLocation,
   type DemoOrderSummary,
@@ -78,6 +79,20 @@ describe('biteplanerFlow backend route adapters', () => {
     expect(apiPost).toHaveBeenCalledWith(
       '/v1/orders/order-1/practice-location-selection',
       { practiceLocationId: 'practice-1' },
+      'token'
+    );
+  });
+
+  it('reconciles a Stripe checkout session through the order checkout route', async () => {
+    apiPost.mockResolvedValue({ order: { id: order.id, status: 'payment_confirmed' } });
+
+    await expect(reconcileCheckoutSession(order.id, 'cs_test_123', 'token')).resolves.toEqual({
+      order: { id: order.id, status: 'payment_confirmed' },
+    });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/checkout-session/cs_test_123/reconcile',
+      {},
       'token'
     );
   });

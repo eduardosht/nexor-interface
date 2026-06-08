@@ -81,6 +81,49 @@ export const SecondaryButton = styled(Button).attrs({ variant: 'secondary' })`
   white-space: nowrap;
 `;
 
+export const ClinicFilterBar = styled.section`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const ClinicRequirementBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 700;
+`;
+
+export const FilterCheckbox = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 700;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: ${({ theme }) => theme.colors.green};
+  }
+
+  input:disabled + span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
 export const StepActions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -178,6 +221,29 @@ export const ClinicName = styled.strong`
   font-weight: 700;
 `;
 
+export const ClinicHeader = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+export const AdaptedBadge = styled.span<{ $adapted: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid ${({ $adapted }) => ($adapted ? 'rgba(22, 101, 52, 0.24)' : 'rgba(107, 114, 128, 0.28)')};
+  background: ${({ $adapted }) => ($adapted ? 'rgba(22, 101, 52, 0.1)' : 'rgba(107, 114, 128, 0.1)')};
+  color: ${({ $adapted }) => ($adapted ? '#166534' : '#4b5563')};
+  font-size: 12px;
+  font-weight: 800;
+`;
+
 export const ClinicMeta = styled.span`
   font-size: 13px;
   line-height: 1.5;
@@ -190,6 +256,38 @@ export const ClinicFooter = styled.span`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+`;
+
+export const ClinicPagination = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+`;
+
+export const ClinicPageSummary = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+`;
+
+export const ClinicPageActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+export const ClinicPageIndicator = styled.span`
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 800;
 `;
 
 export const RatingBadge = styled.span`

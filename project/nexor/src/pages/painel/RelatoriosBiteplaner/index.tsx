@@ -35,7 +35,7 @@ const STATUS_OPTIONS = [
   { value: 'awaiting_scheduling', label: 'Aguardando agendamento' },
   { value: 'in_progress', label: 'Em andamento' },
   { value: 'appointment_confirmed', label: 'Consulta confirmada' },
-  { value: 'ineligible_refund', label: 'Inapto / reembolso' },
+  { value: 'ineligible_reassessment', label: 'Inaptidão' },
   { value: 'lab_processing', label: 'Em produção no laboratório' },
   { value: 'product_received_by_clinic', label: 'Produto recebido pela clínica' },
   { value: 'awaiting_adaptation', label: 'Aguardando adaptação' },
@@ -79,7 +79,7 @@ const orderStatusLabels: Record<string, string> = {
   in_progress: 'Consulta em andamento',
   treatment_required: 'Tratamento prévio pendente',
   clinical_decision_pending: 'Aguardando decisão clínica',
-  dentist_forms_pending: 'Aguardando preenchimento dentista',
+  dentist_forms_pending: 'Aguardando envio ao laboratório',
   lab_processing: 'Em produção no laboratório',
   lab_production: 'Em produção no laboratório',
   lab_acceptance_pending: 'Aguardando aceite do laboratório',
@@ -88,7 +88,7 @@ const orderStatusLabels: Record<string, string> = {
   awaiting_adaptation: 'Aguardando adaptação',
   follow_up: 'Acompanhamento',
   completed: 'Concluído',
-  ineligible_refund: 'Inapto / reembolso',
+  ineligible_reassessment: 'Inaptidão',
   cancelled: 'Cancelado',
 };
 

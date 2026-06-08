@@ -169,6 +169,16 @@ const PARTNER_DASHBOARD_PERIODS: Array<{ key: PartnerDashboardPeriod; label: str
   { key: 'all', label: 'Tudo' },
 ];
 
+const FIRST_ACCESS_MODE_PRIORITY: AccessMode[] = ['lab', 'dentist', 'partner', 'user'];
+
+export function getFirstAccessMode(access: { defaultMode: AccessMode; modes: AccessOption[] }): AccessMode {
+  return (
+    FIRST_ACCESS_MODE_PRIORITY.find((modeKey) =>
+      access.modes.some((mode) => mode.key === modeKey && mode.allowed)
+    ) ?? access.defaultMode
+  );
+}
+
 function getValidDate(value?: string | null) {
   if (!value) {
     return null;
@@ -257,6 +267,7 @@ const TIMELINE_STATUS_LABELS: Record<string, string> = {
   treatment_required: 'Tratamento prévio necessário',
   awaiting_payment: 'Aguardando pagamento',
   awaiting_dentist_forms: 'Formulários do dentista pendentes',
+  ineligible_reassessment: 'Inaptidão',
   awaiting_lab_start: 'Aguardando aceite do laboratório',
   lab_processing: 'Em produção',
   dentist_adjustment_required: 'Ajuste de produção',
@@ -309,6 +320,10 @@ const TIMELINE_TRANSITION_DESCRIPTIONS: Record<string, string> = {
     'Consulta inicial vinculada e etapa clínica inicial em andamento.',
   'in_progress->appointment_confirmed':
     'Comparecimento confirmado; ordem aguarda decisão clínica.',
+  'in_progress->ineligible_reassessment':
+    'Dentista registrou inaptidão momentânea; cliente pode marcar uma nova consulta para reavaliação.',
+  'appointment_confirmed->ineligible_reassessment':
+    'Dentista registrou inaptidão momentânea; cliente pode marcar uma nova consulta para reavaliação.',
   'appointment_confirmed->awaiting_payment':
     'Cliente declarado apto; pagamento do produto foi liberado.',
   'awaiting_payment->payment_confirmed':
@@ -366,6 +381,45 @@ function getTimelineEventDescription(event: DemoTimelineEvent) {
   }
 
   return `Status alterado de ${getTimelineStatusLabel(event.fromStatus).toLowerCase()} para ${getTimelineStatusLabel(event.toStatus).toLowerCase()}.`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getDentistPayloadFromWorkflowForm(form: DemoWorkflowForm) {
+  const payload = isRecord(form.payload) ? form.payload : {};
+
+  return isRecord(payload.dentist) ? payload.dentist : payload;
+}
+
+function isSubmittedIneligiblePreConsultationForm(form: DemoWorkflowForm) {
+  if (form.templateKey !== 'customer_pre_consultation_intake') {
+    return false;
+  }
+
+  const dentistPayload = getDentistPayloadFromWorkflowForm(form);
+
+  return (
+    form.status === 'submitted' &&
+    form.roleState?.dentist === 'submitted' &&
+    dentistPayload.biteplannerEligible === 'no'
+  );
+}
+
+function getEffectiveDentistOrder(order: DemoOrderSummary, workflowForms: DemoWorkflowForm[] | undefined) {
+  const hasIneligibleAssessment = workflowForms?.some(isSubmittedIneligiblePreConsultationForm) ?? false;
+
+  if (!hasIneligibleAssessment || order.status === 'ineligible_reassessment') {
+    return order;
+  }
+
+  return {
+    ...order,
+    status: 'ineligible_reassessment',
+    statusLabel: 'Inaptidão',
+    stage: 'awaiting_initial_consultation',
+  };
 }
 
 function getLeadAccountPresentation(funnelStage: PartnerOverviewResponse['leads'][number]['funnelStage']) {
@@ -835,11 +889,18 @@ export function BiteplanerHub() {
     }
 
     if (access) {
-      return access.defaultMode;
+      return getFirstAccessMode(access);
     }
 
     return fallbackMode;
   }, [access, fallbackMode, requestedMode]);
+  const dentistOrders = useMemo(
+    () =>
+      selectedMode === 'dentist'
+        ? orders.map((order) => getEffectiveDentistOrder(order, workflowFormsByOrder[order.id]))
+        : orders,
+    [orders, selectedMode, workflowFormsByOrder]
+  );
 
   async function fetchOperationalWorkspace(activeMode: AccessMode) {
     if (activeMode === 'partner') {
@@ -868,12 +929,22 @@ export function BiteplanerHub() {
             (await fetchTimeline(order.id, token)).events
           ] as const)
         ),
-        activeMode === 'user'
+        activeMode === 'user' || activeMode === 'dentist'
           ? Promise.all(
-              targetOrders.map(async (order) => [
-                order.id,
-                (await fetchWorkflowForms(order.id, token)).forms
-              ] as const)
+              targetOrders
+                .filter((order) => activeMode === 'user' || order.status === 'in_progress')
+                .map(async (order) => [
+                  order.id,
+                  await fetchWorkflowForms(order.id, token)
+                    .then((response) => (Array.isArray(response.forms) ? response.forms : []))
+                    .catch((error) => {
+                      if (activeMode === 'dentist') {
+                        return [];
+                      }
+
+                      throw error;
+                    })
+                ] as const)
             )
           : Promise.resolve([] as Array<readonly [string, DemoWorkflowForm[]]>),
       ]);
@@ -946,7 +1017,7 @@ export function BiteplanerHub() {
         setAccess(response);
 
         if (!requestedMode) {
-          setSearchParams({ mode: response.defaultMode });
+          setSearchParams({ mode: getFirstAccessMode(response) });
         }
       } catch {
         if (active) {
@@ -1583,17 +1654,30 @@ export function BiteplanerHub() {
     {
       key: 'actions',
       label: 'Visualizar',
-      render: (row) => (
-        <S.IconActionButton
-          type="button"
-          aria-label={`Visualizar link ${row.intendedCustomerName ?? row.token}`}
-          onClick={() => {
-            setSelectedInviteLink(row);
-          }}
-        >
-          <Eye size={16} aria-hidden />
-        </S.IconActionButton>
-      )
+      render: (row) => {
+        const isActive = row.status === 'active';
+        const actionTarget = row.intendedCustomerName ?? row.token;
+
+        return (
+          <S.IconActionButton
+            type="button"
+            aria-label={
+              isActive
+                ? `Visualizar link ${actionTarget}`
+                : `Visualizar link indisponível ${actionTarget}`
+            }
+            disabled={!isActive}
+            title={isActive ? 'Visualizar link individual' : 'Disponível apenas para links ativos'}
+            onClick={() => {
+              if (isActive) {
+                setSelectedInviteLink(row);
+              }
+            }}
+          >
+            <Eye size={16} aria-hidden />
+          </S.IconActionButton>
+        );
+      }
     }
   ];
 
@@ -1619,7 +1703,12 @@ export function BiteplanerHub() {
   );
 
   const partnerOrderColumns: DataTableColumn<(typeof partnerOrderRows)[number]>[] = [
-    { key: 'order', label: 'Pedido', render: (row) => (row.order ? getOrderLabel(row.order) : 'Pedido sincronizando') },
+    {
+      key: 'order',
+      label: 'Pedido',
+      width: '9%',
+      render: (row) => (row.order ? getOrderLabel(row.order) : 'Pedido sincronizando')
+    },
     { key: 'customer', label: 'Cliente', render: (row) => row.customerName },
     {
       key: 'status',
@@ -1749,9 +1838,9 @@ export function BiteplanerHub() {
           icon: <XCircle size={15} aria-hidden />,
           tone: 'danger',
           confirmTitle: 'Confirmar inaptidão',
-          confirmDescription: `Deseja encerrar a ordem ${orderLabel} como inapta após o tratamento prévio?`,
+          confirmDescription: `Deseja registrar a ordem ${orderLabel} como inapta neste momento e liberar nova consulta para reavaliação?`,
           actionKey: `${order.id}:ineligible`,
-          successMessage: `${orderLabel} foi encerrado como inapto na demo.`,
+          successMessage: `${orderLabel} foi marcado como inapto para reavaliação na demo.`,
           execute: () => registerClinicalDecision(order.id, 'ineligible', token)
         }
       ];
@@ -1918,8 +2007,8 @@ export function BiteplanerHub() {
 
   const dentistStatusOptions = useMemo(
     () =>
-      Array.from(new Set(orders.map((order) => order.status))).map((status) => {
-        const matchingOrder = orders.find((order) => order.status === status);
+      Array.from(new Set(dentistOrders.map((order) => order.status))).map((status) => {
+        const matchingOrder = dentistOrders.find((order) => order.status === status);
         const presentation = matchingOrder
           ? getOrderStatusPresentation(matchingOrder)
           : { label: status, color: '#737373' };
@@ -1929,19 +2018,19 @@ export function BiteplanerHub() {
           label: presentation.label,
         };
       }),
-    [orders]
+    [dentistOrders]
   );
 
   const filteredDentistOrders = useMemo(
     () => {
       const visibleOrders =
         dentistStatusFilters.length === 0
-          ? orders
-          : orders.filter((order) => dentistStatusFilters.includes(order.status));
+          ? dentistOrders
+          : dentistOrders.filter((order) => dentistStatusFilters.includes(order.status));
 
       return sortOrdersByLatestFirst(visibleOrders);
     },
-    [dentistStatusFilters, orders]
+    [dentistOrders, dentistStatusFilters]
   );
 
   const labStatusOptions = useMemo(
@@ -1973,7 +2062,7 @@ export function BiteplanerHub() {
   );
 
   const dentistColumns: DataTableColumn<DemoOrderSummary>[] = [
-    { key: 'order', label: 'Pedido', width: '12%', render: (row) => getOrderLabel(row) },
+    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row) },
     {
       key: 'customer',
       label: 'Paciente',
@@ -2067,7 +2156,7 @@ export function BiteplanerHub() {
   ];
 
   const labColumns: DataTableColumn<DemoOrderSummary>[] = [
-    { key: 'order', label: 'Pedido', width: '12%', render: (row) => getOrderLabel(row) },
+    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row) },
     {
       key: 'customer',
       label: 'Paciente',
@@ -2444,7 +2533,13 @@ export function BiteplanerHub() {
                 ) : null}
               </S.AthleteOrderHighlight>
             ) : (
-              <S.EmptyState>Nenhuma jornada do atleta apareceu neste momento da demo.</S.EmptyState>
+              <S.EmptyState data-testid="athlete-onboarding-empty-state">
+                <p>Você ainda não iniciou sua jornada Biteplaner.</p>
+                <S.PrimaryLink to="/painel/biteplaner/onboarding">
+                  Iniciar onboarding
+                  <ChevronRight size={16} aria-hidden />
+                </S.PrimaryLink>
+              </S.EmptyState>
             )}
           </S.AthleteCasePanel>
 
@@ -2486,7 +2581,6 @@ export function BiteplanerHub() {
                   <S.StatValue>{stat.value}</S.StatValue>
                   <S.StatHint>{stat.hint}</S.StatHint>
                 </S.PartnerStatContent>
-                <ChevronRight size={22} aria-hidden />
               </S.PartnerStatCard>
             ))}
           </S.PartnerStatsGrid>

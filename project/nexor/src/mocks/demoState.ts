@@ -635,7 +635,7 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
   {
     persona: 'athleteIneligible',
     orderId: 'BP-DEMO-010',
-    fullName: 'Cliente Encerrado Inapto',
+    fullName: 'Cliente Inapto para Reavaliação',
     email: 'cliente.inapto@nexor.dev'
   },
   {
@@ -1642,9 +1642,9 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-010',
-      status: 'ineligible_refund',
-      statusLabel: 'Inapto - Encerrado',
-      stage: 'closed_ineligible',
+      status: 'ineligible_reassessment',
+      statusLabel: 'Inaptidão',
+      stage: 'awaiting_initial_consultation',
       created_at: '2026-05-04T09:00:00.000Z',
       customer_profile_id: 'demo-profile-marina',
       user_profile_id: 'demo-customer-marina',
@@ -1663,7 +1663,7 @@ const seedState = (): DemoState => ({
       dentistId: 'dentist-demo-001',
       labId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
-      nextActions: [],
+      nextActions: ['schedule-initial-consultation'],
       productionRequestDraft: null,
       preLabChecklistDraft: null,
       flags: {
@@ -2100,6 +2100,41 @@ const seedState = (): DemoState => ({
           averagePainLastWeek: 6,
           biteplanerDiscoverySource: 'coach',
           expectedUseBenefit: ['performance', 'jaw_control']
+        }
+      }
+    },
+    {
+      id: 'BP-WF-010-INTAKE',
+      orderId: 'BP-DEMO-010',
+      templateKey: 'customer_pre_consultation_intake',
+      stepKey: 'initial_consultation_preparation',
+      status: 'submitted',
+      roleState: { customer: 'locked', dentist: 'submitted' },
+      customerSubmittedAt: '2026-05-04T10:10:00.000Z',
+      dentistReviewStartedAt: '2026-05-04T11:00:00.000Z',
+      dentistSubmittedAt: '2026-05-04T11:20:00.000Z',
+      canViewPayload: true,
+      summary: {
+        scoreAverage: null,
+        hasComment: true,
+        responseCount: 1,
+        submittedAt: '2026-05-04T11:20:00.000Z'
+      },
+      releasedAt: '2026-05-04T10:05:00.000Z',
+      submittedAt: '2026-05-04T11:20:00.000Z',
+      payload: {
+        customer: {
+          fullName: 'Marina Lutadora',
+          phone: '11999990006',
+          sportRoutine: 'Boxe quatro vezes por semana',
+          hasRelevantMedicalDiagnosis: 'no'
+        },
+        dentist: {
+          biteplannerEligible: 'no',
+          ineligibilityDescriptionForCustomer:
+            'Foram identificados sinais clínicos que recomendam nova avaliação antes de seguir com o Biteplaner.',
+          consultationDate: '2026-05-04',
+          initialEvaluationSummary: 'Cliente orientada a retornar para reavaliação clínica antes da compra.'
         }
       }
     },
@@ -4042,6 +4077,10 @@ export function removePartnerInviteLink(inviteLinkId: string, context?: RequestC
     throw new DemoStateError(404, 'partner_link_not_found', 'Partner invite link was not found.');
   }
 
+  if (inviteLink.status !== 'active') {
+    throw new DemoStateError(409, 'partner_link_not_active', 'Only active partner invite links can be removed.');
+  }
+
   inviteLink.status = 'inactive';
 
   return {
@@ -4342,6 +4381,26 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
 
         const dentistSource = isRecord(action.payload.dentist) ? action.payload.dentist : action.payload;
         const sanitizedDentistPayload = sanitizeWorkflowPayload(dentistSource);
+
+        if (sanitizedDentistPayload.biteplannerEligible !== 'yes' && sanitizedDentistPayload.biteplannerEligible !== 'no') {
+          throw new DemoStateError(
+            422,
+            'missing_biteplanner_eligibility',
+            'Informe se o cliente está apto para uso do Biteplaner.'
+          );
+        }
+
+        if (
+          sanitizedDentistPayload.biteplannerEligible === 'no' &&
+          !String(sanitizedDentistPayload.ineligibilityDescriptionForCustomer ?? '').trim()
+        ) {
+          throw new DemoStateError(
+            422,
+            'missing_ineligibility_description',
+            'Informe a descrição da inaptidão que será exibida para o cliente.'
+          );
+        }
+
         const nextPayload = {
           ...existingPayload,
           customer: existingCustomerPayload,
@@ -4371,6 +4430,36 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
               : 'Primeiro complemento do dentista na demo.',
           createdAt: nextSubmittedAt
         });
+
+        const order = getOrderOrThrow(orderId);
+        const canApplyDentistEligibilityDecision = [
+          'appointment_confirmed',
+          'awaiting_payment',
+          'awaiting_dentist_forms'
+        ].includes(order.status);
+
+        if (canApplyDentistEligibilityDecision) {
+          order.flags.eligible = sanitizedDentistPayload.biteplannerEligible === 'yes';
+
+          if (sanitizedDentistPayload.biteplannerEligible === 'yes' && order.status === 'appointment_confirmed') {
+            updateOrderStatus(
+              orderId,
+              'awaiting_payment',
+              'Aguardando pagamento',
+              'awaiting_payment',
+              'Dentista confirmou aptidão no complemento de pré-consulta.'
+            );
+          } else if (sanitizedDentistPayload.biteplannerEligible === 'no') {
+            order.nextActions = ['schedule-initial-consultation'];
+            updateOrderStatus(
+              orderId,
+              'ineligible_reassessment',
+              'Inaptidão',
+              'awaiting_initial_consultation',
+              'Dentista registrou inaptidão no complemento de pré-consulta.'
+            );
+          }
+        }
 
         return clone(workflowForm);
       }
@@ -4495,7 +4584,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       );
     }
 
-    if (order.status !== 'awaiting_scheduling') {
+    if (order.status !== 'awaiting_scheduling' && order.status !== 'ineligible_reassessment') {
       throw new DemoStateError(
         409,
         'initial_consultation_not_schedulable',
@@ -4508,6 +4597,23 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     order.dentistId = dentistId;
     order.visibleTo = Array.from(new Set([...order.visibleTo, 'dentist']));
     order.nextActions = ['accept-initial-consultation'];
+
+    if (order.status === 'ineligible_reassessment') {
+      order.flags.eligible = null;
+      const intakeForm = state.workflowForms.find(
+        (form) => form.orderId === orderId && form.templateKey === 'customer_pre_consultation_intake'
+      );
+      const currentPayload = isRecord(intakeForm?.payload) ? intakeForm.payload : {};
+      const customerPayload = isRecord(currentPayload.customer) ? currentPayload.customer : {};
+
+      if (intakeForm) {
+        intakeForm.status = 'submitted';
+        intakeForm.roleState = { customer: 'locked', dentist: 'pending' };
+        intakeForm.dentistReviewStartedAt = null;
+        intakeForm.dentistSubmittedAt = null;
+        intakeForm.payload = { customer: clone(customerPayload) };
+      }
+    }
 
     updateOrderStatus(
       orderId,
@@ -4774,11 +4880,12 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
 
     if (action.decision === 'ineligible') {
       order.flags.eligible = false;
+      order.nextActions = ['schedule-initial-consultation'];
       updateOrderStatus(
         orderId,
-        'ineligible_refund',
-        'Inapto - Encerrado',
-        'closed_ineligible',
+        'ineligible_reassessment',
+        'Inaptidão',
+        'awaiting_initial_consultation',
         action.reason ?? 'Dentista registrou inaptidão na demo.'
       );
       return sanitizeOrder(order, resolveActiveDemoPersona(context));

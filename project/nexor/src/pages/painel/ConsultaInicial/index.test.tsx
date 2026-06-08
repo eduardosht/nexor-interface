@@ -81,6 +81,25 @@ function scheduledOrder() {
   };
 }
 
+function sharedIntake(requiresAdaptedClinic: 'yes' | 'no' = 'no') {
+  return {
+    id: 'workflow-form-1',
+    orderId: 'BP-DEMO-002',
+    templateKey: 'customer_pre_consultation_intake',
+    stepKey: 'clinical_prerequisite',
+    status: 'submitted',
+    canViewPayload: true,
+    summary: null,
+    releasedAt: '2026-05-01T10:00:00.000Z',
+    submittedAt: '2026-05-01T10:00:00.000Z',
+    payload: {
+      customer: {
+        requiresAdaptedClinic,
+      },
+    },
+  };
+}
+
 describe('ConsultaInicial', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
@@ -89,7 +108,9 @@ describe('ConsultaInicial', () => {
   });
 
   it('shows the initial consultation order with a clickable map of nearby clinics', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [scheduledOrder()] });
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [scheduledOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('no')] });
 
     renderPage();
 
@@ -121,11 +142,46 @@ describe('ConsultaInicial', () => {
     expect(screen.getByText(/confirme quando a consulta estiver agendada/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /consulta agendada/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /selecionar consultório/i })).not.toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+  });
+
+  it('locks clinic selection to adapted clinics when the customer requested adapted care', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [scheduledOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('yes')] });
+
+    renderPage();
+
+    expect(await screen.findByText(/necessidade informada: clínica adaptada/i)).toBeInTheDocument();
+    const adaptedFilter = screen.getByRole('checkbox', { name: /somente clínicas adaptadas/i });
+    expect(adaptedFilter).toBeChecked();
+    expect(adaptedFilter).toBeDisabled();
+    expect(screen.getAllByText(/adaptada/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/não adaptada/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/instituto paulistano de odontologia esportiva/i)).not.toBeInTheDocument();
+  });
+
+  it('limits clinic cards to four items and paginates the remaining clinics', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [scheduledOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('no')] });
+
+    renderPage();
+
+    expect(await screen.findByRole('navigation', { name: /paginação de clínicas/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /clínica:/i })).toHaveLength(4);
+    expect(screen.getByText(/mostrando 1 a 4 de 5 clínicas/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /próxima página de clínicas/i }));
+
+    expect(screen.getAllByRole('button', { name: /clínica:/i })).toHaveLength(1);
+    expect(screen.getByText(/mostrando 5 a 5 de 5 clínicas/i)).toBeInTheDocument();
   });
 
   it('lets the athlete confirm a scheduled consultation and link the order to the licensed dentist', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [scheduledOrder()] });
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [scheduledOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('no')] });
     mockApiPost.mockResolvedValueOnce({
       ...scheduledOrder(),
         status: 'awaiting_dentist_acceptance',
@@ -171,20 +227,22 @@ describe('ConsultaInicial', () => {
     expect(await screen.findByText(/aguardando o dentista aceitar a ordem via sistema/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /consulta agendada/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /aguardando aceite/i })).not.toBeInTheDocument();
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
   });
 
   it('keeps only the informed consultation message after the athlete already confirmed scheduling', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          ...scheduledOrder(),
-          status: 'awaiting_dentist_acceptance',
-          statusLabel: 'Aguardando aceite do dentista',
-          stage: 'dentist_acceptance_pending',
-        },
-      ],
-    });
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            ...scheduledOrder(),
+            status: 'awaiting_dentist_acceptance',
+            statusLabel: 'Aguardando aceite do dentista',
+            stage: 'dentist_acceptance_pending',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [sharedIntake('no')] });
 
     renderPage();
 
@@ -195,7 +253,9 @@ describe('ConsultaInicial', () => {
   });
 
   it('offers ready WhatsApp and e-mail messages to indicate dentist licensing without unlocking the current order', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [scheduledOrder()] });
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [scheduledOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('no')] });
 
     renderPage();
 

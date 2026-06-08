@@ -18,11 +18,17 @@ import {
   type SharedIntakeFieldDefinition,
   type SharedIntakeSectionDefinition,
 } from '../components/sharedIntakeDefinition';
+import {
+  getWorkflowFormPayloadSection,
+  hasWorkflowPayloadValue,
+  isAffirmativeWorkflowValue,
+} from '../components/workflowFormFieldDictionary';
 import * as S from './DentalAnamnesisRecord.styles';
 
 type DentalAnamnesisRecordProps = {
   order: DemoOrderSummary;
   intakeForm?: DemoWorkflowForm;
+  onboardingForm?: DemoWorkflowForm;
   draft: ProductionRequestDraft;
   onSummaryChange: (value: string) => void;
 };
@@ -84,21 +90,6 @@ const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
   imaginedUseBarriersOther: 'imaginedUseBarriers',
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getPayloadSection(form: DemoWorkflowForm | undefined, key: 'customer' | 'dentist') {
-  const payload = isRecord(form?.payload) ? form.payload : {};
-  const section = payload[key];
-
-  if (key === 'customer') {
-    return isRecord(section) ? { ...payload, ...section } : payload;
-  }
-
-  return isRecord(section) ? section : {};
-}
-
 function formatValue(value: unknown) {
   if (Array.isArray(value)) {
     return value.length > 0 ? value.join(', ') : missingValue;
@@ -120,11 +111,7 @@ function formatValue(value: unknown) {
 }
 
 function hasFilledValue(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.length > 0;
-  }
-
-  return value !== null && value !== undefined && value !== '';
+  return hasWorkflowPayloadValue(value);
 }
 
 function payloadHasCheckboxValue(payload: Record<string, unknown>, fieldKey: string, value: string) {
@@ -183,6 +170,40 @@ function FieldItem({ label, value, important = false }: { label: string; value: 
   );
 }
 
+function calculateAgeYears(birthDate: unknown) {
+  if (typeof birthDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return undefined;
+  }
+
+  const birth = new Date(`${birthDate}T00:00:00`);
+
+  if (Number.isNaN(birth.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDelta = today.getMonth() - birth.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : undefined;
+}
+
+function buildCustomerProfileFallback(onboardingPayload: Record<string, unknown>) {
+  return {
+    ...onboardingPayload,
+    ...(hasFilledValue(onboardingPayload.heightM) && !hasFilledValue(onboardingPayload.heightMeters)
+      ? { heightMeters: onboardingPayload.heightM }
+      : {}),
+    ...(hasFilledValue(onboardingPayload.birthDate) && !hasFilledValue(onboardingPayload.ageYears)
+      ? { ageYears: calculateAgeYears(onboardingPayload.birthDate) }
+      : {}),
+  };
+}
+
 function getOptionLabel(field: SharedIntakeFieldDefinition, value: unknown) {
   const option = field.options?.find((candidate) => String(candidate.value) === String(value));
   return option?.label ?? formatValue(value);
@@ -191,6 +212,11 @@ function getOptionLabel(field: SharedIntakeFieldDefinition, value: unknown) {
 function formatFieldValue(field: SharedIntakeFieldDefinition, value: unknown) {
   if (Array.isArray(value)) {
     return value.length > 0 ? value.map((item) => getOptionLabel(field, item)).join(', ') : missingValue;
+  }
+
+  if (field.type === 'checkbox-group' && typeof value === 'string' && value.includes('|')) {
+    const values = value.split('|').map((item) => item.trim()).filter(Boolean);
+    return values.length > 0 ? values.map((item) => getOptionLabel(field, item)).join(', ') : missingValue;
   }
 
   if (field.type === 'date') {
@@ -221,11 +247,11 @@ function isFieldVisibleForPayload(
   const parentKey = CLINICAL_DETAIL_PARENT_BY_KEY[field.key];
 
   if (parentKey) {
-    return payload[parentKey] === 'yes';
+    return isAffirmativeWorkflowValue(payload[parentKey]) || hasFilledValue(payload[field.key]);
   }
 
   if (CURRENT_PAIN_DETAIL_KEYS.has(field.key)) {
-    return customer.hasCurrentPain === 'yes';
+    return isAffirmativeWorkflowValue(customer.hasCurrentPain) || hasFilledValue(customer[field.key]);
   }
 
   const checkboxOtherParentKey = CHECKBOX_OTHER_DETAIL_BY_KEY[field.key];
@@ -302,17 +328,24 @@ function buildPayloadSection(
   };
 }
 
-export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChange }: DentalAnamnesisRecordProps) {
-  const payloadCustomer = getPayloadSection(intakeForm, 'customer');
-  const customer: Record<string, unknown> = {
+export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft, onSummaryChange }: DentalAnamnesisRecordProps) {
+  const payloadCustomer = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'customer');
+  const onboardingCustomer = buildCustomerProfileFallback(
+    getWorkflowFormPayloadSection(onboardingForm?.payload, 'customer_new_user_onboarding', 'root')
+  );
+  const baseCustomer: Record<string, unknown> = {
+    ...onboardingCustomer,
     ...payloadCustomer,
-    ...(!hasFilledValue(payloadCustomer.fullName) && hasFilledValue(order.customer?.full_name)
+  };
+  const customer: Record<string, unknown> = {
+    ...baseCustomer,
+    ...(!hasFilledValue(baseCustomer.fullName) && hasFilledValue(order.customer?.full_name)
       ? { fullName: order.customer?.full_name }
       : {}),
-    ...(!hasFilledValue(payloadCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
-    ...(!hasFilledValue(payloadCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
+    ...(!hasFilledValue(baseCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
+    ...(!hasFilledValue(baseCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
   };
-  const dentist = getPayloadSection(intakeForm, 'dentist');
+  const dentist = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'dentist');
   const patientName = formatValue(customer.fullName) !== missingValue
     ? formatValue(customer.fullName)
     : order.customer?.full_name ?? 'Paciente não identificado';
@@ -338,9 +371,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, draft, onSummaryChang
       const extraItems =
         section.key === 'initial-data'
           ? [
-              !hasFilledValue(customer.fullName) && hasFilledValue(order.customer?.full_name) ? (
-                <FieldItem key="order-full-name" label="Nome no pedido" value={order.customer?.full_name} important />
-              ) : null,
+              <FieldItem key="patient-full-name" label="Nome completo do paciente" value={patientName} important />,
               !hasFilledValue(customer.phone) && hasFilledValue(order.customer?.phone) ? (
                 <FieldItem key="order-phone" label="Telefone" value={order.customer?.phone} />
               ) : null,

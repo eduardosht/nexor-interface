@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
+import { getWorkflowFormDictionary } from '../components/workflowFormFieldDictionary';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -87,9 +88,9 @@ class MockPdfWorker {
 function createOrder(overrides: Record<string, unknown> = {}) {
   return {
     id: 'BP-DEMO-004',
-    status: 'awaiting_dentist_forms',
-    statusLabel: 'Aguardando preenchimento dentista',
-    stage: 'awaiting_dentist_forms',
+    status: 'payment_confirmed',
+    statusLabel: 'Pagamento confirmado',
+    stage: 'dentist_production',
     created_at: '2026-05-05T10:00:00.000Z',
     customer: { full_name: 'Carlos Demo', email: 'carlos@nexor.dev', phone: null },
     practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
@@ -153,6 +154,46 @@ function reviewedSharedIntake(overrides: Record<string, unknown> = {}) {
   });
 }
 
+function customerOnboarding(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'BP-WF-004-ONBOARDING',
+    orderId: 'BP-DEMO-004',
+    templateKey: 'customer_new_user_onboarding',
+    stepKey: 'customer_onboarding',
+    status: 'submitted',
+    roleState: { customer: 'submitted', dentist: 'locked' },
+    customerSubmittedAt: '2026-05-01T10:20:00.000Z',
+    dentistReviewStartedAt: null,
+    dentistSubmittedAt: null,
+    canViewPayload: true,
+    summary: { scoreAverage: null, hasComment: false, responseCount: 1, submittedAt: '2026-05-01T10:20:00.000Z' },
+    releasedAt: '2026-05-01T10:05:00.000Z',
+    submittedAt: '2026-05-01T10:20:00.000Z',
+    payload: {
+      fullName: 'Carlos Demo',
+      phone: '(11) 99999-9999',
+      bodyMassKg: 82.4,
+      heightM: 1.78,
+      currentSports: ['strength_training'],
+      birthDate: '1992-04-10',
+    },
+    ...overrides,
+  };
+}
+
+function getExpectedAgeYears(birthDateValue: string) {
+  const birthDate = new Date(`${birthDateValue}T00:00:00`);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDelta = today.getMonth() - birthDate.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+
+  return String(age);
+}
+
 function licensedLabsResponse(overrides: Array<Record<string, unknown>> = []) {
   const [first = {}] = overrides;
 
@@ -170,7 +211,7 @@ function licensedLabsResponse(overrides: Array<Record<string, unknown>> = []) {
         serviceHours: 'Segunda a Sexta - 06h a 19h',
         city: 'São Paulo',
         state: 'SP',
-        coordinates: { lat: -23.5383, lng: -46.6503 },
+        coordinates: { lat: -23.533456, lng: -46.6594115 },
         ...first,
       },
     ],
@@ -184,20 +225,22 @@ function configureApiGet({
   licensedLabs = licensedLabsResponse(),
 }: {
   order?: ReturnType<typeof createOrder>;
-  forms?: Array<ReturnType<typeof sharedIntake>>;
+  forms?: Array<Record<string, unknown>>;
   orderForms?: unknown[];
   licensedLabs?: ReturnType<typeof licensedLabsResponse>;
 } = {}) {
+  const configuredOrderId = String(order.id);
+
   mockApiGet.mockImplementation((url: string) => {
     if (url === '/v1/orders?as=dentist') {
       return Promise.resolve({ orders: [order] });
     }
 
-    if (url === '/v1/orders/BP-DEMO-004/workflow-forms') {
+    if (url === `/v1/orders/${configuredOrderId}/workflow-forms`) {
       return Promise.resolve({ forms });
     }
 
-    if (url === '/v1/orders/BP-DEMO-004/forms') {
+    if (url === `/v1/orders/${configuredOrderId}/forms`) {
       return Promise.resolve({ forms: orderForms });
     }
 
@@ -272,6 +315,22 @@ async function clickWizardNextButton() {
   fireEvent.click(getWizardNextButton());
 }
 
+async function ensureAnamnesisSummaryStep() {
+  if (screen.queryByTestId('dental-anamnesis-record')) {
+    return;
+  }
+
+  try {
+    await screen.findByTestId('dental-anamnesis-record', {}, { timeout: 250 });
+    return;
+  } catch {
+    // The initial evaluation is still pending, so the test needs to advance from step 1.
+  }
+
+  await clickWizardNextButton();
+  await screen.findByTestId('dental-anamnesis-record');
+}
+
 function getPainlessOpeningInput() {
   return screen.getAllByLabelText(/abertura m/i)[0];
 }
@@ -285,6 +344,8 @@ function fillRequiredDentistComplement() {
     throw new Error('Consultation date input was not found.');
   }
 
+  const eligibilityGroup = screen.getByRole('group', { name: /cliente est.*apto para uso do biteplaner/i });
+  fireEvent.click(within(eligibilityGroup).getByRole('radio', { name: /sim/i }));
   fireEvent.change(consultationDateInput, { target: { value: '2026-05-12' } });
   fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
   fireEvent.click(
@@ -340,8 +401,8 @@ function getGeneratedClass(element: Element) {
 }
 
 async function fillProductionRequestUntilLabSelection() {
-  await screen.findByRole('heading', { name: /avalia/i });
-  await clickWizardNextButton();
+  await screen.findByTestId('athlete-order-card');
+  await ensureAnamnesisSummaryStep();
 
   fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
     target: { value: 'Resumo clínico completo.' },
@@ -539,9 +600,9 @@ describe('ProducaoDentista', () => {
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
     expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
-    expect(screen.getByText(/etapa 1 de 4/i)).toBeInTheDocument();
-    expect(await screen.findByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
-    expect(await screen.findByText(/seção 1 de 3/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
     expect(screen.queryByText(/^anexos obrigatórios$/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /salvar rascunho/i })).not.toBeInTheDocument();
@@ -606,6 +667,189 @@ describe('ProducaoDentista', () => {
     expect(screen.getByDisplayValue('Observações salvas para o laboratório.')).toBeInTheDocument();
     expect(screen.getByText(/scan-salvo\.stl/i)).toBeInTheDocument();
     expect(screen.getByText(/prescricao-salva\.pdf/i)).toBeInTheDocument();
+  });
+
+  it('opens directly on the anamnesis summary when the anamnesis was already saved', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder({ productionRequestDraft: null })] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/workflow-forms') {
+        return Promise.resolve({ forms: [reviewedSharedIntake()] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'form-production-1',
+              order_id: 'BP-DEMO-004',
+              type: 'production_request',
+              version: 1,
+              created_at: '2026-06-03T13:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-004/forms/form-production-1') {
+        return Promise.resolve({
+          id: 'form-production-1',
+          order_id: 'BP-DEMO-004',
+          type: 'production_request',
+          version: 1,
+          created_at: '2026-06-03T13:00:00.000Z',
+          payload: {
+            anamnesisSummary: 'Resumo clínico salvo.',
+            anamnesisDownloaded: true,
+            productionRequestSummary: '',
+            labNotes: '',
+            scan3dFileName: '',
+            prescriptionFileName: '',
+            lgpdConfirmed: false,
+            selectedLabId: '',
+          },
+        });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Resumo clínico salvo.')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
+  });
+
+  it('opens directly on the anamnesis summary when the dentist already submitted the initial evaluation', async () => {
+    configureApiGet({
+      order: createOrder({
+        id: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+        status: 'awaiting_payment',
+        statusLabel: 'Aguardando pagamento',
+        stage: 'awaiting_payment',
+        productionRequestDraft: null,
+      }),
+      forms: [
+        reviewedSharedIntake({
+          orderId: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+        }),
+      ],
+    });
+
+    renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /salvar complemento do dentista/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aguardando pagamento do cliente/i })).toBeDisabled();
+  });
+
+  it('allows the dentist to continue production after payment releases dentist forms', async () => {
+    configureApiGet({
+      order: createOrder({
+        id: 'BP-DEMO-004',
+        status: 'awaiting_dentist_forms',
+        statusLabel: 'Aguardando envio ao laboratório',
+        stage: 'awaiting_dentist_forms',
+        productionRequestDraft: null,
+      }),
+      forms: [reviewedSharedIntake()],
+    });
+
+    renderPage('/painel/dentista/producao/BP-DEMO-004');
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(getWizardNextButton()).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the initial evaluation step again when the submitted complement belongs to a previous dentist', async () => {
+    configureApiGet({
+      order: createOrder({
+        id: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+        status: 'in_progress',
+        statusLabel: 'Em andamento',
+        stage: 'consultation_linked',
+        dentist: { id: 'dentist-new', full_name: 'Dra Maria Solicitante', email: 'dentista@gmail.com' },
+      }),
+      forms: [
+        reviewedSharedIntake({
+          orderId: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+          dentistId: 'dentist-previous',
+          payload: {
+            customer: {
+              fullName: 'Carlos Demo',
+              hasRelevantMedicalDiagnosis: 'yes',
+              relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
+              averagePainLastWeek: 6,
+              sportRoutine: 'Musculação cinco vezes por semana.',
+            },
+            dentist: {
+              biteplannerEligible: 'no',
+              painlessMaxOpeningMm: 42,
+              initialEvaluationSummary: 'Cliente inapto na consulta anterior.',
+              dentistProfessionalContact: 'dentista2@gmail.com',
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
+
+    expect(await screen.findByText(/etapa 1 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Dra Maria Solicitante')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Cliente inapto na consulta anterior.')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
+  });
+
+  it('renders only the active clinical form when a previous dentist intake is superseded', async () => {
+    configureApiGet({
+      order: createOrder({
+        id: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+        status: 'in_progress',
+        statusLabel: 'Em andamento',
+        stage: 'consultation_linked',
+        dentist: { id: 'dentist-new', full_name: 'Dra Maria Solicitante', email: 'dentista@gmail.com' },
+      }),
+      forms: [
+        reviewedSharedIntake({
+          id: 'BP-WF-PREVIOUS-INTAKE',
+          orderId: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+          status: 'superseded',
+          dentistId: 'dentist-previous',
+          payload: {
+            customer: { fullName: 'Carlos Demo' },
+            dentist: {
+              biteplannerEligible: 'no',
+              dentistProfessionalContact: 'dentista2@gmail.com',
+            },
+          },
+        }),
+        sharedIntake({
+          id: 'BP-WF-CURRENT-INTAKE',
+          orderId: 'c3dfd202-f15a-4c53-83f8-b82f6948c8be',
+          status: 'submitted',
+          roleState: { customer: 'submitted', dentist: 'pending' },
+          dentistId: 'dentist-new',
+          payload: { customer: { fullName: 'Carlos Demo' } },
+        }),
+      ],
+    });
+
+    renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
+
+    expect(await screen.findByText(/etapa 1 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
+    expect(screen.getAllByText(/formulário clínico biteplaner/i)).toHaveLength(1);
+    expect(screen.queryByDisplayValue('dentista2@gmail.com')).not.toBeInTheDocument();
   });
 
   it('reuses fresh React Query cache when the production page remounts', async () => {
@@ -705,10 +949,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
-
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getByText(/clínica esportiva nexor/i)).toBeInTheDocument();
 
@@ -722,8 +964,54 @@ describe('ProducaoDentista', () => {
     expect(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i)).toBeInTheDocument();
   });
 
+  it('stops the dentist at the anamnesis summary after the initial evaluation is completed', async () => {
+    configureApiGet({
+      order: createOrder({
+        status: 'awaiting_payment',
+        statusLabel: 'Aguardando pagamento',
+        stage: 'awaiting_payment',
+      }),
+    });
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+    await screen.findByText(/etapa 2 de 4/i);
+
+    fireEvent.change(await screen.findByLabelText(/resumo da avalia.*inicial \/ anamnese/i), {
+      target: { value: 'Resumo clinico completo.' },
+    });
+
+    expect(screen.getByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aguardando pagamento do cliente/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^pr.*ximo$/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^solicita.*produ/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/o cliente precisa concluir o pagamento/i)).toBeInTheDocument();
+  });
+
+  it('warns when the shared clinical payload is not available yet instead of showing an empty anamnesis record', async () => {
+    configureApiGet({
+      forms: [
+        reviewedSharedIntake({
+          payload: undefined,
+          canViewPayload: false,
+          summary: { scoreAverage: null, hasComment: false, responseCount: 0, submittedAt: null },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+
+    expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/dados da anamnese ainda n.*dispon/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/atualize a p.*gina/i);
+    expect(screen.queryByText(/n.*informado/i)).not.toBeInTheDocument();
+  });
+
   it('keeps the clinical form progress inside the form card instead of the production shell', async () => {
-    configureApiGet();
+    configureApiGet({ forms: [sharedIntake()] });
 
     renderPage();
 
@@ -737,15 +1025,8 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
     expect(stylesheet).toContain('grid-auto-flow:column');
 
-    await clickWizardNextButton();
-    const updatedStylesheet = Array.from(document.head.querySelectorAll('style'))
-      .map((style) => style.textContent ?? '')
-      .join('\n');
-    const anamnesisSideNavClass = getGeneratedClass(
-      await screen.findByRole('navigation', { name: /navegacao da ficha de anamnese/i })
-    );
-
-    expect(updatedStylesheet).toMatch(new RegExp(`@media \\(max-width:\\s?1440px\\).*\\.${anamnesisSideNavClass}\\{[^}]*display:none`, 's'));
+    expect(screen.getByTestId('workflow-forms-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
   });
 
   it('starts the fixed dental anamnesis card area at the progress section', async () => {
@@ -753,7 +1034,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await clickWizardNextButton();
+    await ensureAnamnesisSummaryStep();
     const stickySummary = await screen.findByTestId('dental-anamnesis-sticky-summary');
     const header = stickySummary.closest('header');
 
@@ -777,7 +1058,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await clickWizardNextButton();
+    await ensureAnamnesisSummaryStep();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getByText(/ficha de anamnese odontológica/i)).toBeInTheDocument();
     expect(screen.getAllByText(/dados iniciais/i).length).toBeGreaterThan(0);
@@ -793,8 +1074,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
@@ -816,8 +1097,8 @@ describe('ProducaoDentista', () => {
     configureApiGet();
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
 
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
@@ -860,7 +1141,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
+    await screen.findByTestId('athlete-order-card');
 
     expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^salvar rascunho$/i })).not.toBeInTheDocument();
@@ -872,7 +1153,7 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByLabelText(/resumo da avaliação inicial \/ anamnese/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
-    expect(screen.getByTestId('workflow-forms-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
   });
 
   it('advances after saving the dentist complement when the response only includes the dentist payload', async () => {
@@ -880,7 +1161,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
+    await screen.findByTestId('athlete-order-card');
     await goToDentistComplement();
     mockApiPost.mockResolvedValueOnce(
       sharedIntake({
@@ -893,6 +1174,7 @@ describe('ProducaoDentista', () => {
             sportRoutine: 'Musculação cinco vezes por semana.',
           },
           dentist: {
+            biteplannerEligible: 'yes',
             consultationDate: '2026-05-12',
             painlessMaxOpeningMm: 42,
             initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
@@ -920,8 +1202,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
 
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
@@ -1059,8 +1341,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
@@ -1090,8 +1372,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
@@ -1117,8 +1399,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });
@@ -1187,51 +1469,18 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByLabelText(/resumo da avalia.*inicial \/ anamnese/i)).toBeInTheDocument();
     expect(screen.queryAllByText(/formulário enviado/i).length).toBeLessThanOrEqual(1);
     fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
-    expect(screen.getByTestId('workflow-forms-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
   });
 
-  it('lets the dentist edit a submitted shared intake complement', async () => {
+  it('does not reopen a submitted shared intake complement as the initial evaluation step', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce(reviewedSharedIntake({
-      payload: {
-        customer: {
-          fullName: 'Carlos Demo',
-          hasRelevantMedicalDiagnosis: 'yes',
-          relevantMedicalDiagnosisDetails: 'Bruxismo diagnosticado.',
-          averagePainLastWeek: 6,
-          sportRoutine: 'Musculação cinco vezes por semana.',
-        },
-        dentist: {
-          painlessMaxOpeningMm: 44,
-          initialEvaluationSummary: 'Complemento corrigido após revisão.',
-        },
-      },
-    }));
 
     renderPage();
 
-    expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /voltar etapa/i })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /editar/i }));
-    await goToDentistComplement();
-
-    fillRequiredDentistComplement();
-    fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
-
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-004/workflow-forms/BP-WF-004-INTAKE/submit',
-        {
-          payload: expect.objectContaining({
-            dentist: expect.objectContaining({
-              painlessMaxOpeningMm: 42,
-              dentistClinicalDeclaration: ['accepted'],
-            }),
-          }),
-        },
-        'tok'
-      )
-    );
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar/i })).not.toBeInTheDocument();
   });
 
   it('does not expose customer consent steps to the dentist shared intake review', async () => {
@@ -1266,6 +1515,33 @@ describe('ProducaoDentista', () => {
     ).toBeInTheDocument();
   });
 
+  it('requires a customer-facing inaptitude description when the dentist marks the client as not eligible', async () => {
+    configureApiGet({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    await screen.findByTestId('workflow-forms-panel');
+    await goToDentistComplement();
+
+    const eligibilityGroup = screen.getByRole('group', { name: /cliente est.*apto para uso do biteplaner/i });
+    fireEvent.click(within(eligibilityGroup).getByRole('radio', { name: /não/i }));
+
+    const inaptitudeDescription = await screen.findByRole('textbox', {
+      name: /descrição da inaptidão para o cliente/i,
+    });
+    expect(inaptitudeDescription).toBeRequired();
+    expect(screen.getByText(/este texto será exibido para o cliente/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
+
+    expect(inaptitudeDescription).toBeInvalid();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/workflow-forms/BP-WF-004-INTAKE/submit',
+      expect.anything(),
+      'tok'
+    );
+  });
+
   it('uses the dentist-filled consultation date in the anamnesis record', async () => {
     configureApiGet({
       forms: [
@@ -1291,7 +1567,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await clickWizardNextButton();
+    await ensureAnamnesisSummaryStep();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getAllByText(/12\/05\/2026/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/20\/05\/2026/)).not.toBeInTheDocument();
@@ -1319,6 +1595,35 @@ describe('ProducaoDentista', () => {
     expect(screen.getByText(/campos preenchidos pelo dentista licenciado/i)).toBeInTheDocument();
     expect(screen.getByText(/integram o prontu.*rio/i)).toBeInTheDocument();
     expect(screen.queryByText(/info interna/i)).not.toBeInTheDocument();
+  });
+
+  it('fills dentist initial data review with customer onboarding values', async () => {
+    configureApiGet({
+      forms: [
+        customerOnboarding(),
+        sharedIntake({
+          payload: {
+            customer: {
+              orthodonticTreatmentStatus: 'no',
+              needsAdaptedClinic: 'no',
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/nome completo do paciente/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Carlos Demo').length).toBeGreaterThan(0);
+    expect(screen.getByText(/massa corporal \(kg\)/i)).toBeInTheDocument();
+    expect(screen.getByText('82.4')).toBeInTheDocument();
+    expect(screen.getByText(/altura \(m\)/i)).toBeInTheDocument();
+    expect(screen.getByText('1.78')).toBeInTheDocument();
+    expect(screen.getByText(/idade \(anos\)/i)).toBeInTheDocument();
+    expect(screen.getByText(getExpectedAgeYears('1992-04-10'))).toBeInTheDocument();
+    expect(screen.getByText(/esportes\/atividades atuais/i)).toBeInTheDocument();
+    expect(screen.getByText(/muscula/i)).toBeInTheDocument();
   });
 
   it('keeps every dentist section 2 clinical question backed by a customer-filled pre-consultation field', () => {
@@ -1423,6 +1728,92 @@ describe('ProducaoDentista', () => {
     );
   });
 
+  it('keeps customer answers visible in the anamnesis record through the canonical intake dictionary', async () => {
+    const dictionary = getWorkflowFormDictionary('customer_pre_consultation_intake');
+
+    expect(dictionary?.payloadMode).toBe('actor-nested');
+    expect(dictionary?.fieldsByKey.hasCurrentPain.payloadRole).toBe('customer');
+    expect(dictionary?.fieldsByKey.painLocations.payloadRole).toBe('customer');
+    expect(dictionary?.fieldsByKey.painlessMaxOpeningMm.payloadRole).toBe('dentist');
+
+    configureApiGet({
+      forms: [
+        reviewedSharedIntake({
+          payload: {
+            customer: {
+              orthodonticTreatmentStatus: 'none',
+              fullName: 'Carlos Demo',
+              phone: '(11) 99999-9999',
+              needsAdaptedClinic: 'no',
+              hasCurrentPain: 'yes',
+              painLocations: ['temples', 'neck'],
+              painPatternDetails: 'Dor no treino já preenchida pelo cliente.',
+              averagePainLastWeek: 6,
+              worstPainLastWeek: 8,
+              painAggravatingFactors: ['heavy_training', 'emotional_stress'],
+              painReliefFactors: ['heat', 'training_pause'],
+              hasMouthOpeningDifficulty: 'no',
+              jointClickFrequency: 'occasional',
+              trainingTeethClenching: 'conscious_yes',
+              trainingJawTensionMoment: ['near_failure', 'heavy_lifts'],
+              trainingInterruptedByPain: 'monthly',
+              trainingPerformanceImpact: 7,
+              missedTrainingDuePain: '1_3',
+            },
+            dentist: {
+              painlessMaxOpeningMm: 42,
+              dentistClinicalDeclaration: ['accepted'],
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    await ensureAnamnesisSummaryStep();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getByText(/dor no treino já preenchida pelo cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/têmporas, pescoço/i)).toBeInTheDocument();
+    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(screen.getByText('8')).toBeInTheDocument();
+    expect(screen.getByText(/treinos pesados\/levantamento de cargas/i)).toBeInTheDocument();
+    expect(screen.getByText(/sim, percebo conscientemente/i)).toBeInTheDocument();
+  });
+
+  it('consolidates customer onboarding values into the dentist anamnesis summary', async () => {
+    configureApiGet({
+      forms: [
+        customerOnboarding(),
+        reviewedSharedIntake({
+          payload: {
+            customer: {
+              orthodonticTreatmentStatus: 'none',
+              hasCurrentPain: 'no',
+              needsAdaptedClinic: 'no',
+            },
+            dentist: {
+              painlessMaxOpeningMm: 42,
+              dentistClinicalDeclaration: ['accepted'],
+            },
+          },
+        }),
+      ],
+    });
+
+    renderPage();
+
+    await ensureAnamnesisSummaryStep();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getByText(/nome completo do paciente/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Carlos Demo').length).toBeGreaterThan(0);
+    expect(screen.getByText(/massa corporal \(kg\)/i)).toBeInTheDocument();
+    expect(screen.getByText('82.4')).toBeInTheDocument();
+    expect(screen.getByText(/altura \(m\)/i)).toBeInTheDocument();
+    expect(screen.getByText('1.78')).toBeInTheDocument();
+    expect(screen.getByText(/musculação/i)).toBeInTheDocument();
+  });
+
   it('renders the clinical form without duplicate internal heading, release metadata or consolidated notice card', async () => {
     configureApiGet({ forms: [sharedIntake()] });
 
@@ -1478,8 +1869,8 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await screen.findByRole('heading', { name: /avalia/i });
-    await clickWizardNextButton();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
     fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
       target: { value: 'Resumo clínico completo.' },
     });

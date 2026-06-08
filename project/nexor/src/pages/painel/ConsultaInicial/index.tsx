@@ -9,10 +9,12 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchPracticeLocations,
   fetchOrders,
+  fetchWorkflowForms,
   getAuthToken,
   scheduleInitialConsultation,
   type DemoOrderSummary,
   type DemoPracticeLocationSelection,
+  type DemoWorkflowForm,
   type PracticeLocationApiRecord,
 } from '../../../features/demo/biteplanerFlow';
 import {
@@ -96,6 +98,8 @@ const FALLBACK_COORDINATES = { lat: -23.5923, lng: -46.6843 };
 const CLINIC_WHATSAPP_MESSAGE = 'Olá! Quero agendar uma consulta para uso do Biteplaner e saber valores.';
 const DEFAULT_CEP = '04567-000';
 const EARTH_RADIUS_KM = 6371;
+const CLINIC_CARDS_PAGE_SIZE = 4;
+const INTAKE_TEMPLATE_KEY = 'customer_pre_consultation_intake';
 
 type ConsultaInicialProps = {
   embedded?: boolean;
@@ -198,6 +202,30 @@ function withDistances(
       ...location,
       distanceKm: calculateDistanceKm(cepLocation, location.coordinates),
     }));
+}
+
+function getCustomerPayload(form: DemoWorkflowForm) {
+  const customerPayload = form.payload?.customer;
+
+  if (customerPayload && typeof customerPayload === 'object' && !Array.isArray(customerPayload)) {
+    return customerPayload as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+function isPositiveValue(value: unknown) {
+  return value === true || value === 'true' || value === 'yes' || value === 'sim';
+}
+
+function getRequiresAdaptedClinic(forms: DemoWorkflowForm[]) {
+  const intakeForm = forms.find((form) => form.templateKey === INTAKE_TEMPLATE_KEY);
+
+  if (!intakeForm) {
+    return false;
+  }
+
+  return isPositiveValue(getCustomerPayload(intakeForm).requiresAdaptedClinic);
 }
 
 function ConsultationMapController({ points }: { points: Array<[number, number]> }) {
@@ -392,6 +420,7 @@ function mapPracticeLocation(location: PracticeLocationApiRecord, index: number)
     address: formatPracticeLocationAddress(location),
     cep: location.address?.zip_code ?? '',
     phone: location.phone ?? '',
+    isAdapted: Boolean(location.is_adapted ?? location.isAdapted),
     dentistName: location.dentist?.full_name ?? 'Dentista não informado',
     dentistReviewScore: 0,
     distanceKm: 0,
@@ -487,6 +516,9 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
   const [locatingUser, setLocatingUser] = useState(false);
   const [scheduleNotice, setScheduleNotice] = useState('');
   const [showScheduleConfirmation, setShowScheduleConfirmation] = useState(false);
+  const [requiresAdaptedClinic, setRequiresAdaptedClinic] = useState(false);
+  const [showOnlyAdaptedClinics, setShowOnlyAdaptedClinics] = useState(false);
+  const [clinicPage, setClinicPage] = useState(1);
 
   useEffect(() => {
     if (initialOrder) {
@@ -549,6 +581,41 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
   }, [initialOrder, token]);
 
   useEffect(() => {
+    if (!order?.id || !token) {
+      setRequiresAdaptedClinic(false);
+      return;
+    }
+
+    let active = true;
+
+    async function loadCustomerIntake() {
+      try {
+        const response = await fetchWorkflowForms(order!.id, token);
+
+        if (active) {
+          setRequiresAdaptedClinic(getRequiresAdaptedClinic(response.forms));
+        }
+      } catch {
+        if (active) {
+          setRequiresAdaptedClinic(false);
+        }
+      }
+    }
+
+    void loadCustomerIntake();
+
+    return () => {
+      active = false;
+    };
+  }, [order?.id, token]);
+
+  useEffect(() => {
+    if (requiresAdaptedClinic) {
+      setShowOnlyAdaptedClinics(true);
+    }
+  }, [requiresAdaptedClinic]);
+
+  useEffect(() => {
     if (isMockMode) {
       const demoLocations = listConsultationLocationsByCep(cep);
       setVisibleLocations(demoLocations);
@@ -607,14 +674,33 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
     () => withDistances(visibleLocations, cepLocation),
     [cepLocation, visibleLocations]
   );
+  const shouldFilterAdaptedClinics = requiresAdaptedClinic || showOnlyAdaptedClinics;
+  const filteredDisplayedLocations = useMemo(
+    () =>
+      shouldFilterAdaptedClinics
+        ? displayedLocations.filter((location) => location.isAdapted)
+        : displayedLocations,
+    [displayedLocations, shouldFilterAdaptedClinics]
+  );
+  const totalClinicPages = Math.max(1, Math.ceil(filteredDisplayedLocations.length / CLINIC_CARDS_PAGE_SIZE));
+  const currentClinicPage = Math.min(clinicPage, totalClinicPages);
+  const clinicPageStart = (currentClinicPage - 1) * CLINIC_CARDS_PAGE_SIZE;
+  const paginatedClinicLocations = filteredDisplayedLocations.slice(
+    clinicPageStart,
+    clinicPageStart + CLINIC_CARDS_PAGE_SIZE
+  );
+  const clinicPageEnd = clinicPageStart + paginatedClinicLocations.length;
   const activeDisplayedLocation = useMemo(
-    () => displayedLocations.find((location) => location.id === activeLocation?.id) ?? displayedLocations[0] ?? null,
-    [activeLocation?.id, displayedLocations]
+    () =>
+      filteredDisplayedLocations.find((location) => location.id === activeLocation?.id) ??
+      filteredDisplayedLocations[0] ??
+      null,
+    [activeLocation?.id, filteredDisplayedLocations]
   );
   const clinicSchedulingWhatsappHref = activeDisplayedLocation
     ? getClinicSchedulingWhatsappHref(activeDisplayedLocation.phone)
     : '';
-  const canConfirmScheduledConsultation = order?.status === 'awaiting_scheduling';
+  const canConfirmScheduledConsultation = order?.status === 'awaiting_scheduling' || order?.status === 'ineligible_reassessment';
   const hasInformedScheduledConsultation = order?.status === 'awaiting_dentist_acceptance';
   const scheduledConsultationNotice =
     scheduleNotice ||
@@ -631,11 +717,11 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
       return [activeDisplayedLocation.coordinates.lat, activeDisplayedLocation.coordinates.lng];
     }
 
-    const fallback = displayedLocations[0];
+    const fallback = filteredDisplayedLocations[0];
     return fallback ? [fallback.coordinates.lat, fallback.coordinates.lng] : [-23.5923, -46.6843];
-  }, [activeDisplayedLocation, cepLocation, displayedLocations]);
+  }, [activeDisplayedLocation, cepLocation, filteredDisplayedLocations]);
   const mapPoints = useMemo<Array<[number, number]>>(() => {
-    const points = displayedLocations.map((location) => [
+    const points = filteredDisplayedLocations.map((location) => [
       location.coordinates.lat,
       location.coordinates.lng,
     ] as [number, number]);
@@ -645,7 +731,28 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
     }
 
     return points;
-  }, [cepLocation, displayedLocations]);
+  }, [cepLocation, filteredDisplayedLocations]);
+
+  useEffect(() => {
+    setClinicPage(1);
+  }, [cep, shouldFilterAdaptedClinics]);
+
+  useEffect(() => {
+    if (clinicPage > totalClinicPages) {
+      setClinicPage(totalClinicPages);
+    }
+  }, [clinicPage, totalClinicPages]);
+
+  useEffect(() => {
+    if (!activeDisplayedLocation) {
+      setActiveLocation(null);
+      return;
+    }
+
+    if (activeLocation?.id !== activeDisplayedLocation.id) {
+      setActiveLocation(activeDisplayedLocation);
+    }
+  }, [activeDisplayedLocation, activeLocation?.id]);
 
   async function handleSearch() {
     const normalizedCep = normalizeCep(cep);
@@ -734,7 +841,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
   }
 
   async function handleScheduleConsultation() {
-    if (!token || !order?.id || !activeLocation) {
+    if (!token || !order?.id || !activeDisplayedLocation) {
       return;
     }
 
@@ -744,7 +851,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
     setError('');
 
     try {
-      const response = await scheduleInitialConsultation(order.id, activeLocation.id, token);
+      const response = await scheduleInitialConsultation(order.id, activeDisplayedLocation.id, token);
       setOrder(response.order);
       onOrderChange?.(response.order);
       setScheduleNotice('Consulta informada com sucesso. Agora estámos aguardando o dentista aceitar a ordem via sistema.');
@@ -806,6 +913,21 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
             </S.SecondaryButton>
           </S.SearchBar>
 
+          <S.ClinicFilterBar>
+            <S.ClinicRequirementBadge>
+              Necessidade informada: {requiresAdaptedClinic ? 'clínica adaptada' : 'sem exigência de clínica adaptada'}
+            </S.ClinicRequirementBadge>
+            <S.FilterCheckbox>
+              <input
+                type="checkbox"
+                checked={shouldFilterAdaptedClinics}
+                disabled={requiresAdaptedClinic}
+                onChange={(event) => setShowOnlyAdaptedClinics(event.target.checked)}
+              />
+              <span>Somente clínicas adaptadas</span>
+            </S.FilterCheckbox>
+          </S.ClinicFilterBar>
+
           <S.Layout>
             <S.MapCard>
               <S.SectionTitle>Clínicas proximas ao CEP</S.SectionTitle>
@@ -814,7 +936,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               </S.Description>
               <S.MapViewport>
                 <MapContainer
-                  key={`${mapCenter[0].toFixed(5)}:${mapCenter[1].toFixed(5)}:${displayedLocations.length}`}
+                  key={`${mapCenter[0].toFixed(5)}:${mapCenter[1].toFixed(5)}:${filteredDisplayedLocations.length}`}
                   center={mapCenter}
                   zoom={14}
                   scrollWheelZoom={false}
@@ -824,7 +946,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   <ConsultationMapController points={mapPoints} />
-                  {displayedLocations.map((location) => {
+                  {filteredDisplayedLocations.map((location) => {
                     const selected = activeDisplayedLocation?.id === location.id;
 
                     return (
@@ -855,14 +977,20 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                 </MapContainer>
               </S.MapViewport>
               <S.ClinicList>
-                {displayedLocations.map((location) => (
+                {paginatedClinicLocations.map((location) => (
                   <S.ClinicButton
                     key={location.id}
                     type="button"
+                    aria-label={`Clínica: ${location.name}`}
                     $active={activeDisplayedLocation?.id === location.id}
                     onClick={() => setActiveLocation(location)}
                   >
-                    <S.ClinicName>{location.name}</S.ClinicName>
+                    <S.ClinicHeader>
+                      <S.ClinicName>{location.name}</S.ClinicName>
+                      <S.AdaptedBadge $adapted={location.isAdapted}>
+                        {location.isAdapted ? 'Adaptada' : 'Não adaptada'}
+                      </S.AdaptedBadge>
+                    </S.ClinicHeader>
                     <S.ClinicMeta>{location.address}</S.ClinicMeta>
                     <S.ClinicFooter>
                       <S.ClinicMeta>{formatDistanceKm(location.distanceKm)} km do CEP informado</S.ClinicMeta>
@@ -871,6 +999,38 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                   </S.ClinicButton>
                 ))}
               </S.ClinicList>
+              {filteredDisplayedLocations.length === 0 ? (
+                <S.Description>
+                  Nenhuma clínica adaptada foi encontrada para este CEP. Tente outro CEP ou fale com a Nexor para
+                  localizar um consultório licenciado compatível.
+                </S.Description>
+              ) : null}
+              {filteredDisplayedLocations.length > CLINIC_CARDS_PAGE_SIZE ? (
+                <S.ClinicPagination aria-label="Paginação de clínicas">
+                  <S.ClinicPageSummary>
+                    Mostrando {clinicPageStart + 1} a {clinicPageEnd} de {filteredDisplayedLocations.length} clínicas
+                  </S.ClinicPageSummary>
+                  <S.ClinicPageActions>
+                    <S.SecondaryButton
+                      type="button"
+                      onClick={() => setClinicPage((current) => Math.max(1, current - 1))}
+                      disabled={currentClinicPage === 1}
+                      aria-label="Página anterior de clínicas"
+                    >
+                      Anterior
+                    </S.SecondaryButton>
+                    <S.ClinicPageIndicator>{currentClinicPage}</S.ClinicPageIndicator>
+                    <S.SecondaryButton
+                      type="button"
+                      onClick={() => setClinicPage((current) => Math.min(totalClinicPages, current + 1))}
+                      disabled={currentClinicPage === totalClinicPages}
+                      aria-label="Próxima página de clínicas"
+                    >
+                      Próxima
+                    </S.SecondaryButton>
+                  </S.ClinicPageActions>
+                </S.ClinicPagination>
+              ) : null}
             </S.MapCard>
 
             <S.SideCard>
@@ -902,6 +1062,9 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.DetailTerm>CEP</S.DetailTerm>
                     <S.DetailValue>{activeDisplayedLocation.cep}</S.DetailValue>
 
+                    <S.DetailTerm>Clínica adaptada</S.DetailTerm>
+                    <S.DetailValue>{activeDisplayedLocation.isAdapted ? 'Sim' : 'Não'}</S.DetailValue>
+
                     <S.DetailTerm>Telefone</S.DetailTerm>
                     <S.DetailValue>{activeDisplayedLocation.phone}</S.DetailValue>
 
@@ -922,13 +1085,15 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.ScheduleButton
                     type="button"
                     onClick={() => setShowScheduleConfirmation(true)}
-                    disabled={schedulingConsultation || order?.status !== 'awaiting_scheduling'}
+                    disabled={schedulingConsultation || !canConfirmScheduledConsultation}
                   >
                     <CalendarCheck size={18} aria-hidden />
-                    {order?.status === 'awaiting_scheduling'
+                    {canConfirmScheduledConsultation
                       ? schedulingConsultation
                         ? 'Vinculando...'
-                        : 'Consulta agendada'
+                        : order?.status === 'ineligible_reassessment'
+                          ? 'Marcar nova consulta'
+                          : 'Consulta agendada'
                       : order?.status === 'awaiting_dentist_acceptance'
                         ? 'Aguardando aceite'
                         : order?.status === 'registration_started'

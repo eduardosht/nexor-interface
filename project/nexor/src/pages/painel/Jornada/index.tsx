@@ -31,6 +31,7 @@ import {
   getStageLabel,
   type DemoOrderSummary,
   type DemoAppointment,
+  type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
 import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import type { StepTone } from './styles';
@@ -101,19 +102,26 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
     return 0;
   }
 
-  if (order.status === 'awaiting_scheduling') {
+  if (
+    order.status === 'awaiting_scheduling' ||
+    order.status === 'awaiting_dentist_acceptance' ||
+    order.status === 'ineligible_reassessment'
+  ) {
     return 1;
   }
 
   if (
     order.status === 'in_progress' ||
-    order.status === 'appointment_confirmed' ||
-    order.status === 'ineligible_refund'
+    order.status === 'appointment_confirmed'
   ) {
     return 2;
   }
 
-  if (order.status === 'awaiting_payment' || order.status === 'payment_confirmed') {
+  if (
+    order.status === 'awaiting_payment' ||
+    order.status === 'payment_confirmed' ||
+    order.status === 'awaiting_dentist_forms'
+  ) {
     return 3;
   }
 
@@ -128,13 +136,106 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
   return 0;
 }
 
-function getOrderProblemContext(order: DemoOrderSummary) {
-  if (order.status === 'ineligible_refund') {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function formatCurrencyFromCents(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value / 100);
+}
+
+function getStringPaymentField(source: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return '';
+}
+
+function getNumberPaymentField(source: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function getPaymentMethodLabel(value: string) {
+  const normalized = value.toLowerCase();
+
+  if (normalized === 'card' || normalized === 'credit_card' || normalized === 'debit_card') {
+    return 'Cartão';
+  }
+
+  if (normalized === 'pix') {
+    return 'Pix';
+  }
+
+  if (normalized === 'boleto') {
+    return 'Boleto';
+  }
+
+  return value || 'Aguardando dados da Stripe';
+}
+
+function getOrderPaymentDetails(order: DemoOrderSummary) {
+  const record = order as unknown as Record<string, unknown>;
+  const payment = isRecord(record.payment)
+    ? record.payment
+    : isRecord(record.paymentDetails)
+      ? record.paymentDetails
+      : {};
+  const amountCents = getNumberPaymentField(payment, ['amountCents', 'amount_cents']) ?? 100000;
+  const discountCents = getNumberPaymentField(payment, ['discountCents', 'discount_cents']) ?? 0;
+  const method = getStringPaymentField(payment, ['method', 'paymentMethod', 'payment_method']);
+  const couponCode = getStringPaymentField(payment, ['couponCode', 'coupon_code', 'coupon']);
+  const paidAt = getStringPaymentField(payment, ['paidAt', 'paid_at']);
+  const receiptEmail =
+    getStringPaymentField(payment, ['receiptEmail', 'receipt_email']) ||
+    order.customer?.email ||
+    'e-mail cadastrado';
+
+  return {
+    amount: formatCurrencyFromCents(amountCents),
+    method: getPaymentMethodLabel(method),
+    coupon: couponCode || 'Nenhum cupom aplicado',
+    discount: discountCents > 0 ? formatCurrencyFromCents(discountCents) : 'Sem desconto aplicado',
+    paidAt: paidAt
+      ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(paidAt))
+      : 'Confirmado pela Stripe',
+    receiptEmail,
+  };
+}
+
+function getCustomerFacingInaptitudeReason(workflowForms: DemoWorkflowForm[]) {
+  const intakeForm = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
+  const payload = isRecord(intakeForm?.payload) ? intakeForm.payload : {};
+  const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
+  const reason = dentistPayload.ineligibilityDescriptionForCustomer ?? payload.ineligibilityDescriptionForCustomer;
+
+  return typeof reason === 'string' ? reason.trim() : '';
+}
+
+function getOrderProblemContext(order: DemoOrderSummary, workflowForms: DemoWorkflowForm[]) {
+  if (order.status === 'ineligible_reassessment') {
+    const reason = getCustomerFacingInaptitudeReason(workflowForms);
+
     return {
-      title: 'Ordem encerrada: atleta inapto para uso do produto',
-      stageTitle: 'Decisão clínica',
+      title: 'Cliente inapto neste momento',
+      stageTitle: 'Consulta inicial',
       reason:
-        'O dentista responsável registrou que o atleta está inapto para seguir com o Biteplaner neste momento. A jornada foi encerrada antes da etapa de compra.'
+        `O dentista responsável registrou que o cliente não está apto para seguir com o Biteplaner agora.${reason ? ` ${reason}` : ''} É possível solicitar uma nova reavaliação com uma clínica licenciada.`
     };
   }
 
@@ -311,8 +412,8 @@ export function Jornada() {
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
   const currentStepActionPath = getAthleteNextPath(selectedFormsOrder);
   const orderProblem = useMemo(
-    () => (selectedFormsOrder ? getOrderProblemContext(selectedFormsOrder) : null),
-    [selectedFormsOrder]
+    () => (selectedFormsOrder ? getOrderProblemContext(selectedFormsOrder, workflowForms) : null),
+    [selectedFormsOrder, workflowForms]
   );
   const initialAppointment = appointments.find((appointment) => appointment.type === 'initial') ?? appointments[0] ?? null;
   const currentStepNotice = selectedFormsOrder
@@ -321,6 +422,11 @@ export function Jornada() {
   const currentStepDisclaimer = selectedFormsOrder
     ? getCurrentStepDisclaimer(selectedFormsOrder, initialAppointment)
     : null;
+  const paymentDetails =
+    selectedFormsOrder &&
+    (selectedFormsOrder.status === 'payment_confirmed' || selectedFormsOrder.status === 'awaiting_dentist_forms')
+      ? getOrderPaymentDetails(selectedFormsOrder)
+      : null;
   const hasPendingUserAppointmentConfirmation = Boolean(
     selectedFormsOrder?.status === 'in_progress' &&
     initialAppointment &&
@@ -425,6 +531,12 @@ export function Jornada() {
             <S.Banner role="alert" data-testid="journey-order-problem">
               <strong>{orderProblem.title}</strong>
               <span> {orderProblem.reason}</span>
+              {selectedFormsOrder.status === 'ineligible_reassessment' ? (
+                <S.BannerActionLink to="/painel/consulta-inicial">
+                  <UserRound size={16} aria-hidden />
+                  <span>Marcar uma nova consulta</span>
+                </S.BannerActionLink>
+              ) : null}
             </S.Banner>
           ) : null}
           {!orderProblem && currentStepNotice && currentStepDisclaimer ? (
@@ -443,6 +555,48 @@ export function Jornada() {
                 <S.StepDisclaimerText>{currentStepNotice}</S.StepDisclaimerText>
               </S.StepDisclaimerContent>
             </S.StepDisclaimer>
+          ) : null}
+          {!orderProblem && paymentDetails ? (
+            <S.PaymentConfirmationCard data-testid="journey-payment-confirmation">
+              <S.PaymentConfirmationHeader>
+                <S.PaymentConfirmationIcon aria-hidden>
+                  <CreditCard size={22} />
+                </S.PaymentConfirmationIcon>
+                <S.PaymentConfirmationCopy>
+                  <strong>Detalhes do pagamento</strong>
+                  <span>
+                    Seu pagamento foi aprovado. O próximo passo é o dentista dar o OK e enviar a produção para o
+                    laboratório licenciado.
+                  </span>
+                </S.PaymentConfirmationCopy>
+              </S.PaymentConfirmationHeader>
+              <S.PaymentDetailsGrid>
+                <S.PaymentDetailItem>
+                  <span>Valor pago</span>
+                  <strong>{paymentDetails.amount}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Forma de pagamento</span>
+                  <strong>{paymentDetails.method}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Cupom</span>
+                  <strong>{paymentDetails.coupon}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Desconto</span>
+                  <strong>{paymentDetails.discount}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Data do pagamento</span>
+                  <strong>{paymentDetails.paidAt}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Recibo</span>
+                  <strong>{paymentDetails.receiptEmail}</strong>
+                </S.PaymentDetailItem>
+              </S.PaymentDetailsGrid>
+            </S.PaymentConfirmationCard>
           ) : null}
           {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
             <S.PendingActionCard data-testid="journey-pending-user-action">

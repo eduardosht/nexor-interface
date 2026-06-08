@@ -92,16 +92,14 @@ describe('BiteplanerPage', () => {
     expect(journeyStyles).not.toContain('transform: translateY(-68%) rotate(45deg);');
   });
 
-  it('renders athlete storytelling without duplicating background-card copy', () => {
+  it('renders athlete storytelling with contextual sport cards', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /feito para a rotina real de treinos e competições/i })).toBeInTheDocument();
     expect(screen.getByText(/nos esportes individuais ou coletivos de combate, força e alta intensidade/i)).toBeInTheDocument();
-    expect(screen.queryByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /esportes de combate/i })).not.toBeInTheDocument();
-    expect(screen.queryByTestId('biteplaner-combat-glove-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('biteplaner-strength-dumbbell-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('biteplaner-strength-zap-icon')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('biteplaner-team-sport-icon')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /força e alta intensidade/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /esportes coletivos/i })).toBeInTheDocument();
+    expect(screen.getByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /protetores bucais vs biteplaner/i })).toBeInTheDocument();
     expect(screen.getByText(/adequação para treinos e competições de lutas/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^alta$/i).length).toBeGreaterThan(0);
@@ -202,9 +200,11 @@ describe('BiteplanerPage', () => {
     expect(stylesSource).toContain('export const RealRoutineContent');
     expect(stylesSource).toContain('export const RealRoutineLead');
     expect(stylesSource).toContain('export const RealRoutineVisual');
-    expect(stylesSource).toContain('display: flex;');
-    expect(stylesSource).toContain('aspect-ratio: 1751 / 565');
-    expect(stylesSource).toContain('background: url(${realRoutineBackground}) bottom / cover no-repeat');
+    expect(stylesSource).toContain('export const RealRoutineTitle');
+    expect(stylesSource).toContain('export const RealRoutineCard');
+    expect(stylesSource).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(stylesSource).toContain('background-size: 420% auto;');
+    expect(stylesSource).toContain('background-image: url(${realRoutineBackground});');
   });
 
   it('renders the automatic customer comments carousel', () => {

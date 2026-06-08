@@ -34,6 +34,14 @@ describe('orders api module', () => {
     expect(apiGet).toHaveBeenNthCalledWith(2, '/v1/orders/order-1/forms/form-1', 'tok');
   });
 
+  it('does not send admin role through the orders query string', async () => {
+    apiGet.mockResolvedValueOnce({ orders: [] });
+
+    await fetchOrders('admin', 'tok');
+
+    expect(apiGet).toHaveBeenCalledWith('/v1/orders', 'tok');
+  });
+
   it('submits production requests through the clinical form route', async () => {
     const payload = {
       anamnesisSummary: '',
@@ -80,4 +88,3 @@ describe('orders api module', () => {
     ]);
   });
 });
-

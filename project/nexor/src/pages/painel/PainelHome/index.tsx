@@ -36,7 +36,7 @@ type BiteplanerOrder = {
   status: string;
 };
 
-const CLOSED_ORDER_STATUSES = new Set(['completed', 'cancelled', 'ineligible_refund']);
+const CLOSED_ORDER_STATUSES = new Set(['completed', 'cancelled']);
 const EXCLUSIVE_OPERATIONAL_ROLES: ProductRoleKey[] = ['partner', 'dentist', 'lab'];
 
 const ROLE_ACTIONS: Array<{

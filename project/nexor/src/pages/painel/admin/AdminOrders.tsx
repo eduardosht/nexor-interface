@@ -43,13 +43,13 @@ const STATUS_OPTIONS = [
   { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
   { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },
   { value: 'awaiting_payment', label: 'Aguardando pagamento' },
-  { value: 'awaiting_dentist_forms', label: 'Aguardando preenchimento dentista' },
+  { value: 'awaiting_dentist_forms', label: 'Aguardando envio ao laboratório' },
   { value: 'payment_confirmed', label: 'Pagamento confirmado' },
   { value: 'treatment_required', label: 'Tratamento prévio pendente' },
   { value: 'lab_processing', label: 'Em processo - Laboratório' },
   { value: 'awaiting_adaptation', label: 'Aguardando adaptação' },
   { value: 'follow_up', label: 'Em acompanhamento' },
-  { value: 'ineligible_refund', label: 'Inapto - Encerrado' },
+  { value: 'ineligible_reassessment', label: 'Inaptidão' },
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
@@ -154,7 +154,13 @@ export function AdminOrders() {
   );
 
   const columns: AdminDataTableColumn<DemoOrderSummary>[] = [
-    { key: 'id', label: 'Pedido', sortValue: (row) => getOrderDisplayId(row), render: (row) => getOrderDisplayId(row) },
+    {
+      key: 'id',
+      label: 'Pedido',
+      width: '9%',
+      sortValue: (row) => getOrderDisplayId(row),
+      render: (row) => getOrderDisplayId(row)
+    },
     { key: 'customer', label: 'Cliente', sortValue: (row) => row.customer?.full_name ?? '', render: (row) => row.customer?.full_name ?? 'Não identificado' },
     {
       key: 'status',
@@ -192,7 +198,7 @@ export function AdminOrders() {
 
         return (
           <S.ReadinessCell>
-            <StatusIndicator color="#D18A00" label="Aguardando preenchimento dentista" />
+            <StatusIndicator color="#D18A00" label="Aguardando envio ao laboratório" />
             <S.ReadinessText>{readiness?.summary ?? 'Pendencias operacionais antes do laboratório.'}</S.ReadinessText>
           </S.ReadinessCell>
         );

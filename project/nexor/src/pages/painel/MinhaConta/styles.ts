@@ -50,6 +50,11 @@ export const Card = styled.div`
   overflow: hidden;
 `;
 
+export const OnboardingStack = styled.div`
+  display: grid;
+  gap: 16px;
+`;
+
 export const DangerCard = styled(Card)`
   border-color: rgba(185, 28, 28, 0.18);
 `;
@@ -90,6 +95,33 @@ export const FieldValue = styled.span`
   font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const EditableValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+`;
+
+export const EditIconButton = styled.button`
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
 `;
 
 export const FieldInput = styled.input`

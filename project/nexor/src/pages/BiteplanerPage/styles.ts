@@ -244,63 +244,173 @@ export const SectionLead = styled.p`
 
 export const RealRoutineSection = styled.section`
   ${fullBleedSection}
-  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(72px, 8vw, 108px) 0 clamp(72px, 8vw, 104px);
+  background:
+    radial-gradient(circle, rgba(22, 122, 72, 0.14) 0 1px, transparent 1.2px) calc(100% - 300px) 24px / 12px 12px,
+    #fbfcfb;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    right: -190px;
+    top: 120px;
+    width: 470px;
+    height: 470px;
+    border: 1px solid rgba(22, 122, 72, 0.14);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  &::after {
+    right: -132px;
+    top: 178px;
+    width: 350px;
+    height: 350px;
+  }
 `;
 
 export const RealRoutineContent = styled.div`
   ${pageContainer}
-  display: flex;
-  padding: 32px 0;
-  gap: 16px;
-  align-items: center;
+  position: relative;
+  z-index: 1;
+  display: block;
 
-  ${SectionIntro} {
-    max-width: 800px;
+  ${SectionLabel} {
+    margin: 0;
   }
 
   @media (max-width: 900px) {
-    flex-direction: column;
-    gap: 24px;
-    padding-top: 54px;
-    padding-bottom: 38px;
+    max-width: 760px;
+  }
+`;
+
+export const RealRoutineTitle = styled.h2`
+  max-width: 820px;
+  margin: 26px 0 0;
+  color: #08111f;
+  font-size: clamp(36px, 4.8vw, 62px);
+  line-height: 1.04;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+
+  span {
+    color: #177642;
   }
 
-  @media (max-width: 560px) {
-    padding-top: 42px;
-    padding-bottom: 30px;
+  @media (max-width: 640px) {
+    font-size: clamp(30px, 10vw, 42px);
+    line-height: 1.08;
   }
 `;
 
 export const RealRoutineLead = styled.p`
-  max-width: 650px;
+  max-width: 690px;
+  margin: 24px 0 0;
   color: #253245;
-  font-size: clamp(14px, 1.22vw, 18px);
-  line-height: 1.75;
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.68;
 
   @media (max-width: 900px) {
-    max-width: 760px;
-    margin-top: 0;
     font-size: ${typeScale.sectionLead};
   }
 `;
 
 export const RealRoutineVisual = styled.div`
-  width: 100%;
-  aspect-ratio: 1751 / 565;
-  min-height: 420px;
-  background: url(${realRoutineBackground}) bottom / cover no-repeat;
+  ${pageContainer}
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 42px;
 
   @media (max-width: 900px) {
-    aspect-ratio: 1751 / 720;
-    min-height: 320px;
-    background-size: 100%;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+`;
+
+export const RealRoutineCard = styled.article<{ $imagePosition: 'left' | 'center' | 'right' }>`
+  min-height: clamp(330px, 32vw, 430px);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 clamp(20px, 2vw, 32px) clamp(22px, 2vw, 30px);
+  border: 1px solid rgba(238, 244, 241, 0.5);
+  border-radius: 8px;
+  isolation: isolate;
+  color: #f5faf8;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
   }
 
-  @media (max-width: 560px) {
-    aspect-ratio: 4 / 5;
-    min-height: 200px;
-    background-position: center bottom;
+  &::before {
+    z-index: -2;
+    background-image: url(${realRoutineBackground});
+    background-repeat: no-repeat;
+    background-size: 420% auto;
+    background-position: ${({ $imagePosition }) =>
+    $imagePosition === 'left' ? 'left top' : $imagePosition === 'center' ? 'center top' : 'right top'};
   }
+
+  &::after {
+    z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(4, 17, 24, 0.04) 0%, rgba(3, 17, 25, 0.16) 38%, rgba(2, 18, 26, 0.86) 100%),
+      linear-gradient(90deg, rgba(4, 20, 27, 0.28), rgba(4, 20, 27, 0.1));
+  }
+
+  @media (max-width: 900px) {
+    min-height: 320px;
+  }
+`;
+
+export const RealRoutineCardIcon = styled.span`
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #177642;
+  color: #f5faf8;
+  box-shadow: 0 14px 28px rgba(6, 51, 33, 0.2);
+`;
+
+export const RealRoutineCardAccent = styled.span`
+  width: 28px;
+  height: 2px;
+  margin: 12px 0 14px;
+  border-radius: 999px;
+  background: #2ecf76;
+`;
+
+export const RealRoutineCardTitle = styled.h3`
+  margin: 0 0 10px;
+  color: #f5faf8;
+  font-size: clamp(20px, 2vw, 25px);
+  line-height: 1.12;
+  font-weight: 900;
+  letter-spacing: 0;
+`;
+
+export const RealRoutineCardBody = styled.p`
+  max-width: 34ch;
+  margin: 0;
+  color: rgba(245, 250, 248, 0.88);
+  font-size: 15px;
+  line-height: 1.42;
 `;
 
 export const CardGrid = styled.div`

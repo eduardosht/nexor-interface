@@ -6,18 +6,24 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
   fetchWorkflowForms,
+  getAthleteNextPath,
   getAuthToken,
+  getEffectiveAthleteOrder,
+  isCustomerOnboardingComplete,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from '../PreRequisito/styles';
 
-const SUCCESS_REDIRECT_SECONDS = 7;
 const ONBOARDING_TEMPLATE_KEY = 'customer_new_user_onboarding';
 
 function onboardingIsSubmitted(form: DemoWorkflowForm) {
-  return form.status === 'submitted';
+  return isCustomerOnboardingComplete(form);
+}
+
+function getNextPathAfterOnboarding(order: DemoOrderSummary | null, forms: DemoWorkflowForm[]) {
+  return getAthleteNextPath(getEffectiveAthleteOrder(order, forms));
 }
 
 function getBlockerMessage(form: DemoWorkflowForm | undefined) {
@@ -47,7 +53,6 @@ export function CadastroUsuarioBiteplaner() {
   const [privacyGateChecked, setPrivacyGateChecked] = useState(false);
   const [privacyGateUnlocked, setPrivacyGateUnlocked] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-  const [completionCountdown, setCompletionCountdown] = useState(SUCCESS_REDIRECT_SECONDS);
 
   useEffect(() => {
     if (!token) {
@@ -119,23 +124,27 @@ export function CadastroUsuarioBiteplaner() {
   }, [order?.id, token]);
 
   useEffect(() => {
-    if (!onboardingCompleted) {
-      return undefined;
+    if (loading || formsLoading || onboardingCompleted || !order) {
+      return;
     }
 
-    setCompletionCountdown(SUCCESS_REDIRECT_SECONDS);
-    const interval = setInterval(() => {
-      setCompletionCountdown((current) => Math.max(current - 1, 0));
-    }, 1000);
-    const timeout = setTimeout(() => {
-      navigate('/painel/biteplaner/jornada');
-    }, SUCCESS_REDIRECT_SECONDS * 1000);
+    const submittedOnboarding = workflowForms.find(
+      (form) => form.templateKey === ONBOARDING_TEMPLATE_KEY && onboardingIsSubmitted(form)
+    );
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [navigate, onboardingCompleted]);
+    if (!submittedOnboarding) {
+      return;
+    }
+
+    const blockerMessage = getBlockerMessage(submittedOnboarding);
+
+    if (blockerMessage) {
+      setError(blockerMessage);
+      return;
+    }
+
+    navigate(getNextPathAfterOnboarding(order, workflowForms), { replace: true });
+  }, [formsLoading, loading, navigate, onboardingCompleted, order, workflowForms]);
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
     setWorkflowForms(nextForms);
@@ -157,7 +166,12 @@ export function CadastroUsuarioBiteplaner() {
 
     setError('');
     setOnboardingCompleted(true);
+    navigate(getNextPathAfterOnboarding(order, nextForms), { replace: true });
   }
+
+  const submittedOnboarding = workflowForms.find(
+    (form) => form.templateKey === ONBOARDING_TEMPLATE_KEY && onboardingIsSubmitted(form)
+  );
 
   return (
     <S.Page>
@@ -184,9 +198,13 @@ export function CadastroUsuarioBiteplaner() {
                 <br />
                 Equipe NEXOR
               </S.OnboardingCompletionText>
-              <S.OnboardingCountdown>
-                Você será redirecionado em {completionCountdown} segundos
-              </S.OnboardingCountdown>
+              <S.OnboardingCountdown>Redirecionando para a próxima etapa.</S.OnboardingCountdown>
+            </S.OnboardingCompletion>
+          ) : submittedOnboarding ? (
+            <S.OnboardingCompletion role="status" aria-live="polite">
+              <S.OnboardingCompletionIcon aria-hidden="true">✓</S.OnboardingCompletionIcon>
+              <S.OnboardingCompletionTitle>Cadastro já enviado.</S.OnboardingCompletionTitle>
+              <S.OnboardingCompletionText>Vamos abrir a próxima etapa da sua jornada.</S.OnboardingCompletionText>
             </S.OnboardingCompletion>
           ) : (
             <S.OnboardingCard>

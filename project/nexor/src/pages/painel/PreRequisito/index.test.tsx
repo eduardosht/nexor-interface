@@ -110,6 +110,28 @@ function sharedIntake(status: 'pending' | 'submitted' = 'pending') {
   };
 }
 
+function customerOnboarding(status: 'pending' | 'submitted' = 'pending') {
+  return {
+    id: 'BP-WF-001-ONBOARDING',
+    orderId: 'BP-DEMO-001',
+    templateKey: 'customer_new_user_onboarding',
+    stepKey: 'new_user_onboarding',
+    status,
+    roleState: { customer: status === 'submitted' ? 'submitted' : 'pending', dentist: 'locked' },
+    customerSubmittedAt: status === 'submitted' ? '2026-05-01T10:20:00.000Z' : null,
+    dentistReviewStartedAt: null,
+    dentistSubmittedAt: null,
+    canViewPayload: true,
+    summary:
+      status === 'submitted'
+        ? { scoreAverage: null, hasComment: false, responseCount: 1, submittedAt: '2026-05-01T10:20:00.000Z' }
+        : null,
+    releasedAt: '2026-05-01T10:05:00.000Z',
+    submittedAt: status === 'submitted' ? '2026-05-01T10:20:00.000Z' : null,
+    payload: status === 'submitted' ? { fullName: 'Joao Demo' } : {},
+  };
+}
+
 function sharedIntakeWithClinicalPayload(payload: Record<string, unknown>) {
   return {
     ...sharedIntake(),
@@ -193,6 +215,19 @@ describe('PreRequisito', () => {
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
+  });
+
+  it('redirects to customer onboarding when the prerequisite intake is not released because onboarding is still pending', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [customerOnboarding('pending')] });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding', { replace: true })
+    );
+    expect(screen.queryByText(/avaliação inicial compartilhada ainda não foi liberada/i)).not.toBeInTheDocument();
   });
 
   it('renders the clinical form from the DOCX with the same stepped intake experience without duplicate privacy consent', async () => {
@@ -304,6 +339,22 @@ describe('PreRequisito', () => {
     expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
   });
 
+  it('does not ask for contact identity again during prerequisite because it comes from customer onboarding', async () => {
+    const user = userEvent.setup();
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    const orthodonticSelect = await findDropdown(/tratamento ortod/i);
+    await user.click(orthodonticSelect);
+    await user.click(await screen.findByRole('option', { name: /^não$/i }));
+
+    expect(screen.queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/telefone/i)).not.toBeInTheDocument();
+  });
+
   it('keeps the local draft when the auth token refreshes after returning to the tab', async () => {
     const user = userEvent.setup();
     const queryClient = createTestQueryClient();
@@ -338,9 +389,7 @@ describe('PreRequisito', () => {
     const orthodonticSelect = await findDropdown(/está em tratamento ortodôntico/i);
     await user.click(orthodonticSelect);
     await user.click(await screen.findByRole('option', { name: /^não$/i }));
-    const fullNameInput = await findField(/nome completo/i);
-    await user.clear(fullNameInput);
-    await user.type(fullNameInput, 'Maria Digitando');
+    expect(getDropdown(/tratamento ortod/i)).toHaveTextContent(/^Não$/);
 
     accessToken = 'tok-refreshed';
     view.rerender(
@@ -355,7 +404,7 @@ describe('PreRequisito', () => {
 
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
     expect(getDropdown(/está em tratamento ortodôntico/i)).toHaveTextContent(/^Não$/);
-    expect(await findField(/nome completo/i)).toHaveValue('Maria Digitando');
+    expect(screen.queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
   });
 
   it('requires a visible conditional clinical field before advancing from clinical data', async () => {

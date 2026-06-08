@@ -27,6 +27,7 @@ vi.mock('../../../lib/api', () => ({
 
 import {
   BiteplanerHub,
+  getFirstAccessMode,
   getDentistLicensingStatusLabel,
   getDentistLicensingStatusTone,
   isLegacyLicensedLabStatus,
@@ -119,6 +120,31 @@ describe('BiteplanerHub', () => {
     expect(source).toContain('padding: 16px');
     expect(compactCardSource).toContain('align-items: flex-start');
     expect(compactIconSource).toContain('align-self: flex-start');
+  });
+
+  it('prioritizes operational modes on first access before the user tab', () => {
+    expect(
+      getFirstAccessMode({
+        defaultMode: 'user',
+        modes: [
+          { key: 'user', label: 'Atleta', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: false, reason: null },
+        ],
+      })
+    ).toBe('lab');
+
+    expect(
+      getFirstAccessMode({
+        defaultMode: 'user',
+        modes: [
+          { key: 'user', label: 'Atleta', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: false, reason: null },
+        ],
+      })
+    ).toBe('dentist');
   });
 
   it('renders the partner lead table with shared funnel data', async () => {
@@ -324,7 +350,7 @@ describe('BiteplanerHub', () => {
     );
   });
 
-  it('shows the athlete primary status and next CTA', async () => {
+  it('sends a registration-started athlete back to onboarding when the prerequisite intake is not released yet', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         productKey: 'biteplaner',
@@ -356,8 +382,28 @@ describe('BiteplanerHub', () => {
     expect(screen.getAllByText(/jornada biteplaner/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/jornada do atleta/i).length).toBeGreaterThan(0);
     expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/próximo passo visível/i);
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
-    expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/pre-requisito');
+    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/cadastro iniciado/i);
+    expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/biteplaner/onboarding');
+  });
+
+  it('shows an onboarding CTA when the athlete has no Biteplaner order yet', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'user',
+        enrollment: null,
+        modes: [{ key: 'user', label: 'Cliente', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] });
+
+    renderPage('/painel/biteplaner?mode=user');
+
+    await waitFor(() => expect(screen.getByTestId('athlete-onboarding-empty-state')).toBeInTheDocument());
+    expect(screen.getByText(/você ainda não iniciou sua jornada biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /iniciar onboarding/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/onboarding'
+    );
   });
 
   it('sends the athlete to clinic selection when the prerequisite intake is already submitted', async () => {
@@ -445,7 +491,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-204',
             status: 'awaiting_dentist_forms',
-            statusLabel: 'Aguardando preenchimento dentista',
+            statusLabel: 'Aguardando envio ao laboratório',
             stage: 'awaiting_dentist_forms',
             created_at: '2026-05-01T11:00:00.000Z',
             customer: { full_name: 'Ana Demo', email: 'ana@nexor.dev', phone: null },
@@ -671,6 +717,8 @@ describe('BiteplanerHub', () => {
       .mockResolvedValueOnce({ events: [] })
       .mockResolvedValueOnce({ events: [] })
       .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ forms: [] })
+      .mockResolvedValueOnce({ forms: [] })
       .mockResolvedValueOnce(licensedDentistWorkflow());
 
     renderPage('/painel/biteplaner?mode=dentist', {
@@ -700,6 +748,125 @@ describe('BiteplanerHub', () => {
 
     expect(within(staleRow).getByRole('button', { name: /complementar pre-consulta/i })).toBeInTheDocument();
     expect(within(staleRow).queryByRole('button', { name: /confirmar consulta realizada/i })).not.toBeInTheDocument();
+  });
+
+  it('shows inaptitude status and no dentist action when the pre-consultation form is already marked not eligible', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return Promise.resolve({
+          productKey: 'biteplaner',
+          defaultMode: 'dentist',
+          enrollment: null,
+          modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+        });
+      }
+
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-INELIGIBLE',
+              status: 'in_progress',
+              statusLabel: 'Em andamento',
+              stage: 'consultation_linked',
+              created_at: '2026-05-07T10:00:00.000Z',
+              customer: { full_name: 'Cliente Inapto', email: 'cliente@nexor.dev', phone: null },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/appointments') {
+        return Promise.resolve({
+          appointments: [
+            {
+              id: 'appointment-ineligible',
+              order_id: 'BP-DEMO-INELIGIBLE',
+              type: 'initial',
+              status: 'completed',
+              scheduled_at: '2026-05-07T10:00:00.000Z',
+              user_confirmed_at: '2026-05-07T11:00:00.000Z',
+              dentist_confirmed_at: '2026-05-07T11:05:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/timeline') {
+        return Promise.resolve({
+          events: [
+            {
+              id: 'event-ineligible',
+              orderId: 'BP-DEMO-INELIGIBLE',
+              fromStatus: 'in_progress',
+              toStatus: 'ineligible_reassessment',
+              reason: 'Dentista registrou inaptidão no complemento de pré-consulta.',
+              createdAt: '2026-05-07T11:10:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/workflow-forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'BP-WF-INELIGIBLE-INTAKE',
+              orderId: 'BP-DEMO-INELIGIBLE',
+              templateKey: 'customer_pre_consultation_intake',
+              stepKey: 'initial_consultation_preparation',
+              status: 'submitted',
+              roleState: { customer: 'locked', dentist: 'submitted' },
+              customerSubmittedAt: '2026-05-07T10:30:00.000Z',
+              dentistReviewStartedAt: '2026-05-07T11:00:00.000Z',
+              dentistSubmittedAt: '2026-05-07T11:10:00.000Z',
+              canViewPayload: true,
+              summary: null,
+              releasedAt: '2026-05-07T10:00:00.000Z',
+              submittedAt: '2026-05-07T11:10:00.000Z',
+              payload: {
+                customer: { fullName: 'Cliente Inapto' },
+                dentist: {
+                  biteplannerEligible: 'no',
+                  ineligibilityDescriptionForCustomer: 'Cliente deve passar por nova avaliação.',
+                },
+              },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/account/biteplaner/dentist-licensing') {
+        return Promise.resolve(licensedDentistWorkflow());
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista2@gmail.com', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    const row = screen.getByText('BP-DEMO-INELIGIBLE').closest('tr');
+
+    if (!row) {
+      throw new Error('Expected ineligible dentist row to render.');
+    }
+
+    expect(row).toHaveTextContent(/inaptidão/i);
+    expect(row).not.toHaveTextContent(/nova consulta disponível/i);
+    expect(row).toHaveTextContent(/consulta inicial/i);
+    expect(within(row).queryByTestId('dentist-order-action-open-pre-consultation-review')).not.toBeInTheDocument();
+    expect(within(row).queryByTestId('dentist-order-action-confirm-appointment')).not.toBeInTheDocument();
+    expect(row).toHaveTextContent('-');
+
+    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizacoes da ordem bp-demo-ineligible/i }));
+    const timelineDialog = await screen.findByRole('dialog', { name: /atualizacoes da ordem/i });
+    expect(within(timelineDialog).getByText(/^inaptidão$/i)).toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/nova consulta disponível/i)).not.toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/ineligible reassessment/i)).not.toBeInTheDocument();
   });
 
   it('shows the dentist workspace when the admin approval is already active', async () => {
@@ -1092,7 +1259,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-204',
             status: 'awaiting_dentist_forms',
-            statusLabel: 'Aguardando preenchimento dentista',
+            statusLabel: 'Aguardando envio ao laboratório',
             stage: 'awaiting_dentist_forms',
             created_at: '2026-05-01T13:00:00.000Z',
             customer: { full_name: 'Ana Demo', email: 'ana@nexor.dev', phone: null },

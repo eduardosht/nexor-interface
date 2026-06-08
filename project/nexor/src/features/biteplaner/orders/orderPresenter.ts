@@ -19,34 +19,51 @@ export type StatusPresentation = {
   label: string;
 };
 
-export const STAGE_LABELS: Record<string, string> = {
+export const JOURNEY_STAGE_LABELS = [
+  'Pre-requisito',
+  'Consulta inicial',
+  'Decisão clínica',
+  'Compra',
+  'Laboratório',
+  'Adaptação e acompanhamento',
+] as const;
+
+export const STAGE_LABELS: Record<string, (typeof JOURNEY_STAGE_LABELS)[number]> = {
+  new_user_onboarding: 'Pre-requisito',
   pre_requisite_pending: 'Pre-requisito',
+  registration_started: 'Pre-requisito',
   awaiting_initial_consultation: 'Consulta inicial',
-  dentist_acceptance_pending: 'Aceite do dentista',
-  consultation_linked: 'Consulta vinculada',
-  consultation_confirmed: 'Consulta confirmada',
+  dentist_acceptance_pending: 'Consulta inicial',
+  consultation_linked: 'Consulta inicial',
+  consultation_confirmed: 'Consulta inicial',
+  in_progress: 'Consulta inicial',
+  appointment_confirmed: 'Decisão clínica',
   awaiting_clinical_decision: 'Decisão clínica',
-  awaiting_payment: 'Pagamento',
-  awaiting_dentist_forms: 'Preenchimento do dentista',
-  awaiting_lab_start: 'Aguardando aceite do laboratório',
-  treatment_required: 'Tratamento prévio',
-  ready_for_lab: 'Liberado para laboratório',
-  lab_production: 'Em produção',
-  dentist_adjustment_required: 'Ajuste de produção',
-  product_received_by_clinic: 'Aguardando recebimento pelo dentista',
-  awaiting_adaptation: 'Adaptação',
-  follow_up: 'Acompanhamento',
-  completed: 'Finalizado',
-  closed_ineligible: 'Encerrado',
-  cancelled: 'Cancelado'
+  treatment_required: 'Decisão clínica',
+  ineligible_reassessment: 'Consulta inicial',
+  awaiting_payment: 'Compra',
+  payment_confirmed: 'Compra',
+  awaiting_dentist_forms: 'Laboratório',
+  awaiting_lab_start: 'Laboratório',
+  ready_for_lab: 'Laboratório',
+  lab_production: 'Laboratório',
+  lab_processing: 'Laboratório',
+  dentist_adjustment_required: 'Laboratório',
+  product_received_by_clinic: 'Adaptação e acompanhamento',
+  awaiting_adaptation: 'Adaptação e acompanhamento',
+  follow_up: 'Adaptação e acompanhamento',
+  completed: 'Adaptação e acompanhamento',
+  cancelled: 'Adaptação e acompanhamento',
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  awaiting_dentist_forms: 'Aguardando envio ao laboratório',
   awaiting_lab_start: 'Aguardando aceite do laboratório',
   lab_processing: 'Em produção',
   dentist_adjustment_required: 'Ajuste de produção',
   product_received_by_clinic: 'Aguardando recebimento pelo dentista',
   awaiting_adaptation: 'Aguardando adaptação',
+  ineligible_reassessment: 'Inaptidão',
   completed: 'Finalizado',
 };
 
@@ -105,8 +122,12 @@ export function getOrderStatusPresentation(order: OrderStatusSummary): StatusPre
     return { color: '#2563EB', label };
   }
 
-  if (order.status === 'ineligible_refund' || order.status === 'cancelled') {
+  if (order.status === 'cancelled') {
     return { color: '#B91C1C', label };
+  }
+
+  if (order.status === 'ineligible_reassessment') {
+    return { color: '#D18A00', label };
   }
 
   return { color: '#737373', label };

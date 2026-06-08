@@ -224,12 +224,74 @@ function hasDentistComplement(form: DemoWorkflowForm | undefined) {
       Object.keys(dentistPayload).length > 0
   );
 }
+
+function getCurrentDentistId(backendUser: unknown, order: DemoOrderSummary | null | undefined) {
+  const user: Record<string, unknown> = isRecord(backendUser) ? backendUser : {};
+  const orderDentist: Record<string, unknown> = isRecord(order?.dentist) ? order.dentist : {};
+
+  return getStringValue(user.dentistId) || getStringValue(orderDentist.id);
+}
+
+function isDentistComplementFromAnotherDentist(
+  form: DemoWorkflowForm | undefined,
+  currentDentistId: string,
+  currentDentistEmail: string
+) {
+  if (!form || form.templateKey !== 'customer_pre_consultation_intake' || !hasDentistComplement(form)) {
+    return false;
+  }
+
+  if (form.dentistId && form.dentistId !== currentDentistId) {
+    return true;
+  }
+
+  const payload = isRecord(form.payload) ? form.payload : {};
+  const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
+  const dentistContact = getStringValue(dentistPayload.dentistProfessionalContact).toLowerCase();
+
+  return Boolean(!form.dentistId && currentDentistEmail && dentistContact && !dentistContact.includes(currentDentistEmail.toLowerCase()));
+}
+
+function getCurrentDentistIntakeForm(
+  form: DemoWorkflowForm | undefined,
+  currentDentistId: string,
+  currentDentistEmail: string
+): DemoWorkflowForm | undefined {
+  if (!isDentistComplementFromAnotherDentist(form, currentDentistId, currentDentistEmail)) {
+    return form;
+  }
+
+  if (!form) {
+    return undefined;
+  }
+
+  const payload = isRecord(form.payload) ? form.payload : {};
+  const customerPayload = isRecord(payload.customer) ? payload.customer : {};
+
+  return {
+    ...form,
+    roleState: { customer: 'submitted' as const, dentist: 'pending' as const },
+    dentistSubmittedAt: null,
+    dentistId: currentDentistId || form.dentistId,
+    payload: { customer: customerPayload },
+  };
+}
+
 function hasWorkflowValue(value: unknown) {
   if (Array.isArray(value)) {
     return value.length > 0;
   }
 
   return value !== null && value !== undefined && value !== '';
+}
+
+function hasFormPayload(form: DemoWorkflowForm | undefined) {
+  return Boolean(
+    form?.payload &&
+      typeof form.payload === 'object' &&
+      !Array.isArray(form.payload) &&
+      Object.keys(form.payload).length > 0
+  );
 }
 
 function getDentistPendingRequiredFields(form: DemoWorkflowForm | undefined) {
@@ -634,6 +696,7 @@ export function ProducaoDentista() {
     return [];
   }, [currentStep, labCep, licensedLabsQuery.data]);
   const intakeFormFromList = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
+  const onboardingFormFromList = workflowForms.find((form) => form.templateKey === 'customer_new_user_onboarding');
   const intakeFormDetailQuery = useQuery({
     queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', intakeFormFromList?.id ?? 'pending'),
     queryFn: () => fetchWorkflowForm(order!.id, intakeFormFromList!.id, token),
@@ -641,13 +704,42 @@ export function ProducaoDentista() {
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
-  const intakeForm = intakeFormDetailQuery.data ?? intakeFormFromList;
+  const onboardingFormDetailQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', onboardingFormFromList?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForm(order!.id, onboardingFormFromList!.id, token),
+    enabled: Boolean(token && order?.id && onboardingFormFromList?.id && onboardingFormFromList.canViewPayload && !onboardingFormFromList.payload),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const currentDentistId = getCurrentDentistId(backendUser, order);
+  const currentDentistEmail = session?.user.email ?? backendUser?.email ?? '';
+  const rawIntakeForm = intakeFormDetailQuery.data ?? intakeFormFromList;
+  const intakeForm = getCurrentDentistIntakeForm(rawIntakeForm, currentDentistId, currentDentistEmail);
+  const onboardingForm = onboardingFormDetailQuery.data ?? onboardingFormFromList;
+  const workflowFormsForPanel = useMemo(() => {
+    if (!intakeForm && !onboardingForm) {
+      return workflowForms;
+    }
+
+    return workflowForms.map((form) => {
+      if (intakeForm && form.id === intakeForm.id) {
+        return intakeForm;
+      }
+
+      if (onboardingForm && form.id === onboardingForm.id) {
+        return onboardingForm;
+      }
+
+      return form;
+    });
+  }, [intakeForm, onboardingForm, workflowForms]);
   const loading =
     ordersQuery.isLoading ||
     (Boolean(order) && workflowFormsQuery.isLoading) ||
     (Boolean(order) && productionFormsQuery.isLoading) ||
     (Boolean(order) && Boolean(latestProductionForm) && productionFormDetailQuery.isLoading) ||
-    (Boolean(intakeFormFromList) && intakeFormDetailQuery.isLoading);
+    (Boolean(intakeFormFromList) && intakeFormDetailQuery.isLoading) ||
+    (Boolean(onboardingFormFromList) && onboardingFormDetailQuery.isLoading);
   const error = actionError ||
     (ordersQuery.isError
       ? 'Nao foi possivel carregar a solicitacao de producao da demo.'
@@ -806,12 +898,34 @@ export function ProducaoDentista() {
   ];
   const currentStepData = STEP_DEFINITIONS[currentStep];
   const currentStepCompleted = stepCompletion[currentStep] ?? false;
+  const canProceedToProductionAfterPayment =
+    order?.status === 'payment_confirmed' || order?.status === 'awaiting_dentist_forms';
+  const shouldHoldAtAnamnesisSummary =
+    currentStep === 1 && dentistReviewCompleted && !canProceedToProductionAfterPayment;
+  const anamnesisSourceDataReady = hasFormPayload(intakeForm);
   const completedStepCount = stepCompletion.filter(Boolean).length;
   const progressPercent = Math.round((completedStepCount / STEP_DEFINITIONS.length) * 100);
   const dentistSystemValues = useMemo(
     () => getDentistSystemValues(backendUser, session?.user.email),
     [backendUser, session?.user.email]
   );
+
+  useEffect(() => {
+    if (isAnamnesisRecordDeepLink || isProductionRequestDeepLink) {
+      return;
+    }
+
+    if (!dentistReviewCompleted || currentStep !== 0) {
+      return;
+    }
+
+    setCurrentStep(1);
+  }, [
+    currentStep,
+    dentistReviewCompleted,
+    isAnamnesisRecordDeepLink,
+    isProductionRequestDeepLink,
+  ]);
 
   const mapCenter = useMemo<[number, number]>(() => {
     if (activeLab) {
@@ -999,6 +1113,10 @@ export function ProducaoDentista() {
   }
 
   function handleNextStep() {
+    if (currentStep === 1 && !canProceedToProductionAfterPayment) {
+      return;
+    }
+
     setCurrentStep((current) => Math.min(STEP_DEFINITIONS.length - 1, current + 1));
   }
 
@@ -1148,7 +1266,7 @@ export function ProducaoDentista() {
                       orderId={order.id}
                       token={token}
                       templateFilter={['customer_pre_consultation_intake']}
-                      forms={workflowForms}
+                      forms={workflowFormsForPanel}
                       onFormsChange={handleWorkflowFormsChange}
                       variant="embedded"
                       actorRole="dentist"
@@ -1166,12 +1284,20 @@ export function ProducaoDentista() {
 
                 {currentStep === 1 ? (
                   <>
-                    <DentalAnamnesisRecord
-                      order={order}
-                      intakeForm={intakeForm}
-                      draft={draft}
-                      onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
-                    />
+                    {anamnesisSourceDataReady ? (
+                      <DentalAnamnesisRecord
+                        order={order}
+                        intakeForm={intakeForm}
+                        onboardingForm={onboardingForm}
+                        draft={draft}
+                        onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
+                      />
+                    ) : (
+                      <S.Banner role="alert">
+                        Dados da anamnese ainda não disponíveis. A ordem pode estar processando os dados no backend;
+                        aguarde alguns instantes e atualize a página para carregar a ficha clínica completa.
+                      </S.Banner>
+                    )}
 
                     {draft.anamnesisDownloaded ? (
                       <S.ActionsRow>
@@ -1187,6 +1313,14 @@ export function ProducaoDentista() {
                             {' '}Campos pendentes: {dentistPendingRequiredFields.join('; ')}.
                           </>
                         ) : null}
+                      </S.Banner>
+                    ) : null}
+
+                    {shouldHoldAtAnamnesisSummary ? (
+                      <S.Banner role="status">
+                        O cliente precisa concluir o pagamento do Biteplaner antes do dentista prosseguir para a
+                        solicitação de produção ao laboratório. Se o cliente estiver inapto, a jornada seguirá para
+                        reagendamento de consulta.
                       </S.Banner>
                     ) : null}
                   </>
@@ -1381,7 +1515,11 @@ export function ProducaoDentista() {
                   </S.SecondaryActions>
 
                   <S.SecondaryActions>
-                    {currentStep < STEP_DEFINITIONS.length - 1 ? (
+                    {shouldHoldAtAnamnesisSummary ? (
+                      <Button type="button" disabled trailingIcon={<ChevronRight size={16} aria-hidden="true" />}>
+                        Aguardando pagamento do cliente
+                      </Button>
+                    ) : currentStep < STEP_DEFINITIONS.length - 1 ? (
                       <Button
                         type="button"
                         disabled={!currentStepCompleted}

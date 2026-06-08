@@ -20,6 +20,9 @@ export const Description = styled.p`
 `;
 
 export const Banner = styled.div`
+  display: grid;
+  justify-items: start;
+  gap: 10px;
   padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -27,6 +30,14 @@ export const Banner = styled.div`
   font-size: 14px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const BannerActionLink = styled(Link)`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  min-height: 40px;
+  padding: 0 16px;
+  text-decoration: none;
 `;
 
 const disclaimerTone = {
@@ -106,6 +117,101 @@ export const StepDisclaimerText = styled.span`
   font-size: 14px;
   line-height: 1.55;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PaymentConfirmationCard = styled.section`
+  display: grid;
+  gap: 20px;
+  padding: 24px 28px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+
+  @media (max-width: 560px) {
+    padding: 18px;
+  }
+`;
+
+export const PaymentConfirmationHeader = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 560px) {
+    align-items: start;
+  }
+`;
+
+export const PaymentConfirmationIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+`;
+
+export const PaymentConfirmationCopy = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  strong {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 850;
+    line-height: 1.35;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    line-height: 1.55;
+  }
+`;
+
+export const PaymentDetailsGrid = styled.dl`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+
+  @media (max-width: 860px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PaymentDetailItem = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 13px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(21, 128, 61, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
 `;
 
 export const PendingActionCard = styled.section`

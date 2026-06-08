@@ -47,23 +47,36 @@ function renderPage(path = '/painel/biteplaner/cadastro/dentista') {
 }
 
 function mockCepLookup() {
-  const fetchMock = vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      cep: '01001-000',
-      logradouro: 'Praça da Sé',
-      complemento: 'lado ímpar',
-      unidade: '',
-      bairro: 'Sé',
-      localidade: 'São Paulo',
-      uf: 'SP',
-      estado: 'São Paulo',
-      regiao: 'Sudeste',
-      ibge: '3550308',
-      gia: '1004',
-      ddd: '11',
-      siafi: '7107',
-    }),
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.startsWith('https://cep.awesomeapi.com.br/json/')) {
+      return {
+        ok: true,
+        json: async () => ({
+          cep: '01001-000',
+          lat: '-23.5505',
+          lng: '-46.6333',
+        }),
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        cep: '01001-000',
+        logradouro: 'Praça da Sé',
+        complemento: 'lado ímpar',
+        unidade: '',
+        bairro: 'Sé',
+        localidade: 'São Paulo',
+        uf: 'SP',
+        estado: 'São Paulo',
+        regiao: 'Sudeste',
+        ibge: '3550308',
+        gia: '1004',
+        ddd: '11',
+        siafi: '7107',
+      }),
+    };
   });
 
   vi.stubGlobal('fetch', fetchMock);
@@ -715,6 +728,7 @@ describe('CadastroPerfilBiteplaner', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+      expect(fetchMock).toHaveBeenCalledWith('https://cep.awesomeapi.com.br/json/01001000');
       expect(mockApiPost).toHaveBeenCalledWith(
         '/v1/account/products/biteplaner/roles/lab',
         expect.objectContaining({
@@ -727,6 +741,7 @@ describe('CadastroPerfilBiteplaner', () => {
               address: 'Praça da Sé - Sé, São Paulo - SP',
               cep: '01001-000',
               serviceHours: 'Segunda a sexta, 8h as 18h',
+              coordinates: { lat: -23.5505, lng: -46.6333 },
             }),
           ],
         }),

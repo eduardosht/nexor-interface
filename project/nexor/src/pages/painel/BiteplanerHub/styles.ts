@@ -1692,12 +1692,19 @@ export const AthleteOrderHeader = styled.div`
 `;
 
 export const EmptyState = styled.div`
+  display: grid;
+  justify-items: start;
+  gap: 12px;
   padding: 18px;
   border-radius: 12px;
   border: 1px dashed ${({ theme }) => theme.colors.borderDefault};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+
+  p {
+    margin: 0;
+  }
 `;
 
 export const LeadTable = styled.div``;
@@ -2185,6 +2192,203 @@ export const ModalActions = styled.div`
   }
 `;
 
+export const ReferralInviteModalBox = styled(ModalBox)`
+  width: min(100%, 760px);
+  gap: 20px;
+  padding: 28px;
+  border-radius: 16px;
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+
+  @media (max-width: 720px) {
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    padding: 22px;
+  }
+`;
+
+export const ReferralInviteModalHeader = styled(ModalHeader)`
+  align-items: flex-start;
+  gap: 16px;
+`;
+
+export const ReferralInviteModalTitle = styled(ModalTitle)`
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+`;
+
+export const ReferralInviteModalSubtitle = styled(ModalSubtitle)`
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-weight: 800;
+  }
+`;
+
+export const ReferralInviteModalCloseButton = styled(ModalCloseButton)`
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  svg {
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+`;
+
+export const ReferralInviteQrShell = styled(QrShell)`
+  position: relative;
+  gap: 14px;
+  min-height: 320px;
+  padding: 28px;
+  border-radius: 18px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+
+  @media (max-width: 720px) {
+    min-height: auto;
+    padding: 20px 16px;
+  }
+`;
+
+export const ReferralInviteQrFrame = styled.div`
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+
+  svg {
+    width: min(100%, 240px);
+    height: auto;
+    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.12));
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(#16803b, #16803b) left top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 2px 28px no-repeat;
+    border-radius: 12px;
+  }
+`;
+
+export const ReferralInviteQrCaption = styled(QrCaption)`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  svg {
+    color: #16803b;
+  }
+`;
+
+export const ReferralInviteModalField = styled(ModalField)`
+  gap: 12px;
+`;
+
+export const ReferralInviteModalLabel = styled(ModalLabel)`
+  font-size: 12px;
+  letter-spacing: 0.08em;
+`;
+
+export const ReferralInviteLinkInputGroup = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  min-height: 52px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 12px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    min-height: 58px;
+  }
+`;
+
+export const ReferralInviteLinkPreview = styled(LinkPreview)`
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+export const ReferralInviteInlineCopyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+`;
+
+export const ReferralInviteModalActions = styled(ModalActions)`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 820px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const referralInviteActionBase = css`
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+`;
+
+export const ReferralInviteCopyButton = styled.button`
+  ${referralInviteActionBase}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #16803b, #239655);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(22, 128, 59, 0.24);
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+`;
+
 export const ModalSecondaryButton = styled.button`
   ${biteplanerButtonSurfaceStyles}
   min-height: 44px;
@@ -2232,6 +2436,19 @@ export const ModalActionLink = styled(motion.a)`
   &:hover {
     border-color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.bgBase};
+  }
+`;
+
+export const ReferralInviteActionLink = styled(ModalActionLink)`
+  ${referralInviteActionBase}
+  gap: 10px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 15px;
+
+  svg {
+    color: #16803b;
   }
 `;
 

@@ -202,7 +202,7 @@ export function UploadField({
   onRemoveFile,
   accept,
   multiple = false,
-  browseLabel = 'browse',
+  browseLabel = 'procurar',
 }: UploadFieldProps) {
   const { tokens } = useDesignSystem();
   const inputId = useId();
@@ -218,8 +218,8 @@ export function UploadField({
       <Dropzone $tokens={tokens} type="button" onClick={openPicker}>
         <UploadIcon />
         <DropzoneText $tokens={tokens}>
-          <DropzoneHeadline>Drag &amp; drop file(s) to upload</DropzoneHeadline>
-          <BrowseText>or {browseLabel}</BrowseText>
+          <DropzoneHeadline>Arraste e solte o(s) arquivo(s) para enviar</DropzoneHeadline>
+          <BrowseText>ou {browseLabel}</BrowseText>
         </DropzoneText>
       </Dropzone>
       <HiddenInput

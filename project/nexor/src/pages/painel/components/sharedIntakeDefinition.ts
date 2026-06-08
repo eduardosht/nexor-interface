@@ -233,24 +233,6 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
           ],
         },
         {
-          key: 'fullName',
-          label: 'Nome completo',
-          required: true,
-          type: 'text',
-          ownerRole: 'user',
-          visibleTo: userVisible,
-          editableWhen: 'customer_intake',
-        },
-        {
-          key: 'phone',
-          label: 'Telefone',
-          required: true,
-          type: 'text',
-          ownerRole: 'user',
-          visibleTo: userVisible,
-          editableWhen: 'customer_intake',
-        },
-        {
           key: 'ageYears',
           label: 'Idade (anos)',
           required: false,
@@ -1254,6 +1236,30 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
       description:
         'Campos preenchidos pelo dentista licenciado durante ou após a consulta. Estes dados integram o prontuário e devem ser baixados/armazenados conforme normas éticas e legais.',
       fields: [
+        {
+          key: 'biteplannerEligible',
+          label: 'Cliente está apto para uso do Biteplaner?',
+          required: true,
+          type: 'select',
+          displayAs: 'radio',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          options: yesNoOptions,
+          helpText:
+            'Marque Sim para liberar o cliente para pagamento. Marque Não quando o cliente precisar de nova avaliação antes de seguir.',
+        },
+        {
+          key: 'ineligibilityDescriptionForCustomer',
+          label: 'Descrição da inaptidão para o cliente',
+          required: false,
+          type: 'textarea',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          helpText:
+            'Obrigatório quando o cliente não estiver apto. Este texto será exibido para o cliente na jornada para explicar a inaptidão e orientar a nova consulta.',
+        },
         {
           key: 'consultationDate',
           label: 'Data da consulta',

@@ -139,6 +139,7 @@ export type DemoPracticeLocationSelection = {
   address: string;
   cep: string;
   phone: string;
+  isAdapted: boolean;
   dentistName: string;
   dentistReviewScore: number;
   distanceKm: number;
@@ -153,6 +154,8 @@ export type PracticeLocationApiRecord = {
   name: string;
   phone: string | null;
   is_active?: boolean | null;
+  is_adapted?: boolean | null;
+  isAdapted?: boolean | null;
   address?: {
     street?: string | null;
     number?: string | null;
@@ -248,7 +251,7 @@ export type DemoWorkflowForm = {
   orderId: string;
   templateKey: string;
   stepKey: string;
-  status: 'pending' | 'draft' | 'submitted';
+  status: 'pending' | 'draft' | 'submitted' | 'superseded' | 'cancelled';
   roleState?: {
     customer: 'pending' | 'submitted' | 'locked';
     dentist: 'locked' | 'pending' | 'submitted';
@@ -256,6 +259,7 @@ export type DemoWorkflowForm = {
   customerSubmittedAt?: string | null;
   dentistReviewStartedAt?: string | null;
   dentistSubmittedAt?: string | null;
+  dentistId?: string | null;
   canViewPayload: boolean;
   summary: DemoWorkflowFormSummary | null;
   releasedAt: string;
@@ -437,6 +441,7 @@ export function getAthletePrimaryOrder(orders: DemoOrderSummary[]) {
     'registration_started',
     'awaiting_payment',
     'awaiting_dentist_forms',
+    'ineligible_reassessment',
     'awaiting_scheduling',
     'awaiting_dentist_acceptance',
     'in_progress',
@@ -467,10 +472,38 @@ export function isCustomerPreConsultationIntakeComplete(form: DemoWorkflowForm) 
   return form.status === 'submitted';
 }
 
+export function isCustomerOnboardingComplete(form: DemoWorkflowForm) {
+  if (form.templateKey !== 'customer_new_user_onboarding') {
+    return false;
+  }
+
+  if (form.roleState) {
+    return form.roleState.customer === 'submitted' || form.roleState.customer === 'locked';
+  }
+
+  return form.status === 'submitted';
+}
+
+export function hasCustomerPreConsultationIntakeReleased(forms: DemoWorkflowForm[]) {
+  return forms.some((form) => form.templateKey === 'customer_pre_consultation_intake');
+}
+
 export function getEffectiveAthleteOrder(
   order: DemoOrderSummary | null,
   forms: DemoWorkflowForm[] = []
 ): DemoOrderSummary | null {
+  if (
+    order?.status === 'registration_started' &&
+    !forms.some(isCustomerOnboardingComplete) &&
+    !hasCustomerPreConsultationIntakeReleased(forms)
+  ) {
+    return {
+      ...order,
+      statusLabel: 'Cadastro iniciado',
+      stage: 'new_user_onboarding',
+    };
+  }
+
   if (
     order?.status === 'registration_started' &&
     forms.some(isCustomerPreConsultationIntakeComplete)
@@ -499,7 +532,7 @@ export function getAthleteNextPath(order: DemoOrderSummary | null) {
     return '/painel/pre-requisito';
   }
 
-  if (order.status === 'awaiting_scheduling') {
+  if (order.status === 'awaiting_scheduling' || order.status === 'ineligible_reassessment') {
     return '/painel/consulta-inicial';
   }
 
@@ -519,7 +552,8 @@ export async function fetchAccessOptions(token?: string) {
 }
 
 export async function fetchOrders(mode: AccessMode, token?: string) {
-  return api.get<{ orders: DemoOrderSummary[] }>(`/v1/orders?as=${mode}`, token);
+  const path = mode === 'admin' ? '/v1/orders' : `/v1/orders?as=${mode}`;
+  return api.get<{ orders: DemoOrderSummary[] }>(path, token);
 }
 
 export async function fetchPracticeLocations(token?: string) {
@@ -741,11 +775,13 @@ export async function confirmAppointmentByUser(
   appointmentId: string,
   token?: string
 ) {
-  return api.post<{ appointment: DemoAppointment }>(
+  const response = await api.post<{ appointment: DemoAppointment } | DemoAppointment>(
     `/v1/orders/${orderId}/appointments/${appointmentId}/user-confirmation`,
     {},
     token
   );
+
+  return { appointment: 'appointment' in response ? response.appointment : response };
 }
 
 export async function confirmAppointmentByDentist(
@@ -753,11 +789,13 @@ export async function confirmAppointmentByDentist(
   appointmentId: string,
   token?: string
 ) {
-  return api.post<{ appointment: DemoAppointment }>(
+  const response = await api.post<{ appointment: DemoAppointment } | DemoAppointment>(
     `/v1/orders/${orderId}/appointments/${appointmentId}/dentist-confirmation`,
     {},
     token
   );
+
+  return { appointment: 'appointment' in response ? response.appointment : response };
 }
 
 export async function fetchTimeline(orderId: string, token?: string) {
@@ -820,6 +858,14 @@ export async function confirmPayment(orderId: string, token?: string) {
 
 export async function createCheckoutSession(orderId: string, token?: string) {
   return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, {}, token);
+}
+
+export async function reconcileCheckoutSession(orderId: string, sessionId: string, token?: string) {
+  return api.post<{ order: DemoOrderSummary }>(
+    `/v1/orders/${orderId}/checkout-session/${sessionId}/reconcile`,
+    {},
+    token
+  );
 }
 
 export async function scheduleInitialConsultation(
