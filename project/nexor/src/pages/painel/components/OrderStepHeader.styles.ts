@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
 
 export const Header = styled.header`
   display: grid;
@@ -14,35 +15,9 @@ export const Copy = styled.div`
   gap: 12px;
 `;
 
-export const Title = styled.h1`
-  margin: 0;
-  max-width: 760px;
-  font-size: clamp(2rem, 3.4vw, 2.75rem);
-  line-height: 1.08;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const Title = PortalPageTitle;
 
-  @media (max-width: 1280px) {
-    font-size: clamp(1.5rem, 2.4vw, 2.1rem);
-  }
-`;
-
-export const Description = styled.p`
-  max-width: 760px;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  strong {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 700;
-  }
-
-  @media (max-width: 1280px) {
-    font-size: 14px;
-  }
-`;
+export const Description = PortalPageDescription;
 
 export const OrderBanner = styled.section`
   display: grid;

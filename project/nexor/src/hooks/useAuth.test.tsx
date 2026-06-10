@@ -127,6 +127,34 @@ describe('useAuth backendUser', () => {
     expect(screen.getByTestId('resolved')).toHaveTextContent('yes');
   });
 
+  it('keeps the resolved backend user during same-user signed-in events', async () => {
+    let authCallback = (_event: string, _nextSession: { access_token: string; user: { id: string; email: string } }) => {};
+    mockOnAuthStateChange.mockImplementation((callback) => {
+      authCallback = callback;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
+    mockGet.mockResolvedValue({
+      user: { id: '1', authUserId: '1', email: 'a@b.com', roles: ['customer'], clinicIds: [] }
+    });
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('role')).toHaveTextContent('customer'));
+
+    authCallback('SIGNED_IN', {
+      access_token: 'tok-focus-restored',
+      user: { id: '1', email: 'a@b.com' },
+    });
+
+    expect(screen.queryByText('loading')).not.toBeInTheDocument();
+    expect(screen.getByTestId('role')).toHaveTextContent('customer');
+    expect(screen.getByTestId('resolved')).toHaveTextContent('yes');
+  });
+
   it('fetches the backend user on token refresh when the previous profile was missing', async () => {
     let authCallback = (_event: string, _nextSession: { access_token: string; user: { id: string; email: string } }) => {};
     mockOnAuthStateChange.mockImplementation((callback) => {

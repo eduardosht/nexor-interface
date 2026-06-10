@@ -3,678 +3,557 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apresentação dos fluxos Biteplaner Nexor</title>
+  <title>Nexor Biteplaner | Jornada do Cliente</title>
   <style>
     :root {
-      --bg: #f6f7f9;
-      --panel: #ffffff;
-      --ink: #121722;
-      --muted: #5d6675;
-      --soft: #eef2f6;
-      --line: #d8dee8;
-      --green: #15803d;
-      --green-soft: #eaf7ef;
-      --blue: #2563eb;
-      --blue-soft: #eaf1ff;
-      --amber: #b7791f;
-      --amber-soft: #fff7e6;
-      --red: #b42318;
-      --red-soft: #fff1f0;
-      --dark: #10141c;
-      --shadow: 0 18px 44px rgba(18, 23, 34, 0.10);
+      color-scheme: light;
+      --bg: oklch(98.4% 0.008 160);
+      --panel: oklch(99.2% 0.006 160);
+      --panel-soft: oklch(96.9% 0.012 160);
+      --line: oklch(88.5% 0.018 240);
+      --line-strong: oklch(81% 0.032 240);
+      --ink: oklch(22% 0.052 255);
+      --muted: oklch(48% 0.036 255);
+      --subtle: oklch(62% 0.026 255);
+      --green: oklch(55% 0.145 154);
+      --green-ink: oklch(29% 0.09 154);
+      --green-soft: oklch(95.5% 0.035 154);
+      --blue: oklch(50% 0.11 245);
+      --blue-soft: oklch(96% 0.026 245);
+      --amber: oklch(67% 0.128 72);
+      --amber-soft: oklch(96.5% 0.035 72);
+      --violet: oklch(46% 0.095 285);
+      --violet-soft: oklch(96% 0.026 285);
+      --danger: oklch(54% 0.16 26);
+      --shadow: 0 14px 40px oklch(22% 0.052 255 / 0.08);
+      --radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 16px;
     }
 
     * { box-sizing: border-box; }
 
+    html { scroll-behavior: smooth; }
+
     body {
       margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
       color: var(--ink);
-      background: var(--bg);
-      line-height: 1.55;
-    }
-
-    img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
-    a { color: inherit; }
-
-    .hero {
-      min-height: 86vh;
-      display: grid;
-      grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
-      gap: 44px;
-      align-items: center;
-      padding: 64px clamp(24px, 6vw, 92px);
       background:
-        radial-gradient(circle at 82% 20%, rgba(72, 187, 120, 0.34), transparent 36%),
-        linear-gradient(110deg, #10141c, #18202c 54%, #0f5132);
-      color: #fff;
+        radial-gradient(circle at 12% 6%, oklch(94% 0.035 154 / 0.65), transparent 28rem),
+        linear-gradient(180deg, var(--bg), oklch(97% 0.006 240));
     }
 
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 20px;
-      color: #bfe7cd;
-      font-size: 13px;
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .page-shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 32px;
+      width: min(1460px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      min-height: calc(100vh - 48px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 26px;
+      padding: 4px 0;
+    }
+
+    .brand {
+      display: grid;
+      gap: 3px;
+      width: fit-content;
+    }
+
+    .brand-mark {
+      font-size: 31px;
+      line-height: 1;
       font-weight: 800;
       letter-spacing: 0.08em;
-      text-transform: uppercase;
+      color: oklch(22% 0.065 255);
     }
 
-    .eyebrow::before {
+    .brand-sub {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--blue);
+      padding-left: 12px;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .timeline::before {
       content: "";
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: currentColor;
+      position: absolute;
+      left: 31px;
+      top: 30px;
+      bottom: 30px;
+      width: 2px;
+      background: var(--line);
     }
 
-    h1, h2, h3, h4, p { margin-top: 0; }
-
-    h1 {
-      max-width: 820px;
-      margin-bottom: 22px;
-      font-size: clamp(38px, 5vw, 68px);
-      line-height: 1.04;
-      letter-spacing: 0;
-    }
-
-    .hero p {
-      max-width: 720px;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: clamp(17px, 1.8vw, 23px);
-    }
-
-    .hero-panel {
-      align-self: end;
+    .timeline-button {
+      position: relative;
       display: grid;
-      gap: 14px;
-      padding: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.09);
-      backdrop-filter: blur(16px);
+      grid-template-columns: 62px 1fr;
+      gap: 13px;
+      align-items: center;
+      width: 100%;
+      min-height: 72px;
+      padding: 8px 10px 8px 0;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: transparent;
+      text-align: left;
+      transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
     }
 
-    .hero-stat {
-      display: grid;
-      grid-template-columns: 46px 1fr;
-      gap: 14px;
-      align-items: start;
+    .timeline-button:hover {
+      color: var(--ink);
+      background: oklch(99% 0.006 160 / 0.72);
     }
 
-    .hero-stat span {
+    .timeline-button[aria-current="true"] {
+      color: var(--green-ink);
+      background: var(--green-soft);
+      border-color: oklch(74% 0.09 154);
+      box-shadow: 0 8px 24px oklch(55% 0.145 154 / 0.12);
+    }
+
+    .step-dot {
+      position: relative;
+      z-index: 1;
       display: grid;
       place-items: center;
-      width: 46px;
-      height: 46px;
-      border-radius: 8px;
-      color: #d7f7df;
-      background: rgba(255, 255, 255, 0.12);
-      font-weight: 900;
-    }
-
-    .hero-stat strong {
-      display: block;
-      margin-bottom: 2px;
-      color: #fff;
-      font-size: 15px;
-    }
-
-    .hero-stat p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.72);
-      font-size: 14px;
-    }
-
-    main {
-      display: grid;
-      gap: 28px;
-      padding: 42px clamp(18px, 5vw, 72px) 80px;
-    }
-
-    section {
+      width: 54px;
+      height: 54px;
+      margin-left: 5px;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .section-head {
-      padding: 28px 30px 20px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .section-head h2 {
-      margin-bottom: 8px;
-      font-size: clamp(26px, 3vw, 38px);
-      line-height: 1.15;
-      letter-spacing: 0;
-    }
-
-    .section-head p {
-      max-width: 1040px;
-      margin: 0;
-      color: var(--muted);
-      font-size: 16px;
-    }
-
-    .section-body {
-      padding: 28px 30px 32px;
-    }
-
-    .timeline-label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .timeline-label::before {
-      content: "";
-      width: 10px;
-      height: 10px;
       border-radius: 999px;
+      background: var(--panel);
+      color: var(--subtle);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .timeline-button[aria-current="true"] .step-dot {
+      color: oklch(99% 0.006 160);
       background: var(--green);
-      box-shadow: 0 0 0 6px var(--green-soft);
-    }
-
-    .timeline-label.role::before {
-      background: var(--blue);
-      box-shadow: 0 0 0 6px var(--blue-soft);
-    }
-
-    .timeline-block + .timeline-block {
-      margin-top: 24px;
-      padding-top: 24px;
-      border-top: 1px dashed var(--line);
-    }
-
-    .split > .timeline-label {
-      grid-column: 1 / -1;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
-    }
-
-    .grid.three {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .flow {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(128px, 1fr));
-      gap: 12px;
-    }
-
-    .step {
-      min-height: 142px;
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
+      border-color: var(--green);
     }
 
     .step-number {
-      display: inline-grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      margin-bottom: 12px;
-      border-radius: 999px;
-      color: var(--green);
-      background: var(--green-soft);
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    .step h3 {
-      margin-bottom: 6px;
-      font-size: 16px;
-      line-height: 1.25;
-    }
-
-    .step p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .screen-card,
-    .mock-screen,
-    .info-card,
-    .form-card {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      overflow: hidden;
-    }
-
-    .screen-card a.image-link {
-      position: relative;
       display: block;
-      color: inherit;
-      text-decoration: none;
-      cursor: zoom-in;
-    }
-
-    .screen-card a.image-link::after {
-      content: "Abrir print completo";
-      position: absolute;
-      right: 12px;
-      bottom: 12px;
-      padding: 7px 10px;
-      border-radius: 999px;
-      color: #fff;
-      background: rgba(18, 23, 34, 0.82);
-      font-size: 11px;
-      font-weight: 900;
-      opacity: 0;
-      transform: translateY(4px);
-      transition: opacity 0.18s ease, transform 0.18s ease;
-      pointer-events: none;
-    }
-
-    .screen-card a.image-link:hover::after,
-    .screen-card a.image-link:focus-visible::after {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .screen-card img {
-      aspect-ratio: 16 / 10;
-      object-fit: cover;
-      object-position: top center;
-      border-bottom: 1px solid var(--line);
-      background: var(--soft);
-    }
-
-    .screen-caption,
-    .mock-caption,
-    .info-card,
-    .form-card {
-      padding: 18px;
-    }
-
-    .screen-caption h3,
-    .mock-caption h3,
-    .info-card h3,
-    .form-card h3 {
-      margin-bottom: 6px;
-      font-size: 18px;
-      line-height: 1.25;
-    }
-
-    .screen-caption p,
-    .mock-caption p,
-    .info-card p,
-    .form-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .mock-canvas {
-      min-height: 360px;
-      padding: 22px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #fbfcfd, #f2f5f8);
-    }
-
-    .mock-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .mock-title {
-      font-size: 24px;
-      line-height: 1.15;
-      font-weight: 900;
-    }
-
-    .mock-subtitle {
-      margin-top: 5px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .mock-panel {
-      display: grid;
-      gap: 12px;
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .mock-row {
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 12px;
-      align-items: center;
-      min-height: 42px;
-    }
-
-    .mock-label {
-      color: var(--muted);
+      margin-bottom: 4px;
       font-size: 12px;
       font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      color: var(--subtle);
     }
 
-    .mock-value {
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--ink);
-      background: #fbfcfd;
-      font-size: 14px;
-    }
+    .timeline-button[aria-current="true"] .step-number { color: var(--green); }
 
-    .mini-stepper {
-      display: grid;
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .mini-step {
-      display: grid;
-      grid-template-columns: 34px 1fr auto;
-      gap: 12px;
-      align-items: center;
-      padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-    }
-
-    .mini-step-icon {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      color: var(--green);
-      background: var(--green-soft);
-      font-weight: 900;
-    }
-
-    .network-map {
-      position: relative;
-      display: grid;
-      gap: 18px;
-      padding: 24px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background:
-        linear-gradient(90deg, rgba(21, 128, 61, 0.08) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(21, 128, 61, 0.08) 1px, transparent 1px),
-        #fbfcfd;
-      background-size: 42px 42px;
-      overflow: hidden;
-    }
-
-    .network-row {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(120px, 1fr));
-      gap: 14px;
-      align-items: stretch;
-    }
-
-    .network-row.compact {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .network-node {
-      position: relative;
-      min-height: 116px;
-      padding: 15px;
-      border: 1px solid #b9d8c4;
-      border-radius: 8px;
-      background: #fff;
-      box-shadow: 0 12px 28px rgba(18, 23, 34, 0.08);
-    }
-
-    .network-node::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      right: -15px;
-      width: 15px;
-      border-top: 2px solid #8fc8a3;
-    }
-
-    .network-node:last-child::after {
-      display: none;
-    }
-
-    .network-node strong {
+    .step-title {
       display: block;
-      margin-bottom: 6px;
-      color: var(--ink);
       font-size: 14px;
-      line-height: 1.25;
+      line-height: 1.35;
+      font-weight: 700;
     }
 
-    .network-node span {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .network-node.decision {
-      border-color: #f2c16d;
-      background: #fffaf0;
-    }
-
-    .network-node.stop {
-      border-color: #fecaca;
-      background: #fff7f7;
-    }
-
-    .network-node.success {
-      border-color: #8fd3a7;
-      background: #f1fbf4;
-    }
-
-    .network-branches {
+    .support-card {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .branch-card {
-      padding: 16px;
+      gap: 13px;
+      padding: 18px;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 30px oklch(22% 0.052 255 / 0.05);
     }
 
-    .branch-card h3 {
-      margin-bottom: 8px;
-      font-size: 17px;
-    }
+    .support-card strong { font-size: 14px; }
 
-    .branch-card p {
+    .support-card p {
       margin: 0;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
-    .status-grid {
+    .help-badge {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      font-weight: 800;
+    }
+
+    .main {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .topbar,
+    .panel,
+    .section,
+    .screen-stack,
+    .practice-shot,
+    .stage-hero {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 18px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .overview-button {
+      display: grid;
+      grid-template-columns: 34px 1fr 22px;
       gap: 12px;
+      align-items: center;
+      min-width: 280px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      text-align: left;
+      box-shadow: 0 8px 26px oklch(22% 0.052 255 / 0.04);
+    }
+
+    .overview-button span {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(99% 0.006 160 / 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    .stage-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 28px;
+      padding: 24px;
     }
 
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
       width: fit-content;
-      padding: 5px 10px;
+      min-height: 28px;
+      padding: 0 11px;
+      border: 1px solid oklch(79% 0.09 154);
       border-radius: 999px;
-      border: 1px solid transparent;
+      color: var(--green-ink);
+      background: var(--green-soft);
       font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .stage-summary {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .meta-grid {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 11px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--blue);
+      background: var(--panel);
+      font-size: 17px;
+      line-height: 1;
       font-weight: 800;
     }
 
-    .badge::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: currentColor;
+    .section {
+      padding: 20px;
     }
 
-    .badge.green { color: var(--green); background: var(--green-soft); border-color: #b7e3c6; }
-    .badge.blue { color: var(--blue); background: var(--blue-soft); border-color: #bdd0ff; }
-    .badge.amber { color: var(--amber); background: var(--amber-soft); border-color: #f4d090; }
-    .badge.red { color: var(--red); background: var(--red-soft); border-color: #fecaca; }
+    .section + .section { border-top: 1px solid var(--line); }
 
-    .rule {
-      padding: 16px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
     }
 
-    .rule strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 14px;
+    h3 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
     }
 
-    .rule p {
+    .section-head p, .note {
       margin: 0;
       color: var(--muted);
+      line-height: 1.45;
       font-size: 14px;
     }
 
-    .split {
+    .screen-stack {
       display: grid;
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-      gap: 20px;
-      align-items: start;
+      gap: 16px;
     }
 
-    .list {
-      display: grid;
-      gap: 8px;
-      margin: 14px 0 0;
-      padding: 0;
-      list-style: none;
+    .practice-shot {
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
     }
 
-    .list li {
-      display: grid;
-      grid-template-columns: 20px 1fr;
-      gap: 9px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .list li::before {
-      content: "✓";
-      display: grid;
-      place-items: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      color: var(--green);
-      border: 1px solid #9bd7ad;
-      font-size: 11px;
-      font-weight: 900;
-    }
-
-    .field-list {
-      columns: 2;
-      column-gap: 28px;
-      margin: 14px 0 0;
-      padding-left: 18px;
+    .shot-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
       color: var(--muted);
       font-size: 13px;
     }
 
-    .field-list li {
-      break-inside: avoid;
-      margin: 0 0 7px;
-    }
-
-    details {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      overflow: hidden;
-    }
-
-    details + details { margin-top: 12px; }
-
-    summary {
-      cursor: pointer;
-      padding: 15px 18px;
+    .shot-toolbar strong {
       color: var(--ink);
-      font-weight: 850;
-      background: #fbfcfd;
-      border-bottom: 1px solid var(--line);
-    }
-
-    details[open] summary {
-      border-bottom-color: var(--line);
-    }
-
-    .details-body {
-      padding: 18px;
-    }
-
-    .input {
-      min-height: 44px;
-      padding: 11px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--muted);
-      background: #fbfcfd;
       font-size: 14px;
     }
 
-    .button {
+    .ghost-button {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 18px;
-      border-radius: 8px;
-      color: #fff;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .shot-frame {
+      max-height: 760px;
+      overflow: auto;
+      background: oklch(96.8% 0.008 240);
+    }
+
+    .shot-frame img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .callout-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      min-height: 82px;
+    }
+
+    .callout b {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      color: oklch(99% 0.006 160);
       background: var(--green);
-      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .callout strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .callout span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .info-card {
+      display: grid;
+      gap: 10px;
+      min-height: 152px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--panel), oklch(97.6% 0.018 154));
+    }
+
+    .info-card strong { font-size: 15px; }
+
+    .info-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr 44px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .flow-card {
+      min-height: 156px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--blue-soft);
+    }
+
+    .flow-card.process { background: var(--amber-soft); }
+    .flow-card.result { background: var(--green-soft); }
+
+    .flow-card h4 {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: 15px;
+    }
+
+    .flow-card.process h4 { color: oklch(43% 0.105 72); }
+    .flow-card.result h4 { color: var(--green-ink); }
+
+    .flow-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .flow-arrow {
+      color: var(--subtle);
+      font-size: 30px;
+      text-align: center;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
     }
 
     table {
       width: 100%;
+      min-width: 820px;
       border-collapse: collapse;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     th, td {
-      padding: 12px 10px;
+      padding: 11px 12px;
       border-bottom: 1px solid var(--line);
       text-align: left;
       vertical-align: top;
@@ -682,463 +561,911 @@
 
     th {
       color: var(--muted);
+      background: oklch(97.8% 0.01 240);
       font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      font-weight: 800;
     }
 
-    @media (max-width: 1100px) {
-      .hero,
-      .split,
-      .grid,
-      .grid.three {
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child { font-weight: 700; }
+
+    .overview-panel {
+      display: none;
+      padding: 22px;
+    }
+
+    .overview-panel.is-visible { display: block; }
+
+    .overview-map {
+      display: grid;
+      grid-template-columns: repeat(9, minmax(118px, 1fr));
+      gap: 10px;
+      overflow: auto;
+      padding-bottom: 4px;
+    }
+
+    .overview-step {
+      min-height: 138px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .overview-step b {
+      display: block;
+      color: var(--green);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .overview-step strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .overview-step span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .technical {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 18px;
+      border: 1px solid oklch(83% 0.05 285);
+      border-radius: var(--radius);
+      background: linear-gradient(90deg, var(--violet-soft), oklch(98.4% 0.012 245));
+    }
+
+    .technical strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--violet);
+    }
+
+    .technical p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 2px;
+    }
+
+    .nav-button {
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: var(--panel);
+      font-weight: 800;
+    }
+
+    .nav-button.primary {
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .progress-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      grid-template-rows: auto 1fr;
+      padding: 18px;
+      background: oklch(18% 0.035 255 / 0.82);
+    }
+
+    .image-modal[aria-hidden="false"] { display: grid; }
+
+    .modal-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      color: oklch(98% 0.008 160);
+      padding: 0 0 14px;
+    }
+
+    .modal-bar strong { font-size: 16px; }
+
+    .modal-close {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid oklch(98% 0.008 160 / 0.35);
+      border-radius: 6px;
+      color: oklch(98% 0.008 160);
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .modal-image-scroll {
+      overflow: auto;
+      border-radius: var(--radius);
+      background: oklch(98% 0.008 160);
+    }
+
+    .modal-image-scroll img {
+      display: block;
+      width: min(100%, 1440px);
+      height: auto;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1120px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+        width: min(calc(100% - 28px), 980px);
+      }
+
+      .sidebar {
+        position: static;
+        min-height: 0;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .timeline::before { display: none; }
+
+      .timeline-button {
+        grid-template-columns: 42px 1fr;
+        min-height: 66px;
+        padding: 8px;
+      }
+
+      .step-dot {
+        width: 38px;
+        height: 38px;
+        margin-left: 0;
+        font-size: 16px;
+      }
+
+      .support-card { display: none; }
+
+      .stage-hero {
         grid-template-columns: 1fr;
       }
 
-      .flow,
-      .status-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      .callout-grid, .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .overview-map { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
     }
 
     @media (max-width: 720px) {
-      .hero {
-        min-height: auto;
-        padding: 44px 18px;
+      .page-shell {
+        width: min(calc(100% - 20px), 620px);
+        padding-top: 18px;
       }
 
-      main {
-        padding: 22px 14px 52px;
-      }
-
-      .section-head,
-      .section-body {
-        padding-left: 18px;
-        padding-right: 18px;
-      }
-
-      .flow,
-      .status-grid,
-      .network-row,
-      .network-branches {
+      .topbar {
         grid-template-columns: 1fr;
       }
 
-      .network-node::after {
-        top: auto;
-        right: auto;
-        left: 28px;
-        bottom: -15px;
-        width: 0;
-        height: 15px;
-        border-top: 0;
-        border-left: 2px solid #8fc8a3;
+      .overview-button { min-width: 0; }
+
+      h1 { font-size: 28px; }
+      h2 { font-size: 23px; }
+
+      .timeline {
+        grid-template-columns: 1fr;
       }
 
-      .field-list {
-        columns: 1;
+      .timeline-button {
+        grid-template-columns: 48px 1fr;
+      }
+
+      .stage-hero, .section { padding: 16px; }
+
+      .section-head {
+        display: grid;
+        align-items: start;
+      }
+
+      .shot-toolbar {
+        display: grid;
+        align-items: start;
+      }
+
+      .callout-grid, .cards-grid { grid-template-columns: 1fr; }
+
+      .flow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+
+      .technical {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
 <body>
-  <header class="hero">
-    <div>
-      <p class="eyebrow">Fluxo Biteplaner Nexor</p>
-      <h1>Apresentação visual da jornada operacional</h1>
-      <p>Material para stakeholders acompanharem o fluxo real: indicação por parceiro, cadastro do cliente, onboarding, pré-consulta, decisão clínica, compra, produção com dentista e laboratório, inaptidão e reavaliação.</p>
-    </div>
+  <div class="page-shell">
+    <aside class="sidebar" aria-label="Etapas da jornada">
+      <div>
+        <div class="brand" aria-label="Nexor Biteplaner">
+          <div class="brand-mark">NEXOR</div>
+          <div class="brand-sub">BITEPLANER</div>
+        </div>
+        <nav class="timeline" data-timeline></nav>
+      </div>
 
-    <aside class="hero-panel" aria-label="Resumo da apresentação">
-      <div class="hero-stat">
-        <span>6</span>
-        <div>
-          <strong>Etapas padronizadas</strong>
-          <p>Pre-requisito, Consulta inicial, Decisão clínica, Compra, Laboratório e Adaptação e acompanhamento.</p>
-        </div>
-      </div>
-      <div class="hero-stat">
-        <span>22</span>
-        <div>
-          <strong>Prints operacionais</strong>
-          <p>Fluxos de parceiro, cliente, dentista, laboratório, onboarding e pagamento. Conteúdo de admin foi removido deste material.</p>
-        </div>
-      </div>
-      <div class="hero-stat">
-        <span>1</span>
-        <div>
-          <strong>Regra crítica de pagamento</strong>
-          <p>O cliente só paga depois de ser declarado apto pelo dentista. A confirmação de pagamento libera a produção.</p>
-        </div>
+      <div class="support-card">
+        <div class="help-badge">?</div>
+        <strong>Precisa de ajuda?</strong>
+        <p>Use a linha do tempo para ver quem atua, quais dados são criados e o que libera a próxima etapa.</p>
       </div>
     </aside>
-  </header>
 
-  <main>
-    <section>
-      <div class="section-head">
-        <h2>Mapa da jornada</h2>
-        <p>Toda tabela com coluna Etapa deve usar apenas estas seis labels. Status técnicos e ações internas não substituem a etapa da jornada do cliente.</p>
-      </div>
-      <div class="section-body">
-        <div class="flow">
-          <article class="step"><span class="step-number">1</span><h3>Pre-requisito</h3><p>Conta, consentimentos, onboarding e triagens iniciais do produto.</p></article>
-          <article class="step"><span class="step-number">2</span><h3>Consulta inicial</h3><p>Cliente escolhe clínica e dentista aceita a consulta combinada.</p></article>
-          <article class="step"><span class="step-number">3</span><h3>Decisão clínica</h3><p>Dentista revisa a pré-consulta e decide aptidão para o Biteplaner.</p></article>
-          <article class="step"><span class="step-number">4</span><h3>Compra</h3><p>Cliente apto realiza o pagamento e aguarda confirmação.</p></article>
-          <article class="step"><span class="step-number">5</span><h3>Laboratório</h3><p>Dentista envia produção e laboratório executa a confecção.</p></article>
-          <article class="step"><span class="step-number">6</span><h3>Adaptação e acompanhamento</h3><p>Retorno, adaptação do dispositivo e acompanhamento pós-entrega.</p></article>
-        </div>
-        <div class="info-card" style="margin-top:20px">
-          <h3>Como ler as próximas seções</h3>
-          <p>Nas etapas do cliente, o documento começa pelo <strong>Fluxo visual da jornada</strong>. Nas roles parceiro, dentista e laboratório, a leitura mostra diretamente os <strong>formulários, listagens de ordens e ações pertencentes à role</strong>.</p>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Regras que mudaram o fluxo</h2>
-        <p>As regras abaixo são as que mais impactam status, permissões e telas depois das últimas decisões de produto.</p>
-      </div>
-      <div class="section-body">
-        <div class="status-grid">
-          <div class="rule"><strong>Inaptidão</strong><p>Exibir apenas “Inaptidão” para cliente e dentista. Não existe status de refund por inaptidão.</p></div>
-          <div class="rule"><strong>Nova consulta</strong><p>Cliente inapto pode voltar para Consulta inicial e escolher a mesma clínica ou outra clínica licenciada.</p></div>
-          <div class="rule"><strong>Novo dentista</strong><p>Se houver troca de dentista após inaptidão, o novo dentista deve preencher seu próprio complemento clínico.</p></div>
-          <div class="rule"><strong>Pagamento transitório</strong><p>Após a confirmação de pagamento, o sistema libera a solicitação de produção. O dentista não fica parado nesse status.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Entrada: parceiro indicando cliente</h2>
-        <p>O parceiro gera um link individual e acompanha sua própria listagem de indicações. O cliente indicado acessa o convite, cria conta Nexor e segue a jornada do Biteplaner.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label role">Conteúdo da etapa por role: parceiro</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/01-parceiro-indicar-formulario.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/01-parceiro-indicar-formulario.png" alt="Formulário para parceiro indicar cliente"></a><div class="screen-caption"><h3>Indicação por parceiro</h3><p>Campos principais: nome do indicado, e-mail, telefone, origem/parceiro e observações.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/02-parceiro-indicar-preenchido.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/02-parceiro-indicar-preenchido.png" alt="Formulário de indicação preenchido"></a><div class="screen-caption"><h3>Indicação preenchida</h3><p>O parceiro confere os dados antes de gerar o convite individual.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/03-parceiro-listagem-ordens-links.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/03-parceiro-listagem-ordens-links.png" alt="Tabela de links gerados pelo parceiro"></a><div class="screen-caption"><h3>Listagem do parceiro</h3><p>Links inativos não podem ser compartilhados nem deletados. A ação fica disponível apenas para status Ativo.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/04-parceiro-link-modal-qr.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/04-parceiro-link-modal-qr.png" alt="Modal de visualizar link individual com QR code"></a><div class="screen-caption"><h3>Link individual</h3><p>Modal mostra nome do indicado, QR code, URL individual e ações de copiar, e-mail e WhatsApp.</p></div></article>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Entrada: cadastro do cliente indicado</h2>
-        <p>O cliente indicado precisa ter conta Nexor para entrar na jornada. O convite deve preservar o vínculo com o parceiro de origem.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label role">Conteúdo da etapa por role: cliente indicado</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/05-cliente-cadastro-conta-convite.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/05-cliente-cadastro-conta-convite.png" alt="Cadastro de conta do cliente por convite"></a><div class="screen-caption"><h3>Criação de conta</h3><p>Conta simples com dados de acesso e vínculo do convite.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/06-cliente-cadastro-consentimentos.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/06-cliente-cadastro-consentimentos.png" alt="Consentimentos do cadastro do cliente"></a><div class="screen-caption"><h3>Consentimentos</h3><p>LGPD, termos e comunicações são coletados antes de liberar formulários sensíveis.</p></div></article>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Entrada: onboarding do cliente</h2>
-        <p>O onboarding coleta os dados de perfil, prática esportiva e objetivos. Stakeholders precisam enxergar todos os blocos de perguntas porque eles alimentam a pré-consulta e a jornada.</p>
-      </div>
-      <div class="section-body split">
-        <div class="timeline-label role">Conteúdo da etapa por role: cliente</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/07-cliente-onboarding-lgpd-bloqueio.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/07-cliente-onboarding-lgpd-bloqueio.png" alt="Tela de onboarding bloqueada por consentimento LGPD"></a><div class="screen-caption"><h3>Bloqueio LGPD</h3><p>Sem aceite, o formulário sensível não fica disponível.</p></div></article>
-          <div class="form-card"><h3>Formulário do cliente</h3><p>Depois do aceite, o cliente preenche dados pessoais, treino, saúde, perfil financeiro e objetivos. O conteúdo completo dos campos está detalhado logo abaixo para leitura dos stakeholders.</p></div>
-        </div>
+    <main class="main">
+      <header class="topbar">
         <div>
-          <details open>
-            <summary>Campos do onboarding do cliente</summary>
-            <div class="details-body">
-              <ul class="field-list">
-                <li>Nome completo</li><li>E-mail</li><li>Telefone</li><li>CPF</li><li>CEP</li><li>Endereço</li><li>Complemento</li><li>Cidade</li><li>Estado</li><li>Profissão</li><li>Data de nascimento</li><li>Sexo biológico</li><li>Lateralidade predominante</li><li>Massa corporal (kg)</li><li>Altura (m)</li><li>Esportes/atividades atuais</li><li>Esportes/atividades passados</li><li>Há quanto tempo está treinando em geral?</li><li>Cidade/Bairro onde treina</li><li>Local de treinamento</li><li>Quem direciona/acompanha seu treinamento?</li><li>Acessórios de segurança, monitoramento ou performance</li><li>Lesões/problemas de saúde atuais que dificultam o treinamento</li><li>Lesões/problemas de saúde anteriores relacionados a treinos ou competições</li><li>Gasto médio mensal com locais de treinamento</li><li>Gasto anual com acessórios</li><li>Gasto mensal com suplementos</li><li>Gasto mensal com personal trainer</li><li>Gasto mensal com nutricionista</li><li>Renda mensal aproximada</li><li>Objetivos pessoais em relação aos treinos</li><li>Maior objetivo em relação aos treinos</li><li>Maior preocupação em relação aos treinos</li><li>Trabalho afeta seu desempenho nos treinos?</li><li>Chance de usar o SIN</li><li>Motivo da nota do SIN</li><li>Funcionalidade esperada no SIN</li><li>O que faria deixar de usar o SIN?</li><li>Indicaria a Nexor?</li><li>Consentimento para análises internas e melhoria do produto</li><li>Consentimento para comunicações e informes personalizados</li><li>Conselho para a equipe de produto</li><li>Coisa mais importante em que a Nexor precisa auxiliar</li><li>Dúvida, preocupação ou sugestão aberta</li>
-              </ul>
-            </div>
-          </details>
+          <h1>Jornada do Cliente</h1>
+          <p class="lead">Entenda cada etapa que o atleta percorre na Nexor, desde a indicação inicial até a adaptação e o acompanhamento clínico do Biteplaner.</p>
         </div>
-      </div>
-    </section>
+        <button class="overview-button" type="button" data-overview-toggle>
+          <span class="icon">↔</span>
+          <strong>Visão geral<span>Fluxo completo da ordem do produto</span></strong>
+          <span aria-hidden="true">→</span>
+        </button>
+      </header>
 
-    <section>
-      <div class="section-head">
-        <h2>Etapa 1: Pre-requisito e pré-consulta</h2>
-        <p>A pré-consulta é compartilhada: o cliente preenche a anamnese inicial e o dentista complementa após a consulta. O pagamento só nasce depois da decisão clínica positiva.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label">Fluxo visual da jornada: Pre-requisito e decisão clínica</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/09a-cliente-pre-requisito-secao-1.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/09a-cliente-pre-requisito-secao-1.png" alt="Pre-requisito seção 1 dados iniciais"></a><div class="screen-caption"><h3>Pre-requisito: seção 1</h3><p>Dados iniciais, triagem e informações já registradas no cadastro para preparar a pré-consulta.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png" alt="Pre-requisito seção 2 dados clínicos"></a><div class="screen-caption"><h3>Pre-requisito: seção 2</h3><p>Dados clínicos, odontológicos, sintomas, hábitos e fatores de vida usados no cuidado.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/11-cliente-pre-consulta-clinica.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/11-cliente-pre-consulta-clinica.png" alt="Pré-consulta clínica compartilhada"></a><div class="screen-caption"><h3>Pré-consulta clínica</h3><p>O cliente informa histórico e sintomas antes da consulta inicial.</p></div></article>
-          <div class="form-card"><h3>Pre-requisito: seção 3</h3><p>Pesquisa de satisfação e melhorias: satisfação com Nexor/Biteplaner, indicação, dúvidas, preocupações e sugestões abertas.</p></div>
-        </div>
-
-        <div style="margin-top:20px">
-          <div class="timeline-label role">Conteúdo da etapa por role: cliente e dentista</div>
-          <details open>
-            <summary>Perguntas do cliente na avaliação inicial / anamnese</summary>
-            <div class="details-body">
-              <ul class="field-list">
-                <li>Declaração de leitura e aceite da Política de Privacidade clínica</li><li>Está em tratamento ortodôntico?</li><li>Idade calculada</li><li>Esportes/atividades atuais</li><li>Massa corporal</li><li>Altura</li><li>Necessita de atendimento em clínica adaptada?</li><li>Possui diagnóstico médico prévio relevante?</li><li>Quais diagnósticos ou condições?</li><li>Faz uso atual de medicamentos?</li><li>Quais medicamentos, dosagens e há quanto tempo?</li><li>Já fez uso prolongado de medicamentos para dor crônica ou sono?</li><li>Cirurgia prévia em cabeça, pescoço ou coluna?</li><li>Trauma em face/mandíbula?</li><li>Acidentes com impacto em cabeça, pescoço ou coluna?</li><li>Qualidade do sono</li><li>Distúrbios do sono relatados</li><li>Ranger ou apertar os dentes dormindo?</li><li>Já recebeu diagnóstico de DTM?</li><li>Ano e tipo do diagnóstico de DTM</li><li>Sinais/sintomas de ATM, têmporas, mandíbula, masseteres, pescoço, ombros, desgaste dentário e sensibilidade</li><li>Sintomas articulares específicos de ATM</li><li>Hábitos parafuncionais acordado</li><li>Tratamentos odontológicos prévios relacionados à dor orofacial/ATM</li><li>Satisfação com tratamentos anteriores</li><li>Uso atual ou anterior de aparelho ortodôntico</li><li>Uso atual de prótese ou elemento dentário</li><li>Frequenta regularmente algum dentista?</li><li>Cidade/Bairro do dentista</li><li>Presença de dor atualmente</li><li>Localização da dor</li><li>Padrão da dor</li><li>Dor média e pior dor na última semana</li><li>Fatores que pioram a dor</li><li>Fatores que aliviam a dor</li><li>Dificuldade para abrir a boca completamente</li><li>Dor, desconforto ou cansaço mandibular em funções do dia a dia</li><li>Percepção de estalos/cliques na ATM</li><li>Apertamento dos dentes durante os treinos</li><li>Momentos do treino com maior tensão em mandíbula/pescoço</li><li>Interrupção ou redução de treino por dor</li><li>Impacto da dor/desconforto no desempenho</li><li>Treinos perdidos nos últimos 3 meses</li><li>Nicotina</li><li>Álcool</li><li>Cafeína/estimulantes</li><li>Nível de estresse percebido</li><li>Horas médias de sono</li><li>Qualidade subjetiva do sono</li><li>Posição de trabalho predominante</li><li>Como conheceu o Biteplaner?</li><li>Motivação inicial para buscar o Biteplaner</li><li>O que achou da proposta inicial?</li><li>O que interessou na proposta?</li><li>Expectativa com dispositivo bucal no treino</li><li>Benefícios esperados</li><li>Barreiras imaginadas ao uso</li><li>Consentimento para uso de respostas de satisfação e feedback</li><li>Consentimento para comunicações e informes personalizados</li><li>Satisfação geral com a Nexor até o momento</li><li>Satisfação geral com o Biteplaner até o momento</li><li>Indicaria a Nexor e o Biteplaner?</li><li>Dúvida, preocupação ou sugestão aberta</li>
-              </ul>
-            </div>
-          </details>
-          <details>
-            <summary>Complemento obrigatório do dentista</summary>
-            <div class="details-body">
-              <ul class="field-list">
-                <li>Data da avaliação</li><li>Nome do dentista</li><li>CRO/Estado</li><li>Contato profissional do dentista</li><li>Cliente está apto para uso do Biteplaner? Opções: Sim ou Não</li><li>Descrição da inaptidão para o cliente, obrigatória quando a resposta for Não</li><li>Data da consulta</li><li>Abertura máxima sem dor (mm)</li><li>Abertura máxima com dor (mm)</li><li>Desvio da linha média ao abrir?</li><li>Lado do desvio: direita ou esquerda</li><li>Declaração de que as informações foram coletadas por exame clínico e, quando aplicável, complementadas por exames</li>
-              </ul>
-            </div>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Etapa 2: Consulta inicial e match</h2>
-        <p>O sistema não agenda horário no lugar da clínica. Ele registra a escolha da clínica, a confirmação do cliente e o aceite operacional do dentista.</p>
-      </div>
-      <div class="section-body split">
-        <div class="timeline-label">Fluxo visual da jornada: Consulta inicial e retorno por inaptidão</div>
-        <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/16b-cliente-jornada-inaptidao.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/16b-cliente-jornada-inaptidao.png" alt="Jornada do cliente em cenário de inaptidão com nova consulta disponível"></a><div class="screen-caption"><h3>Inaptidão com nova consulta</h3><p>Quando o dentista marca inaptidão, o cliente vê a justificativa clínica e volta para Consulta inicial para escolher clínica/dentista novamente.</p></div></article>
-        <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/10-cliente-selecao-clinica.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/10-cliente-selecao-clinica.png" alt="Seleção de clínica pelo cliente"></a><div class="screen-caption"><h3>Escolha da clínica</h3><p>Cliente vê clínicas licenciadas, distância, endereço e indicação de acessibilidade/adaptação.</p></div></article>
-        <div class="timeline-label role">Conteúdo da etapa por role: cliente, clínica e dentista</div>
-        <div class="info-card" style="grid-column:1/-1">
-          <h3>Regra de reavaliação por inaptidão</h3>
-          <p>Se o cliente foi declarado inapto, a jornada volta para Consulta inicial. A clínica anterior pode vir pré-selecionada, mas o cliente pode escolher outra clínica. Se escolher outro dentista, esse novo dentista verá a etapa de anamnese para preencher o complemento da nova consulta.</p>
-          <ul class="list">
-            <li>A inaptidão não gera refund porque não houve cobrança.</li>
-            <li>O texto exibido ao cliente vem da descrição preenchida pelo dentista.</li>
-            <li>A ordem mantém histórico, mas o vínculo ativo do novo ciclo pertence ao dentista escolhido.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Etapa 3: Decisão clínica</h2>
-        <p>Depois da consulta inicial, o dentista valida a anamnese, complementa os dados clínicos e decide se o cliente está apto para seguir para a compra.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label">Fluxo visual da jornada: Decisão clínica</div>
-        <div class="status-grid">
-          <div class="rule"><strong>Aguardando decisão</strong><p>A ordem fica com o dentista para revisão clínica e preenchimento do complemento obrigatório.</p></div>
-          <div class="rule"><strong>Cliente apto</strong><p>A jornada avança para Compra. O dentista para no Resumo anamnese até o pagamento ser confirmado.</p></div>
-          <div class="rule"><strong>Cliente inapto</strong><p>A jornada volta para Consulta inicial, com a descrição clínica da inaptidão visível ao cliente.</p></div>
-        </div>
-        <div class="timeline-label role" style="margin-top:24px">Conteúdo da etapa por role: dentista</div>
-        <div class="info-card">
-          <h3>Complemento clínico obrigatório</h3>
-          <p>O dentista responde “Cliente está apto para uso do Biteplaner?” com Sim ou Não. Ao marcar Não, a descrição da inaptidão se torna obrigatória e será exibida ao cliente no fluxo de nova consulta.</p>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Etapa 4: Compra</h2>
-        <p>A tela de compra aparece apenas após aptidão clínica. O sucesso visual usa o retorno de pagamento, mas a liberação real vem da confirmação no backend.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label">Fluxo visual da jornada: Compra</div>
-        <div class="grid" style="margin-bottom:24px">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/13-cliente-jornada-pagamento-detalhes.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/13-cliente-jornada-pagamento-detalhes.png" alt="Jornada do cliente após compra com etapa Compra ativa"></a><div class="screen-caption"><h3>Fluxo visual após compra</h3><p>Print atualizado da jornada do cliente no cenário de pagamento: a etapa Compra fica ativa e o cliente entende que o próximo passo depende da liberação operacional.</p></div></article>
-        </div>
-        <div class="timeline-label role">Conteúdo da etapa por role: cliente e backend</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/12-cliente-compra-biteplanner.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/12-cliente-compra-biteplanner.png" alt="Tela de compra aguardando pagamento do Biteplanner"></a><div class="screen-caption"><h3>Compra aguardando pagamento</h3><p>Print atualizado da tela real: card do pedido, stepper compacto, resumo financeiro e botão verde para iniciar o pagamento.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/12b-cliente-compra-sucesso-stripe.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/12b-cliente-compra-sucesso-stripe.png" alt="Tela de compra com pagamento confirmado"></a><div class="screen-caption"><h3>Retorno com sucesso</h3><p>Ao voltar para <code>/painel/compra?checkout=success</code>, a tela exibe pagamento realizado, etapa atualizada e mensagens de sincronização com o backend.</p></div></article>
-        </div>
-        <div class="grid three" style="margin-top:20px">
-          <div class="rule"><strong>Antes do pagamento</strong><p>Step 1: Aguardando pagamento pelo cliente. Steps 2 e 3 aparecem como pendentes.</p></div>
-          <div class="rule"><strong>Após `/painel/compra?checkout=success`</strong><p>Step 1 vira Pagamento confirmado em verde; Step 2 vira Aguardando produção.</p></div>
-          <div class="rule"><strong>Após confirmação no backend</strong><p>Backend salva método, valor, desconto, recibo quando existir e avança a ordem para o dentista finalizar produção.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Pós-compra: envio de produção pelo dentista</h2>
-        <p>O dentista só prossegue para produção após o pagamento confirmado pelo backend. Antes disso, ao concluir o complemento clínico, a tela para no Resumo anamnese.</p>
-      </div>
-      <div class="section-body split">
-        <div class="timeline-label role">Conteúdo da etapa por role: dentista</div>
-        <div class="grid" style="grid-column:1/-1">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/20-dentista-listagem-ordens.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/20-dentista-listagem-ordens.png" alt="Listagem de ordens do dentista"></a><div class="screen-caption"><h3>Listagem de ordens do dentista</h3><p>Fila operacional com pedidos, etapa/status e ações disponíveis conforme a situação da ordem.</p></div></article>
-          <div class="form-card"><h3>Formulário clínico: seção 1</h3><p>Revisão de dados iniciais da avaliação compartilhada e complemento clínico do dentista.</p></div>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/21b-dentista-producao-etapa-1-secao-2.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/21b-dentista-producao-etapa-1-secao-2.png" alt="Produção do dentista etapa 1 seção dados clínicos"></a><div class="screen-caption"><h3>Formulário clínico: seção 2</h3><p>Revisão dos dados clínicos, sintomas, hábitos e histórico odontológico/orofacial.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/21c-dentista-producao-complemento.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/21c-dentista-producao-complemento.png" alt="Produção do dentista complemento clínico"></a><div class="screen-caption"><h3>Formulário clínico: complemento dentista</h3><p>Decisão de aptidão, data da consulta, medidas clínicas e declaração profissional.</p></div></article>
-        </div>
-        <div class="timeline-label role">Detalhamento dos steps e formulários do dentista</div>
-        <div style="grid-column:1/-1">
-          <details open>
-            <summary>Steps do dentista na página de produção</summary>
-            <div class="details-body">
-              <ul class="field-list">
-                <li>Etapa 1 de 4: Avaliação inicial / anamnese, exibida somente quando o dentista vinculado ainda não enviou seu complemento clínico</li><li>Etapa 2 de 4: Resumo anamnese, onde o dentista revisa dados e baixa/guarda a ficha conforme norma clínica</li><li>Etapa 3 de 4: Solicitação de produção, liberada apenas depois do pagamento confirmado</li><li>Etapa 4 de 4: Escolha do laboratório licenciado</li><li>Aviso de processamento quando a anamnese ainda não carregou, evitando tela cheia de “Não informado” sem ação</li>
-              </ul>
-            </div>
-          </details>
-          <details>
-            <summary>Campos da solicitação de produção</summary>
-            <div class="details-body">
-              <ul class="field-list">
-                <li>Resumo da avaliação inicial / anamnese</li><li>Solicitação de produção</li><li>Observações para o laboratório</li><li>Escaneamento 3D intraoral</li><li>Prescrição médica assinada e carimbada</li><li>Aceite de que o laboratório receberá apenas dados operacionais indispensáveis para fabricação</li><li>CEP atual para buscar laboratórios</li><li>Seleção de laboratório licenciado</li><li>Revisão de informações do laboratório antes do envio</li>
-              </ul>
-            </div>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Etapa 5: Laboratório</h2>
-        <p>O laboratório recebe somente o necessário para fabricar o dispositivo e acompanhar a ordem enviada pelo dentista.</p>
-      </div>
-      <div class="section-body split">
-        <div class="timeline-label role">Conteúdo da etapa por role: laboratório</div>
-        <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/22-laboratorio-listagem-ordens.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/22-laboratorio-listagem-ordens.png" alt="Listagem de ordens do laboratório"></a><div class="screen-caption"><h3>Listagem de ordens do laboratório</h3><p>Fila de pedidos recebidos, dados operacionais e status de produção.</p></div></article>
-        <div class="info-card">
-          <h3>Dados esperados</h3>
-          <ul class="list">
-            <li>Identificação operacional do pedido.</li>
-            <li>Solicitação técnica feita pelo dentista.</li>
-            <li>Arquivo de escaneamento 3D intraoral.</li>
-            <li>Prescrição assinada/carimbada.</li>
-            <li>Observações técnicas necessárias, sem excesso de dados clínicos.</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Etapa 6: Adaptação e acompanhamento</h2>
-        <p>No fim da linha do tempo, a jornada mostra o retorno para adaptação, uso do produto e acompanhamento pós-entrega.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label">Fluxo visual da jornada: Adaptação e acompanhamento</div>
-        <div class="grid">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/15-cliente-jornada-adaptacao.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/15-cliente-jornada-adaptacao.png" alt="Jornada do cliente em adaptação"></a><div class="screen-caption"><h3>Adaptação</h3><p>Etapa de retorno e adaptação do dispositivo.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/16-cliente-jornada-acompanhamento.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/16-cliente-jornada-acompanhamento.png" alt="Jornada do cliente em acompanhamento"></a><div class="screen-caption"><h3>Acompanhamento</h3><p>Uso, avaliação e relatórios pós-entrega.</p></div></article>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="section-head">
-        <h2>Relatórios e avaliações pós-entrega</h2>
-        <p>Depois da produção e adaptação, o produto coleta uso em treino/competição e avaliações entre cliente, dentista, laboratório, parceiro e influenciador.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label role">Conteúdo da etapa por role: cliente, dentista, laboratório e parceiro</div>
-        <div class="grid">
-          <div class="form-card">
-            <h3>Relatório de treino/competição</h3>
-            <ul class="field-list">
-              <li>Consentimento de uso do relatório</li><li>Data da atividade</li><li>Horário aproximado</li><li>Duração aproximada</li><li>Massa corporal</li><li>Modalidade/atividade realizada</li><li>Cidade/região do treino</li><li>Usou o Biteplaner nesta atividade?</li><li>Conforto</li><li>Força percebida</li><li>Resistência percebida</li><li>Satisfação geral</li><li>Comentário sobre o uso</li>
-            </ul>
-          </div>
-          <div class="form-card">
-            <h3>Avaliações operacionais</h3>
-            <ul class="field-list">
-              <li>Cliente avalia dentista: facilidade de contato, prazo, pontualidade, estrutura, cordialidade, orientação de uso e comentário</li><li>Dentista avalia laboratório: prazo de entrega, qualidade do dispositivo bruto, facilidade de contato e comentário</li><li>Laboratório avalia dentista: qualidade do arquivo/scan, facilidade de contato e comentário</li><li>Cliente avalia parceiro: estrutura, cordialidade, disponibilidade de acompanhamento, orientação técnica e comentário</li><li>Cliente avalia influenciador: clareza da comunicação e comentário</li>
-            </ul>
+      <section class="panel overview-panel" data-overview>
+        <div class="section-head">
+          <div>
+            <h3>Mapa visual da jornada</h3>
+            <p>Do convite ao acompanhamento, cada nó indica o responsável principal e a dependência que move a ordem.</p>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="overview-map" data-overview-map></div>
+      </section>
 
-    <section>
-      <div class="section-head">
-        <h2>Onboarding de parceiros, dentistas e laboratórios</h2>
-        <p>Os perfis profissionais têm cadastro complementar dedicado e ficam pendentes de aprovação operacional antes de operar no Biteplaner.</p>
-      </div>
-      <div class="section-body">
-        <div class="timeline-label role">Preparação operacional das roles</div>
-        <div class="grid three">
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/17-onboarding-parceiro-full.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/17-onboarding-parceiro-full.png" alt="Onboarding de parceiro em página inteira"></a><div class="screen-caption"><h3>Parceiro</h3><p>Nome da empresa/parceiro, tipo de documento, CPF/CNPJ, tipo de parceiro, CEP, cidade, estado, endereço, complemento, locais de atuação e aceites.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/18-onboarding-dentista-full.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/18-onboarding-dentista-full.png" alt="Onboarding de dentista em página inteira"></a><div class="screen-caption"><h3>Dentista</h3><p>Nome profissional, CRO, resumo profissional, clínica de atendimento, endereço, horários, telefone, clínica adaptada e aceites.</p></div></article>
-          <article class="screen-card"><a class="image-link" href="assets/apresentacao-painel-admin/19-onboarding-laboratorio-full.png" target="_blank" rel="noopener" title="Abrir print completo"><img src="assets/apresentacao-painel-admin/19-onboarding-laboratorio-full.png" alt="Onboarding de laboratório em página inteira"></a><div class="screen-caption"><h3>Laboratório</h3><p>Nome do laboratório, CNPJ, resumo operacional, local operacional, endereço, horários, telefone e aceites.</p></div></article>
+      <section class="panel stage-hero">
+        <div>
+          <span class="badge" data-stage-badge></span>
+          <h2 data-stage-title></h2>
+          <p class="stage-summary" data-stage-summary></p>
         </div>
-      </div>
-    </section>
+        <div class="meta-grid">
+          <div class="meta-row">
+            <span class="icon">◷</span>
+            <div><strong>Responsável</strong><span data-stage-owner></span></div>
+          </div>
+          <div class="meta-row">
+            <span class="icon">⏱</span>
+            <div><strong>Duração média</strong><span data-stage-duration></span></div>
+          </div>
+          <div class="meta-row">
+            <span class="icon">→</span>
+            <div><strong>Próxima etapa</strong><span data-stage-next></span></div>
+          </div>
+        </div>
+      </section>
 
-    <section>
-      <div class="section-head">
-        <h2>Status, etapas e labels amigáveis</h2>
-        <p>Referência rápida para alinhar backend, frontend e documentação. A etapa é a jornada; o status técnico controla permissão e ações.</p>
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Como é na prática</h3>
+            <p data-practice-copy></p>
+          </div>
+        </div>
+        <div class="screen-stack" data-screens></div>
+        <div class="callout-grid" data-callouts></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>O que acontece nesta etapa</h3>
+            <p>Eventos, responsabilidades e controles operacionais necessários para a etapa avançar sem ruído.</p>
+          </div>
+        </div>
+        <div class="cards-grid" data-happens></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Entradas, processamento e resultado</h3>
+            <p>Visão curta para Produto, UX, Desenvolvimento, QA e Operação entenderem dependências.</p>
+          </div>
+        </div>
+        <div class="flow-grid">
+          <article class="flow-card">
+            <h4>Entradas</h4>
+            <ul data-inputs></ul>
+          </article>
+          <div class="flow-arrow">→</div>
+          <article class="flow-card process">
+            <h4>Processamento</h4>
+            <ul data-processing></ul>
+          </article>
+          <div class="flow-arrow">→</div>
+          <article class="flow-card result">
+            <h4>Resultado</h4>
+            <ul data-results></ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Campos e dados relevantes</h3>
+            <p data-fields-copy></p>
+          </div>
+        </div>
+        <div class="table-wrap" data-fields></div>
+      </section>
+
+      <section class="technical">
+        <div>
+          <strong>Detalhes técnicos e operacionais</strong>
+          <p data-technical-copy></p>
+        </div>
+        <button class="ghost-button" type="button" data-overview-toggle-secondary>Ver mapa completo →</button>
+      </section>
+
+      <div class="nav-controls">
+        <button class="nav-button" type="button" data-prev>← Etapa anterior</button>
+        <span class="progress-label" data-progress></span>
+        <button class="nav-button primary" type="button" data-next>Próxima etapa →</button>
       </div>
-      <div class="section-body">
+    </main>
+  </div>
+
+  <div class="image-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Print completo" data-modal>
+    <div class="modal-bar">
+      <strong data-modal-title></strong>
+      <button class="modal-close" type="button" data-modal-close>Fechar</button>
+    </div>
+    <div class="modal-image-scroll">
+      <img data-modal-image alt="">
+    </div>
+  </div>
+
+  <script>
+    const assetBase = "assets/apresentacao-painel-admin/";
+
+    const stages = [
+      {
+        number: "01",
+        title: "Parceiro indica",
+        badge: "Entrada 01",
+        owner: "Parceiro Indicador",
+        duration: "1 a 3 minutos",
+        next: "Cadastro do cliente indicado",
+        summary: "O parceiro cria um convite rastreável para o atleta. Esse link conecta a origem comercial à jornada do Biteplaner e permite acompanhar conversão, status e elegibilidade.",
+        practice: "O parceiro preenche os dados essenciais, gera o link e pode compartilhar por URL ou QR Code.",
+        screens: [
+          ["01-parceiro-indicar-formulario.png", "Formulário de indicação", "Dados iniciais do cliente e origem do convite."],
+          ["04-parceiro-link-modal-qr.png", "Link e QR Code gerados", "Convite pronto para envio ao atleta indicado."]
+        ],
+        callouts: [
+          ["Dados do atleta", "Nome e contato que iniciam o vínculo da indicação."],
+          ["Origem comercial", "Parceiro fica associado ao convite e à ordem futura."],
+          ["Link rastreável", "URL direciona o cliente para cadastro com contexto."],
+          ["Status do convite", "Operação acompanha se virou cadastro e ordem."]
+        ],
+        happens: [
+          ["Convite criado", "A plataforma registra origem, parceiro e dados básicos do indicado."],
+          ["Compartilhamento", "Parceiro envia link ou QR Code para o atleta."],
+          ["Rastreabilidade", "A ordem futura preserva a origem da indicação."],
+          ["Próximo passo", "Cliente acessa o link e cria sua conta."]
+        ],
+        flow: {
+          inputs: ["Nome e contato do cliente", "Parceiro autenticado", "Campanha ou contexto da indicação"],
+          processing: ["Criação do convite", "Geração do link público", "Registro da origem comercial"],
+          results: ["Convite ativo", "Cliente direcionado ao cadastro", "Parceiro consegue acompanhar evolução"]
+        },
+        fields: [
+          ["Nome do cliente", "Texto", "Sim", "Parceiro", "Convites", "Min. 3 caracteres", "Parceiro"],
+          ["Contato", "E-mail ou telefone", "Sim", "Parceiro", "Convites", "Formato válido", "Parceiro"],
+          ["Link de convite", "URL", "Automático", "Sistema", "Convites", "Token único", "Sistema"],
+          ["Origem", "Relacionamento", "Automático", "Sessão do parceiro", "Ordens", "Parceiro ativo", "Sistema"]
+        ],
+        technical: "Entidades principais: convites, parceiros, usuários e ordens. O token do convite precisa persistir até a compra para manter atribuição."
+      },
+      {
+        number: "02",
+        title: "Onboarding do cliente",
+        badge: "Entrada 02",
+        owner: "Cliente",
+        duration: "2 a 5 minutos",
+        next: "Pré-requisito e pré-consulta",
+        summary: "O cliente aceita consentimentos, informa dados pessoais, contexto esportivo e objetivos. O sistema cria o perfil necessário para iniciar a triagem clínica.",
+        practice: "A tela combina consentimento LGPD, dados pessoais, modalidade esportiva e objetivos de uso do Biteplaner.",
+        screens: [
+          ["05-cliente-cadastro-conta-convite.png", "Cadastro pelo link indicado", "Cliente entra pela origem do parceiro e cria acesso."],
+          ["06-cliente-cadastro-consentimentos.png", "Consentimentos iniciais", "Bloqueio de continuidade enquanto os termos não forem aceitos."],
+          ["08-cliente-onboarding-formulario.png", "Step 2: formulário completo", "Dados pessoais, perfil esportivo, objetivo e contexto clínico inicial."]
+        ],
+        callouts: [
+          ["Consentimento LGPD", "Autorização para tratar dados pessoais e de saúde."],
+          ["Dados pessoais", "Identificação e contato para comunicações da jornada."],
+          ["Perfil esportivo", "Modalidade, rotina e intensidade de uso."],
+          ["Objetivos", "Motivo de compra e expectativa do atleta."]
+        ],
+        happens: [
+          ["Conta criada", "O usuário passa a existir como cliente autenticado."],
+          ["Consentimentos salvos", "A jornada só avança com aceite obrigatório."],
+          ["Perfil formado", "Dados esportivos orientam a avaliação odontológica."],
+          ["Jornada aberta", "Cliente é liberado para pré-requisito e pré-consulta."]
+        ],
+        flow: {
+          inputs: ["Link de indicação", "Consentimento LGPD", "Dados pessoais", "Perfil esportivo", "Objetivos com o produto"],
+          processing: ["Validação das informações", "Criação do usuário", "Criação da jornada", "Armazenamento dos dados"],
+          results: ["Cliente cadastrado", "Origem comercial preservada", "Próxima etapa liberada"]
+        },
+        fields: [
+          ["Consentimento LGPD", "Checkbox", "Sim", "Formulário", "Consentimentos", "Aceite obrigatório", "Cliente"],
+          ["Nome completo", "Texto", "Sim", "Formulário", "Usuários", "Min. 3 caracteres", "Cliente"],
+          ["Data de nascimento", "Data", "Sim", "Formulário", "Perfil do cliente", "Data válida", "Cliente"],
+          ["E-mail", "E-mail", "Sim", "Formulário", "Usuários", "E-mail válido", "Cliente"],
+          ["Telefone/WhatsApp", "Telefone", "Sim", "Formulário", "Perfil do cliente", "Formato válido", "Cliente"],
+          ["Modalidade principal", "Select", "Sim", "Formulário", "Perfil esportivo", "Seleção obrigatória", "Cliente"],
+          ["Nível", "Select", "Sim", "Formulário", "Perfil esportivo", "Seleção obrigatória", "Cliente"],
+          ["Objetivos", "Texto longo", "Sim", "Formulário", "Jornada", "Min. 10 caracteres", "Cliente"]
+        ],
+        technical: "O onboarding cria usuário, perfil de cliente, consentimentos e a jornada inicial. QA deve validar bloqueio sem consentimento e persistência do segundo passo."
+      },
+      {
+        number: "03",
+        title: "Pré-requisito e pré-consulta",
+        badge: "Etapa 01",
+        owner: "Cliente",
+        duration: "5 a 10 minutos",
+        next: "Consulta inicial e match",
+        summary: "O cliente responde critérios de elegibilidade e informa condições clínicas preliminares. Essa etapa reduz risco antes da avaliação presencial ou teleorientada.",
+        practice: "O fluxo coleta respostas estruturadas e sinais de atenção antes de liberar o match com dentista.",
+        screens: [
+          ["09a-cliente-pre-requisito-secao-1.png", "Pré-requisito: elegibilidade", "Primeira parte dos critérios e confirmações."],
+          ["09b-cliente-pre-requisito-secao-2.png", "Pré-requisito: informações adicionais", "Complemento das respostas para triagem."],
+          ["11-cliente-pre-consulta-clinica.png", "Pré-consulta clínica", "Informações de histórico e contexto odontológico."]
+        ],
+        callouts: [
+          ["Critérios mínimos", "Confirma requisitos para continuar."],
+          ["Histórico clínico", "Sinais, restrições e antecedentes relevantes."],
+          ["Alertas", "Respostas críticas podem exigir avaliação ou bloqueio."],
+          ["Liberação", "Conclusão permite seguir para escolha ou match."]
+        ],
+        happens: [
+          ["Triagem registrada", "Respostas ficam disponíveis para dentista e operação."],
+          ["Risco reduzido", "Condições impeditivas aparecem antes da compra."],
+          ["Dados clínicos iniciais", "O dentista recebe contexto antes da consulta."],
+          ["Status atualizado", "Jornada avança para seleção de clínica ou match."]
+        ],
+        flow: {
+          inputs: ["Respostas de elegibilidade", "Histórico odontológico", "Condições de saúde", "Observações do cliente"],
+          processing: ["Validação dos requisitos", "Marcação de alertas", "Atualização do status da jornada"],
+          results: ["Pré-requisito concluído", "Pré-consulta disponível", "Cliente pronto para match"]
+        },
+        fields: [
+          ["Uso pretendido", "Select", "Sim", "Cliente", "Pré-requisito", "Seleção obrigatória", "Cliente"],
+          ["Histórico ATM", "Radio/Texto", "Sim", "Cliente", "Pré-consulta", "Resposta válida", "Cliente"],
+          ["Dor ou desconforto", "Radio", "Sim", "Cliente", "Pré-consulta", "Sim/Não", "Cliente"],
+          ["Observações", "Texto longo", "Não", "Cliente", "Pré-consulta", "Até limite configurado", "Cliente"]
+        ],
+        technical: "Estados esperados: pré-requisito, pré-consulta e pendência clínica. Respostas críticas devem ser auditáveis e visíveis ao dentista."
+      },
+      {
+        number: "04",
+        title: "Consulta inicial e match",
+        badge: "Etapa 02",
+        owner: "Cliente e Dentista",
+        duration: "Variável por agenda",
+        next: "Decisão clínica",
+        summary: "O cliente escolhe clínica ou dentista disponível. O profissional recebe o caso com contexto suficiente para conduzir a avaliação clínica.",
+        practice: "A seleção conecta preferência do cliente, disponibilidade operacional e responsabilidade clínica do dentista.",
+        screens: [
+          ["10b-cliente-selecao-clinica-full.png", "Seleção de clínica", "Cliente escolhe atendimento disponível com a tela completa."],
+          ["20-dentista-listagem-ordens.png", "Dentista recebe ordens", "Profissional visualiza casos atribuídos e próximos passos."]
+        ],
+        callouts: [
+          ["Clínicas disponíveis", "Opções habilitadas para atendimento."],
+          ["Dados do caso", "Dentista acessa triagem e contexto do cliente."],
+          ["Responsável clínico", "Caso passa a ter profissional executor."],
+          ["Agendamento", "Consulta inicial prepara a decisão clínica."]
+        ],
+        happens: [
+          ["Match realizado", "Cliente fica vinculado a uma clínica ou dentista."],
+          ["Caso aparece ao dentista", "Profissional passa a consumir dados da jornada."],
+          ["Atendimento preparado", "Triagem orienta a conversa clínica."],
+          ["Responsabilidade transferida", "Próxima ação principal é do dentista."]
+        ],
+        flow: {
+          inputs: ["Perfil do cliente", "Localização ou escolha de clínica", "Dentistas habilitados", "Pré-consulta concluída"],
+          processing: ["Vinculação do caso", "Exibição na fila do dentista", "Registro do responsável clínico"],
+          results: ["Dentista definido", "Consulta inicial pronta", "Jornada aguardando decisão clínica"]
+        },
+        fields: [
+          ["Clínica escolhida", "Relacionamento", "Sim", "Cliente", "Jornada", "Clínica ativa", "Cliente"],
+          ["Dentista responsável", "Relacionamento", "Automático", "Sistema/Operação", "Caso clínico", "Dentista aprovado", "Sistema"],
+          ["Status da consulta", "Status", "Sim", "Dentista", "Jornada", "Valores permitidos", "Dentista"],
+          ["Observações iniciais", "Texto longo", "Não", "Dentista", "Avaliação", "Até limite configurado", "Dentista"]
+        ],
+        technical: "A regra central é vínculo entre jornada, clínica e dentista aprovado. O cliente não deve avançar para compra sem decisão clínica apta."
+      },
+      {
+        number: "05",
+        title: "Decisão clínica",
+        badge: "Etapa 03",
+        owner: "Dentista",
+        duration: "Após avaliação",
+        next: "Compra ou encerramento",
+        summary: "O dentista avalia o caso e define se o cliente está apto, inapto ou se precisa de tratamento prévio. Essa decisão controla a liberação da compra.",
+        practice: "A decisão clínica transforma a triagem em um status operacional que abre ou bloqueia a etapa comercial.",
+        screens: [
+          ["13a-dentista-decisao-clinica.png", "Decisão clínica pelo dentista", "Dentista revisa a triagem e registra aptidão, inaptidão ou tratamento prévio."],
+          ["16b-cliente-jornada-inaptidao.png", "Cenário de inaptidão", "Jornada encerrada ou pausada quando há impeditivo clínico."]
+        ],
+        callouts: [
+          ["Avaliação", "Dentista registra análise clínica."],
+          ["Apto", "Libera pagamento e produção futura."],
+          ["Inapto", "Bloqueia compra e encerra ou pausa jornada."],
+          ["Tratamento prévio", "Cliente deve resolver pendência antes de avançar."]
+        ],
+        happens: [
+          ["Critério clínico aplicado", "A plataforma respeita decisão profissional."],
+          ["Status muda", "Jornada passa para pagamento ou pausa clínica."],
+          ["Cliente informado", "Tela mostra o próximo passo esperado."],
+          ["Operação rastreia", "Admin consegue consultar motivos e histórico."]
+        ],
+        flow: {
+          inputs: ["Triagem", "Pré-consulta", "Avaliação do dentista", "Fotos ou registros clínicos"],
+          processing: ["Análise profissional", "Registro de decisão", "Atualização do status"],
+          results: ["Apto para compra", "Inapto", "Necessita tratamento prévio"]
+        },
+        fields: [
+          ["Parecer clínico", "Select", "Sim", "Dentista", "Avaliação clínica", "Apto/Inapto/Tratamento", "Dentista"],
+          ["Motivo", "Texto longo", "Condicional", "Dentista", "Avaliação clínica", "Obrigatório quando inapto", "Dentista"],
+          ["Data da avaliação", "Data/hora", "Automático", "Sistema", "Avaliação clínica", "Carimbo de criação", "Sistema"],
+          ["Status da jornada", "Status", "Automático", "Sistema", "Jornada", "Transição permitida", "Sistema"]
+        ],
+        technical: "Transições críticas devem ser protegidas por permissão de dentista. A compra só aparece quando a avaliação retorna apto."
+      },
+      {
+        number: "06",
+        title: "Compra",
+        badge: "Etapa 04",
+        owner: "Cliente",
+        duration: "3 a 8 minutos",
+        next: "Envio de produção pelo dentista",
+        summary: "Com a elegibilidade aprovada, o cliente conclui a compra do Biteplaner. O pagamento aprovado cria a ordem que seguirá para produção sob protocolo.",
+        practice: "A etapa mostra produto, preço, redirecionamento para checkout e retorno de sucesso após pagamento.",
+        screens: [
+          ["12-cliente-compra-biteplanner.png", "Tela de compra", "Cliente revisa a oferta e clica para concluir pagamento."],
+          ["12c-stripe-checkout-redirecionamento.png", "Checkout redirecionado", "Página externa de pagamento exibida após concluir pagamento."],
+          ["12b-cliente-compra-sucesso-stripe.png", "Pagamento aprovado", "Cliente retorna com confirmação e próxima etapa."]
+        ],
+        callouts: [
+          ["Produto", "Biteplaner associado à jornada apta."],
+          ["Checkout", "Redirecionamento seguro para pagamento."],
+          ["Confirmação", "Retorno atualiza compra e ordem."],
+          ["Ordem criada", "Fluxo pós-compra passa ao dentista."]
+        ],
+        happens: [
+          ["Pagamento iniciado", "Sistema cria sessão de checkout vinculada à jornada."],
+          ["Cliente paga", "Dados sensíveis ficam no provedor de pagamento."],
+          ["Webhook confirma", "Status financeiro atualiza a ordem."],
+          ["Produção habilitada", "Dentista pode enviar materiais ao laboratório."]
+        ],
+        flow: {
+          inputs: ["Jornada apta", "Produto Biteplaner", "Cliente autenticado", "Valor e condição comercial"],
+          processing: ["Criação do checkout", "Pagamento externo", "Confirmação do provedor", "Atualização da ordem"],
+          results: ["Pagamento aprovado", "Ordem de produção criada", "Cliente acompanha pós-compra"]
+        },
+        fields: [
+          ["Produto", "Texto", "Automático", "Catálogo", "Compra", "Produto ativo", "Sistema"],
+          ["Valor", "Moeda", "Automático", "Regra comercial", "Pagamento", "Valor válido", "Sistema"],
+          ["E-mail de cobrança", "E-mail", "Sim", "Cliente", "Checkout", "E-mail válido", "Cliente"],
+          ["Status do pagamento", "Status", "Automático", "Provedor", "Pagamento", "Webhook assinado", "Sistema"],
+          ["ID da sessão", "Texto", "Automático", "Provedor", "Pagamento", "Único", "Sistema"]
+        ],
+        technical: "A integração de pagamento precisa manter idempotência de webhook e vínculo entre pagamento, jornada, parceiro de origem e ordem."
+      },
+      {
+        number: "07",
+        title: "Produção laboratorial",
+        badge: "Pós-compra",
+        owner: "Dentista e Laboratório",
+        duration: "Conforme protocolo",
+        next: "Adaptação",
+        summary: "Após pagamento, o dentista prepara a solicitação de produção e anexa arquivos para o laboratório. O laboratório recebe, produz e atualiza o status da ordem.",
+        practice: "Esta etapa explicita o envio de arquivos pelo dentista e a continuidade no painel do laboratório.",
+        screens: [
+          ["21e-dentista-producao-completa-sem-loading.png", "Dados de produção pelo dentista", "Dentista revisa dados iniciais, dados clínicos e complemento sem loading."],
+          ["21d-dentista-producao-anexos-laboratorio.png", "Anexos para laboratório", "Dentista adiciona arquivos, fotos ou documentos necessários à produção."],
+          ["21f-dentista-selecao-laboratorio.png", "Seleção do laboratório", "Dentista escolhe o laboratório licenciado e confirma o envio da solicitação."],
+          ["22-laboratorio-listagem-ordens.png", "Fila do laboratório", "Laboratório visualiza ordens recebidas e status de produção."],
+          ["14b-cliente-jornada-laboratorio-ativo.png", "Cliente acompanha produção", "Cliente vê a jornada com o status Laboratório ativo."]
+        ],
+        callouts: [
+          ["Protocolo técnico", "Dentista define dados necessários à confecção."],
+          ["Arquivos anexados", "Materiais digitais seguem junto da solicitação."],
+          ["Fila laboratorial", "Laboratório recebe ordem e atualiza progresso."],
+          ["Transparência", "Cliente acompanha sem editar dados técnicos."]
+        ],
+        happens: [
+          ["Solicitação enviada", "Dentista transfere responsabilidade produtiva ao laboratório."],
+          ["Arquivos validados", "Anexos reduzem retrabalho e dúvidas técnicas."],
+          ["Produção acompanhada", "Status mostra recebimento, produção e entrega."],
+          ["Entrega preparada", "Após finalização, fluxo segue para adaptação."]
+        ],
+        flow: {
+          inputs: ["Pagamento aprovado", "Avaliação clínica", "Dados técnicos do dentista", "Arquivos e anexos"],
+          processing: ["Criação da solicitação", "Upload de anexos", "Recebimento pelo laboratório", "Atualização de status"],
+          results: ["Ordem em produção", "Laboratório responsável", "Cliente informado sobre andamento"]
+        },
+        fields: [
+          ["Tipo de produção", "Select", "Sim", "Dentista", "Produção", "Seleção obrigatória", "Dentista"],
+          ["Observações técnicas", "Texto longo", "Sim", "Dentista", "Produção", "Conteúdo mínimo", "Dentista"],
+          ["Arquivo anexo", "Upload", "Sim", "Dentista", "Anexos", "Tipo e tamanho permitidos", "Dentista"],
+          ["Status laboratorial", "Status", "Sim", "Laboratório", "Produção", "Transição permitida", "Laboratório"],
+          ["Previsão de entrega", "Data", "Condicional", "Laboratório", "Produção", "Data futura", "Laboratório"]
+        ],
+        technical: "Os anexos precisam ficar vinculados à ordem e acessíveis ao laboratório autorizado. QA deve validar upload, visualização e transições de status."
+      },
+      {
+        number: "08",
+        title: "Adaptação",
+        badge: "Etapa 06",
+        owner: "Dentista e Cliente",
+        duration: "Após entrega",
+        next: "Acompanhamento e evolução",
+        summary: "Com o dispositivo produzido e entregue, o dentista conduz adaptação e ajustes. O cliente recebe orientações de uso e passa a registrar percepção inicial.",
+        practice: "A tela orienta o cliente sobre status de entrega, adaptação e próximos cuidados.",
+        screens: [
+          ["15-cliente-jornada-adaptacao.png", "Adaptação do Biteplaner", "Cliente acompanha entrega e orientações iniciais."]
+        ],
+        callouts: [
+          ["Entrega", "Dispositivo sai da produção para o cliente."],
+          ["Ajustes", "Dentista avalia encaixe e necessidade de adaptação."],
+          ["Orientações", "Cliente recebe instruções de uso e cuidado."],
+          ["Liberação", "Uso acompanhado inicia após adaptação."]
+        ],
+        happens: [
+          ["Produto entregue", "A jornada deixa produção e entra em experiência clínica."],
+          ["Uso orientado", "Dentista define instruções iniciais."],
+          ["Ajustes registrados", "Ocorrências ficam disponíveis para histórico."],
+          ["Cliente preparado", "Próxima etapa passa a acompanhar evolução."]
+        ],
+        flow: {
+          inputs: ["Produto entregue", "Dados de produção", "Orientações do dentista", "Feedback inicial do cliente"],
+          processing: ["Registro de entrega", "Adaptação clínica", "Ajustes se necessário"],
+          results: ["Dispositivo adaptado", "Cliente orientado", "Acompanhamento liberado"]
+        },
+        fields: [
+          ["Data de entrega", "Data", "Sim", "Dentista/Operação", "Entrega", "Data válida", "Dentista"],
+          ["Orientações", "Texto longo", "Sim", "Dentista", "Adaptação", "Conteúdo mínimo", "Dentista"],
+          ["Ajustes", "Texto/Status", "Condicional", "Dentista", "Adaptação", "Obrigatório se houver ajuste", "Dentista"],
+          ["Confirmação do cliente", "Status", "Não", "Cliente", "Jornada", "Transição permitida", "Cliente"]
+        ],
+        technical: "A adaptação deve preservar histórico entre entrega, ajustes e acompanhamento para evitar perda de contexto clínico."
+      },
+      {
+        number: "09",
+        title: "Acompanhamento e evolução",
+        badge: "Etapa 07",
+        owner: "Cliente e Dentista",
+        duration: "Ciclos definidos pelo protocolo",
+        next: "Conclusão ou novo ciclo",
+        summary: "O cliente registra evolução e o dentista acompanha adaptação, sintomas e resultados. A jornada se encerra quando o acompanhamento previsto é concluído.",
+        practice: "A etapa final consolida feedback, evolução clínica e conclusão operacional da jornada.",
+        screens: [
+          ["16-cliente-jornada-acompanhamento.png", "Acompanhamento clínico", "Cliente visualiza evolução e próximos retornos."]
+        ],
+        callouts: [
+          ["Feedback", "Cliente informa adaptação e percepção de uso."],
+          ["Evolução", "Dentista acompanha sinais e ajustes."],
+          ["Retornos", "Novos contatos podem ser abertos por protocolo."],
+          ["Conclusão", "Jornada fecha com histórico completo."]
+        ],
+        happens: [
+          ["Uso monitorado", "Dados pós-entrega entram no histórico clínico."],
+          ["Ações corretivas", "Dentista pode orientar ajustes ou retorno."],
+          ["Resultado documentado", "Operação entende sucesso e pendências."],
+          ["Ciclo concluído", "Jornada termina ou inicia acompanhamento adicional."]
+        ],
+        flow: {
+          inputs: ["Feedback do cliente", "Dados de adaptação", "Orientações anteriores", "Eventos clínicos"],
+          processing: ["Registro de evolução", "Análise do dentista", "Atualização de status"],
+          results: ["Acompanhamento concluído", "Novo retorno solicitado", "Histórico completo da jornada"]
+        },
+        fields: [
+          ["Feedback de uso", "Texto longo", "Sim", "Cliente", "Acompanhamento", "Conteúdo mínimo", "Cliente"],
+          ["Nível de conforto", "Escala", "Sim", "Cliente", "Acompanhamento", "Valor permitido", "Cliente"],
+          ["Parecer do dentista", "Texto longo", "Condicional", "Dentista", "Acompanhamento", "Obrigatório ao revisar", "Dentista"],
+          ["Status final", "Status", "Sim", "Dentista/Sistema", "Jornada", "Concluído ou retorno", "Dentista"]
+        ],
+        technical: "A conclusão deve ser reversível apenas por perfis autorizados e manter trilha de auditoria para Produto, QA e Operação."
+      }
+    ];
+
+    const icons = ["⌁", "+", "▣", "⌕", "✓", "◴", "△", "◇", "↗"];
+    let current = 1;
+
+    const el = (selector) => document.querySelector(selector);
+    const timeline = el("[data-timeline]");
+    const overviewMap = el("[data-overview-map]");
+    const modal = el("[data-modal]");
+    const modalImage = el("[data-modal-image]");
+    const modalTitle = el("[data-modal-title]");
+
+    function listItems(items) {
+      return items.map((item) => `<li>${item}</li>`).join("");
+    }
+
+    function renderTimeline() {
+      timeline.innerHTML = stages.map((stage, index) => `
+        <button class="timeline-button" type="button" data-stage-index="${index}" aria-current="${index === current}">
+          <span class="step-dot">${icons[index]}</span>
+          <span>
+            <span class="step-number">${stage.number}</span>
+            <span class="step-title">${stage.title}</span>
+          </span>
+        </button>
+      `).join("");
+
+      timeline.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => setStage(Number(button.dataset.stageIndex)));
+      });
+    }
+
+    function renderOverview() {
+      overviewMap.innerHTML = stages.map((stage, index) => `
+        <button class="overview-step" type="button" data-stage-index="${index}">
+          <b>${stage.number} · ${stage.owner}</b>
+          <strong>${stage.title}</strong>
+          <span>${stage.next}</span>
+        </button>
+      `).join("");
+
+      overviewMap.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          setStage(Number(button.dataset.stageIndex));
+          el("[data-overview]").classList.remove("is-visible");
+        });
+      });
+    }
+
+    function renderStage() {
+      const stage = stages[current];
+      el("[data-stage-badge]").textContent = stage.badge;
+      el("[data-stage-title]").textContent = stage.title;
+      el("[data-stage-summary]").textContent = stage.summary;
+      el("[data-stage-owner]").textContent = stage.owner;
+      el("[data-stage-duration]").textContent = stage.duration;
+      el("[data-stage-next]").textContent = stage.next;
+      el("[data-practice-copy]").textContent = stage.practice;
+      el("[data-fields-copy]").textContent = `Campos críticos consumidos ou alterados por ${stage.owner}.`;
+      el("[data-technical-copy]").textContent = stage.technical;
+      el("[data-progress]").textContent = `${stage.number} de ${String(stages.length).padStart(2, "0")}`;
+
+      el("[data-screens]").innerHTML = stage.screens.map(([file, title, description]) => `
+        <article class="practice-shot">
+          <div class="shot-toolbar">
+            <div><strong>${title}</strong><span> · ${description}</span></div>
+            <button class="ghost-button" type="button" data-open-image="${file}" data-open-title="${title}">Abrir print completo</button>
+          </div>
+          <div class="shot-frame">
+            <img src="${assetBase}${file}" alt="${title}" loading="lazy">
+          </div>
+        </article>
+      `).join("");
+
+      el("[data-screens]").querySelectorAll("[data-open-image]").forEach((button) => {
+        button.addEventListener("click", () => openModal(button.dataset.openImage, button.dataset.openTitle));
+      });
+
+      el("[data-callouts]").innerHTML = stage.callouts.map(([title, text], index) => `
+        <article class="callout">
+          <b>${index + 1}</b>
+          <span><strong>${title}</strong><span>${text}</span></span>
+        </article>
+      `).join("");
+
+      el("[data-happens]").innerHTML = stage.happens.map(([title, text]) => `
+        <article class="info-card">
+          <span class="icon">✓</span>
+          <strong>${title}</strong>
+          <p>${text}</p>
+        </article>
+      `).join("");
+
+      el("[data-inputs]").innerHTML = listItems(stage.flow.inputs);
+      el("[data-processing]").innerHTML = listItems(stage.flow.processing);
+      el("[data-results]").innerHTML = listItems(stage.flow.results);
+
+      el("[data-fields]").innerHTML = `
         <table>
           <thead>
-            <tr><th>Status técnico</th><th>Label para o usuário</th><th>Etapa exibida</th><th>Ação esperada</th></tr>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Obrigatório</th>
+              <th>Origem</th>
+              <th>Destino</th>
+              <th>Validação</th>
+              <th>Responsável</th>
+            </tr>
           </thead>
           <tbody>
-            <tr><td><code>prerequisite_pending</code></td><td>Pre-requisito pendente</td><td>Pre-requisito</td><td>Cliente completa dados iniciais.</td></tr>
-            <tr><td><code>consultation_selection</code></td><td>Consulta inicial</td><td>Consulta inicial</td><td>Cliente escolhe clínica.</td></tr>
-            <tr><td><code>awaiting_dentist_acceptance</code></td><td>Aguardando aceite do dentista</td><td>Consulta inicial</td><td>Dentista confirma a consulta combinada.</td></tr>
-            <tr><td><code>awaiting_clinical_decision</code></td><td>Aguardando decisão clínica</td><td>Decisão clínica</td><td>Dentista preenche complemento clínico.</td></tr>
-            <tr><td><code>ineligible_reassessment</code></td><td>Inaptidão</td><td>Consulta inicial</td><td>Cliente pode marcar nova consulta.</td></tr>
-            <tr><td><code>awaiting_payment</code></td><td>Aguardando pagamento</td><td>Compra</td><td>Cliente paga o Biteplaner.</td></tr>
-            <tr><td><code>payment_confirmed</code></td><td>Pagamento confirmado</td><td>Compra</td><td>Status transitório após confirmação de pagamento.</td></tr>
-            <tr><td><code>awaiting_dentist_forms</code></td><td>Aguardando envio ao laboratório</td><td>Decisão clínica</td><td>Dentista finaliza produção.</td></tr>
-            <tr><td><code>sent_to_lab</code></td><td>Enviado ao laboratório</td><td>Laboratório</td><td>Laboratório inicia produção.</td></tr>
-            <tr><td><code>adaptation_pending</code></td><td>Adaptação pendente</td><td>Adaptação e acompanhamento</td><td>Dentista agenda retorno/adaptação.</td></tr>
+            ${stage.fields.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
           </tbody>
         </table>
-      </div>
-    </section>
+      `;
 
-    <section>
-      <div class="section-head">
-        <h2>Fluxograma final da ordem</h2>
-        <p>Mapa de ponta a ponta para visualizar os papéis, decisões clínicas e retornos possíveis sem depender de uma tela específica.</p>
-      </div>
-      <div class="section-body">
-        <div class="network-map" aria-label="Fluxograma final do Biteplaner">
-          <div class="network-row">
-            <div class="network-node source"><strong>Parceiro</strong><span>Indica cliente e gera link individual</span></div>
-            <div class="network-node"><strong>Cliente</strong><span>Cria conta, aceita LGPD e completa onboarding</span></div>
-            <div class="network-node"><strong>Pre-requisito</strong><span>Responde perfil inicial e escolhe clínica</span></div>
-            <div class="network-node"><strong>Dentista</strong><span>Confirma consulta e preenche anamnese</span></div>
-            <div class="network-node decision"><strong>Decisão clínica</strong><span>Apto ou Inaptidão</span></div>
-          </div>
-          <div class="network-branches">
-            <div class="branch-card">
-              <h3>Ramo apto</h3>
-              <p>A ordem vai para Compra. A confirmação de pagamento é salva no backend e libera o dentista para finalizar a solicitação de produção.</p>
-              <div class="network-row compact">
-                <div class="network-node success"><strong>Compra</strong><span>Pagamento confirmado</span></div>
-                <div class="network-node"><strong>Produção</strong><span>Dentista envia ao laboratório</span></div>
-                <div class="network-node"><strong>Laboratório</strong><span>Produz e devolve para adaptação</span></div>
-                <div class="network-node"><strong>Acompanhamento</strong><span>Cliente registra uso e avaliações</span></div>
-              </div>
-            </div>
-            <div class="branch-card">
-              <h3>Ramo inapto</h3>
-              <p>O fluxo clínico atual é encerrado com justificativa visível ao cliente. A jornada volta para Consulta inicial, permitindo escolher a mesma clínica ou outra para uma nova avaliação.</p>
-              <div class="network-row compact">
-                <div class="network-node stop"><strong>Inaptidão</strong><span>Descrição obrigatória do dentista</span></div>
-                <div class="network-node"><strong>Nova consulta</strong><span>Cliente escolhe clínica/dentista</span></div>
-                <div class="network-node decision"><strong>Novo ciclo</strong><span>O novo dentista preenche sua própria anamnese</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+      renderTimeline();
+    }
+
+    function setStage(index) {
+      current = Math.max(0, Math.min(stages.length - 1, index));
+      renderStage();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openModal(file, title) {
+      modalTitle.textContent = title;
+      modalImage.src = `${assetBase}${file}`;
+      modalImage.alt = title;
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      modal.setAttribute("aria-hidden", "true");
+      modalImage.removeAttribute("src");
+    }
+
+    document.querySelectorAll("[data-overview-toggle], [data-overview-toggle-secondary]").forEach((button) => {
+      button.addEventListener("click", () => {
+        el("[data-overview]").classList.toggle("is-visible");
+        el("[data-overview]").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    el("[data-prev]").addEventListener("click", () => setStage(current - 1));
+    el("[data-next]").addEventListener("click", () => setStage(current + 1));
+    el("[data-modal-close]").addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeModal();
+      if (event.key === "ArrowRight") setStage(current + 1);
+      if (event.key === "ArrowLeft") setStage(current - 1);
+    });
+
+    renderTimeline();
+    renderOverview();
+    renderStage();
+  </script>
 </body>
 </html>

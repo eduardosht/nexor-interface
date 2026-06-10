@@ -6,6 +6,17 @@ import {
   biteplanerButtonSurfaceStyles,
   biteplanerFormButtonStyles,
 } from '../styles/biteplanerFormButton';
+import {
+  PortalCardText,
+  PortalCardTitle,
+  PortalMetaLabel,
+  PortalModalDescription,
+  PortalModalTitle,
+  PortalPageDescription,
+  PortalPageTitle,
+  PortalSectionDescription,
+  PortalSectionTitle,
+} from '../styles/portalTypography';
 
 type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
 
@@ -122,29 +133,16 @@ export const HeroCopy = styled.div`
   min-width: 0;
 `;
 
-export const Eyebrow = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const Eyebrow = PortalMetaLabel;
 
-export const Title = styled.h1<{ $showcase?: boolean }>`
-  margin: 0;
-  font-size: ${({ $showcase }) => ($showcase ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(1.8rem, 3vw, 2.4rem)')};
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: ${({ $showcase }) => ($showcase ? '0.98' : '1.1')};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const Title = styled(PortalPageTitle).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+}))<{ $showcase?: boolean }>``;
 
-export const Description = styled.p<{ $showcase?: boolean }>`
-  margin: 0;
-  max-width: 760px;
-  font-size: ${({ $showcase }) => ($showcase ? 'clamp(1rem, 1.4vw, 1.18rem)' : '14px')};
-  line-height: ${({ $showcase }) => ($showcase ? '1.75' : '1.6')};
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const Description = styled(PortalPageDescription).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+}))<{ $showcase?: boolean }>`
+  ${({ $showcase }) => (!$showcase ? 'font-size: 14px; line-height: 1.6;' : '')}
 `;
 
 export const HeroVisual = styled.div`
@@ -1178,13 +1176,8 @@ export const StatCard = styled.article`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const StatLabel = styled.span`
+export const StatLabel = styled(PortalMetaLabel)`
   display: block;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const StatValue = styled.strong`
@@ -1379,19 +1372,9 @@ export const PanelHeaderRow = styled.div`
   }
 `;
 
-export const PanelTitle = styled.h2`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const PanelTitle = styled(PortalSectionTitle).attrs({ $size: 'md' as const })``;
 
-export const PanelText = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const PanelText = PortalSectionDescription;
 
 export const AthleteCasePanel = styled.section`
   display: grid;
@@ -1585,24 +1568,14 @@ export const OrderHeader = styled.div`
   gap: 12px;
 `;
 
-export const OrderTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const OrderTitle = PortalCardTitle;
+
+export const OrderText = PortalCardText;
 
 export const OrderMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-`;
-
-export const OrderText = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const AthleteOrderHighlight = styled.article`
@@ -2018,19 +1991,9 @@ export const SectionHeading = styled.div`
   gap: 4px;
 `;
 
-export const SectionTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const SectionTitle = styled(PortalSectionTitle).attrs({ as: 'h3', $size: 'sm' as const })``;
 
-export const SectionDescription = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const SectionDescription = styled(PortalSectionDescription).attrs({ $size: 'sm' as const })``;
 
 export const InlineForm = styled.form`
   display: grid;
@@ -2106,19 +2069,9 @@ export const ModalHeader = styled.div`
   gap: 16px;
 `;
 
-export const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const ModalTitle = styled(PortalModalTitle).attrs({ as: 'h3' })``;
 
-export const ModalSubtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalSubtitle = PortalModalDescription;
 
 export const ModalCloseButton = styled.button`
   display: inline-flex;
@@ -2143,26 +2096,14 @@ export const QrShell = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const QrCaption = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const QrCaption = PortalMetaLabel;
 
 export const ModalField = styled.div`
   display: grid;
   gap: 8px;
 `;
 
-export const ModalLabel = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalLabel = PortalMetaLabel;
 
 export const LinkPreview = styled.input`
   width: 100%;
@@ -2476,13 +2417,7 @@ export const DocumentationItem = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const DocumentationLabel = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const DocumentationLabel = PortalMetaLabel;
 
 export const DocumentationValue = styled.p`
   margin: 0;

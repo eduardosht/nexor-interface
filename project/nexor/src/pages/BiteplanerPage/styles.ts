@@ -3,7 +3,18 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { getBrandTokens } from '@nexor/design-system';
 import { fullBleedSection, pageContainer } from '../../styles/layout';
-import realRoutineBackground from '../../assets/backgrounds/hero-section-3.png';
+import {
+  MarketingBodyText,
+  MarketingCardTitle,
+  MarketingEyebrow,
+  MarketingSectionLead,
+  MarketingSectionTitle,
+  MarketingTitleAccent,
+} from '../../styles/marketingTypography';
+import esportesColetivosBackground from '../../assets/backgrounds/esportes-coletivos.jpg';
+import esportesCombateBackground from '../../assets/backgrounds/esportes-combate.jpg';
+import forcaAltaIntensidadeBackground from '../../assets/backgrounds/forca-alta-intensidade.jpg';
+import finalCtaBackground from '../../assets/backgrounds/banner-horizontal.jpg';
 import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
 
 const bp = getBrandTokens('nexor').biteplanerContext;
@@ -20,6 +31,21 @@ const typeScale = {
   contentBody: '14px',
   meta: '12px',
 } as const;
+
+const sportContextBackgrounds = {
+  left: esportesCombateBackground,
+  center: forcaAltaIntensidadeBackground,
+  right: esportesColetivosBackground,
+} as const;
+
+export {
+  MarketingBodyText,
+  MarketingCardTitle,
+  MarketingEyebrow,
+  MarketingSectionLead,
+  MarketingSectionTitle,
+  MarketingTitleAccent,
+};
 
 const commentsMarquee = keyframes`
   from {
@@ -207,41 +233,6 @@ export const SectionIntro = styled.div`
   max-width: 980px;
 `;
 
-export const SectionLabel = styled.p`
-  margin: 0 0 16px;
-  font-family: ${({ theme }) => theme.fonts.display};
-  color: ${bp.accentStrong};
-  font-size: ${typeScale.eyebrow};
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-transform: uppercase;
-`;
-
-export const SectionTitle = styled.h2`
-  max-width: none;
-  margin: 0;
-  color: #172033;
-  font-size: ${typeScale.sectionTitle};
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-transform: uppercase;
-
-  @media (max-width: 640px) {
-    font-size: ${typeScale.sectionTitleMobile};
-    line-height: 1.08;
-  }
-`;
-
-export const SectionLead = styled.p`
-  max-width: 720px;
-  margin: 22px 0 0;
-  color: #465164;
-  font-size: ${typeScale.sectionLead};
-  line-height: 1.75;
-`;
-
 export const RealRoutineSection = styled.section`
   ${fullBleedSection}
   position: relative;
@@ -278,7 +269,7 @@ export const RealRoutineContent = styled.div`
   z-index: 1;
   display: block;
 
-  ${SectionLabel} {
+  ${MarketingEyebrow} {
     margin: 0;
   }
 
@@ -287,36 +278,21 @@ export const RealRoutineContent = styled.div`
   }
 `;
 
-export const RealRoutineTitle = styled.h2`
-  max-width: 820px;
-  margin: 26px 0 0;
-  color: #08111f;
-  font-size: clamp(36px, 4.8vw, 62px);
-  line-height: 1.04;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-transform: uppercase;
-
-  span {
-    color: #177642;
-  }
-
-  @media (max-width: 640px) {
-    font-size: clamp(30px, 10vw, 42px);
-    line-height: 1.08;
-  }
+export const RealRoutineKicker = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
 `;
 
-export const RealRoutineLead = styled.p`
-  max-width: 690px;
-  margin: 24px 0 0;
-  color: #253245;
-  font-size: clamp(15px, 1.25vw, 18px);
-  line-height: 1.68;
-
-  @media (max-width: 900px) {
-    font-size: ${typeScale.sectionLead};
-  }
+export const RealRoutineKickerIcon = styled.span`
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #eaf5ee;
+  color: #167a48;
 `;
 
 export const RealRoutineVisual = styled.div`
@@ -357,11 +333,10 @@ export const RealRoutineCard = styled.article<{ $imagePosition: 'left' | 'center
 
   &::before {
     z-index: -2;
-    background-image: url(${realRoutineBackground});
+    background-image: url(${({ $imagePosition }) => sportContextBackgrounds[$imagePosition]});
     background-repeat: no-repeat;
-    background-size: 420% auto;
-    background-position: ${({ $imagePosition }) =>
-    $imagePosition === 'left' ? 'left top' : $imagePosition === 'center' ? 'center top' : 'right top'};
+    background-size: cover;
+    background-position: center;
   }
 
   &::after {
@@ -396,23 +371,6 @@ export const RealRoutineCardAccent = styled.span`
   background: #2ecf76;
 `;
 
-export const RealRoutineCardTitle = styled.h3`
-  margin: 0 0 10px;
-  color: #f5faf8;
-  font-size: clamp(20px, 2vw, 25px);
-  line-height: 1.12;
-  font-weight: 900;
-  letter-spacing: 0;
-`;
-
-export const RealRoutineCardBody = styled.p`
-  max-width: 34ch;
-  margin: 0;
-  color: rgba(245, 250, 248, 0.88);
-  font-size: 15px;
-  line-height: 1.42;
-`;
-
 export const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -440,20 +398,8 @@ export const CardIcon = styled.div`
   margin-bottom: 32px;
 `;
 
-export const CardTitle = styled.h3`
-  margin: 0 0 14px;
-  color: #172033;
-  font-size: ${typeScale.contentTitle};
-  line-height: 1.2;
-  font-weight: 900;
-`;
-
-export const CardBody = styled.p`
-  margin: 0;
-  color: #465164;
-  font-size: ${typeScale.contentBody};
-  line-height: 1.72;
-`;
+export const CardTitle = MarketingCardTitle;
+export const CardBody = MarketingBodyText;
 
 export const ProcessOuter = styled.div`
   ${fullBleedSection}
@@ -501,14 +447,14 @@ export const ProcessOuter = styled.div`
     }
   }
 
-  ${SectionLabel} {
+  ${MarketingEyebrow} {
     position: relative;
     margin-bottom: 28px;
     color: #57d36d;
     font-size: clamp(12px, 1.2vw, 16px);
   }
 
-  ${SectionTitle} {
+  ${MarketingSectionTitle} {
     max-width: 660px;
     color: #ffffff;
     font-size: clamp(32px, 3.1vw, 44px);
@@ -516,7 +462,7 @@ export const ProcessOuter = styled.div`
     text-shadow: 0 6px 24px rgba(0, 0, 0, 0.58);
   }
 
-  ${SectionLead} {
+  ${MarketingSectionLead} {
     max-width: 680px;
     margin-top: 66px;
     color: rgba(255, 255, 255, 0.86);
@@ -526,12 +472,12 @@ export const ProcessOuter = styled.div`
   }
 
   @media (max-width: 900px) {
-    ${SectionTitle} {
+    ${MarketingSectionTitle} {
       max-width: 620px;
       font-size: clamp(36px, 7.4vw, 50px);
     }
 
-    ${SectionLead} {
+    ${MarketingSectionLead} {
       max-width: 600px;
       margin-top: 54px;
       font-size: clamp(18px, 3.1vw, 23px);
@@ -540,7 +486,7 @@ export const ProcessOuter = styled.div`
   }
 
   @media (max-width: 560px) {
-    ${SectionLabel} {
+    ${MarketingEyebrow} {
       margin-bottom: 24px;
 
       &::after {
@@ -548,13 +494,13 @@ export const ProcessOuter = styled.div`
       }
     }
 
-    ${SectionTitle} {
+    ${MarketingSectionTitle} {
       max-width: 350px;
       font-size: clamp(29px, 8.4vw, 36px);
       line-height: 1.1;
     }
 
-    ${SectionLead} {
+    ${MarketingSectionLead} {
       margin-top: 48px;
       font-size: 17px;
     }
@@ -844,7 +790,7 @@ export const ComparisonHeader = styled.div`
     max-width: 720px;
   }
 
-  ${SectionLabel} {
+  ${MarketingEyebrow} {
     position: relative;
     margin-bottom: 34px;
 
@@ -862,38 +808,6 @@ export const ComparisonHeader = styled.div`
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
     gap: 20px;
-  }
-`;
-
-export const ComparisonTitle = styled.h2`
-  margin: 0;
-  color: #07101d;
-  font-size: ${typeScale.sectionTitle};
-  line-height: 1;
-  font-weight: 950;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  text-shadow: 0 14px 32px rgba(7, 16, 29, 0.12);
-
-  @media (max-width: 640px) {
-    font-size: ${typeScale.sectionTitleMobile};
-    line-height: 1.08;
-  }
-`;
-
-export const ComparisonTitleAccent = styled.span`
-  color: ${bp.accentStrong};
-`;
-
-export const ComparisonLead = styled.p`
-  max-width: 620px;
-  margin: 24px 0 0;
-  color: #4b5563;
-  font-size: ${typeScale.sectionLead};
-  line-height: 1.75;
-
-  @media (max-width: 640px) {
-    font-size: ${typeScale.contentBody};
   }
 `;
 
@@ -1207,7 +1121,7 @@ export const TrustHero = styled.div`
 export const TrustIntro = styled.div`
   max-width: 680px;
 
-  ${SectionLabel} {
+  ${MarketingEyebrow} {
     position: relative;
     margin-bottom: 36px;
     color: ${bp.accentStrong};
@@ -1221,40 +1135,6 @@ export const TrustIntro = styled.div`
       height: 2px;
       background: ${bp.accentStrong};
     }
-  }
-`;
-
-export const TrustTitle = styled.h2`
-  position: relative;
-  margin: 0;
-  color: #07101d;
-  font-size: ${typeScale.sectionTitle};
-  line-height: 1;
-  font-weight: 950;
-  letter-spacing: 0;
-  text-transform: uppercase;
-  text-shadow: 0 14px 32px rgba(7, 16, 29, 0.1);
-
-  @media (max-width: 640px) {
-    font-size: ${typeScale.sectionTitleMobile};
-    line-height: 1.08;
-  }
-`;
-
-export const TrustTitleAccent = styled.span`
-  color: ${bp.accentStrong};
-`;
-
-export const TrustLead = styled.p`
-  max-width: 560px;
-  margin: 26px 0 0;
-  color: #465164;
-  font-size: ${typeScale.sectionLead};
-  line-height: 1.75;
-
-  @media (max-width: 640px) {
-    margin-top: 20px;
-    font-size: ${typeScale.sectionLead};
   }
 `;
 
@@ -1639,9 +1519,8 @@ export const FinalCtaOuter = styled.section`
   overflow: hidden;
   display: grid;
   align-items: center;
-  background:
-    linear-gradient(90deg, rgba(2, 12, 16, 0.3) 0%, rgba(3, 29, 26, 0.78) 42%, rgba(0, 0, 0, 0.92) 100%),
-    ${imageSet(publicOptimizedImages.biteplaner.finalCta.desktop)} 24% center / cover no-repeat;
+  background: url(${finalCtaBackground});
+  background-size: cover;
   color: #ffffff;
 
   &::before {
@@ -1655,9 +1534,9 @@ export const FinalCtaOuter = styled.section`
   }
 
   @media (max-width: 900px) {
-    background-image:
+    background:
       linear-gradient(90deg, rgba(2, 12, 16, 0.3) 0%, rgba(3, 29, 26, 0.78) 42%, rgba(0, 0, 0, 0.92) 100%),
-      ${imageSet(publicOptimizedImages.biteplaner.finalCta.mobile)};
+      url(${finalCtaBackground}) 24% center / cover no-repeat;
   }
 `;
 
@@ -1686,31 +1565,6 @@ export const FinalCtaContent = styled.div`
   @media (max-width: 900px) {
     padding: 32px 24px 10px;
   }
-`;
-
-export const FinalCtaTitle = styled.h2`
-  margin: 0;
-  color: #ffffff;
-  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.55);
-  font-size: ${typeScale.sectionTitle};
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0;
-  text-transform: uppercase;
-
-  @media (max-width: 640px) {
-    font-size: ${typeScale.sectionTitleMobile};
-    line-height: 1.08;
-  }
-`;
-
-export const FinalCtaBody = styled.p`
-  max-width: 480px;
-  margin: 14px 0 0;
-  color: rgba(255, 255, 255, 0.94);
-  font-size: ${typeScale.sectionLead};
-  line-height: 1.65;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.56);
 `;
 
 export const FinalCtaAction = styled.div`

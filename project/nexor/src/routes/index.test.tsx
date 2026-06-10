@@ -11,4 +11,8 @@ describe('routes', () => {
     expect(routesSource).not.toContain("import { Home } from '../pages/Home'");
     expect(routesSource).not.toContain("import { BiteplanerPage } from '../pages/BiteplanerPage'");
   });
+
+  it('exposes the Biteplaner care guide at the requested public URL', () => {
+    expect(routesSource).toContain("{ path: '/conheca-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> }");
+  });
 });

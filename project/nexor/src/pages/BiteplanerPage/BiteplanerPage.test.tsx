@@ -166,10 +166,10 @@ describe('BiteplanerPage', () => {
     expect(pageSource).toContain('icon: Heart');
     expect(pageSource).toContain('icon: ShieldCheck');
     expect(pageSource).toContain('<S.EducationIcon data-testid="education-icon">');
-    expect(stylesSource).toContain('export const TrustLead');
+    expect(stylesSource).toContain('MarketingSectionLead');
     expect(stylesSource).toContain('export const EducationIcon');
-    expect(educationStyles).toContain('font-size: ${typeScale.sectionTitle};');
-    expect(educationStyles).toContain('font-size: ${typeScale.sectionLead};');
+    expect(stylesSource).toContain('MarketingSectionTitle');
+    expect(stylesSource).toContain('MarketingSectionLead');
     expect(educationStyles).toContain('font-size: ${typeScale.contentTitle};');
     expect(educationStyles).toContain('font-size: ${typeScale.contentBody};');
     expect(educationStyles).not.toContain('font-size: clamp(38px, 4.5vw, 64px);');
@@ -192,19 +192,32 @@ describe('BiteplanerPage', () => {
     expect(stylesSource).not.toContain('imageSet(publicOptimizedImages.biteplaner.education');
   });
 
-  it('uses hero-section-3 as the real routine background', () => {
+  it('uses dedicated sport backgrounds on the real routine cards', () => {
     const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
 
-    expect(stylesSource).toContain("import realRoutineBackground from '../../assets/backgrounds/hero-section-3.png'");
+    expect(stylesSource).toContain("import esportesCombateBackground from '../../assets/backgrounds/esportes-combate.jpg'");
+    expect(stylesSource).toContain("import forcaAltaIntensidadeBackground from '../../assets/backgrounds/forca-alta-intensidade.jpg'");
+    expect(stylesSource).toContain("import esportesColetivosBackground from '../../assets/backgrounds/esportes-coletivos.jpg'");
     expect(stylesSource).toContain('export const RealRoutineSection');
     expect(stylesSource).toContain('export const RealRoutineContent');
-    expect(stylesSource).toContain('export const RealRoutineLead');
+    expect(stylesSource).toContain('MarketingSectionLead');
     expect(stylesSource).toContain('export const RealRoutineVisual');
-    expect(stylesSource).toContain('export const RealRoutineTitle');
     expect(stylesSource).toContain('export const RealRoutineCard');
     expect(stylesSource).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
-    expect(stylesSource).toContain('background-size: 420% auto;');
-    expect(stylesSource).toContain('background-image: url(${realRoutineBackground});');
+    expect(stylesSource).toContain('left: esportesCombateBackground');
+    expect(stylesSource).toContain('center: forcaAltaIntensidadeBackground');
+    expect(stylesSource).toContain('right: esportesColetivosBackground');
+    expect(stylesSource).toContain('background-size: cover;');
+    expect(stylesSource).toContain('background-image: url(${({ $imagePosition }) => sportContextBackgrounds[$imagePosition]});');
+  });
+
+  it('uses the horizontal banner background on the final CTA', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(stylesSource).toContain("import finalCtaBackground from '../../assets/backgrounds/banner-horizontal.jpg'");
+    expect(stylesSource).toContain('export const FinalCtaOuter');
+    expect(stylesSource).toContain('url(${finalCtaBackground}) 24% center / cover no-repeat;');
+    expect(stylesSource).not.toContain('publicOptimizedImages.biteplaner.finalCta');
   });
 
   it('renders the automatic customer comments carousel', () => {

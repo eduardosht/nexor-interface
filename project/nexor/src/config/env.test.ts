@@ -32,6 +32,15 @@ describe('parseEnv', () => {
     expect(env.contactEmail).toBe('x@y.com');
   });
 
+  it('defaults the public contact email to the Nexor Advance inbox', () => {
+    const env = parseEnv({
+      VITE_BITEPLANER_URL: 'http://localhost:5174',
+      VITE_API_URL: 'http://127.0.0.1:3333'
+    });
+
+    expect(env.contactEmail).toBe('contato@nexoradvance.com.br');
+  });
+
   it('parses the Biteplaner disable flag', () => {
     expect(
       parseEnv({

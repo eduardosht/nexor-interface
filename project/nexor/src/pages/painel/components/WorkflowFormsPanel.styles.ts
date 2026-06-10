@@ -5,6 +5,11 @@ import {
   biteplanerButtonSurfaceStyles,
   biteplanerFormButtonStyles,
 } from '../styles/biteplanerFormButton';
+import {
+  PortalCardTitle,
+  PortalSectionDescription,
+  PortalSectionTitle,
+} from '../styles/portalTypography';
 
 const sadPulse = keyframes`
   0%, 100% {
@@ -35,18 +40,9 @@ export const Header = styled.div`
   gap: 6px;
 `;
 
-export const Title = styled.h2`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 18px;
-  font-weight: 800;
-`;
+export const Title = PortalSectionTitle;
 
-export const Description = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 14px;
-  line-height: 1.6;
+export const Description = styled(PortalSectionDescription)`
   white-space: pre-line;
 `;
 
@@ -81,12 +77,7 @@ export const FormHeader = styled.div`
   gap: 12px;
 `;
 
-export const FormTitle = styled.h3`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 16px;
-  font-weight: 800;
-`;
+export const FormTitle = PortalCardTitle;
 
 export const Meta = styled.p`
   margin: 0;

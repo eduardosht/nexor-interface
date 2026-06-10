@@ -441,6 +441,25 @@ function getInitialPayload(
   );
 }
 
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+      .map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`)
+      .join(',')}}`;
+  }
+
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+function getDefaultValuesSignature(defaultValues: Record<string, string>) {
+  return stableStringify(defaultValues);
+}
+
 function isScoreField(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition
 ): field is BiteplanerReviewFieldDefinition {
@@ -1476,12 +1495,14 @@ function FormItem({
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false);
   const formCardRef = useRef<HTMLElement | null>(null);
   const presentation = STATUS_PRESENTATION[form.status];
+  const defaultValuesSignature = getDefaultValuesSignature(defaultValues);
+  const formPayloadSignature = stableStringify(form.payload);
 
   useEffect(() => {
     setPayload(getInitialPayload(form, definition, defaultValues, actorRole));
     setFieldErrors({});
     setStepError('');
-  }, [actorRole, defaultValues, definition, form.id, form.payload]);
+  }, [actorRole, defaultValuesSignature, definition, form.id, formPayloadSignature]);
 
   const fields = getDefinitionFields(definition).filter(
     (field) => !isConsentCoveredByBiteplanerGate(field, form.templateKey, actorRole)

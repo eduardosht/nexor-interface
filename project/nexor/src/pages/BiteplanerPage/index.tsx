@@ -3,7 +3,6 @@ import {
   BadgeCheck,
   Dumbbell,
   Heart,
-  Image as ImageIcon,
   Quote,
   ShieldCheck,
   SlidersHorizontal,
@@ -80,19 +79,16 @@ const JOURNEY_STEPS = [
 
 const SPORT_CONTEXT_CARDS = [
   {
-    icon: Target,
     imagePosition: 'left' as const,
     title: 'Esportes de combate',
     body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
   },
   {
-    icon: Dumbbell,
     imagePosition: 'center' as const,
     title: 'Força e alta intensidade',
     body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
   },
   {
-    icon: Trophy,
     imagePosition: 'right' as const,
     title: 'Esportes coletivos',
     body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
@@ -339,11 +335,11 @@ export function BiteplanerPage() {
       <S.TrustOuter>
         <S.TrustHero>
           <S.TrustIntro>
-            <S.SectionLabel>Comparação</S.SectionLabel>
-            <S.TrustTitle>Educação para decidir <S.TrustTitleAccent>melhor</S.TrustTitleAccent></S.TrustTitle>
-            <S.TrustLead>
+            <S.MarketingEyebrow>Comparação</S.MarketingEyebrow>
+            <S.MarketingSectionTitle>Educação para decidir <S.MarketingTitleAccent>melhor</S.MarketingTitleAccent></S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
               Informações e tecnologia para transformar performance em decisões mais inteligentes.
-            </S.TrustLead>
+            </S.MarketingSectionLead>
           </S.TrustIntro>
         </S.TrustHero>
 
@@ -381,12 +377,12 @@ export function BiteplanerPage() {
       <S.ProcessOuter id="como-funciona">
         <S.SplitSection>
           <S.SectionIntro>
-            <S.SectionLabel>Como funciona</S.SectionLabel>
-            <S.SectionTitle>Da elegibilidade ao acompanhamento</S.SectionTitle>
-            <S.SectionLead>
+            <S.MarketingEyebrow>Como funciona</S.MarketingEyebrow>
+            <S.MarketingSectionTitle>Da elegibilidade ao acompanhamento</S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
               A jornada foi desenhada para que o atleta entenda o passo a passo e possa adquirir o dispositivo
               após avaliação do dentista.
-            </S.SectionLead>
+            </S.MarketingSectionLead>
           </S.SectionIntro>
           <S.JourneyGrid data-testid="biteplaner-process-journey">
             {JOURNEY_STEPS.map(({ icon: Icon, ...step }, index) => (
@@ -418,24 +414,21 @@ export function BiteplanerPage() {
 
       <S.RealRoutineSection>
         <S.RealRoutineContent>
-          <S.RealRoutineTitle>
+          <S.MarketingSectionTitle $size="feature">
             Feito para a rotina real de <span>treinos e competições</span>
-          </S.RealRoutineTitle>
-          <S.RealRoutineLead>
-            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e
-            competições, muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O
-            Biteplaner® modula as sobrecargas através de um processo tecnológico e avaliações periódicas.
-          </S.RealRoutineLead>
+          </S.MarketingSectionTitle>
+          <S.MarketingSectionLead $size="feature">
+            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e competições,
+            muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O Biteplaner® modula
+            as sobrecargas através de um processo tecnológico e avaliações periódicas.
+          </S.MarketingSectionLead>
         </S.RealRoutineContent>
         <S.RealRoutineVisual>
-          {SPORT_CONTEXT_CARDS.map(({ icon: Icon, ...card }) => (
+          {SPORT_CONTEXT_CARDS.map(({ ...card }) => (
             <S.RealRoutineCard key={card.title} $imagePosition={card.imagePosition}>
-              <S.RealRoutineCardIcon aria-hidden="true">
-                <Icon size={24} strokeWidth={1.8} />
-              </S.RealRoutineCardIcon>
               <S.RealRoutineCardAccent aria-hidden="true" />
-              <S.RealRoutineCardTitle>{card.title}</S.RealRoutineCardTitle>
-              <S.RealRoutineCardBody>{card.body}</S.RealRoutineCardBody>
+              <S.MarketingCardTitle $tone="light" $size="lg">{card.title}</S.MarketingCardTitle>
+              <S.MarketingBodyText $tone="light">{card.body}</S.MarketingBodyText>
             </S.RealRoutineCard>
           ))}
         </S.RealRoutineVisual>
@@ -444,11 +437,11 @@ export function BiteplanerPage() {
       <S.ComparisonSection>
         <S.ComparisonHeader>
           <S.SectionIntro>
-            <S.SectionLabel>Comparação</S.SectionLabel>
-            <S.ComparisonTitle>Protetores Bucais vs <S.ComparisonTitleAccent>Biteplaner</S.ComparisonTitleAccent></S.ComparisonTitle>
-            <S.ComparisonLead>
+            <S.MarketingEyebrow>Comparação</S.MarketingEyebrow>
+            <S.MarketingSectionTitle>Protetores Bucais vs <S.MarketingTitleAccent>Biteplaner</S.MarketingTitleAccent></S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
               Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
-            </S.ComparisonLead>
+            </S.MarketingSectionLead>
           </S.SectionIntro>
           <S.ComparisonProductVisual>
             <picture>
@@ -503,11 +496,11 @@ export function BiteplanerPage() {
 
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
-          <S.SectionLabel>Comentários</S.SectionLabel>
-          <S.SectionTitle id="biteplaner-comments-title">Clientes satisfeitos com o Biteplaner</S.SectionTitle>
-          <S.SectionLead>
+          <S.MarketingEyebrow>Comentários</S.MarketingEyebrow>
+          <S.MarketingSectionTitle id="biteplaner-comments-title">Clientes satisfeitos com o Biteplaner</S.MarketingSectionTitle>
+          <S.MarketingSectionLead>
             Relatos sobre conforto, adaptação e confiança no uso real do produto.
-          </S.SectionLead>
+          </S.MarketingSectionLead>
         </S.SectionIntro>
         <S.CommentsViewport data-comments-viewport>
           <S.CommentsTrack data-comments-track aria-label="Carrossel automático de comentários dos clientes">
@@ -536,8 +529,8 @@ export function BiteplanerPage() {
 
       <S.FaqSection>
         <S.FaqMedia>
-          <S.SectionLabel>Dúvidas</S.SectionLabel>
-          <S.SectionTitle>Perguntas frequentes</S.SectionTitle>
+          <S.MarketingEyebrow>Dúvidas</S.MarketingEyebrow>
+          <S.MarketingSectionTitle>Perguntas frequentes</S.MarketingSectionTitle>
         </S.FaqMedia>
         <S.FaqContent>
           <S.FaqList>
@@ -554,11 +547,11 @@ export function BiteplanerPage() {
         <S.FinalCtaInner>
           <S.FinalCtaMedia aria-hidden="true" />
           <S.FinalCtaContent>
-            <S.FinalCtaTitle>Comece pela elegibilidade</S.FinalCtaTitle>
-            <S.FinalCtaBody>
+            <S.MarketingSectionTitle $tone="light">Comece pela elegibilidade</S.MarketingSectionTitle>
+            <S.MarketingSectionLead $tone="light">
               Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
               qualquer pagamento do produto.
-            </S.FinalCtaBody>
+            </S.MarketingSectionLead>
           </S.FinalCtaContent>
           <S.FinalCtaAction>
             <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>

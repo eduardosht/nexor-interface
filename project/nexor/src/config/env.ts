@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const emptyToUndef = (v: unknown) => (v === '' ? undefined : v);
+const defaultContactEmail = 'contato@nexoradvance.com.br';
 const devDefaults = {
   VITE_BITEPLANER_URL: 'http://localhost:5174',
   VITE_API_URL: 'http://127.0.0.1:3333',
@@ -12,7 +13,7 @@ const schema = z.object({
   VITE_APP_URL: z.preprocess(emptyToUndef, z.string().url().optional()),
   VITE_SUPABASE_URL: z.preprocess(emptyToUndef, z.string().url().optional()),
   VITE_SUPABASE_ANON_KEY: z.preprocess(emptyToUndef, z.string().min(1).optional()),
-  VITE_CONTACT_EMAIL: z.preprocess(emptyToUndef, z.string().email().optional()),
+  VITE_CONTACT_EMAIL: z.preprocess(emptyToUndef, z.string().email().default(defaultContactEmail)),
   VITE_CONTACT_WHATSAPP: z.preprocess(emptyToUndef, z.string().optional()),
   DISABLE_BITEPLANER: z.preprocess(emptyToUndef, z.enum(['true', 'false']).optional()),
 });

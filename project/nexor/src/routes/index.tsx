@@ -112,6 +112,7 @@ export const router = createBrowserRouter([
       { path: '/', element: <LazyRoute><Home /></LazyRoute> },
       { path: '/sobre', element: <LazyRoute><Sobre /></LazyRoute> },
       { path: '/biteplaner', element: <LazyRoute><BiteplanerPage /></LazyRoute> },
+      { path: '/conheca-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> },
       { path: '/conheca-o-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> },
       { path: '/parceiros', element: <LazyRoute><Parceiros /></LazyRoute> },
       { path: '/privacidade', element: <LazyRoute><Privacidade /></LazyRoute> },

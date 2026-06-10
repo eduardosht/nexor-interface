@@ -35,6 +35,16 @@ describe('RequireAuth', () => {
     );
     expect(screen.getByText('protected')).toBeInTheDocument();
   });
+
+  it('keeps children mounted during transient loading when session exists', () => {
+    mockUseAuth.mockReturnValue({ loading: true, session: { user: { id: '1' } } });
+    render(
+      <MemoryRouter>
+        <RequireAuth><div>protected</div></RequireAuth>
+      </MemoryRouter>
+    );
+    expect(screen.getByText('protected')).toBeInTheDocument();
+  });
 });
 
 describe('RequireAdmin', () => {
@@ -72,6 +82,23 @@ describe('RequireAdmin', () => {
     expect(screen.getByText('admin-only')).toBeInTheDocument();
   });
 
+  it('keeps admin routes mounted during transient loading for resolved admins', () => {
+    mockUseAuth.mockReturnValue({
+      loading: true,
+      session: { user: { id: '1' } },
+      backendUserResolved: true,
+      backendUser: { roles: ['admin'] },
+    });
+
+    render(
+      <MemoryRouter>
+        <RequireAdmin><div>admin-only</div></RequireAdmin>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('admin-only')).toBeInTheDocument();
+  });
+
   it('blocks non-admin users from admin routes', () => {
     mockUseAuth.mockReturnValue({
       loading: false,
@@ -91,6 +118,23 @@ describe('RequireAdmin', () => {
 });
 
 describe('RequireNonAdmin', () => {
+  it('keeps regular portal routes mounted during transient loading for resolved users', () => {
+    mockUseAuth.mockReturnValue({
+      loading: true,
+      session: { user: { id: '1' } },
+      backendUserResolved: true,
+      backendUser: { roles: ['customer'] },
+    });
+
+    render(
+      <MemoryRouter>
+        <RequireNonAdmin><div>user-portal</div></RequireNonAdmin>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('user-portal')).toBeInTheDocument();
+  });
+
   it('blocks admins from regular portal routes', () => {
     mockUseAuth.mockReturnValue({
       loading: false,

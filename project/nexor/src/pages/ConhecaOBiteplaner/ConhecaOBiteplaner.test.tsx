@@ -15,14 +15,18 @@ function renderPage() {
 }
 
 describe('ConhecaOBiteplaner', () => {
-  it('renders a QR campaign landing page without embedding a QR code', () => {
+  it('renders an informative care guide based on the mouthguard PDF', () => {
     renderPage();
 
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
-    expect(screen.getByRole('heading', { name: /conheça o biteplaner/i })).toBeInTheDocument();
-    expect(screen.getByText(/você chegou aqui pelo qr code/i)).toBeInTheDocument();
-    expect(screen.getByText(/protetor bucal premium/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /iniciar minha jornada/i })).toHaveAttribute('href', '/cadastro');
+    expect(screen.getByRole('heading', { name: /cuidados com o protetor bucal esportivo/i })).toBeInTheDocument();
+    expect(screen.getByText(/lugar de protetor bucal é em boca/i)).toBeInTheDocument();
+    expect(screen.getByText(/não lavar em água quente/i)).toBeInTheDocument();
+    expect(screen.getByText(/nunca compartilhe seu protetor/i)).toBeInTheDocument();
+    expect(screen.getByText(/protetor bucal não é eterno/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /iniciar minha jornada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ver página completa/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/atleta usando protetor bucal biteplaner/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId('biteplaner-print-qr-code')).not.toBeInTheDocument();
   });
 });

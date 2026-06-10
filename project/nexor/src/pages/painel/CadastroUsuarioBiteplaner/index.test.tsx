@@ -409,6 +409,31 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
+  it('preserves typed onboarding values when the page rerenders with the same server form', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+
+    const { rerender } = renderPage();
+
+    await acceptInitialPrivacyGateIfNeeded();
+    const cpfInput = await findTextField(/cpf/i);
+    fireEvent.change(cpfInput, { target: { value: '52998224725' } });
+    expect(cpfInput).toHaveValue('529.982.247-25');
+
+    rerender(
+      <MemoryRouter>
+        <TestQueryClientProvider>
+          <ThemeProvider theme={lightTheme}>
+            <CadastroUsuarioBiteplaner />
+          </ThemeProvider>
+        </TestQueryClientProvider>
+      </MemoryRouter>
+    );
+
+    expect(await findTextField(/cpf/i)).toHaveValue('529.982.247-25');
+  });
+
   it('marks required fields and validates CPF on blur below the input', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })

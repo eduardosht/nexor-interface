@@ -11,7 +11,7 @@ function currentPath() {
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { loading, session } = useAuth();
 
-  if (loading) return null;
+  if (loading && !session) return null;
 
   if (!session) {
     return <Navigate to={`/entrar?next=${encodeURIComponent(currentPath())}`} replace />;
@@ -23,7 +23,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 export function RequireAdmin({ children }: { children: ReactNode }) {
   const { loading, session, backendUser, backendUserResolved } = useAuth();
 
-  if (loading || (session && !backendUserResolved)) {
+  if ((loading && !session) || (session && !backendUserResolved)) {
     return null;
   }
 
@@ -41,7 +41,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
 export function RequireNonAdmin({ children }: { children: ReactNode }) {
   const { loading, session, backendUser, backendUserResolved } = useAuth();
 
-  if (loading || (session && !backendUserResolved)) {
+  if ((loading && !session) || (session && !backendUserResolved)) {
     return null;
   }
 

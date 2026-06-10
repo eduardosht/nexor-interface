@@ -548,6 +548,7 @@ describe('ProducaoDentista', () => {
   it('keeps administrative form typography aligned with the onboarding scale', () => {
     const onboardingStyles = readFileSync(join(process.cwd(), 'src/pages/painel/PreRequisito/styles.ts'), 'utf8');
     const adminStyles = readFileSync(join(process.cwd(), 'src/pages/painel/admin/styles.ts'), 'utf8');
+    const portalTypography = readFileSync(join(process.cwd(), 'src/pages/painel/styles/portalTypography.ts'), 'utf8');
     const designSystemFormSources = [
       '../packages/design-system/src/components/Field.tsx',
       '../packages/design-system/src/components/Select.tsx',
@@ -560,8 +561,11 @@ describe('ProducaoDentista', () => {
     expect(onboardingStyles).toContain('font-size: 1rem;');
     expect(onboardingStyles).toContain('font-size: 0.875rem;');
     expect(adminStyles).toContain('export const PageTitle');
-    expect(adminStyles).toContain('font-size: 2rem;');
-    expect(adminStyles).toContain('font-size: 1rem;');
+    expect(adminStyles).toContain('PortalPageTitle');
+    expect(adminStyles).toContain('PortalPageDescription');
+    expect(portalTypography).toContain('font-size: ${({ $size = \'default\' }) =>');
+    expect(portalTypography).toContain('clamp(2rem, 3.4vw, 2.75rem)');
+    expect(portalTypography).toContain('16px');
 
     designSystemFormSources.forEach((source) => {
       const labelBlock = source.slice(source.indexOf('const Label'), source.indexOf('const RequiredMark'));

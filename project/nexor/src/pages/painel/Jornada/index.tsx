@@ -125,7 +125,7 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
     return 3;
   }
 
-  if (order.status === 'lab_processing') {
+  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
     return 4;
   }
 
@@ -288,6 +288,10 @@ function getCurrentStepNotice(
     return `Pagamento confirmado. A jornada aguarda os registros operacionais do dentista para seguir.`;
   }
 
+  if (order.status === 'awaiting_lab_start') {
+    return `A solicitação foi enviada ao laboratório. Acompanhe por aqui enquanto a produção é aceita e iniciada.`;
+  }
+
   if (order.status === 'lab_processing') {
     return `O Biteplaner está em etapa laboratorial. Acompanhe o progresso por aqui enquanto o laboratório conclui a produção.`;
   }
@@ -340,7 +344,7 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
     };
   }
 
-  if (order.status === 'lab_processing') {
+  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
     return {
       tone: 'info' as const,
       title: 'Etapa laboratorial',

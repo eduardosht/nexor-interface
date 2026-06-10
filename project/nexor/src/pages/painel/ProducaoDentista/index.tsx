@@ -1152,7 +1152,7 @@ export function ProducaoDentista() {
 
   return (
     <PageStack>
-      {loading ? (
+      {loading && !order ? (
         <S.LoadingStack aria-label="Carregando solicitação de produção">
           <SkeletonGrid cards={2} minCardWidth="260px" />
           <SkeletonCard lines={5} blockHeight="140px" />

@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vídeo documental da jornada Biteplaner</title>
+  <style>
+    :root {
+      --ink: #18342b;
+      --muted: #587067;
+      --line: #d7e3de;
+      --surface: #f5faf7;
+      --panel: #fbfdfb;
+      --green: #176f4d;
+      --green-soft: #e6f5eb;
+      --yellow: #f0c84b;
+      --blue: #2d6cdf;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--surface);
+      color: var(--ink);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(23, 111, 77, 0.08), rgba(45, 108, 223, 0.06)),
+        var(--surface);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 24px;
+      padding: 54px 64px 34px;
+      opacity: 0;
+      transform: translateX(24px);
+      pointer-events: none;
+      transition: opacity 420ms ease, transform 420ms ease;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .intro,
+    .outro {
+      align-content: center;
+      grid-template-rows: auto auto auto;
+      gap: 28px;
+      padding: 90px 120px;
+    }
+
+    .intro h1,
+    .outro h1 {
+      max-width: 1040px;
+      margin: 0;
+      font-size: 72px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .intro p,
+    .outro p {
+      max-width: 900px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 28px;
+      line-height: 1.35;
+    }
+
+    .eyebrow {
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border: 1px solid #9bd7ad;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .slide-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .slide-title {
+      display: grid;
+      gap: 12px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 44px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .slide-title p {
+      max-width: 1080px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.42;
+    }
+
+    .meta {
+      min-width: 300px;
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(251, 253, 251, 0.86);
+    }
+
+    .meta span {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .meta strong {
+      font-size: 17px;
+    }
+
+    .screens {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+      min-height: 0;
+      align-items: stretch;
+    }
+
+    .screens.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .screen {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      min-height: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      box-shadow: 0 18px 48px rgba(24, 52, 43, 0.10);
+    }
+
+    .screen img {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      object-fit: contain;
+      background: #edf4f0;
+    }
+
+    .caption {
+      display: grid;
+      gap: 4px;
+      padding: 13px 16px 15px;
+      border-top: 1px solid var(--line);
+      background: #fbfdfb;
+    }
+
+    .caption strong {
+      font-size: 16px;
+    }
+
+    .caption span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .progress {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dfeae5;
+    }
+
+    .progress span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      transition: width 300ms ease;
+    }
+
+    .flow-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 1120px;
+    }
+
+    .flow-strip span {
+      min-height: 72px;
+      display: grid;
+      place-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="Vídeo documental da jornada Biteplaner">
+    <section class="slide intro active">
+      <span class="eyebrow">Biteplaner Nexor</span>
+      <h1>Jornada operacional documentada por telas</h1>
+      <p>Fluxo visual desde a indicação do parceiro até adaptação, acompanhamento e habilitação dos perfis operacionais.</p>
+      <div class="flow-strip" aria-label="Resumo do fluxo">
+        <span>Indicação</span>
+        <span>Cadastro</span>
+        <span>Pré-requisito</span>
+        <span>Decisão clínica</span>
+        <span>Produção</span>
+        <span>Acompanhamento</span>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: origem da indicação</span><h2>Parceiro gerar convite</h2><p>O parceiro cria um link individual rastreável para iniciar a jornada do cliente indicado.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Parceiro indicador</strong><span>Próxima etapa</span><strong>Cadastro do cliente indicado</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/01-parceiro-indicar-formulario.png" alt="Formulário de indicação"><div class="caption"><strong>Formulário de indicação</strong><span>Nome, e-mail e contato do cliente qualificado.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/04-parceiro-link-modal-qr.png" alt="Link e QR code"><div class="caption"><strong>Link e QR code</strong><span>URL individual para compartilhar e rastrear origem.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>01 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: conta</span><h2>Entrada: cadastro do cliente indicado</h2><p>O cliente cria conta Nexor e mantém o vínculo comercial do convite recebido.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente</strong><span>Próxima etapa</span><strong>Onboarding do cliente</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/05-cliente-cadastro-conta-convite.png" alt="Cadastro do cliente por convite"><div class="caption"><strong>Dados da conta</strong><span>Nome, e-mail, senha e confirmação.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/06-cliente-cadastro-consentimentos.png" alt="Consentimentos do cliente"><div class="caption"><strong>Consentimentos</strong><span>Termos, privacidade e comunicação.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>02 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: pré-requisito</span><h2>Entrada: onboarding do cliente</h2><p>O cliente autoriza dados sensíveis e preenche o segundo step com perfil esportivo, saúde, objetivos e rotina.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente</strong><span>Próxima etapa</span><strong>Pré-requisito e pré-consulta</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/07-cliente-onboarding-lgpd-bloqueio.png" alt="Bloqueio LGPD"><div class="caption"><strong>Step 1: consentimento LGPD</strong><span>Sem aceite, o formulário sensível não abre.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/08-cliente-onboarding-formulario.png" alt="Formulário completo do onboarding"><div class="caption"><strong>Step 2: formulário completo</strong><span>Campos adicionais para qualificar a jornada.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>03 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 1</span><h2>Etapa 1: Pré-requisito e pré-consulta</h2><p>Anamnese inicial e triagens estruturam o caso antes da consulta com dentista licenciado.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente</strong><span>Próxima etapa</span><strong>Consulta inicial e match</strong></div>
+      </div>
+      <div class="screens three">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/09a-cliente-pre-requisito-secao-1.png" alt="Pré-requisito seção 1"><div class="caption"><strong>Dados iniciais</strong><span>Identificação, esporte e contexto base.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png" alt="Pré-requisito seção 2"><div class="caption"><strong>Dados clínicos</strong><span>Histórico odontológico, ATM, dor e hábitos.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/11-cliente-pre-consulta-clinica.png" alt="Pré-consulta clínica"><div class="caption"><strong>Pré-consulta</strong><span>Formulário compartilhado com o dentista.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>04 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 2</span><h2>Etapa 2: Consulta inicial e match</h2><p>A ordem é vinculada a uma clínica licenciada e passa a depender do aceite do dentista.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente e dentista</strong><span>Próxima etapa</span><strong>Decisão clínica</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/10-cliente-selecao-clinica.png" alt="Seleção de clínica"><div class="caption"><strong>Escolha da clínica</strong><span>Clínicas licenciadas, distância e acessibilidade.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/16b-cliente-jornada-inaptidao.png" alt="Retorno por inaptidão"><div class="caption"><strong>Retorno por inaptidão</strong><span>Cliente pode iniciar novo ciclo de consulta.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>05 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 3</span><h2>Etapa 3: Decisão clínica</h2><p>O dentista revisa a anamnese, complementa a avaliação e decide aptidão, tratamento ou inaptidão.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Dentista</strong><span>Próxima etapa</span><strong>Compra se apto</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/21b-dentista-producao-etapa-1-secao-2.png" alt="Revisão clínica"><div class="caption"><strong>Revisão clínica</strong><span>Dentista consome os dados enviados pelo cliente.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/21c-dentista-producao-complemento.png" alt="Complemento clínico"><div class="caption"><strong>Complemento e aptidão</strong><span>Decisão controla compra, retorno ou encerramento.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>06 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 4</span><h2>Etapa 4: Compra</h2><p>Depois da aptidão clínica, o cliente confirma pagamento e o sistema libera a produção.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente e sistema</strong><span>Próxima etapa</span><strong>Produção pelo dentista</strong></div>
+      </div>
+      <div class="screens three">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/12-cliente-compra-biteplanner.png" alt="Compra aguardando pagamento"><div class="caption"><strong>Compra aguardando pagamento</strong><span>Resumo do pedido e botão para checkout.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/12c-stripe-checkout-redirecionamento.png" alt="Checkout Stripe"><div class="caption"><strong>Checkout Stripe</strong><span>Redirecionamento após concluir pagamento.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/12b-cliente-compra-sucesso-stripe.png" alt="Pagamento confirmado"><div class="caption"><strong>Retorno com sucesso</strong><span>Confirmação visual após reconciliação.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>07 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: produção técnica</span><h2>Pós-compra: envio de produção pelo dentista</h2><p>O dentista transforma o caso aprovado e pago em solicitação técnica para laboratório.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Dentista</strong><span>Próxima etapa</span><strong>Laboratório</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/20-dentista-listagem-ordens.png" alt="Fila do dentista"><div class="caption"><strong>Fila do dentista</strong><span>Pedidos e ações por status.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/21a-dentista-producao-etapa-1.png" alt="Avaliação inicial"><div class="caption"><strong>Avaliação inicial</strong><span>Revisão da anamnese antes do complemento técnico.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/21c-dentista-producao-complemento.png" alt="Solicitação de produção"><div class="caption"><strong>Solicitação de produção</strong><span>Arquivos, prescrição e laboratório.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/21d-dentista-producao-anexos-laboratorio.png" alt="Anexos para laboratório"><div class="caption"><strong>Anexos para laboratório</strong><span>Escaneamento 3D, prescrição assinada e confirmação LGPD.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>08 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 5</span><h2>Etapa 5: Laboratório</h2><p>O laboratório recebe os dados técnicos mínimos, produz o dispositivo e atualiza a ordem.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Laboratório</strong><span>Próxima etapa</span><strong>Adaptação</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/22-laboratorio-listagem-ordens.png" alt="Fila do laboratório"><div class="caption"><strong>Fila do laboratório</strong><span>Pedidos recebidos, dados operacionais e produção.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/14-cliente-jornada-laboratorio.png" alt="Cliente acompanhando laboratório"><div class="caption"><strong>Acompanhamento pelo cliente</strong><span>Status de laboratório aparece na jornada.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>09 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: etapa 6</span><h2>Etapa 6: Adaptação e acompanhamento</h2><p>Depois da produção, o cliente passa por adaptação e registra uso, avaliações e evolução.</p></div>
+        <div class="meta"><span>Perfil responsável</span><strong>Cliente e dentista</strong><span>Próxima etapa</span><strong>Acompanhamento concluído</strong></div>
+      </div>
+      <div class="screens">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/15-cliente-jornada-adaptacao.png" alt="Adaptação"><div class="caption"><strong>Adaptação</strong><span>Retorno com o dentista e ajuste do dispositivo.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/16-cliente-jornada-acompanhamento.png" alt="Acompanhamento"><div class="caption"><strong>Acompanhamento</strong><span>Uso, relatórios de treino e avaliações.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>10 / 11</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-head">
+        <div class="slide-title"><span class="eyebrow">Fluxo visual da jornada: habilitação operacional</span><h2>Onboarding de parceiros, dentistas e laboratórios</h2><p>Perfis profissionais completam cadastro e dependem de aprovação administrativa para atuar na operação.</p></div>
+        <div class="meta"><span>Perfis responsáveis</span><strong>Parceiro, dentista, laboratório e admin</strong><span>Resultado</span><strong>Perfil ativo na jornada</strong></div>
+      </div>
+      <div class="screens three">
+        <article class="screen"><img src="assets/apresentacao-painel-admin/17-onboarding-parceiro-full.png" alt="Onboarding de parceiro"><div class="caption"><strong>Parceiro</strong><span>Documento, atuação, endereço e aceites.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/18-onboarding-dentista-full.png" alt="Onboarding de dentista"><div class="caption"><strong>Dentista</strong><span>CRO, clínicas, horários e acessibilidade.</span></div></article>
+        <article class="screen"><img src="assets/apresentacao-painel-admin/19-onboarding-laboratorio-full.png" alt="Onboarding de laboratório"><div class="caption"><strong>Laboratório</strong><span>CNPJ, operação, horários e aceites.</span></div></article>
+      </div>
+      <div class="footer"><div class="progress"><span></span></div><span>11 / 11</span></div>
+    </section>
+
+    <section class="slide outro">
+      <span class="eyebrow">Resumo operacional</span>
+      <h1>Da indicação ao acompanhamento clínico</h1>
+      <p>A documentação em vídeo consolida quem atua, quando atua e quais telas sustentam cada passagem de responsabilidade.</p>
+    </section>
+  </main>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const slideMs = 4600;
+    const introMs = 3600;
+    let current = 0;
+
+    function setProgress(slide, ratio) {
+      const bar = slide.querySelector(".progress span");
+      if (bar) bar.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+    }
+
+    function activate(index) {
+      slides.forEach((slide, position) => {
+        slide.classList.toggle("active", position === index);
+        setProgress(slide, 0);
+      });
+      current = index;
+    }
+
+    async function waitForImages() {
+      const images = [...document.images];
+      await Promise.all(images.map((image) => {
+        if (image.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          image.addEventListener("load", resolve, { once: true });
+          image.addEventListener("error", resolve, { once: true });
+        });
+      }));
+    }
+
+    async function runDeck() {
+      await waitForImages();
+      window.__biteplanerVideoReady = true;
+      await new Promise((resolve) => setTimeout(resolve, introMs));
+
+      for (let index = 1; index < slides.length; index += 1) {
+        activate(index);
+        const start = performance.now();
+        while (performance.now() - start < slideMs) {
+          setProgress(slides[index], (performance.now() - start) / slideMs);
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+        setProgress(slides[index], 1);
+      }
+
+      window.__biteplanerVideoDone = true;
+    }
+
+    runDeck();
+  </script>
+</body>
+</html>
