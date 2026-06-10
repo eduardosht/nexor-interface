@@ -35,6 +35,7 @@ import {
 } from '../../../features/demo/biteplanerFlow';
 import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import type { StepTone } from './styles';
+import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 import * as S from './styles';
 
 type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
@@ -531,6 +532,7 @@ export function Jornada() {
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
           {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
           {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
+          <PendingFeedbackPrompt mode="user" orders={[selectedFormsOrder]} forms={workflowForms} />
           {orderProblem ? (
             <S.Banner role="alert" data-testid="journey-order-problem">
               <strong>{orderProblem.title}</strong>

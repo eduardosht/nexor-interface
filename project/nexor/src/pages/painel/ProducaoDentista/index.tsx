@@ -45,6 +45,7 @@ import {
 } from '../admin/styles';
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
+import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 import { DentalAnamnesisRecord } from './DentalAnamnesisRecord';
 import { ProductionRequestFields } from './ProductionRequestFields';
 import * as S from './styles';
@@ -645,6 +646,10 @@ export function ProducaoDentista() {
     refetchOnWindowFocus: false,
   });
   const workflowForms = workflowFormsQuery.data?.forms ?? [];
+  const canShowFeedbackPrompt = Boolean(
+    order &&
+      ['product_received_by_clinic', 'awaiting_adaptation', 'follow_up', 'completed'].includes(order.status)
+  );
   const productionFormsQuery = useQuery({
     queryKey: biteplanerQueryKeys.orderForms(order?.id ?? 'pending'),
     queryFn: () => fetchOrderForms(order!.id, token),
@@ -1249,6 +1254,9 @@ export function ProducaoDentista() {
               </S.ContextGrid>
             </S.OrderContextCard>
           </S.ProductionHero>
+          {canShowFeedbackPrompt ? (
+            <PendingFeedbackPrompt mode="dentist" orders={[order]} forms={workflowForms} />
+          ) : null}
           <S.WizardShell>
             <S.WizardContent>
               <S.StepContentHeader>

@@ -229,7 +229,7 @@ export function Avaliacoes() {
   const queryClient = useQueryClient();
   const token = getAuthToken(session);
   const queryOwnerId = session?.user.id ?? 'anonymous';
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const mode = getMode(searchParams.get('mode'));
   const copy = MODE_COPY[mode];
   const [selectedMomentKey, setSelectedMomentKey] = useState(getDefaultMomentKey(copy));
@@ -337,6 +337,20 @@ export function Avaliacoes() {
 
   const selectedTemplate = selectedSurvey ? getTemplate(selectedSurvey.form.templateKey) : null;
 
+  useEffect(() => {
+    const surveyId = searchParams.get('surveyId');
+
+    if (!surveyId || selectedSurvey?.form.id === surveyId) {
+      return;
+    }
+
+    const pendingSurvey = pendingSurveys.find((entry) => entry.form.id === surveyId);
+
+    if (pendingSurvey) {
+      openSurvey(pendingSurvey);
+    }
+  }, [pendingSurveys, searchParams, selectedSurvey?.form.id]);
+
   function openSurvey(entry: { order: DemoOrderSummary; form: DemoWorkflowForm }) {
     const template = getTemplate(entry.form.templateKey);
 
@@ -366,6 +380,13 @@ export function Avaliacoes() {
   function closeSurvey() {
     if (surveySubmitting) {
       return;
+    }
+
+    const surveyId = searchParams.get('surveyId');
+    if (surveyId && selectedSurvey?.form.id === surveyId) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('surveyId');
+      setSearchParams(nextParams, { replace: true });
     }
 
     setSelectedSurvey(null);

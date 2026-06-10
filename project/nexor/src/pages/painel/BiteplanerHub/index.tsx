@@ -107,6 +107,7 @@ import {
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
 import { mapProductionRequestPayload } from '../../../features/biteplaner/production/productionRequestPayload';
+import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 
 
 
@@ -1585,6 +1586,10 @@ export function BiteplanerHub() {
       : isLicensingActorMode
         ? dentistStatusTone
         : getOperationalRoleStatusTone(currentAccessMode?.status);
+  const allWorkflowForms = useMemo(
+    () => Object.values(workflowFormsByOrder).flat(),
+    [workflowFormsByOrder]
+  );
   const dentistCertificateHref = buildCertificateHref(dentistWorkflow);
   const courseContents = dentistLicensing?.course ?? [];
   const courseProgress =
@@ -2380,6 +2385,10 @@ export function BiteplanerHub() {
             />
           ) : null}
         </SnackbarStack>
+      ) : null}
+
+      {selectedMode ? (
+        <PendingFeedbackPrompt mode={selectedMode} orders={orders} forms={allWorkflowForms} />
       ) : null}
 
       {access && showDentistLicensingTabs ? (

@@ -29,6 +29,65 @@ export interface BiteplanerReviewTemplateDefinition {
   fields: BiteplanerReviewFieldDefinition[];
 }
 
+export interface BiteplanerReviewMomentDefinition {
+  templateKey: BiteplanerReviewTemplateKey;
+  title: string;
+  promptTitle: string;
+  actor: 'Cliente' | 'Dentista' | 'Laboratório';
+  moment: string;
+  priority: number;
+}
+
+export interface PendingReviewOpportunity {
+  id: string;
+  orderId: string;
+  formId: string;
+  templateKey: BiteplanerReviewTemplateKey;
+  actorMode: BiteplanerReviewTemplateDefinition['actorMode'];
+  title: string;
+  context: string;
+  route: string;
+  releasedAt: string;
+  priority: number;
+}
+
+type ReviewOpportunityOrder = {
+  id: string;
+  displayId?: string;
+  display_number?: number | string | null;
+  displayNumber?: number | string | null;
+  customer?: { full_name?: string | null } | null;
+  dentist?: { full_name?: string | null } | null;
+  practice_location?: { name?: string | null } | null;
+};
+
+type ReviewOpportunityForm = {
+  id: string;
+  orderId: string;
+  templateKey: string;
+  status: string;
+  releasedAt: string;
+};
+
+export const FEEDBACK_PROMPT_SUPPRESSION_TTL_MS = 1000 * 60 * 60 * 24;
+
+export function getFeedbackPromptSuppressionKey(formId: string) {
+  return `biteplaner-feedback-prompt-dismissed:${formId}`;
+}
+
+export function getFeedbackPromptSuppressionExpiresAt(now = Date.now()) {
+  return String(now + FEEDBACK_PROMPT_SUPPRESSION_TTL_MS);
+}
+
+export function isFeedbackPromptSuppressed(value: string | null | undefined, now = Date.now()) {
+  if (!value) {
+    return false;
+  }
+
+  const expiresAt = Number(value);
+  return Number.isFinite(expiresAt) && expiresAt > now;
+}
+
 const scoreOptions = Array.from({ length: 5 }, (_, index) => {
   const value = index + 1;
 
@@ -265,3 +324,140 @@ export const BITEPLANER_REVIEW_TEMPLATES: Record<
     ]
   }
 };
+
+export const BITEPLANER_REVIEW_MOMENTS: Record<BiteplanerReviewTemplateKey, BiteplanerReviewMomentDefinition> = {
+  partner_review_by_customer: {
+    templateKey: 'partner_review_by_customer',
+    title: 'Cliente avalia parceiro indicador',
+    promptTitle: 'Avalie o parceiro indicador',
+    actor: 'Cliente',
+    moment:
+      'Após o primeiro cadastro na Nexor feito por link de recomendação/link de parceiro, antes de depender da ordem avançar.',
+    priority: 80,
+  },
+  dentist_review_by_customer: {
+    templateKey: 'dentist_review_by_customer',
+    title: 'Cliente avalia dentista',
+    promptTitle: 'Avalie o atendimento do dentista',
+    actor: 'Cliente',
+    moment:
+      'Após consulta de adaptação/entrega do dispositivo, quando o cliente já consegue avaliar atendimento, prazo, consultório e ajuste.',
+    priority: 90,
+  },
+  lab_review_by_dentist: {
+    templateKey: 'lab_review_by_dentist',
+    title: 'Dentista avalia laboratório',
+    promptTitle: 'Avalie o laboratório',
+    actor: 'Dentista',
+    moment:
+      'Após o laboratório concluir a produção e o dentista receber ou validar o dispositivo bruto entregue.',
+    priority: 90,
+  },
+  dentist_review_by_lab: {
+    templateKey: 'dentist_review_by_lab',
+    title: 'Laboratório avalia dentista',
+    promptTitle: 'Avalie o envio do dentista',
+    actor: 'Laboratório',
+    moment:
+      'Quando o laboratório recebe/inicia a produção e consegue avaliar o arquivo 3D intraoral e a facilidade de contato.',
+    priority: 85,
+  },
+  influencer_review_by_customer: {
+    templateKey: 'influencer_review_by_customer',
+    title: 'Cliente avalia influencer',
+    promptTitle: 'Avalie a comunicação do influencer',
+    actor: 'Cliente',
+    moment: 'Futuro feedback de campanhas ou indicações com influencer.',
+    priority: 40,
+  },
+};
+
+function getOrderDisplayLabel(order: ReviewOpportunityOrder | undefined) {
+  if (!order) {
+    return 'ordem Biteplaner';
+  }
+
+  return String(order.displayId ?? order.display_number ?? order.displayNumber ?? order.id);
+}
+
+function getPendingReviewContext(templateKey: BiteplanerReviewTemplateKey, order: ReviewOpportunityOrder | undefined) {
+  const orderLabel = getOrderDisplayLabel(order);
+
+  if (templateKey === 'partner_review_by_customer') {
+    return 'Cadastro via link de recomendação do parceiro';
+  }
+
+  if (templateKey === 'dentist_review_by_customer') {
+    return `Ordem ${orderLabel} | feedback pós-atendimento`;
+  }
+
+  if (templateKey === 'lab_review_by_dentist') {
+    return `Ordem ${orderLabel} | laboratório ${order?.practice_location?.name ?? 'selecionado'}`;
+  }
+
+  if (templateKey === 'dentist_review_by_lab') {
+    return `Ordem ${orderLabel} | dentista ${order?.dentist?.full_name ?? 'responsável'}`;
+  }
+
+  return `Ordem ${orderLabel} | feedback operacional`;
+}
+
+function isActivePendingReviewForm(form: ReviewOpportunityForm) {
+  return form.status !== 'submitted' && form.status !== 'cancelled' && form.status !== 'superseded';
+}
+
+export function getPendingReviewOpportunities({
+  mode,
+  forms,
+  orders,
+  suppressedFormIds = new Set<string>(),
+}: {
+  mode: 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+  forms: ReviewOpportunityForm[];
+  orders: ReviewOpportunityOrder[];
+  suppressedFormIds?: Set<string>;
+}) {
+  if (mode === 'admin' || mode === 'partner') {
+    return [];
+  }
+
+  const ordersById = new Map(orders.map((order) => [order.id, order]));
+
+  return forms
+    .flatMap<PendingReviewOpportunity>((form) => {
+      const templateKey = form.templateKey as BiteplanerReviewTemplateKey;
+      const template = BITEPLANER_REVIEW_TEMPLATES[templateKey];
+      const moment = BITEPLANER_REVIEW_MOMENTS[templateKey];
+
+      if (!template || !moment || !template.enabled || template.actorMode !== mode || !isActivePendingReviewForm(form)) {
+        return [];
+      }
+
+      if (suppressedFormIds.has(form.id)) {
+        return [];
+      }
+
+      const order = ordersById.get(form.orderId);
+      const route = `/painel/biteplaner/avaliacoes?mode=${mode}&surveyId=${encodeURIComponent(form.id)}`;
+
+      return [{
+        id: form.id,
+        orderId: form.orderId,
+        formId: form.id,
+        templateKey,
+        actorMode: template.actorMode,
+        title: moment.promptTitle,
+        context: getPendingReviewContext(templateKey, order),
+        route,
+        releasedAt: form.releasedAt,
+        priority: moment.priority,
+      }];
+    })
+    .sort((left, right) => {
+      if (left.priority !== right.priority) {
+        return right.priority - left.priority;
+      }
+
+      return new Date(right.releasedAt).getTime() - new Date(left.releasedAt).getTime();
+    });
+}

@@ -389,4 +389,41 @@ describe('Avaliações', () => {
     );
     expect(await screen.findByText(/cadastro por link bem orientado/i)).toBeInTheDocument();
   }, 10_000);
+
+  it('opens a pending survey from the surveyId query parameter', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-006',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-04T10:00:00.000Z',
+            customer: { full_name: 'Marina Costa', email: 'marina@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'review-partner-pending',
+            orderId: 'BP-DEMO-006',
+            templateKey: 'partner_review_by_customer',
+            stepKey: 'partner_review_by_customer',
+            status: 'pending',
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-04T12:00:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage('/painel/biteplaner/avaliacoes?mode=user&surveyId=review-partner-pending');
+
+    expect(await screen.findByRole('dialog', { name: /cliente avaliando parceiro indicador/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/cadastro via link de recomendação do parceiro/i).length).toBeGreaterThan(0);
+  });
 });
