@@ -1052,6 +1052,46 @@ export const PartnerActionCard = styled(Link)`
   }
 `;
 
+export const PartnerActionButton = styled.button`
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 244px;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  > svg:last-child {
+    margin-top: auto;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(23, 23, 23, 0.24);
+    outline-offset: 3px;
+  }
+`;
+
 export const PartnerActionCardPrimary = styled(PartnerActionCard)`
   border-color: #171717;
   background:

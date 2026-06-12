@@ -519,6 +519,290 @@ function buildCertificateHref(workflow: DentistLicensingWorkflow | null) {
   return `data:text/plain;charset=utf-8,${encodeURIComponent(`Certificado Biteplaner\nStatus: Licenciado\nEmitido em: ${issuedAt}`)}`;
 }
 
+function getOneYearAgo(referenceDate = new Date()) {
+  const date = new Date(referenceDate);
+  date.setFullYear(date.getFullYear() - 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function isWithinLastYear(value?: string | null, referenceDate = new Date()) {
+  const date = getValidDate(value);
+
+  if (!date) {
+    return false;
+  }
+
+  return date >= getOneYearAgo(referenceDate) && date <= referenceDate;
+}
+
+function escapeXml(value: unknown) {
+  return String(value ?? 'Não informado')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getPartnerInviteStatusLabel(status: string) {
+  if (status === 'active') {
+    return 'Ativo';
+  }
+
+  if (status === 'expired') {
+    return 'Expirado';
+  }
+
+  if (status === 'consumed') {
+    return 'Consumido';
+  }
+
+  return status || 'Não informado';
+}
+
+function getPartnerLeadOrderStatusLabel(lead: PartnerOverviewResponse['leads'][number]) {
+  return lead.orderStatus ?? lead.statusLabel ?? 'Pedido ativo';
+}
+
+function getPartnerOrderLifecycleLabel(lead: PartnerOverviewResponse['leads'][number]) {
+  const status = getPartnerLeadOrderStatusLabel(lead).toLowerCase();
+
+  if (status.includes('finalizado') || status.includes('completed') || status.includes('acompanhamento')) {
+    return 'Finalizado';
+  }
+
+  return 'Ativo';
+}
+
+function getPartnerReportRows(partnerOverview: PartnerOverviewResponse | null, referenceDate = new Date()) {
+  const inviteLinks = (partnerOverview?.inviteLinks ?? []).filter((inviteLink) =>
+    isWithinLastYear(inviteLink.created_at, referenceDate)
+  );
+  const linkIds = new Set(inviteLinks.map((inviteLink) => inviteLink.id));
+  const orderLeads = (partnerOverview?.leads ?? []).filter(
+    (lead) =>
+      linkIds.has(lead.partnerLinkId) &&
+      (lead.funnelStage === 'order_advanced' || lead.funnelStage === 'pre_requisite_completed')
+  );
+  const generatedAt = formatDate(referenceDate.toISOString());
+
+  return [
+    ['Relatório do parceiro - últimos 12 meses'],
+    [`Gerado em ${generatedAt}`],
+    [],
+    ['Links gerados'],
+    ['Token', 'Status', 'Cliente', 'E-mail', 'Gerado em', 'Expira em', 'Consumido em', 'ID do link'],
+    ...inviteLinks.map((inviteLink) => [
+      inviteLink.token,
+      getPartnerInviteStatusLabel(inviteLink.status),
+      inviteLink.intendedCustomerName ?? 'Não informado',
+      inviteLink.intendedCustomerEmail ?? 'Não informado',
+      formatDate(inviteLink.created_at),
+      inviteLink.expires_at ? formatDate(inviteLink.expires_at) : 'Não informado',
+      inviteLink.consumed_at ? formatDate(inviteLink.consumed_at) : 'Não informado',
+      inviteLink.id,
+    ]),
+    [],
+    ['Pedidos ativos e finalizados'],
+    ['Pedido', 'Ciclo', 'Status do pedido', 'Cliente', 'E-mail', 'Telefone', 'Link de origem', 'Originado em'],
+    ...orderLeads.map((lead) => [
+      lead.orderId,
+      getPartnerOrderLifecycleLabel(lead),
+      getPartnerLeadOrderStatusLabel(lead),
+      lead.customerName,
+      lead.customerEmail,
+      lead.customerPhone ?? 'Não informado',
+      lead.partnerLinkId,
+      formatDate(lead.created_at),
+    ]),
+  ];
+}
+
+function getColumnName(index: number) {
+  let columnName = '';
+  let value = index + 1;
+
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    columnName = `${String.fromCharCode(65 + remainder)}${columnName}`;
+    value = Math.floor((value - 1) / 26);
+  }
+
+  return columnName;
+}
+
+function buildWorksheetXml(rows: string[][]) {
+  const xmlRows = rows.map((row, rowIndex) => {
+    const rowNumber = rowIndex + 1;
+    const cells = row.map((cell, columnIndex) => (
+      `<c r="${getColumnName(columnIndex)}${rowNumber}" t="inlineStr"><is><t>${escapeXml(cell)}</t></is></c>`
+    ));
+
+    return `<row r="${rowNumber}">${cells.join('')}</row>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>${xmlRows.join('')}</sheetData>
+</worksheet>`;
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, index) => {
+  let value = index;
+
+  for (let bit = 0; bit < 8; bit += 1) {
+    value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+  }
+
+  return value >>> 0;
+});
+
+function crc32(bytes: Uint8Array) {
+  let crc = 0xffffffff;
+
+  for (const byte of bytes) {
+    crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function writeUint16(output: number[], value: number) {
+  output.push(value & 0xff, (value >>> 8) & 0xff);
+}
+
+function writeUint32(output: number[], value: number) {
+  output.push(value & 0xff, (value >>> 8) & 0xff, (value >>> 16) & 0xff, (value >>> 24) & 0xff);
+}
+
+function writeBytes(output: number[], bytes: Uint8Array) {
+  output.push(...bytes);
+}
+
+function encodeText(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+function createZip(files: Array<{ name: string; content: string }>) {
+  const output: number[] = [];
+  const centralDirectory: number[] = [];
+  const entries = files.map((file) => ({
+    ...file,
+    nameBytes: encodeText(file.name),
+    contentBytes: encodeText(file.content),
+  }));
+
+  for (const entry of entries) {
+    const localHeaderOffset = output.length;
+    const checksum = crc32(entry.contentBytes);
+
+    writeUint32(output, 0x04034b50);
+    writeUint16(output, 20);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint16(output, 0);
+    writeUint32(output, checksum);
+    writeUint32(output, entry.contentBytes.length);
+    writeUint32(output, entry.contentBytes.length);
+    writeUint16(output, entry.nameBytes.length);
+    writeUint16(output, 0);
+    writeBytes(output, entry.nameBytes);
+    writeBytes(output, entry.contentBytes);
+
+    writeUint32(centralDirectory, 0x02014b50);
+    writeUint16(centralDirectory, 20);
+    writeUint16(centralDirectory, 20);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint32(centralDirectory, checksum);
+    writeUint32(centralDirectory, entry.contentBytes.length);
+    writeUint32(centralDirectory, entry.contentBytes.length);
+    writeUint16(centralDirectory, entry.nameBytes.length);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint16(centralDirectory, 0);
+    writeUint32(centralDirectory, 0);
+    writeUint32(centralDirectory, localHeaderOffset);
+    writeBytes(centralDirectory, entry.nameBytes);
+  }
+
+  const centralDirectoryOffset = output.length;
+  output.push(...centralDirectory);
+  writeUint32(output, 0x06054b50);
+  writeUint16(output, 0);
+  writeUint16(output, 0);
+  writeUint16(output, entries.length);
+  writeUint16(output, entries.length);
+  writeUint32(output, centralDirectory.length);
+  writeUint32(output, centralDirectoryOffset);
+  writeUint16(output, 0);
+
+  return new Uint8Array(output);
+}
+
+export function buildPartnerReportWorkbook(partnerOverview: PartnerOverviewResponse | null, referenceDate = new Date()) {
+  const worksheetXml = buildWorksheetXml(getPartnerReportRows(partnerOverview, referenceDate));
+
+  return createZip([
+    {
+      name: '[Content_Types].xml',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`,
+    },
+    {
+      name: '_rels/.rels',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`,
+    },
+    {
+      name: 'xl/workbook.xml',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Relatório" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`,
+    },
+    {
+      name: 'xl/_rels/workbook.xml.rels',
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`,
+    },
+    {
+      name: 'xl/worksheets/sheet1.xml',
+      content: worksheetXml,
+    },
+  ]);
+}
+
+function downloadPartnerReport(partnerOverview: PartnerOverviewResponse | null) {
+  const referenceDate = new Date();
+  const workbook = buildPartnerReportWorkbook(partnerOverview, referenceDate);
+  const blob = new Blob([workbook], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const filenameDate = referenceDate.toISOString().slice(0, 10);
+
+  link.href = url;
+  link.download = `relatorio-parceiro-biteplaner-${filenameDate}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function getCourseStudyText(contentId: string, mode: AccessMode | null = 'dentist') {
   if (mode === 'lab') {
     const labStudyTexts: Record<string, string> = {
@@ -2631,6 +2915,16 @@ export function BiteplanerHub() {
                   <S.PartnerActionText>Veja o desempenho das suas indicações e conversões.</S.PartnerActionText>
                   <ArrowRight size={22} aria-hidden />
                 </S.PartnerActionCard>
+                <S.PartnerActionButton type="button" onClick={() => downloadPartnerReport(partnerOverview)}>
+                  <S.PartnerActionIcon>
+                    <Download size={24} aria-hidden />
+                  </S.PartnerActionIcon>
+                  <strong>Download do relatório</strong>
+                  <S.PartnerActionText>
+                    Exporte em Excel os links gerados no último ano, com status e pedidos ativos ou finalizados.
+                  </S.PartnerActionText>
+                  <Download size={22} aria-hidden />
+                </S.PartnerActionButton>
               </S.PartnerActionCards>
             </S.PartnerOperationPanel>
           </S.PartnerDashboardGrid>

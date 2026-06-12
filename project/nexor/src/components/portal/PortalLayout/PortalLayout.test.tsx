@@ -479,6 +479,88 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByRole('button', { name: /biteplaner/i })).toBeInTheDocument();
   });
 
+  it('shows Biteplaner customer submenus from the panel home after the order is started', () => {
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [
+          {
+            productKey: 'biteplaner',
+            role: 'customer',
+            status: 'active',
+            metadata: { orderStarted: true },
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner');
+    expect(screen.getByRole('link', { name: /^ordem$/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
+  });
+
+  it('shows Biteplaner partner submenus from the panel home', () => {
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'parceiro@nexor.dev',
+        roles: ['partner'],
+        productRoles: [{ productKey: 'biteplaner', role: 'partner', status: 'active' }],
+      },
+      demoPersona: 'partner',
+    });
+
+    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner?mode=partner');
+    expect(screen.getByRole('link', { name: /indicar/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/indicar?mode=partner'
+    );
+    expect(screen.getByRole('link', { name: /avaliações/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/avaliacoes?mode=partner'
+    );
+    expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the customer Ordem submenu until the Biteplaner order is started', () => {
+    renderLayout('/painel/biteplaner', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [
+          {
+            productKey: 'biteplaner',
+            role: 'customer',
+            status: 'active',
+            metadata: { orderStarted: false },
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByRole('button', { name: /biteplaner/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows the customer Ordem submenu after the Biteplaner order is started', () => {
+    renderLayout('/painel/biteplaner', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [
+          {
+            productKey: 'biteplaner',
+            role: 'customer',
+            status: 'active',
+            metadata: { orderStarted: true },
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByRole('link', { name: /^ordem$/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
+  });
+
   it('shows the licensing submenu and hides Ordem for dentist access', () => {
     renderLayout('/painel/biteplaner?mode=dentist', {
       backendUser: {

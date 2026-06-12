@@ -185,15 +185,66 @@ const ADMIN_MOBILE_PRIMARY_NAV_ITEMS = [
   { to: '/painel/admin/configuracoes/negocio', label: 'Configurações', Icon: Settings2 },
 ];
 
-const BITEPLANER_MENU_ROLES = new Set(['customer', 'partner', 'dentist', 'lab']);
+type BiteplanerMenuMode = 'customer' | 'partner' | 'dentist' | 'lab';
+
+const BITEPLANER_MENU_ROLES = new Set<BiteplanerMenuMode>(['customer', 'partner', 'dentist', 'lab']);
 const BITEPLANER_MENU_STATUSES = new Set(['active']);
+
+function isBiteplanerMenuMode(value: string | null): value is BiteplanerMenuMode {
+  return value !== null && BITEPLANER_MENU_ROLES.has(value as BiteplanerMenuMode);
+}
 
 function canSeeBiteplanerProductMenu(user?: BackendUser | null) {
   return (user?.productRoles ?? []).some((productRole) => (
     productRole.productKey === 'biteplaner' &&
-    BITEPLANER_MENU_ROLES.has(productRole.role) &&
+    isBiteplanerMenuMode(productRole.role) &&
     BITEPLANER_MENU_STATUSES.has(productRole.status)
   ));
+}
+
+function getActiveBiteplanerMenuMode(user?: BackendUser | null, preferredMode?: string | null): BiteplanerMenuMode | null {
+  const requestedMode = preferredMode ?? null;
+  const activeRoles = (user?.productRoles ?? []).filter((productRole) => (
+    productRole.productKey === 'biteplaner' &&
+    isBiteplanerMenuMode(productRole.role) &&
+    BITEPLANER_MENU_STATUSES.has(productRole.status)
+  ));
+
+  if (
+    isBiteplanerMenuMode(requestedMode) &&
+    activeRoles.some((productRole) => productRole.role === requestedMode)
+  ) {
+    return requestedMode;
+  }
+
+  return (activeRoles[0]?.role as BiteplanerMenuMode | undefined) ?? null;
+}
+
+function hasStartedBiteplanerCustomerOrder(user?: BackendUser | null) {
+  return (user?.productRoles ?? []).some((productRole) => {
+    if (
+      productRole.productKey !== 'biteplaner' ||
+      productRole.role !== 'customer' ||
+      productRole.status !== 'active'
+    ) {
+      return false;
+    }
+
+    const metadata = productRole.metadata ?? {};
+    const hasOrderFlag =
+      metadata.orderStarted === true ||
+      metadata.hasOrder === true ||
+      metadata.orderStartedAt ||
+      metadata.orderId ||
+      productRole.orderStartedAt ||
+      productRole.orderId;
+
+    if (hasOrderFlag) {
+      return true;
+    }
+
+    return Boolean(productRole.stage && productRole.stage !== 'new_user_onboarding');
+  });
 }
 
 function getGreeting() {
@@ -224,15 +275,20 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const initials = displayName.slice(0, 2).toUpperCase() || 'NX';
 
   const isBiteplanerActive = location.pathname.startsWith('/painel/biteplaner');
-  const biteplanerMode = new URLSearchParams(location.search).get('mode');
+  const requestedBiteplanerMode = new URLSearchParams(location.search).get('mode');
+  const biteplanerMode = getActiveBiteplanerMenuMode(backendUser, requestedBiteplanerMode);
+  const biteplanerModeQuery = biteplanerMode && biteplanerMode !== 'customer' ? `?mode=${biteplanerMode}` : '';
+  const biteplanerHomePath = `/painel/biteplaner${biteplanerModeQuery}`;
   const isPartnerBiteplanerMode = biteplanerMode === 'partner';
   const isDentistBiteplanerMode = biteplanerMode === 'dentist';
   const isLabBiteplanerMode = biteplanerMode === 'lab';
+  const isCustomerBiteplanerMode = biteplanerMode === 'customer';
   const isLicensingBiteplanerMode = isDentistBiteplanerMode || isLabBiteplanerMode;
-  const showEvaluationsSubmenu = biteplanerMode === 'partner' || biteplanerMode === 'dentist' || biteplanerMode === 'lab';
+  const showEvaluationsSubmenu = isPartnerBiteplanerMode || isDentistBiteplanerMode || isLabBiteplanerMode;
   const showBiteplanerMvpMenus = import.meta.env.VITE_MOCK === 'true';
   const isAdmin = hasAdministrativeRole(backendUser?.roles);
   const showBiteplanerProductMenu = canSeeBiteplanerProductMenu(backendUser);
+  const showCustomerOrderSubmenu = hasStartedBiteplanerCustomerOrder(backendUser);
   const notificationsOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
   const notificationsQueryKey = accountQueryKeys.notifications(notificationsOwnerId);
   const notificationsQuery = useQuery<AccountNotificationsResponse>({
@@ -489,7 +545,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     $collapsed={collapsed}
                     $active={isBiteplanerActive}
                     onClick={() => {
-                      void navigate('/painel/biteplaner');
+                      void navigate(biteplanerHomePath);
                     }}
                     title={collapsed ? 'Biteplaner' : undefined}
                     style={{ marginTop: 4 }}
@@ -497,14 +553,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <ShieldCheck size={16} />
                     <S.NavLabel $collapsed={collapsed}>Biteplaner</S.NavLabel>
                   </S.NavButton>
-              {isBiteplanerActive && (
                 <>
                   <S.SubNavLink
-                    to={
-                      isPartnerBiteplanerMode || isDentistBiteplanerMode || isLabBiteplanerMode
-                        ? `/painel/biteplaner?mode=${biteplanerMode}`
-                        : '/painel/biteplaner'
-                    }
+                    to={biteplanerHomePath}
                     end
                     $collapsed={collapsed}
                     title={collapsed ? 'Home' : undefined}
@@ -514,7 +565,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   </S.SubNavLink>
                   {isLicensingBiteplanerMode && showBiteplanerMvpMenus ? (
                     <S.SubNavLink
-                      to={`/painel/biteplaner/licenciamento?mode=${biteplanerMode}`}
+                      to={`/painel/biteplaner/licenciamento${biteplanerModeQuery}`}
                       $collapsed={collapsed}
                       title={collapsed ? 'Licenciamento' : undefined}
                     >
@@ -522,7 +573,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                       <S.SubNavText>Licenciamento</S.SubNavText>
                       <S.MvpBadge>MVP1</S.MvpBadge>
                     </S.SubNavLink>
-                  ) : !isPartnerBiteplanerMode && !isDentistBiteplanerMode ? (
+                  ) : isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
                     <S.SubNavLink
                       to="/painel/biteplaner/jornada"
                       $collapsed={collapsed}
@@ -544,7 +595,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                   ) : null}
                   {showEvaluationsSubmenu ? (
                     <S.SubNavLink
-                      to={`/painel/biteplaner/avaliacoes?mode=${biteplanerMode}`}
+                      to={`/painel/biteplaner/avaliacoes${biteplanerModeQuery}`}
                       $collapsed={collapsed}
                       title={collapsed ? 'Avaliações' : undefined}
                     >
@@ -553,7 +604,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     </S.SubNavLink>
                   ) : null}
                 </>
-              )}
                 </>
               ) : null}
             </>

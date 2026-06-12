@@ -17,6 +17,7 @@ const Sobre = lazy(() => import('../pages/Sobre').then(({ Sobre }) => ({ default
 const BiteplanerPage = lazy(() => import('../pages/BiteplanerPage').then(({ BiteplanerPage }) => ({ default: BiteplanerPage })));
 const ConhecaOBiteplaner = lazy(() => import('../pages/ConhecaOBiteplaner').then(({ ConhecaOBiteplaner }) => ({ default: ConhecaOBiteplaner })));
 const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) => ({ default: Parceiros })));
+const DemoAdm = lazy(() => import('../pages/DemoAdm').then(({ DemoAdm }) => ({ default: DemoAdm })));
 const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
 const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
 const CadastroUsuarioBiteplaner = lazy(() => import('../pages/painel/CadastroUsuarioBiteplaner').then(({ CadastroUsuarioBiteplaner }) => ({ default: CadastroUsuarioBiteplaner })));
@@ -123,6 +124,7 @@ export const router = createBrowserRouter([
   { path: '/entrar', element: <LazyRoute><Login /></LazyRoute> },
   { path: '/cadastro', element: <LazyRoute><Cadastro /></LazyRoute> },
   { path: '/recuperar-senha', element: <LazyRoute><RecuperarSenha /></LazyRoute> },
+  { path: '/demo-adm', element: <LazyRoute><DemoAdm /></LazyRoute> },
   { path: '/conta', element: <ProtectedRedirect><AccountRedirect /></ProtectedRedirect> },
   { path: '/painel', element: <ProtectedRedirect><PortalRootRedirect /></ProtectedRedirect> },
   { path: '/painel/home', element: <PainelRoute><PainelHome /></PainelRoute> },

@@ -27,6 +27,7 @@ vi.mock('../../../lib/api', () => ({
 
 import {
   BiteplanerHub,
+  buildPartnerReportWorkbook,
   getFirstAccessMode,
   getDentistLicensingStatusLabel,
   getDentistLicensingStatusTone,
@@ -96,6 +97,7 @@ describe('BiteplanerHub', () => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     mockApiPatch.mockReset();
+    vi.restoreAllMocks();
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
@@ -348,6 +350,143 @@ describe('BiteplanerHub', () => {
       'href',
       '/painel/biteplaner/indicar?mode=partner'
     );
+  });
+
+  it('downloads the partner one-year link and order report from the operation card', async () => {
+    const createdBlobs: Blob[] = [];
+    const partnerOverview = {
+      inviteLinks: [
+        {
+          id: 'link-current',
+          token: 'bp-partner-current',
+          status: 'active',
+          intendedCustomerName: 'Joao Atual',
+          intendedCustomerEmail: 'joao@nexor.dev',
+          created_at: '2026-05-10T10:00:00.000Z',
+          expires_at: null,
+          consumed_at: null,
+        },
+        {
+          id: 'link-old',
+          token: 'bp-partner-old',
+          status: 'expired',
+          intendedCustomerName: 'Marina Antiga',
+          intendedCustomerEmail: 'marina@nexor.dev',
+          created_at: '2024-12-10T10:00:00.000Z',
+          expires_at: null,
+          consumed_at: null,
+        },
+      ],
+      leads: [
+        {
+          id: 'lead-current',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-current',
+          orderId: 'BP-DEMO-010',
+          customerProfileId: 'profile-1',
+          customerName: 'Joao Atual',
+          customerEmail: 'joao@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Pedido ativo',
+          created_at: '2026-05-10T10:00:00.000Z',
+          orderStatus: 'Pedido ativo',
+        },
+        {
+          id: 'lead-finished',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-current',
+          orderId: 'BP-DEMO-011',
+          customerProfileId: 'profile-2',
+          customerName: 'Ana Finalizada',
+          customerEmail: 'ana@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Finalizado',
+          created_at: '2026-04-10T10:00:00.000Z',
+          orderStatus: 'Finalizado',
+        },
+        {
+          id: 'lead-old',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-old',
+          orderId: 'BP-DEMO-012',
+          customerProfileId: 'profile-3',
+          customerName: 'Marina Antiga',
+          customerEmail: 'marina@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Pedido antigo',
+          created_at: '2024-12-10T10:00:00.000Z',
+          orderStatus: 'Pedido antigo',
+        },
+      ],
+      summary: { leadsCaptured: 3, convertedToAccount: 3, activeOrders: 1, finishedOrders: 1 },
+    };
+    const createObjectUrl = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockImplementation((blob) => {
+        if (blob instanceof Blob) {
+          createdBlobs.push(blob);
+        }
+        return 'blob:partner-report';
+      });
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const clickSpy = vi.fn();
+    const createdAnchors: HTMLAnchorElement[] = [];
+    const originalCreateElement = document.createElement.bind(document);
+
+    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const element = originalCreateElement(tagName, options);
+
+      if (tagName.toLowerCase() === 'a') {
+        createdAnchors.push(element as HTMLAnchorElement);
+        element.click = clickSpy;
+      }
+
+      return element;
+    });
+
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'partner',
+        enrollment: null,
+        modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce(partnerOverview);
+
+    renderPage('/painel/biteplaner?mode=partner', {
+      demoPersona: 'partner',
+      backendUser: { email: 'parceiro@nexor.dev', roles: ['partner'] },
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: /download do relatório/i }));
+
+    expect(createObjectUrl).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:partner-report');
+    expect(createdBlobs).toHaveLength(1);
+    const downloadedBlob = createdBlobs[0];
+    const downloadAnchor = createdAnchors.find((anchor) => anchor.download.endsWith('.xlsx'));
+
+    expect(downloadedBlob.type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(downloadAnchor?.download).toMatch(/^relatorio-parceiro-biteplaner-\d{4}-\d{2}-\d{2}\.xlsx$/);
+
+    const workbook = buildPartnerReportWorkbook(partnerOverview, new Date('2026-06-12T12:00:00.000Z'));
+    const workbookText = new TextDecoder().decode(workbook);
+
+    expect(workbook[0]).toBe(0x50);
+    expect(workbook[1]).toBe(0x4b);
+    expect(workbookText).toContain('xl/worksheets/sheet1.xml');
+    expect(workbookText).toContain('Relatório do parceiro - últimos 12 meses');
+    expect(workbookText).toContain('bp-partner-current');
+    expect(workbookText).toContain('Ativo');
+    expect(workbookText).toContain('BP-DEMO-010');
+    expect(workbookText).toContain('Pedido ativo');
+    expect(workbookText).toContain('BP-DEMO-011');
+    expect(workbookText).toContain('Finalizado');
+    expect(workbookText).not.toContain('bp-partner-old');
   });
 
   it('sends a registration-started athlete back to onboarding when the prerequisite intake is not released yet', async () => {

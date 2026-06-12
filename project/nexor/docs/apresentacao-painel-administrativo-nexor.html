@@ -847,6 +847,64 @@
       line-height: 1.45;
     }
 
+    .video-section {
+      display: grid;
+      gap: 18px;
+    }
+
+    .video-copy {
+      display: grid;
+      gap: 6px;
+      max-width: 820px;
+    }
+
+    .video-copy h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.22;
+    }
+
+    .video-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .video-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(14% 0.035 255);
+      box-shadow: 0 18px 42px oklch(22% 0.052 255 / 0.1);
+    }
+
+    .video-frame video {
+      display: block;
+      width: 100%;
+      max-height: 78vh;
+      background: #000;
+    }
+
+    .video-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      color: oklch(94% 0.012 160);
+      background: oklch(18% 0.042 255);
+      font-size: 13px;
+    }
+
+    .video-meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 10px;
+      border: 1px solid oklch(94% 0.012 160 / 0.18);
+      border-radius: 999px;
+      background: oklch(100% 0 0 / 0.06);
+    }
+
     .modal-bar {
       display: flex;
       justify-content: space-between;
@@ -1034,6 +1092,28 @@
           </div>
         </div>
         <div class="overview-map" data-overview-map></div>
+      </section>
+
+      <section class="panel section video-section" aria-labelledby="full-flow-video-title">
+        <div class="section-head">
+          <div class="video-copy">
+            <span class="badge">Vídeo completo</span>
+            <h3 id="full-flow-video-title">Execução E2E da jornada Biteplaner</h3>
+            <p>Gravação única do fluxo completo usando Supabase local real: cadastro, parceiro, admin, cliente, dentista, laboratório, compra, produção e surveys de feedback.</p>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png">
+            <source src="assets/apresentacao-painel-admin/video/biteplaner-fluxo-completo-e2e.webm" type="video/webm">
+            Seu navegador não suporta reprodução de vídeo WebM.
+          </video>
+          <div class="video-meta" aria-label="Conteúdo do vídeo">
+            <span>Fluxo completo da ordem</span>
+            <span>Preenchimento dos formulários</span>
+            <span>Surveys salvos no backend</span>
+            <span>Base local real</span>
+          </div>
+        </div>
       </section>
 
       <section class="panel stage-hero">

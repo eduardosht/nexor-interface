@@ -30,6 +30,10 @@ export interface BackendUser {
     productKey: string;
     role: string;
     status: string;
+    stage?: string | null;
+    orderId?: string | null;
+    orderStartedAt?: string | null;
+    metadata?: Record<string, unknown> | null;
   }>;
   clinicIds: string[];
   dentistId?: string;
