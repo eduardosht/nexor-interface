@@ -1,52 +1,87 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, FileText, Search, Star } from 'lucide-react';
 import {
    Button,
-  CheckboxField,
   Field,
   Snackbar,
   SnackbarStack,
   StatusIndicator,
-  UploadField,
-  type UploadFieldFile,
 } from '@nexor/design-system';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import { divIcon } from 'leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { divIcon, latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   completeProductionRequest,
+  fetchOrderForm,
+  fetchOrderForms,
   fetchOrders,
+  fetchWorkflowForm,
   fetchWorkflowForms,
+} from '../../../features/biteplaner/orders/orders.api';
+import {
+  getOrderDisplayId,
+  getStageLabel,
   getAuthToken,
-  type DemoWorkflowForm,
-  type DemoLicensedLabSelection,
+  registerClinicalDecision,
   type DemoOrderSummary,
+  type DemoWorkflowForm,
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
+import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
+import type {
+  DemoLicensedLabSelection,
+  LicensedLabSelectionApiRecord,
+} from '../../../features/biteplaner/labs/labs.types';
+import { mapProductionRequestPayload } from '../../../features/biteplaner/production/productionRequestPayload';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import { getLicensedLab, listLicensedLabsByCep } from '../../../features/demo/labLocations';
 import {
    FieldsGrid,
-  FormSection,
   PageStack,
 } from '../admin/styles';
-import { OrderStepHeader } from '../components/OrderStepHeader';
+import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
+import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 import { DentalAnamnesisRecord } from './DentalAnamnesisRecord';
+import { ProductionRequestFields } from './ProductionRequestFields';
 import * as S from './styles';
 
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-type FinalAnamnesisPdfWorkerResponse =
-  | {
-      status: 'success';
-      arrayBuffer: ArrayBuffer;
-    }
-  | {
-      status: 'error';
-      message?: string;
-    };
+
+type CepLocation = {
+  lat: number;
+  lng: number;
+  label: string;
+};
+
+type ViaCepResponse = {
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  localidade?: string;
+  uf?: string;
+  erro?: boolean;
+};
+
+type NominatimResult = {
+  lat: string;
+  lon: string;
+};
+
+type AwesomeCepResponse = {
+  cep?: string;
+  district?: string;
+  city?: string;
+  state?: string;
+  lat?: string;
+  lng?: string;
+};
+
+const EARTH_RADIUS_KM = 6371;
 
 
 
@@ -98,6 +133,32 @@ const markerIcon = divIcon({
   popupAnchor: [0, -16],
 });
 
+const cepMarkerIcon = divIcon({
+  className: 'licensed-lab-map-pin licensed-lab-map-pin-home',
+  html: `
+    <div style="
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 2px solid #171717;
+      box-shadow: 0 12px 28px rgba(23, 23, 23, 0.22);
+      color: #171717;
+    ">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m3 11 9-8 9 8"></path>
+        <path d="M5 10v10h14V10"></path>
+        <path d="M9 20v-6h6v6"></path>
+      </svg>
+    </div>
+  `,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+  popupAnchor: [0, -18],
+});
+
 const STEP_DEFINITIONS = [
   {
     key: 'anamnesis',
@@ -131,23 +192,15 @@ const EMPTY_DRAFT: ProductionRequestDraft = {
   productionRequestSummary: '',
   labNotes: '',
   scan3dFileName: '',
+  scan3dFileRef: null,
   prescriptionFileName: '',
+  prescriptionFileRef: null,
   lgpdConfirmed: false,
   selectedLabId: null,
 };
 
-function fileListFromName(fileName: string): UploadFieldFile[] {
-  if (!fileName.trim()) {
-    return [];
-  }
-
-  return [
-    {
-      id: fileName,
-      name: fileName,
-      status: 'uploaded',
-    },
-  ];
+function getLabPayloadId(lab: DemoLicensedLabSelection) {
+  return lab.profileId ?? lab.id;
 }
 
 function hasDentistComplement(form: DemoWorkflowForm | undefined) {
@@ -171,6 +224,92 @@ function hasDentistComplement(form: DemoWorkflowForm | undefined) {
       !Array.isArray(dentistPayload) &&
       Object.keys(dentistPayload).length > 0
   );
+}
+
+function getCurrentDentistId(backendUser: unknown, order: DemoOrderSummary | null | undefined) {
+  const user: Record<string, unknown> = isRecord(backendUser) ? backendUser : {};
+  const orderDentist: Record<string, unknown> = isRecord(order?.dentist) ? order.dentist : {};
+
+  return getStringValue(user.dentistId) || getStringValue(orderDentist.id);
+}
+
+function isDentistComplementFromAnotherDentist(
+  form: DemoWorkflowForm | undefined,
+  currentDentistId: string,
+  currentDentistEmail: string
+) {
+  if (!form || form.templateKey !== 'customer_pre_consultation_intake' || !hasDentistComplement(form)) {
+    return false;
+  }
+
+  if (form.dentistId && form.dentistId !== currentDentistId) {
+    return true;
+  }
+
+  const payload = isRecord(form.payload) ? form.payload : {};
+  const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
+  const dentistContact = getStringValue(dentistPayload.dentistProfessionalContact).toLowerCase();
+
+  return Boolean(!form.dentistId && currentDentistEmail && dentistContact && !dentistContact.includes(currentDentistEmail.toLowerCase()));
+}
+
+function getCurrentDentistIntakeForm(
+  form: DemoWorkflowForm | undefined,
+  currentDentistId: string,
+  currentDentistEmail: string
+): DemoWorkflowForm | undefined {
+  if (!isDentistComplementFromAnotherDentist(form, currentDentistId, currentDentistEmail)) {
+    return form;
+  }
+
+  if (!form) {
+    return undefined;
+  }
+
+  const payload = isRecord(form.payload) ? form.payload : {};
+  const customerPayload = isRecord(payload.customer) ? payload.customer : {};
+
+  return {
+    ...form,
+    roleState: { customer: 'submitted' as const, dentist: 'pending' as const },
+    dentistSubmittedAt: null,
+    dentistId: currentDentistId || form.dentistId,
+    payload: { customer: customerPayload },
+  };
+}
+
+function hasWorkflowValue(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== null && value !== undefined && value !== '';
+}
+
+function hasFormPayload(form: DemoWorkflowForm | undefined) {
+  return Boolean(
+    form?.payload &&
+      typeof form.payload === 'object' &&
+      !Array.isArray(form.payload) &&
+      Object.keys(form.payload).length > 0
+  );
+}
+
+function getDentistPendingRequiredFields(form: DemoWorkflowForm | undefined) {
+  const payload = isRecord(form?.payload) ? form.payload : {};
+  const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
+  const dentistSection = SHARED_INITIAL_EVALUATION_INTAKE.sections.find(
+    (section) => section.key === 'dentist-clinical-complement'
+  );
+
+  if (!dentistSection || form?.dentistSubmittedAt || form?.roleState?.dentist === 'submitted') {
+    return [];
+  }
+
+  return dentistSection.fields
+    .filter((field) => field.ownerRole === 'dentist' && field.required)
+    .filter((field) => !hasWorkflowValue(dentistPayload[field.key]))
+    .map((field) => field.label);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -204,6 +343,243 @@ function getDentistSystemValues(backendUser: unknown, sessionEmail?: string | nu
   };
 }
 
+function formatOrderDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date);
+}
+
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+
+  if (digits.length <= 5) {
+    return digits;
+  }
+
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function normalizeCep(value: string) {
+  return value.replace(/\D/g, '').slice(0, 8);
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function calculateDistanceKm(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
+  const latDelta = toRadians(to.lat - from.lat);
+  const lngDelta = toRadians(to.lng - from.lng);
+  const fromLat = toRadians(from.lat);
+  const toLat = toRadians(to.lat);
+  const haversine =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lngDelta / 2) ** 2;
+
+  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+function withDistances(labs: DemoLicensedLabSelection[], cepLocation: CepLocation | null) {
+  if (!cepLocation) {
+    return labs;
+  }
+
+  return labs.map((lab) => ({
+    ...lab,
+    distanceKm: calculateDistanceKm(cepLocation, lab.coordinates),
+  }));
+}
+
+function formatDistanceKm(value: number) {
+  return value < 10 ? value.toFixed(1) : value.toFixed(0);
+}
+
+function LicensedLabMapController({ points }: { points: Array<[number, number]> }) {
+  const map = useMap();
+  const pointsKey = points.map(([lat, lng]) => `${lat.toFixed(6)},${lng.toFixed(6)}`).join('|');
+
+  useEffect(() => {
+    if (points.length === 0) {
+      return;
+    }
+
+    if (points.length === 1) {
+      map.setView(points[0], 14);
+      return;
+    }
+
+    map.fitBounds(latLngBounds(points), {
+      padding: [44, 44],
+      maxZoom: 14,
+    });
+  }, [map, points, pointsKey]);
+
+  return null;
+}
+
+async function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | null> {
+  if (!query.trim() || typeof fetch !== 'function') {
+    return null;
+  }
+
+  const url = new URL('https://nominatim.openstreetmap.org/search');
+  url.searchParams.set('format', 'json');
+  url.searchParams.set('limit', '1');
+  url.searchParams.set('countrycodes', 'br');
+  url.searchParams.set('q', query);
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as NominatimResult[];
+  const first = data[0];
+
+  if (!first) {
+    return null;
+  }
+
+  const lat = Number(first.lat);
+  const lng = Number(first.lon);
+
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+}
+
+async function resolveCepWithCoordinates(cep: string): Promise<CepLocation | null> {
+  const normalizedCep = normalizeCep(cep);
+  const response = await fetch(`https://cep.awesomeapi.com.br/json/${normalizedCep}`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = (await response.json()) as AwesomeCepResponse;
+  const lat = Number(data.lat);
+  const lng = Number(data.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    label: [
+      `CEP ${formatCep(normalizedCep)}`,
+      data.district,
+      [data.city, data.state].filter(Boolean).join(' - '),
+    ]
+      .filter(Boolean)
+      .join(' - '),
+  };
+}
+
+async function resolveCepLocation(cep: string): Promise<CepLocation> {
+  const normalizedCep = normalizeCep(cep);
+
+  if (normalizedCep.length !== 8) {
+    throw new Error('invalid_cep');
+  }
+
+  const cepWithCoordinates = await resolveCepWithCoordinates(normalizedCep);
+
+  if (cepWithCoordinates) {
+    return cepWithCoordinates;
+  }
+
+  const viaCepResponse = await fetch(`https://viacep.com.br/ws/${normalizedCep}/json/`);
+
+  if (!viaCepResponse.ok) {
+    throw new Error('cep_lookup_failed');
+  }
+
+  const viaCep = (await viaCepResponse.json()) as ViaCepResponse;
+
+  if (viaCep.erro) {
+    throw new Error('cep_not_found');
+  }
+
+  const locationLabel = [
+    `CEP ${formatCep(normalizedCep)}`,
+    viaCep.bairro,
+    [viaCep.localidade, viaCep.uf].filter(Boolean).join(' - '),
+  ]
+    .filter(Boolean)
+    .join(' - ');
+  const geocodeQuery = [
+    viaCep.logradouro,
+    viaCep.bairro,
+    viaCep.localidade,
+    viaCep.uf,
+    normalizedCep,
+    'Brasil',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const coordinates = await geocodeAddress(geocodeQuery);
+
+  if (!coordinates) {
+    const fallbackCoordinates = await geocodeAddress(
+      [viaCep.bairro, viaCep.localidade, viaCep.uf, 'Brasil'].filter(Boolean).join(', ')
+    );
+
+    if (!fallbackCoordinates) {
+      throw new Error('cep_geocode_failed');
+    }
+
+    return {
+      ...fallbackCoordinates,
+      label: locationLabel,
+    };
+  }
+
+  return {
+    ...coordinates,
+    label: locationLabel,
+  };
+}
+
+function mapLicensedLabRecord(
+  lab: LicensedLabSelectionApiRecord,
+  index: number
+): DemoLicensedLabSelection {
+  const fallbackLat = -23.5618 + index * 0.0025;
+  const fallbackLng = -46.6565 + index * 0.0025;
+
+  return {
+    id: lab.id,
+    profileId: lab.profileId,
+    name: lab.labName,
+    cnpj: lab.cnpj,
+    professionalSummary: lab.professionalSummary,
+    address: lab.address,
+    cep: lab.cep,
+    phone: lab.phone || 'Telefone não informado',
+    serviceHours: lab.serviceHours,
+    city: lab.city,
+    state: lab.state,
+    reviewScore: 4,
+    distanceKm: Number((1.2 + index * 0.7).toFixed(1)),
+    coordinates: lab.coordinates ?? {
+      lat: fallbackLat,
+      lng: fallbackLng,
+    },
+  };
+}
+
 function RatingStars({ score, label }: { score: number; label: string }) {
   const roundedScore = Math.round(score);
 
@@ -224,99 +600,295 @@ function RatingStars({ score, label }: { score: number; label: string }) {
 export function ProducaoDentista() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { session, backendUser } = useAuth();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
-  const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
-  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
   const [notice, setNotice] = useState('');
   const [pdfNotice, setPdfNotice] = useState('');
   const [pdfError, setPdfError] = useState('');
-  const [order, setOrder] = useState<DemoOrderSummary | null>(null);
-  const [workflowForms, setWorkflowForms] = useState<DemoWorkflowForm[]>([]);
-  const [formsError, setFormsError] = useState('');
   const [draft, setDraft] = useState<ProductionRequestDraft>(EMPTY_DRAFT);
   const [currentStep, setCurrentStep] = useState(0);
   const [labCep, setLabCep] = useState('01310-100');
-  const [visibleLabs, setVisibleLabs] = useState<DemoLicensedLabSelection[]>(() => listLicensedLabsByCep('01310-100'));
+  const [labCepLocation, setLabCepLocation] = useState<CepLocation | null>(null);
+  const [locatingLabCep, setLocatingLabCep] = useState(false);
+  const [labLookupError, setLabLookupError] = useState('');
+  const [visibleLabs, setVisibleLabs] = useState<DemoLicensedLabSelection[]>([]);
+  const [activeLab, setActiveLab] = useState<DemoLicensedLabSelection | null>(null);
   const [selectedLab, setSelectedLab] = useState<DemoLicensedLabSelection | null>(null);
+  const hydratedOrderIdRef = useRef<string | null>(null);
+  const queryOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
+  const isAnamnesisRecordDeepLink = location.hash.startsWith('#anamnese-');
+  const isProductionRequestDeepLink = location.hash === '#production-request';
+
+  const ordersQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orders('dentist', queryOwnerId),
+    queryFn: () => fetchOrders('dentist', token),
+    enabled: Boolean(token && orderId),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const orders = useMemo(
+    () => (Array.isArray(ordersQuery.data?.orders) ? ordersQuery.data.orders : []),
+    [ordersQuery.data?.orders]
+  );
+  const order = useMemo(
+    () => orders.find((item) => item.id === orderId) ?? null,
+    [orderId, orders]
+  );
+  const workflowFormsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForms(order?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForms(order!.id, token),
+    enabled: Boolean(token && order?.id),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const workflowForms = workflowFormsQuery.data?.forms ?? [];
+  const canShowFeedbackPrompt = Boolean(
+    order &&
+      ['product_received_by_clinic', 'awaiting_adaptation', 'follow_up', 'completed'].includes(order.status)
+  );
+  const productionFormsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orderForms(order?.id ?? 'pending'),
+    queryFn: () => fetchOrderForms(order!.id, token),
+    enabled: Boolean(token && order?.id),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
+  const latestProductionForm = useMemo(
+    () =>
+      (productionFormsQuery.data?.forms ?? [])
+        .filter((form) => form.type === 'production_request')
+        .sort((left, right) => right.version - left.version || Date.parse(right.created_at) - Date.parse(left.created_at))[0] ?? null,
+    [productionFormsQuery.data?.forms]
+  );
+  const productionFormDetailQuery = useQuery({
+    queryKey: biteplanerQueryKeys.orderForm(order?.id ?? 'pending', latestProductionForm?.id ?? 'pending'),
+    queryFn: () => fetchOrderForm(order!.id, latestProductionForm!.id, token),
+    enabled: Boolean(token && order?.id && latestProductionForm?.id),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+  });
+  const savedProductionDraft = useMemo(() => {
+    const payload = productionFormDetailQuery.data?.payload;
+    if (payload) {
+      return mapProductionRequestPayload(payload);
+    }
+
+    return order?.productionRequestDraft ?? null;
+  }, [order?.productionRequestDraft, productionFormDetailQuery.data?.payload]);
+  const licensedLabsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.licensedLabs(queryOwnerId),
+    queryFn: async () => {
+      const response = await fetchLicensedLabs(token);
+      return response.labs.map(mapLicensedLabRecord);
+    },
+    enabled: Boolean(token && currentStep === 3),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const licensedLabs = useMemo(() => {
+    if (currentStep !== 3) {
+      return [];
+    }
+
+    if (licensedLabsQuery.data) {
+      return licensedLabsQuery.data.length > 0 ? licensedLabsQuery.data : listLicensedLabsByCep('');
+    }
+
+    return [];
+  }, [currentStep, labCep, licensedLabsQuery.data]);
+  const intakeFormFromList = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
+  const onboardingFormFromList = workflowForms.find((form) => form.templateKey === 'customer_new_user_onboarding');
+  const intakeFormDetailQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', intakeFormFromList?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForm(order!.id, intakeFormFromList!.id, token),
+    enabled: Boolean(token && order?.id && intakeFormFromList?.id && intakeFormFromList.canViewPayload && !intakeFormFromList.payload),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const onboardingFormDetailQuery = useQuery({
+    queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', onboardingFormFromList?.id ?? 'pending'),
+    queryFn: () => fetchWorkflowForm(order!.id, onboardingFormFromList!.id, token),
+    enabled: Boolean(token && order?.id && onboardingFormFromList?.id && onboardingFormFromList.canViewPayload && !onboardingFormFromList.payload),
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const currentDentistId = getCurrentDentistId(backendUser, order);
+  const currentDentistEmail = session?.user.email ?? backendUser?.email ?? '';
+  const rawIntakeForm = intakeFormDetailQuery.data ?? intakeFormFromList;
+  const intakeForm = getCurrentDentistIntakeForm(rawIntakeForm, currentDentistId, currentDentistEmail);
+  const onboardingForm = onboardingFormDetailQuery.data ?? onboardingFormFromList;
+  const workflowFormsForPanel = useMemo(() => {
+    if (!intakeForm && !onboardingForm) {
+      return workflowForms;
+    }
+
+    return workflowForms.map((form) => {
+      if (intakeForm && form.id === intakeForm.id) {
+        return intakeForm;
+      }
+
+      if (onboardingForm && form.id === onboardingForm.id) {
+        return onboardingForm;
+      }
+
+      return form;
+    });
+  }, [intakeForm, onboardingForm, workflowForms]);
+  const loading =
+    ordersQuery.isLoading ||
+    (Boolean(order) && workflowFormsQuery.isLoading) ||
+    (Boolean(order) && productionFormsQuery.isLoading) ||
+    (Boolean(order) && Boolean(latestProductionForm) && productionFormDetailQuery.isLoading) ||
+    (Boolean(intakeFormFromList) && intakeFormDetailQuery.isLoading) ||
+    (Boolean(onboardingFormFromList) && onboardingFormDetailQuery.isLoading);
+  const error = actionError ||
+    (ordersQuery.isError
+      ? 'Nao foi possivel carregar a solicitacao de producao da demo.'
+      : ordersQuery.isSuccess && !order
+        ? 'Nao foi possivel localizar essa ordem na fila do dentista.'
+        : '');
+  const formsError = workflowFormsQuery.isError
+    ? 'Nao foi possivel carregar o intake compartilhado desta ordem.'
+    : '';
+
+  const labsError = licensedLabsQuery.isError
+    ? 'Nao foi possivel carregar os laboratorios licenciados aprovados.'
+    : '';
+  const displayedLabs = useMemo(() => withDistances(visibleLabs, labCepLocation), [labCepLocation, visibleLabs]);
 
   useEffect(() => {
-    if (!token || !orderId) {
+    if (!order) {
+      hydratedOrderIdRef.current = null;
+      setDraft(EMPTY_DRAFT);
+      setActiveLab(null);
+      setSelectedLab(null);
       return;
     }
 
-    let active = true;
-
-    async function loadOrder() {
-      setLoading(true);
-      setError('');
-
-      try {
-        const response = await fetchOrders('dentist', token);
-        const nextOrder = response.orders.find((item) => item.id === orderId) ?? null;
-
-        if (!active) {
-          return;
-        }
-
-        if (!nextOrder) {
-          setError('Não foi possível localizar essa ordem na fila do dentista.');
-          setOrder(null);
-          return;
-        }
-
-        setOrder(nextOrder);
-        const nextDraft = nextOrder.productionRequestDraft ?? EMPTY_DRAFT;
-        setDraft(nextDraft);
-
-        try {
-          const formsResponse = await fetchWorkflowForms(nextOrder.id, token);
-          if (active) {
-            setWorkflowForms(formsResponse.forms);
-            setFormsError('');
-          }
-        } catch {
-          if (active) {
-            setFormsError('Não foi possível carregar o intake compartilhado desta ordem.');
-          }
-        }
-
-        if (nextDraft.selectedLabId) {
-          const lab = getLicensedLab(nextDraft.selectedLabId);
-          if (lab) {
-            setSelectedLab(lab);
-          }
-        }
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar a solicitação de produção da demo.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+    if (!savedProductionDraft && !productionFormsQuery.isFetched) {
+      return;
     }
 
-    void loadOrder();
+    const nextDraft = savedProductionDraft ?? EMPTY_DRAFT;
+    const hydrationSource = productionFormDetailQuery.data?.payload ? latestProductionForm?.id ?? 'form' : 'order';
+    const hydrationKey = `${order.id}:${hydrationSource}:${latestProductionForm?.version ?? 0}`;
 
-    return () => {
-      active = false;
-    };
-  }, [orderId, token]);
+    if (hydratedOrderIdRef.current === hydrationKey) {
+      return;
+    }
+
+    hydratedOrderIdRef.current = hydrationKey;
+    setDraft(nextDraft);
+  }, [
+    latestProductionForm?.id,
+    latestProductionForm?.version,
+    order,
+    productionFormDetailQuery.data?.payload,
+    productionFormsQuery.isFetched,
+    savedProductionDraft,
+  ]);
+
+  useEffect(() => {
+    const selectedLabId = draft.selectedLabId;
+
+    if (!selectedLabId) {
+      setActiveLab(null);
+      setSelectedLab(null);
+      return;
+    }
+
+    const lab =
+      licensedLabs.find((item) => item.id === selectedLabId || item.profileId === selectedLabId) ??
+      getLicensedLab(selectedLabId);
+    if (!lab) {
+      return;
+    }
+
+    setSelectedLab(lab);
+    setActiveLab((current) => (current?.id === lab.id ? current : lab));
+  }, [draft.selectedLabId, licensedLabs]);
+
+  useEffect(() => {
+    setVisibleLabs(licensedLabs);
+  }, [licensedLabs]);
+
+  useEffect(() => {
+    if (displayedLabs.length === 0) {
+      setActiveLab(null);
+      return;
+    }
+
+    setActiveLab((current) => {
+      if (current) {
+        const currentDisplayed = displayedLabs.find((lab) => lab.id === current.id);
+        if (currentDisplayed) {
+          return currentDisplayed;
+        }
+      }
+
+      if (selectedLab) {
+        const selectedDisplayed = displayedLabs.find((lab) => lab.id === selectedLab.id);
+        if (selectedDisplayed) {
+          return selectedDisplayed;
+        }
+      }
+
+      return displayedLabs[0] ?? null;
+    });
+  }, [displayedLabs, selectedLab]);
+
+  useEffect(() => {
+    if (!selectedLab) {
+      return;
+    }
+
+    const selectedDisplayed = displayedLabs.find((lab) => lab.id === selectedLab.id);
+    if (selectedDisplayed) {
+      setSelectedLab(selectedDisplayed);
+    }
+  }, [displayedLabs, selectedLab]);
+
+  useEffect(() => {
+    if (!isAnamnesisRecordDeepLink) {
+      return;
+    }
+
+    setCurrentStep(1);
+  }, [isAnamnesisRecordDeepLink]);
+
+  useEffect(() => {
+    if (!isProductionRequestDeepLink) {
+      return;
+    }
+
+    setCurrentStep(2);
+  }, [isProductionRequestDeepLink]);
+
+  useEffect(() => {
+    if (!isAnamnesisRecordDeepLink || currentStep !== 1 || !location.hash) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
+    });
+  }, [currentStep, isAnamnesisRecordDeepLink, location.hash]);
 
   const selectedLabId = draft.selectedLabId;
-  const intakeForm = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
-  const dentistReviewCompleted = hasDentistComplement(intakeForm);
-  const anamnesisCompleted = dentistReviewCompleted && draft.anamnesisSummary.trim().length > 0;
+  const dentistPendingRequiredFields = getDentistPendingRequiredFields(intakeForm);
+  const dentistReviewCompleted = hasDentistComplement(intakeForm) && dentistPendingRequiredFields.length === 0;
+  const anamnesisCompleted = dentistReviewCompleted;
   const productionRequestCompleted = draft.productionRequestSummary.trim().length > 0;
   const attachmentsCompleted =
     draft.scan3dFileName.trim().length > 0 &&
     draft.prescriptionFileName.trim().length > 0 &&
     draft.lgpdConfirmed;
   const labSelectionCompleted = Boolean(selectedLabId);
-  const finalReviewCompleted = labSelectionCompleted && draft.anamnesisDownloaded;
+  const finalReviewCompleted = labSelectionCompleted;
   const canComplete =
     anamnesisCompleted &&
     productionRequestCompleted &&
@@ -331,29 +903,134 @@ export function ProducaoDentista() {
   ];
   const currentStepData = STEP_DEFINITIONS[currentStep];
   const currentStepCompleted = stepCompletion[currentStep] ?? false;
+  const canProceedToProductionAfterPayment =
+    order?.status === 'payment_confirmed' || order?.status === 'awaiting_dentist_forms';
+  const shouldHoldAtAnamnesisSummary =
+    currentStep === 1 && dentistReviewCompleted && !canProceedToProductionAfterPayment;
+  const anamnesisSourceDataReady = hasFormPayload(intakeForm);
+  const completedStepCount = stepCompletion.filter(Boolean).length;
+  const progressPercent = Math.round((completedStepCount / STEP_DEFINITIONS.length) * 100);
   const dentistSystemValues = useMemo(
     () => getDentistSystemValues(backendUser, session?.user.email),
     [backendUser, session?.user.email]
   );
 
-  const mapCenter = useMemo<[number, number]>(() => {
-    if (selectedLab) {
-      return [selectedLab.coordinates.lat, selectedLab.coordinates.lng];
+  useEffect(() => {
+    if (isAnamnesisRecordDeepLink || isProductionRequestDeepLink) {
+      return;
     }
 
-    const fallback = visibleLabs[0];
+    if (!dentistReviewCompleted || currentStep !== 0) {
+      return;
+    }
+
+    setCurrentStep(1);
+  }, [
+    currentStep,
+    dentistReviewCompleted,
+    isAnamnesisRecordDeepLink,
+    isProductionRequestDeepLink,
+  ]);
+
+  const mapCenter = useMemo<[number, number]>(() => {
+    if (activeLab) {
+      return [activeLab.coordinates.lat, activeLab.coordinates.lng];
+    }
+
+    if (labCepLocation) {
+      return [labCepLocation.lat, labCepLocation.lng];
+    }
+
+    const fallback = displayedLabs[0];
     return fallback ? [fallback.coordinates.lat, fallback.coordinates.lng] : [-23.5618, -46.6565];
-  }, [selectedLab, visibleLabs]);
+  }, [activeLab, displayedLabs, labCepLocation]);
+  const mapPoints = useMemo<Array<[number, number]>>(() => {
+    const points = displayedLabs.map((lab) => [lab.coordinates.lat, lab.coordinates.lng] as [number, number]);
+
+    if (labCepLocation) {
+      return [[labCepLocation.lat, labCepLocation.lng], ...points];
+    }
+
+    return points;
+  }, [displayedLabs, labCepLocation]);
+  const completionIssues = useMemo(() => {
+    const issues: string[] = [];
+
+    if (!anamnesisCompleted) {
+      issues.push('completar a revisão clínica do dentista');
+    }
+
+    if (!productionRequestCompleted) {
+      issues.push('preencher a solicitação de produção');
+    }
+
+    if (!draft.scan3dFileName.trim()) {
+      issues.push('anexar o escaneamento 3D intraoral');
+    }
+
+    if (!draft.prescriptionFileName.trim()) {
+      issues.push('anexar a prescrição médica assinada e carimbada');
+    }
+
+    if (!draft.lgpdConfirmed) {
+      issues.push('confirmar o aceite de retenção e rastreabilidade');
+    }
+
+    if (!labSelectionCompleted) {
+      issues.push('selecionar um laboratório licenciado');
+    }
+
+    return issues;
+  }, [
+    anamnesisCompleted,
+    draft.lgpdConfirmed,
+    draft.prescriptionFileName,
+    draft.scan3dFileName,
+    labSelectionCompleted,
+    productionRequestCompleted,
+  ]);
 
   function updateDraft(patch: Partial<ProductionRequestDraft>) {
-    setDraft((current) => ({ ...current, ...patch }));
+    setDraft((current) => {
+      const nextDraft = { ...current, ...patch };
+
+      if (orderId) {
+        queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
+          biteplanerQueryKeys.orders('dentist', queryOwnerId),
+          (currentOrders) => {
+            if (!currentOrders) {
+              return currentOrders;
+            }
+
+            return {
+              orders: currentOrders.orders.map((item) =>
+                item.id === orderId ? { ...item, productionRequestDraft: nextDraft } : item
+              ),
+            };
+          }
+        );
+      }
+
+      return nextDraft;
+    });
   }
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
-    setWorkflowForms(nextForms);
-
     const nextIntakeForm = nextForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
-    const nextDentistReviewCompleted = hasDentistComplement(nextIntakeForm);
+
+    if (order) {
+      queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
+        biteplanerQueryKeys.workflowForms(order.id),
+        { forms: nextForms }
+      );
+
+      if (nextIntakeForm) {
+        queryClient.setQueryData(biteplanerQueryKeys.workflowForm(order.id, nextIntakeForm.id), nextIntakeForm);
+      }
+    }
+
+    const nextDentistReviewCompleted =
+      hasDentistComplement(nextIntakeForm) && getDentistPendingRequiredFields(nextIntakeForm).length === 0;
 
     if (!nextDentistReviewCompleted) {
       return;
@@ -362,9 +1039,52 @@ export function ProducaoDentista() {
     setCurrentStep((current) => (current === 0 ? 1 : current));
   }
 
-  function handleSearchLabs() {
-    const nextLabs = listLicensedLabsByCep(labCep);
-    setVisibleLabs(nextLabs);
+  async function handleSearchLabs() {
+    const normalizedCep = normalizeCep(labCep);
+
+    if (normalizedCep.length !== 8) {
+      setLabLookupError('Informe um CEP válido com 8 dígitos.');
+      return;
+    }
+
+    setLabLookupError('');
+
+    try {
+      const nextCepLocation = await resolveCepLocation(normalizedCep);
+      setLabCepLocation(nextCepLocation);
+    } catch {
+      setLabLookupError('Não foi possível localizar este CEP no mapa. Confira o número e tente novamente.');
+    }
+  }
+
+  function handleUseCurrentLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setLabLookupError('Seu navegador não disponibilizou a localização atual.');
+      return;
+    }
+
+    setLocatingLabCep(true);
+    setLabLookupError('');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLabCepLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          label: 'Sua localização atual',
+        });
+        setLocatingLabCep(false);
+      },
+      () => {
+        setLabLookupError('Não foi possível acessar sua localização atual. Verifique a permissão do navegador.');
+        setLocatingLabCep(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
+      }
+    );
   }
 
   async function handleComplete() {
@@ -374,97 +1094,57 @@ export function ProducaoDentista() {
 
     setCompleting(true);
     setNotice('');
-    setError('');
+    setActionError('');
     setPdfError('');
 
     try {
-      const finalizedDraft = { ...draft, anamnesisDownloaded: true };
-      if (!draft.anamnesisDownloaded) {
-        startFinalAnamnesisPdfGeneration(finalizedDraft);
-      }
-      updateDraft({ anamnesisDownloaded: true });
-      await completeProductionRequest(orderId, finalizedDraft, token);
+      await registerClinicalDecision(orderId, 'eligible', token);
+      await completeProductionRequest(orderId, draft, token);
+      await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orderForms(orderId) });
+      await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orders('dentist', queryOwnerId) });
       navigate('/painel/biteplaner?mode=dentist', {
         replace: true,
         state: {
           notice:
-            `Solicitação de produção da ordem ${orderId} concluída e enviada ao laboratório. ` +
-            'É sua responsabilidade manter este registro, não mantemos estes dados em nosso banco de dados.',
+            `Solicitação de produção da ordem ${getOrderDisplayId(order)} concluída e enviada ao laboratório. ` +
+            'É sua responsabilidade manter este registro; não mantemos estes dados em nosso banco de dados.',
         },
       });
     } catch {
-      setError('Não foi possível concluir o envio ao laboratório.');
+      setActionError('Não foi possível concluir o envio ao laboratório.');
     } finally {
       setCompleting(false);
     }
   }
 
-  function downloadFinalAnamnesisBlob(arrayBuffer: ArrayBuffer, fileOrderId: string) {
-    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = `${fileOrderId.toLowerCase()}-anamnese-final.pdf`;
-    link.click();
-    URL.revokeObjectURL(objectUrl);
-  }
-
-  function startFinalAnamnesisPdfGeneration(nextDraft: ProductionRequestDraft) {
-    if (!order) {
-      return;
-    }
-
-    setPdfNotice('PDF sendo gerado em segundo plano. Você pode continuar usando a página.');
-    setPdfError('');
-
-    const currentOrder = order;
-    const currentIntakeForm = intakeForm;
-    let worker: Worker;
-
-    try {
-      worker = new Worker(new URL('./finalAnamnesisPdf.worker.ts', import.meta.url), { type: 'module' });
-    } catch {
-      setPdfError('Não foi possível iniciar a geração do PDF final da anamnese.');
-      return;
-    }
-
-    worker.onmessage = (event: MessageEvent<FinalAnamnesisPdfWorkerResponse>) => {
-      worker.terminate();
-
-      if (event.data.status === 'success') {
-        downloadFinalAnamnesisBlob(event.data.arrayBuffer, currentOrder.id);
-        setPdfNotice('PDF gerado e baixado.');
-        return;
-      }
-
-      setPdfError(event.data.message ?? 'Não foi possível gerar o PDF final da anamnese.');
-    };
-
-    worker.onerror = () => {
-      worker.terminate();
-      setPdfError('Não foi possível gerar o PDF final da anamnese.');
-    };
-
-    try {
-      worker.postMessage({
-        order: currentOrder,
-        intakeForm: currentIntakeForm,
-        draft: nextDraft,
-      });
-    } catch {
-      worker.terminate();
-      setPdfError('Não foi possível iniciar a geração do PDF final da anamnese.');
-    }
-  }
-
   function handleNextStep() {
-    if (currentStep === 1) {
-      const nextDraft = { ...draft, anamnesisDownloaded: true };
-      startFinalAnamnesisPdfGeneration(nextDraft);
-      updateDraft({ anamnesisDownloaded: true });
+    if (currentStep === 1 && !canProceedToProductionAfterPayment) {
+      return;
     }
 
     setCurrentStep((current) => Math.min(STEP_DEFINITIONS.length - 1, current + 1));
+  }
+
+  function handleAnamnesisDeepLinkNext() {
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+      },
+      { replace: true }
+    );
+    handleNextStep();
+  }
+
+  function handleOpenDentistReview() {
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+      },
+      { replace: true }
+    );
+    setCurrentStep(0);
   }
 
   if (!orderId) {
@@ -477,15 +1157,7 @@ export function ProducaoDentista() {
 
   return (
     <PageStack>
-      <OrderStepHeader
-        title="Solicitação de produção"
-        description="Fluxo dedicado para o dentista preencher a documentação obrigatória, anexar os arquivos clínicos e selecionar o laboratório licenciado."
-        currentStep="laboratory"
-        order={order}
-        orderHelpText="Este pedido está com o dentista para completar a solicitação produtiva e liberar o envio ao laboratório."
-      />
-
-      {loading ? (
+      {loading && !order ? (
         <S.LoadingStack aria-label="Carregando solicitação de produção">
           <SkeletonGrid cards={2} minCardWidth="260px" />
           <SkeletonCard lines={5} blockHeight="140px" />
@@ -530,7 +1202,7 @@ export function ProducaoDentista() {
               title="Falha na requisicao"
               message={error}
               onClose={() => {
-                setError('');
+                setActionError('');
               }}
             />
           ) : null}
@@ -538,63 +1210,71 @@ export function ProducaoDentista() {
       ) : null}
 
       {order ? (
-        <>
+        <S.ProductionCard>
+          <S.ProductionHero>
+            <S.ProductionHeroCopy>
+              <S.HeroEyebrow>
+                <ClipboardCheck size={18} aria-hidden="true" />
+                Fluxo do dentista
+              </S.HeroEyebrow>
+              <S.ProductionTitle>Solicitação de produção</S.ProductionTitle>
+              <S.ProductionLead>
+                Complete a revisão clínica, gere a anamnese e envie somente os dados necessários ao laboratório licenciado.
+              </S.ProductionLead>
+            </S.ProductionHeroCopy>
+
+            <S.OrderContextCard data-testid="athlete-order-card">
+              <S.OrderContextHeader>
+                <S.OrderContextIcon aria-hidden="true">
+                  <FileText size={22} />
+                </S.OrderContextIcon>
+                <span>
+                  <S.ContextLabel>Pedido</S.ContextLabel>
+                  <S.ContextStrong>{getOrderDisplayId(order)}</S.ContextStrong>
+                </span>
+              </S.OrderContextHeader>
+
+              <S.ContextGrid>
+                <S.ContextItem>
+                  <S.ContextLabel>Status atual</S.ContextLabel>
+                  <S.StatusBadge>{order.statusLabel ?? order.status}</S.StatusBadge>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Etapa atual</S.ContextLabel>
+                  <S.ContextValue>{getStageLabel(order)}</S.ContextValue>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Última atualização</S.ContextLabel>
+                  <S.ContextValue>{formatOrderDate(order.created_at)}</S.ContextValue>
+                </S.ContextItem>
+                <S.ContextItem>
+                  <S.ContextLabel>Progresso</S.ContextLabel>
+                  <S.ContextValue>{progressPercent}% completo</S.ContextValue>
+                </S.ContextItem>
+              </S.ContextGrid>
+            </S.OrderContextCard>
+          </S.ProductionHero>
+          {canShowFeedbackPrompt ? (
+            <PendingFeedbackPrompt mode="dentist" orders={[order]} forms={workflowForms} />
+          ) : null}
           <S.WizardShell>
-            <S.WizardSidebar data-testid="dentist-production-steps">
-              <S.StepList>
-                {STEP_DEFINITIONS.map((step, index) => {
-                  const completed = stepCompletion[index];
-                  const active = currentStep === index;
-                  const disabled = index > currentStep && !stepCompletion[index - 1];
-
-                  return (
-                    <li key={step.key}>
-                      <S.StepCard
-                        type="button"
-                        $active={active}
-                        $completed={completed}
-                        $disabled={disabled}
-                        onClick={() => {
-                          if (!disabled) {
-                            setCurrentStep(index);
-                          }
-                        }}
-                      >
-                        <S.StepBadge $active={active} $completed={completed} $disabled={disabled}>
-                          {index + 1}
-                        </S.StepBadge>
-                        <S.StepTop>
-                          <S.StepMeta $active={active} $completed={completed} $disabled={disabled}>
-                            {active ? 'Em preenchimento' : disabled ? 'Bloqueado' : step.shortLabel}
-                          </S.StepMeta>
-                          <S.StepStatusRow>
-                            <S.StepTitle>{step.label}</S.StepTitle>
-                          </S.StepStatusRow>
-                        </S.StepTop>
-                        <S.StepText>{step.description}</S.StepText>
-                      </S.StepCard>
-                    </li>
-                  );
-                })}
-              </S.StepList>
-            </S.WizardSidebar>
-
             <S.WizardContent>
               <S.StepContentHeader>
+                <S.StepKicker>Etapa {currentStep + 1} de {STEP_DEFINITIONS.length}</S.StepKicker>
                 <S.StepStatusRow>
                   <S.StepContentTitle>{currentStepData.label}</S.StepContentTitle>
                 </S.StepStatusRow>
                 <S.StepContentDescription>{currentStepData.description}</S.StepContentDescription>
               </S.StepContentHeader>
 
-              <FormSection padding="lg">
+              <S.FormPanel>
                 {currentStep === 0 ? (
                   <>
                     <WorkflowFormsPanel
                       orderId={order.id}
                       token={token}
                       templateFilter={['customer_pre_consultation_intake']}
-                      forms={workflowForms}
+                      forms={workflowFormsForPanel}
                       onFormsChange={handleWorkflowFormsChange}
                       variant="embedded"
                       actorRole="dentist"
@@ -612,156 +1292,223 @@ export function ProducaoDentista() {
 
                 {currentStep === 1 ? (
                   <>
-                    <DentalAnamnesisRecord
-                      order={order}
-                      intakeForm={intakeForm}
-                      draft={draft}
-                      onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
-                    />
+                    {anamnesisSourceDataReady ? (
+                      <DentalAnamnesisRecord
+                        order={order}
+                        intakeForm={intakeForm}
+                        onboardingForm={onboardingForm}
+                        draft={draft}
+                        onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
+                      />
+                    ) : (
+                      <S.Banner role="alert">
+                        Dados da anamnese ainda não disponíveis. A ordem pode estar processando os dados no backend;
+                        aguarde alguns instantes e atualize a página para carregar a ficha clínica completa.
+                      </S.Banner>
+                    )}
 
                     {draft.anamnesisDownloaded ? (
                       <S.ActionsRow>
                         <StatusIndicator color="#15803D" label="Anamnese baixada" />
                       </S.ActionsRow>
+                    ) : null}
+
+                    {isAnamnesisRecordDeepLink && !dentistReviewCompleted ? (
+                      <S.Banner role="alert">
+                        Antes de continuar para a solicitação de produção, complete a revisão clínica do dentista.
+                        {dentistPendingRequiredFields.length > 0 ? (
+                          <>
+                            {' '}Campos pendentes: {dentistPendingRequiredFields.join('; ')}.
+                          </>
+                        ) : null}
+                      </S.Banner>
+                    ) : null}
+
+                    {shouldHoldAtAnamnesisSummary ? (
+                      <S.Banner role="status">
+                        O cliente precisa concluir o pagamento do Biteplaner antes do dentista prosseguir para a
+                        solicitação de produção ao laboratório. Se o cliente estiver inapto, a jornada seguirá para
+                        reagendamento de consulta.
+                      </S.Banner>
                     ) : null}
                   </>
                 ) : null}
 
                 {currentStep === 2 ? (
-                  <>
-                  <FieldsGrid>
-                    <Field
-                      as="textarea"
-                      label="Solicitação de produção"
-                      maxLength={1200}
-                      placeholder="Descreva a prescrição, parâmetros clínicos estritamente necessários e direcionamento da produção."
-                      value={draft.productionRequestSummary}
-                      onChange={(event: FieldChangeEvent) => updateDraft({ productionRequestSummary: event.target.value })}
-                    />
-                    <Field
-                      as="textarea"
-                      label="Observações para o laboratório"
-                      maxLength={500}
-                      placeholder="Inclua somente orientações técnicas necessárias ao laboratório. Evite dados clínicos não essenciais."
-                      value={draft.labNotes}
-                      onChange={(event: FieldChangeEvent) => updateDraft({ labNotes: event.target.value })}
-                    />
-                  </FieldsGrid>
-
-                    <S.AttachmentGrid>
-                      <UploadField
-                        label="Escaneamento 3D intraoral"
-                        accept=".stl,.obj,.ply,.zip"
-                        hint="Obrigatório anexar 1 arquivo de escaneamento 3D intraoral."
-                        files={fileListFromName(draft.scan3dFileName)}
-                        onFilesChange={(files) => updateDraft({ scan3dFileName: files[0]?.name ?? '' })}
-                        onRemoveFile={() => updateDraft({ scan3dFileName: '' })}
-                      />
-
-                      <UploadField
-                        label="Prescrição médica assinada e carimbada"
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        hint="Obrigatório anexar 1 arquivo de prescrição médica do dentista para o Biteplaner."
-                        files={fileListFromName(draft.prescriptionFileName)}
-                        onFilesChange={(files) => updateDraft({ prescriptionFileName: files[0]?.name ?? '' })}
-                        onRemoveFile={() => updateDraft({ prescriptionFileName: '' })}
-                      />
-                    </S.AttachmentGrid>
-
-                    <CheckboxField
-                      checked={draft.lgpdConfirmed}
-                      onChange={(checked) => updateDraft({ lgpdConfirmed: checked })}
-                      label={
-                        <S.RetentionConsentLabel data-testid="dentist-retention-consent-label">
-                          Estou ciente de que a plataforma reterá estes dados apenas pelo{' '}
-                          <strong>tempo necessário para entrega, rastreabilidade e auditoria</strong>, que a{' '}
-                          <strong>guarda principal do registro clínico</strong> permanece sob minha responsabilidade e
-                          que o laboratório deve receber apenas{' '}
-                          <strong>dados operacionais indispensaveis</strong> para fabricacao.
-                        </S.RetentionConsentLabel>
-                      }
-                    />
-                  </>
+                  <ProductionRequestFields draft={draft} onChange={updateDraft} />
                 ) : null}
-
                 {currentStep === 3 ? (
                   <>
                     <FieldsGrid>
                       <Field
                         as="input"
-                        label="CEP do laboratório"
+                        label="CEP atual"
                         value={labCep}
-                        onChange={(event: FieldChangeEvent) => setLabCep(event.target.value)}
+                        onChange={(event: FieldChangeEvent) => setLabCep(formatCep(event.target.value))}
                       />
-                      <S.SearchActionSlot>
-                        <Button type="button" onClick={handleSearchLabs}>
-                          Buscar laboratórios
-                        </Button>
-                      </S.SearchActionSlot>
+                      <S.SearchActionsGroup>
+                        <S.SearchActionSlot>
+                          <Button
+                            type="button"
+                            onClick={() => void handleSearchLabs()}
+                            trailingIcon={<Search size={16} aria-hidden="true" />}
+                          >
+                            Buscar laboratórios
+                          </Button>
+                        </S.SearchActionSlot>
+                        <S.SearchActionSlot>
+                          <Button type="button" variant="secondary" onClick={handleUseCurrentLocation}>
+                            {locatingLabCep ? 'Localizando...' : 'Usar minha localização'}
+                          </Button>
+                        </S.SearchActionSlot>
+                      </S.SearchActionsGroup>
                     </FieldsGrid>
 
                     <S.LabLayout>
-                      <S.MapViewport>
-                        <MapContainer center={mapCenter} zoom={13} scrollWheelZoom={false}>
-                          <TileLayer
-                            attribution="&copy; OpenStreetMap contributors"
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          />
-                          {visibleLabs.map((lab) => (
-                            <Marker
+                      <S.MapCard>
+                        <S.SectionTitle>Laboratórios próximos ao CEP</S.SectionTitle>
+                        <S.Description>
+                          Revise o parceiro licenciado e selecione o laboratório que vai receber esta ordem.
+                        </S.Description>
+                        <S.MapViewport>
+                          <MapContainer center={mapCenter} zoom={13} scrollWheelZoom={false}>
+                            <TileLayer
+                              attribution="&copy; OpenStreetMap contributors"
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <LicensedLabMapController points={mapPoints} />
+                            {displayedLabs.map((lab) => (
+                              <Marker
+                                key={lab.id}
+                                position={[lab.coordinates.lat, lab.coordinates.lng]}
+                                icon={markerIcon}
+                                eventHandlers={{
+                                  click: () => {
+                                    setActiveLab(lab);
+                                    setSelectedLab(lab);
+                                    updateDraft({ selectedLabId: getLabPayloadId(lab) });
+                                  },
+                                }}
+                              >
+                                <Popup>{lab.name}</Popup>
+                              </Marker>
+                            ))}
+                            {labCepLocation ? (
+                              <Marker position={[labCepLocation.lat, labCepLocation.lng]} icon={cepMarkerIcon} zIndexOffset={1500}>
+                                <Popup>{labCepLocation.label}</Popup>
+                              </Marker>
+                            ) : null}
+                          </MapContainer>
+                        </S.MapViewport>
+
+                        {licensedLabsQuery.isLoading ? (
+                          <S.EmptyState>Carregando laboratórios licenciados...</S.EmptyState>
+                        ) : null}
+                        {labLookupError ? <S.Banner role="alert">{labLookupError}</S.Banner> : null}
+
+                        <S.LabList>
+                          {displayedLabs.map((lab) => (
+                            <S.LabButton
                               key={lab.id}
-                              position={[lab.coordinates.lat, lab.coordinates.lng]}
-                              icon={markerIcon}
-                              eventHandlers={{
-                                click: () => {
-                                  setSelectedLab(lab);
-                                  updateDraft({ selectedLabId: lab.id });
-                                },
+                              type="button"
+                              $active={activeLab?.id === lab.id}
+                              onClick={() => {
+                                setActiveLab(lab);
+                                setSelectedLab(lab);
+                                updateDraft({ selectedLabId: getLabPayloadId(lab) });
                               }}
                             >
-                              <Popup>{lab.name}</Popup>
-                            </Marker>
+                              <S.LabName>{lab.name}</S.LabName>
+                              <S.LabMeta>{lab.address}</S.LabMeta>
+                              <S.LabFooter>
+                                <S.LabMeta>{lab.phone} - {formatDistanceKm(lab.distanceKm)} km</S.LabMeta>
+                                <RatingStars score={lab.reviewScore} label="avaliações do laboratório" />
+                              </S.LabFooter>
+                            </S.LabButton>
                           ))}
-                        </MapContainer>
-                      </S.MapViewport>
+                        </S.LabList>
+                      </S.MapCard>
 
-                      <S.LabList>
-                        {visibleLabs.map((lab) => (
-                          <S.LabButton
-                            key={lab.id}
-                            type="button"
-                            $active={draft.selectedLabId === lab.id}
-                            onClick={() => {
-                              setSelectedLab(lab);
-                              updateDraft({ selectedLabId: lab.id });
-                            }}
-                          >
-                            <S.LabName>{lab.name}</S.LabName>
-                            <S.LabMeta>{lab.address}</S.LabMeta>
-                            <S.LabFooter>
-                              <S.LabMeta>{lab.phone} - {lab.distanceKm.toFixed(1)} km</S.LabMeta>
-                              <RatingStars score={lab.reviewScore} label="avaliações do laboratório" />
-                            </S.LabFooter>
-                          </S.LabButton>
-                        ))}
-                      </S.LabList>
+                      <S.SideCard>
+                        <S.SectionTitle>Informações do laboratório</S.SectionTitle>
+                        {activeLab ? (
+                          <>
+                            <S.GuidanceCard>
+                              Use esta etapa como a seleção de clínicas: revise o cadastro aprovado e confirme o destino operacional da ordem.
+                            </S.GuidanceCard>
+                            <S.DetailList>
+                              <S.DetailTerm>Laboratorio</S.DetailTerm>
+                              <S.DetailValue>{activeLab.name}</S.DetailValue>
+
+                              <S.DetailTerm>Endereço</S.DetailTerm>
+                              <S.DetailValue>{activeLab.address}</S.DetailValue>
+
+                              <S.DetailTerm>CEP</S.DetailTerm>
+                              <S.DetailValue>{activeLab.cep || '-'}</S.DetailValue>
+
+                              <S.DetailTerm>Telefone</S.DetailTerm>
+                              <S.DetailValue>{activeLab.phone}</S.DetailValue>
+
+                              <S.DetailTerm>CNPJ</S.DetailTerm>
+                              <S.DetailValue>{activeLab.cnpj || '-'}</S.DetailValue>
+
+                              <S.DetailTerm>Horário</S.DetailTerm>
+                              <S.DetailValue>{activeLab.serviceHours || '-'}</S.DetailValue>
+
+                              <S.DetailTerm>Distancia</S.DetailTerm>
+                              <S.DetailValue>{formatDistanceKm(activeLab.distanceKm)} km</S.DetailValue>
+                            </S.DetailList>
+
+                            {activeLab.professionalSummary ? (
+                              <S.GuidanceCard>{activeLab.professionalSummary}</S.GuidanceCard>
+                            ) : null}
+                          </>
+                        ) : (
+                          <S.Description>Selecione um laboratório da lista para ver os detalhes completos.</S.Description>
+                        )}
+                      </S.SideCard>
                     </S.LabLayout>
 
-                    {draft.anamnesisDownloaded ? (
-                      <S.ActionsRow>
-                        <StatusIndicator color="#15803D" label="Anamnese baixada" />
-                      </S.ActionsRow>
-                    ) : null}
+                    {labsError ? <S.Banner role="alert">{labsError}</S.Banner> : null}
 
                     {selectedLab ? (
                       <S.Banner>Laboratório selecionado: {selectedLab.name}</S.Banner>
                     ) : (
                       <S.EmptyState>Selecione um laboratório licenciado para concluir o envio da ordem.</S.EmptyState>
                     )}
+
+                    {!canComplete ? (
+                      <S.EmptyState>
+                        Para finalizar ainda faltam: {completionIssues.join(', ')}.
+                      </S.EmptyState>
+                    ) : null}
                   </>
                 ) : null}
 
-                {currentStep === 0 && !dentistReviewCompleted ? null : (
+                {isAnamnesisRecordDeepLink ? (
+                <S.StepActions>
+                  <span />
+                  <S.SecondaryActions>
+                    {!dentistReviewCompleted ? (
+                      <Button
+                        type="button"
+                        onClick={handleOpenDentistReview}
+                        trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                      >
+                        Completar revisão clínica
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={handleAnamnesisDeepLinkNext}
+                        trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                      >
+                        Continuar para solicitação de produção
+                      </Button>
+                    )}
+                  </S.SecondaryActions>
+                </S.StepActions>
+                ) : currentStep === 0 && !dentistReviewCompleted ? null : (
                 <S.StepActions>
                   <S.SecondaryActions>
                     <Button
@@ -769,31 +1516,43 @@ export function ProducaoDentista() {
                       variant="secondary"
                       disabled={currentStep === 0}
                       onClick={() => setCurrentStep((current) => Math.max(0, current - 1))}
+                      leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                     >
                       Voltar
                     </Button>
                   </S.SecondaryActions>
 
                   <S.SecondaryActions>
-                    {currentStep < STEP_DEFINITIONS.length - 1 ? (
+                    {shouldHoldAtAnamnesisSummary ? (
+                      <Button type="button" disabled trailingIcon={<ChevronRight size={16} aria-hidden="true" />}>
+                        Aguardando pagamento do cliente
+                      </Button>
+                    ) : currentStep < STEP_DEFINITIONS.length - 1 ? (
                       <Button
                         type="button"
                         disabled={!currentStepCompleted}
                         onClick={handleNextStep}
+                        trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                       >
                         Próximo
                       </Button>
-                    ) : null}
-                    <Button type="button" disabled={!canComplete || completing} onClick={() => void handleComplete()}>
-                      {completing ? 'Finalizando...' : 'Finalizar'}
-                    </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        disabled={!canComplete || completing}
+                        onClick={() => void handleComplete()}
+                        trailingIcon={<CheckCircle2 size={16} aria-hidden="true" />}
+                      >
+                        {completing ? 'Finalizando...' : 'Finalizar'}
+                      </Button>
+                    )}
                   </S.SecondaryActions>
                 </S.StepActions>
                 )}
-              </FormSection>
+              </S.FormPanel>
             </S.WizardContent>
           </S.WizardShell>
-        </>
+        </S.ProductionCard>
       ) : null}
     </PageStack>
   );

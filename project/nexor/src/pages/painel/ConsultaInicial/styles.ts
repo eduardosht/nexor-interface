@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Button } from '@nexor/design-system';
+import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   display: grid;
@@ -25,11 +26,11 @@ export const Banner = styled.div`
 
 export const SearchBar = styled.section`
   display: grid;
-  grid-template-columns: minmax(220px, 320px) max-content;
+  grid-template-columns: minmax(220px, 320px) max-content max-content;
   gap: 12px;
   align-items: end;
 
-  @media (max-width: 720px) {
+  @media (max-width: 860px) {
     grid-template-columns: 1fr;
   }
 `;
@@ -51,6 +52,25 @@ export const SearchButton = styled(Button)`
   white-space: nowrap;
 `;
 
+export const ScheduleButton = styled(Button)`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+
+  @media (max-width: 760px) {
+    width: 100%;
+    min-width: 0;
+    gap: 12px;
+    padding: 12px 14px;
+
+    > span {
+      gap: 12px;
+    }
+  }
+`;
+
 export const SecondaryButton = styled(Button).attrs({ variant: 'secondary' })`
   display: inline-flex;
   align-items: center;
@@ -59,6 +79,49 @@ export const SecondaryButton = styled(Button).attrs({ variant: 'secondary' })`
   max-width: 100%;
   justify-self: start;
   white-space: nowrap;
+`;
+
+export const ClinicFilterBar = styled.section`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const ClinicRequirementBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 700;
+`;
+
+export const FilterCheckbox = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 700;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: ${({ theme }) => theme.colors.green};
+  }
+
+  input:disabled + span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
 `;
 
 export const StepActions = styled.div`
@@ -158,6 +221,29 @@ export const ClinicName = styled.strong`
   font-weight: 700;
 `;
 
+export const ClinicHeader = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+`;
+
+export const AdaptedBadge = styled.span<{ $adapted: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  min-height: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid ${({ $adapted }) => ($adapted ? 'rgba(22, 101, 52, 0.24)' : 'rgba(107, 114, 128, 0.28)')};
+  background: ${({ $adapted }) => ($adapted ? 'rgba(22, 101, 52, 0.1)' : 'rgba(107, 114, 128, 0.1)')};
+  color: ${({ $adapted }) => ($adapted ? '#166534' : '#4b5563')};
+  font-size: 12px;
+  font-weight: 800;
+`;
+
 export const ClinicMeta = styled.span`
   font-size: 13px;
   line-height: 1.5;
@@ -170,6 +256,38 @@ export const ClinicFooter = styled.span`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+`;
+
+export const ClinicPagination = styled.nav`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+`;
+
+export const ClinicPageSummary = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+`;
+
+export const ClinicPageActions = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+`;
+
+export const ClinicPageIndicator = styled.span`
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 800;
 `;
 
 export const RatingBadge = styled.span`
@@ -337,4 +455,43 @@ export const ActionHref = styled.a`
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+`;
+
+export const WhatsappActionHref = styled(ActionHref)`
+  border-color: #1da851;
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 211, 102, 0.22);
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease,
+    transform 180ms ease;
+
+  &:hover {
+    border-color: #16843f;
+    background: #1da851;
+    box-shadow: 0 12px 26px rgba(37, 211, 102, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(37, 211, 102, 0.28);
+    outline-offset: 2px;
+  }
+`;
+
+export const EmailActionHref = styled(ActionHref)`
+  border-color: ${({ theme }) => theme.colors.borderDefault};
+  background: #ffffff;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.green};
+    box-shadow: 0 10px 22px rgba(23, 23, 23, 0.08);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(7, 132, 90, 0.24);
+    outline-offset: 2px;
+  }
 `;

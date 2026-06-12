@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Button, DataTable, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
-import { BarChart3, Check, Eye, Link2, Mail, MessageCircle, UserRound } from 'lucide-react';
+import { DataTable, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
+import { BarChart3, Check, Copy, Eye, Link2, Mail, MessageCircle, Trash2, UserRound, X } from 'lucide-react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -8,6 +8,7 @@ import {
   fetchPartnerOverview,
   formatDate,
   getAuthToken,
+  removePartnerInviteLink,
   type PartnerOverviewResponse,
 } from '../../../features/demo/biteplanerFlow';
 import * as S from '../BiteplanerHub/styles';
@@ -57,8 +58,8 @@ function createQrMatrix(value: string) {
 
 function DemoQrCode({ value }: { value: string }) {
   const matrix = useMemo(() => createQrMatrix(value), [value]);
-  const moduleSize = 8;
-  const quietZone = 12;
+  const moduleSize = 12;
+  const quietZone = 20;
   const size = matrix.length * moduleSize + quietZone * 2;
 
   return (
@@ -135,6 +136,29 @@ export function PartnerReferralPage() {
     }
   }
 
+  async function handleRemoveLink(inviteLink: PartnerOverviewResponse['inviteLinks'][number]) {
+    setError('');
+    setNotice('');
+
+    if (inviteLink.status !== 'active') {
+      setError('Apenas links ativos podem ser removidos.');
+      return;
+    }
+
+    setActiveAction(`partner:remove-link:${inviteLink.id}`);
+
+    try {
+      await removePartnerInviteLink(inviteLink.id, token);
+      setNotice('Link individual removido.');
+      if (selectedInviteLink?.id === inviteLink.id) {
+        setSelectedInviteLink(null);
+      }
+      await loadOverview();
+    } finally {
+      setActiveAction('');
+    }
+  }
+
   const linkColumns: DataTableColumn<PartnerOverviewResponse['inviteLinks'][number]>[] = [
     { key: 'token', label: 'Token', render: (row) => row.token },
     { key: 'customer', label: 'Cliente qualificado', render: (row) => row.intendedCustomerName ?? 'Não informado' },
@@ -152,19 +176,52 @@ export function PartnerReferralPage() {
     { key: 'created', label: 'Gerado em', render: (row) => formatDate(row.created_at) },
     {
       key: 'actions',
-      label: 'Visualizar',
-      render: (row) => (
-        <S.IconActionButton type="button" aria-label={`Visualizar link ${row.intendedCustomerName ?? row.token}`} onClick={() => setSelectedInviteLink(row)}>
-          <Eye size={16} aria-hidden />
-        </S.IconActionButton>
-      ),
+      label: 'Ações',
+      render: (row) => {
+        const isActive = row.status === 'active';
+        const actionTarget = row.intendedCustomerName ?? row.token;
+        const inactiveTitle = 'Disponível apenas para links ativos';
+
+        return (
+          <S.TableActionRow>
+            <S.IconActionButton
+              type="button"
+              aria-label={
+                isActive
+                  ? `Visualizar link ${actionTarget}`
+                  : `Visualizar link indisponível ${actionTarget}`
+              }
+              disabled={!isActive}
+              title={isActive ? 'Visualizar link individual' : inactiveTitle}
+              onClick={() => {
+                if (isActive) {
+                  setSelectedInviteLink(row);
+                }
+              }}
+            >
+              <Eye size={16} aria-hidden />
+            </S.IconActionButton>
+            <S.IconActionButton
+              type="button"
+              aria-label={isActive ? `Remover link ${actionTarget}` : `Remover link indisponível ${actionTarget}`}
+              disabled={!isActive || activeAction === `partner:remove-link:${row.id}`}
+              title={isActive ? 'Remover link individual' : inactiveTitle}
+              onClick={() => {
+                void handleRemoveLink(row);
+              }}
+            >
+              <Trash2 size={16} aria-hidden />
+            </S.IconActionButton>
+          </S.TableActionRow>
+        );
+      },
     },
   ];
 
   const leadColumns: DataTableColumn<PartnerOverviewResponse['leads'][number]>[] = [
     { key: 'customer', label: 'Cliente', render: (row) => row.customerName },
     { key: 'email', label: 'E-mail', render: (row) => row.customerEmail },
-    { key: 'stage', label: 'Etapa', render: (row) => row.statusLabel },
+    { key: 'stage', label: 'Status', render: (row) => row.statusLabel },
     { key: 'created', label: 'Captado em', render: (row) => formatDate(row.created_at) },
   ];
 
@@ -314,53 +371,72 @@ export function PartnerReferralPage() {
         <S.ModalOverlay role="dialog" aria-modal="true" aria-label="Visualizar link individual" onClick={(event) => {
           if (event.target === event.currentTarget) setSelectedInviteLink(null);
         }}>
-          <S.ModalBox>
-            <S.ModalHeader>
+          <S.ReferralInviteModalBox>
+            <S.ReferralInviteModalHeader>
               <div>
-                <S.ModalTitle>Visualizar link individual</S.ModalTitle>
-                <S.ModalSubtitle>{selectedInviteLink.intendedCustomerName ?? 'Cliente qualificado'}</S.ModalSubtitle>
+                <S.ReferralInviteModalTitle>Visualizar link individual</S.ReferralInviteModalTitle>
+                <S.ReferralInviteModalSubtitle>
+                  <strong>Nome:</strong> {selectedInviteLink.intendedCustomerName ?? 'Cliente qualificado'}
+                </S.ReferralInviteModalSubtitle>
               </div>
-              <S.ModalCloseButton type="button" aria-label="Fechar modal do link" onClick={() => setSelectedInviteLink(null)}>
-                ×
-              </S.ModalCloseButton>
-            </S.ModalHeader>
+              <S.ReferralInviteModalCloseButton type="button" aria-label="Fechar modal do link" onClick={() => setSelectedInviteLink(null)}>
+                <X size={22} strokeWidth={2.3} aria-hidden />
+              </S.ReferralInviteModalCloseButton>
+            </S.ReferralInviteModalHeader>
 
-            <S.QrShell>
-              <DemoQrCode value={selectedInviteUrl} />
-              <S.QrCaption>QR code de apresentação</S.QrCaption>
-            </S.QrShell>
+            <S.ReferralInviteQrShell>
+              <S.ReferralInviteQrFrame>
+                <DemoQrCode value={selectedInviteUrl} />
+              </S.ReferralInviteQrFrame>
+              <S.ReferralInviteQrCaption>
+                <Link2 size={18} strokeWidth={2.2} aria-hidden />
+                QR code de apresentação
+              </S.ReferralInviteQrCaption>
+            </S.ReferralInviteQrShell>
 
-            <S.ModalField>
-              <S.ModalLabel>Link individual</S.ModalLabel>
-              <S.LinkPreview value={selectedInviteUrl} readOnly aria-label="Link individual do parceiro" />
-            </S.ModalField>
+            <S.ReferralInviteModalField>
+              <S.ReferralInviteModalLabel>Link individual</S.ReferralInviteModalLabel>
+              <S.ReferralInviteLinkInputGroup>
+                <S.ReferralInviteLinkPreview value={selectedInviteUrl} readOnly aria-label="Link individual do parceiro" />
+                <S.ReferralInviteInlineCopyButton
+                  type="button"
+                  aria-label="Copiar link individual"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(selectedInviteUrl).then(() => setNotice('Link copiado para compartilhar com o cliente.'));
+                  }}
+                >
+                  <Copy size={18} strokeWidth={2.2} aria-hidden />
+                </S.ReferralInviteInlineCopyButton>
+              </S.ReferralInviteLinkInputGroup>
+            </S.ReferralInviteModalField>
 
-            <S.ModalActions>
-              <Button type="button" variant="secondary" onClick={() => {
+            <S.ReferralInviteModalActions>
+              <S.ReferralInviteCopyButton type="button" onClick={() => {
                 void navigator.clipboard.writeText(selectedInviteUrl).then(() => setNotice('Link copiado para compartilhar com o cliente.'));
               }}>
+                <Copy size={18} strokeWidth={2.2} aria-hidden />
                 Copiar link
-              </Button>
-              <S.ModalActionLink
+              </S.ReferralInviteCopyButton>
+              <S.ReferralInviteActionLink
                 href={emailHref}
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <Mail size={16} aria-hidden />
+                <Mail size={18} strokeWidth={2.2} aria-hidden />
                 Enviar por e-mail
-              </S.ModalActionLink>
-              <S.ModalActionLink
+              </S.ReferralInviteActionLink>
+              <S.ReferralInviteActionLink
                 href={whatsappHref}
                 target="_blank"
                 rel="noreferrer"
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <MessageCircle size={16} aria-hidden />
+                <MessageCircle size={18} strokeWidth={2.2} aria-hidden />
                 Abrir WhatsApp
-              </S.ModalActionLink>
-            </S.ModalActions>
-          </S.ModalBox>
+              </S.ReferralInviteActionLink>
+            </S.ReferralInviteModalActions>
+          </S.ReferralInviteModalBox>
         </S.ModalOverlay>
       ) : null}
     </S.Page>

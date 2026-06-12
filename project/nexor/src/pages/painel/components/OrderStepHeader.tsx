@@ -3,6 +3,7 @@ import { CalendarDays, ClipboardList, Clock3, Flag } from 'lucide-react';
 import * as S from './OrderStepHeader.styles';
 import {
   getOrderStatusPresentation,
+  getOrderDisplayId,
   getStageLabel,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
@@ -59,6 +60,7 @@ export function OrderStepHeader({
 }: OrderStepHeaderProps) {
   const orderUpdate = order ? formatOrderUpdate(order.created_at) : null;
   const status = order ? getOrderStatusPresentation(order) : null;
+  const orderLabel = getOrderDisplayId(order);
 
   return (
     <S.Header>
@@ -80,7 +82,7 @@ export function OrderStepHeader({
             </S.OrderIcon>
             <S.OrderSummaryText>
               <S.OrderEyebrow>Pedido</S.OrderEyebrow>
-              <S.OrderId>{order.id}</S.OrderId>
+              <S.OrderId>{orderLabel}</S.OrderId>
               <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
             </S.OrderSummaryText>
           </S.OrderSummary>

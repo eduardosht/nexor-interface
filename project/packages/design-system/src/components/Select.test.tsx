@@ -57,4 +57,20 @@ describe('Select', () => {
     expect(controlShell).toContainElement(listbox);
     expect(controlShell).not.toContainElement(hint);
   });
+
+  it('renders an optional leading icon inside the trigger', () => {
+    render(
+      <DesignSystemProvider brand="nexor">
+        <Select
+          label="Status"
+          value=""
+          onChange={() => undefined}
+          leadingIcon={<span data-testid="filter-icon" aria-hidden="true">#</span>}
+          options={[{ value: '', label: 'Todos' }]}
+        />
+      </DesignSystemProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Status' })).toContainElement(screen.getByTestId('filter-icon'));
+  });
 });

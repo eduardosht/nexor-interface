@@ -65,6 +65,7 @@ describe('MinhaConta', () => {
     mockApiPatch.mockReset();
     mockApiPost.mockReset();
     mockSendPasswordReset.mockReset();
+    vi.unstubAllGlobals();
   });
 
   it('shows account information without account type or document fields', async () => {
@@ -133,7 +134,7 @@ describe('MinhaConta', () => {
     fireEvent.change(await screen.findByLabelText(/nome completo/i), {
       target: { value: 'Joao Santos' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /salvar alteráções/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^salvar$/i }));
 
     await waitFor(() => {
       expect(mockApiPatch).toHaveBeenCalledWith(
@@ -145,6 +146,80 @@ describe('MinhaConta', () => {
       );
     });
     expect(await screen.findByRole('status')).toHaveTextContent(/alterações salvas/i);
+  });
+
+  it('shows onboarding values as labels and edits a field only after clicking the pencil', async () => {
+    const productRole = {
+      id: 'role-dentist-1',
+      productKey: 'biteplaner',
+      role: 'dentist',
+      status: 'active',
+      metadata: {
+        fullName: 'Dra. Eduarda',
+        croNumber: 'CRO-SP 123456',
+        professionalSummary: 'Atendimento esportivo.',
+        practiceLocations: [
+          {
+            name: 'Clínica Edu',
+            address: 'Rua Teste, 123',
+            cep: '01234000',
+            phone: '(11) 99999-9999',
+            dentistName: 'Dra. Eduarda',
+            isAdapted: true,
+            serviceHours: 'Segunda a sexta',
+            city: 'São Paulo',
+            state: 'SP',
+          },
+        ],
+      },
+    };
+
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'dentista@nexor.dev',
+          fullName: 'Dra. Eduarda',
+          roles: ['dentist'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [productRole] });
+    mockApiPatch.mockImplementation(async (_url, payload) => ({
+      productRole: {
+        ...productRole,
+        metadata: payload.metadata,
+      },
+    }));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })));
+
+    renderPage({
+      session: { access_token: 'tok', user: { id: 'dentist', email: 'dentista@nexor.dev' } },
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    expect(await screen.findByText('Clínica Edu')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Clínica Edu')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /editar nome da clínica/i }));
+    fireEvent.change(screen.getByDisplayValue('Clínica Edu'), {
+      target: { value: 'Clínica Nova' },
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /^salvar$/i }).at(-1)!);
+
+    await waitFor(() => {
+      expect(mockApiPatch).toHaveBeenCalledWith(
+        '/v1/account/product-roles/role-dentist-1',
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            practiceLocations: [
+              expect.objectContaining({
+                name: 'Clínica Nova',
+              }),
+            ],
+          }),
+        }),
+        'tok'
+      );
+    });
   });
 
   it('shows the acquired Biteplaner product for a user that has it', async () => {

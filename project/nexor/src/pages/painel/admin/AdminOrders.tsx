@@ -1,12 +1,15 @@
 import {
   Button,
-  DataTable,
+  AdminDataTable,
+  AdminMetricGrid,
+  AdminStatusPill,
   Field,
   FilterSheet,
   MultiSelect,
   ResponsiveDataList,
   StatusIndicator,
-  type DataTableColumn,
+  type AdminDataTableColumn,
+  type AdminMetric,
 } from '@nexor/design-system';
 import { useEffect, useMemo, useState } from 'react';
 import { SkeletonTable } from '../../../components/Skeleton';
@@ -16,6 +19,7 @@ import {
    fetchOrders,
   formatDate,
   getAuthToken,
+  getOrderDisplayId,
   getOrderStatusPresentation,
   getStageLabel,
   type DemoOrderSummary,
@@ -28,10 +32,6 @@ import {
   PageStack,
   PageSubtitle,
   PageTitle,
-  StatCard,
-  StatGrid,
-  StatLabel,
-  StatValue,
   TableSection,
 } from './styles';
 
@@ -43,13 +43,13 @@ const STATUS_OPTIONS = [
   { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
   { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },
   { value: 'awaiting_payment', label: 'Aguardando pagamento' },
-  { value: 'awaiting_dentist_forms', label: 'Aguardando preenchimento dentista' },
+  { value: 'awaiting_dentist_forms', label: 'Aguardando envio ao laboratório' },
   { value: 'payment_confirmed', label: 'Pagamento confirmado' },
   { value: 'treatment_required', label: 'Tratamento prévio pendente' },
   { value: 'lab_processing', label: 'Em processo - Laboratório' },
   { value: 'awaiting_adaptation', label: 'Aguardando adaptação' },
   { value: 'follow_up', label: 'Em acompanhamento' },
-  { value: 'ineligible_refund', label: 'Inapto - Encerrado' },
+  { value: 'ineligible_reassessment', label: 'Inaptidão' },
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
@@ -112,7 +112,7 @@ export function AdminOrders() {
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch = search.trim()
-        ? `${order.id} ${order.customer?.full_name ?? ''} ${order.customer?.email ?? ''}`
+        ? `${getOrderDisplayId(order)} ${order.id} ${order.customer?.full_name ?? ''} ${order.customer?.email ?? ''}`
             .toLowerCase()
             .includes(search.trim().toLowerCase())
         : true;
@@ -135,35 +135,43 @@ export function AdminOrders() {
     return [...statusLabels, ...stageLabels];
   }, [stageFilter, stageOptions, statusFilter]);
 
-  const stats = useMemo(
+  const stats = useMemo<AdminMetric[]>(
     () => [
-      { label: 'Casos totais', value: String(orders.length) },
+      { label: 'Casos totais', value: String(orders.length), tone: 'success' },
       {
         label: 'Aguardando liberação ao lab',
         value: String(
           orders.filter(
             (order) => order.status === 'awaiting_dentist_forms' && !order.operationalReadiness?.preLabReady
           ).length
-        )
+        ),
+        tone: 'success',
       },
-      { label: 'Em laboratório', value: String(orders.filter((order) => order.status === 'lab_processing').length) },
-      { label: 'Em acompanhamento', value: String(orders.filter((order) => order.status === 'follow_up').length) },
+      { label: 'Em laboratório', value: String(orders.filter((order) => order.status === 'lab_processing').length), tone: 'success' },
+      { label: 'Em acompanhamento', value: String(orders.filter((order) => order.status === 'follow_up').length), tone: 'success' },
     ],
     [orders]
   );
 
-  const columns: DataTableColumn<DemoOrderSummary>[] = [
-    { key: 'id', label: 'Pedido', render: (row) => row.id },
-    { key: 'customer', label: 'Cliente', render: (row) => row.customer?.full_name ?? 'Não identificado' },
+  const columns: AdminDataTableColumn<DemoOrderSummary>[] = [
+    {
+      key: 'id',
+      label: 'Pedido',
+      width: '9%',
+      sortValue: (row) => getOrderDisplayId(row),
+      render: (row) => getOrderDisplayId(row)
+    },
+    { key: 'customer', label: 'Cliente', sortValue: (row) => row.customer?.full_name ?? '', render: (row) => row.customer?.full_name ?? 'Não identificado' },
     {
       key: 'status',
       label: 'Status',
+      sortValue: (row) => getOrderStatusPresentation(row).label,
       render: (row) => {
         const presentation = getOrderStatusPresentation(row);
-        return <StatusIndicator color={presentation.color} label={presentation.label} />;
+        return <AdminStatusPill color={presentation.color} label={presentation.label} />;
       }
     },
-    { key: 'stage', label: 'Etapa', render: (row) => getStageLabel(row) },
+    { key: 'stage', label: 'Etapa', sortValue: (row) => getStageLabel(row), render: (row) => getStageLabel(row) },
     {
       key: 'readiness',
       label: 'Prontidao operacional',
@@ -190,13 +198,13 @@ export function AdminOrders() {
 
         return (
           <S.ReadinessCell>
-            <StatusIndicator color="#D18A00" label="Aguardando preenchimento dentista" />
+            <StatusIndicator color="#D18A00" label="Aguardando envio ao laboratório" />
             <S.ReadinessText>{readiness?.summary ?? 'Pendencias operacionais antes do laboratório.'}</S.ReadinessText>
           </S.ReadinessCell>
         );
       }
     },
-    { key: 'date', label: 'Atualizado em', render: (row) => formatDate(row.created_at) },
+    { key: 'date', label: 'Atualizado em', sortValue: (row) => new Date(row.created_at).getTime(), render: (row) => formatDate(row.created_at) },
   ];
 
   function openMobileFilters() {
@@ -235,14 +243,7 @@ export function AdminOrders() {
 
       {selectedProduct ? (
         <>
-          <StatGrid>
-            {stats.map((stat) => (
-              <StatCard key={stat.label} padding="lg">
-                <StatValue>{stat.value}</StatValue>
-                <StatLabel>{stat.label}</StatLabel>
-              </StatCard>
-            ))}
-          </StatGrid>
+          <AdminMetricGrid metrics={stats} columns={4} />
 
           <TableSection padding="lg">
             <S.DesktopFilters>
@@ -307,15 +308,14 @@ export function AdminOrders() {
             ) : (
               <ResponsiveDataList
               desktop={
-                <div data-testid="admin-orders-table">
-                  <DataTable
-                    data={filteredOrders}
-                    columns={columns}
-                    keyExtractor={(row) => row.id}
-                    pageSize={6}
-                    emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
-                  />
-                </div>
+                <AdminDataTable
+                  data={filteredOrders}
+                  columns={columns}
+                  keyExtractor={(row) => row.id}
+                  pageSize={6}
+                  emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
+                  testId="admin-orders-table"
+                />
               }
               data={filteredOrders}
               keyExtractor={(row) => row.id}
@@ -327,7 +327,7 @@ export function AdminOrders() {
                   <S.OrderCard data-testid={`admin-order-card-${row.id}`}>
                     <S.OrderCardHeader>
                       <div>
-                        <S.OrderCardTitle>{row.id}</S.OrderCardTitle>
+                        <S.OrderCardTitle>{getOrderDisplayId(row)}</S.OrderCardTitle>
                         <S.OrderCardMeta>{row.customer?.full_name ?? 'Não identificado'}</S.OrderCardMeta>
                       </div>
                       <StatusIndicator color={presentation.color} label={presentation.label} />

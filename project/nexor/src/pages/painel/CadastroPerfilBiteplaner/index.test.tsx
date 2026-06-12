@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { describe, expect, it, vi } from 'vitest';
@@ -47,23 +47,36 @@ function renderPage(path = '/painel/biteplaner/cadastro/dentista') {
 }
 
 function mockCepLookup() {
-  const fetchMock = vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
-      cep: '01001-000',
-      logradouro: 'Praça da Sé',
-      complemento: 'lado ímpar',
-      unidade: '',
-      bairro: 'Sé',
-      localidade: 'São Paulo',
-      uf: 'SP',
-      estado: 'São Paulo',
-      regiao: 'Sudeste',
-      ibge: '3550308',
-      gia: '1004',
-      ddd: '11',
-      siafi: '7107',
-    }),
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url.startsWith('https://cep.awesomeapi.com.br/json/')) {
+      return {
+        ok: true,
+        json: async () => ({
+          cep: '01001-000',
+          lat: '-23.5505',
+          lng: '-46.6333',
+        }),
+      };
+    }
+
+    return {
+      ok: true,
+      json: async () => ({
+        cep: '01001-000',
+        logradouro: 'Praça da Sé',
+        complemento: 'lado ímpar',
+        unidade: '',
+        bairro: 'Sé',
+        localidade: 'São Paulo',
+        uf: 'SP',
+        estado: 'São Paulo',
+        regiao: 'Sudeste',
+        ibge: '3550308',
+        gia: '1004',
+        ddd: '11',
+        siafi: '7107',
+      }),
+    };
   });
 
   vi.stubGlobal('fetch', fetchMock);
@@ -104,12 +117,29 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
   });
 
+  it('renders role-specific Biteplaner registration hero titles', () => {
+    let view = renderPage('/painel/biteplaner/cadastro/parceiro');
+    expect(screen.getByRole('heading', { name: /cadastro de parceiro biteplaner/i })).toBeInTheDocument();
+
+    view.unmount();
+    view = renderPage('/painel/biteplaner/cadastro/dentista');
+    expect(screen.getByRole('heading', { name: /solicitar cadastro de dentista/i })).toBeInTheDocument();
+
+    view.unmount();
+    renderPage('/painel/biteplaner/cadastro/laboratório');
+    expect(screen.getByRole('heading', { name: /solicitar cadastro de laborat.rio/i })).toBeInTheDocument();
+  });
+
   it('keeps submit disabled until required dentist and clinic fields and required terms are filled', async () => {
     mockCepLookup();
     renderPage();
 
     const submit = screen.getByRole('button', { name: /enviar solicitação/i });
+    const cancel = screen.getByRole('button', { name: /cancelar/i });
     expect(submit).toBeDisabled();
+    expect(cancel).toHaveAttribute('data-variant', 'secondary');
+    expect(screen.getByText(/seus dados est.o protegidos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/salvar rascunho/i)).not.toBeInTheDocument();
     expect(screen.getByText(/cadastre a clínica de atendimento/i)).toBeInTheDocument();
     expect(screen.getByText(/a nexor irá verificar o cadastro do dentista/i)).toBeInTheDocument();
 
@@ -138,6 +168,11 @@ describe('CadastroPerfilBiteplaner', () => {
 
     expect(screen.queryByLabelText(/latitude/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/longitude/i)).not.toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    const adaptedGroup = screen.getByRole('group', { name: /clínica adaptada/i });
+    fireEvent.click(within(adaptedGroup).getByLabelText('Sim'));
+
     expect(submit).toBeEnabled();
   });
 
@@ -203,6 +238,48 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.getByLabelText(/telefone da clínica/i)).toHaveValue('(11) 98765-4321');
   });
 
+  it('applies CRO mask and keeps dentist submit disabled while CRO is invalid', async () => {
+    mockCepLookup();
+    renderPage();
+
+    const submit = screen.getByRole('button', { name: /enviar solicita/i });
+
+    fireEvent.change(screen.getByLabelText(/nome profissional/i), {
+      target: { value: 'Dra Maria' },
+    });
+    fireEvent.change(screen.getByLabelText(/cro/i), {
+      target: { value: 'sp12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
+      target: { value: 'Dentista com foco em performance esportiva.' },
+    });
+    fireEvent.change(screen.getByLabelText(/nome da cl.nica/i), {
+      target: { value: 'Clínica Esportiva Nexor' },
+    });
+    fireEvent.change(screen.getByLabelText(/dia e hor.rio de atendimento/i), {
+      target: { value: 'Segunda a sexta, 8h as 18h' },
+    });
+    fireEvent.change(screen.getByLabelText(/telefone da cl.nica/i), {
+      target: { value: '11987654321' },
+    });
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/privacidade/i));
+
+    await fillCepAndWaitForAddress();
+
+    expect(screen.getByLabelText(/cro/i)).toHaveValue('CRO-SP 12345');
+    expect(submit).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText(/cro/i), {
+      target: { value: 'xx123' },
+    });
+
+    expect(screen.getByLabelText(/cro/i)).toHaveValue('CRO-XX 123');
+    expect(screen.getByText(/cro v.lido no formato/i)).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+  });
+
   it('keeps submit enabled when the optional complement is empty', async () => {
     mockCepLookup();
     renderPage();
@@ -233,6 +310,7 @@ describe('CadastroPerfilBiteplaner', () => {
     await fillCepAndWaitForAddress();
 
     expect(screen.getByLabelText(/^complemento da clínica$/i)).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
     expect(submit).toBeEnabled();
   });
 
@@ -267,6 +345,7 @@ describe('CadastroPerfilBiteplaner', () => {
     });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Sim'));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
 
     await waitFor(() => {
@@ -283,6 +362,7 @@ describe('CadastroPerfilBiteplaner', () => {
             cep: '01001-000',
             complement: 'Sala 42',
             dentistName: 'Dra Maria',
+            isAdapted: true,
             serviceHours: 'Segunda a sexta, 8h as 18h',
           }),
           practiceLocations: [
@@ -290,6 +370,7 @@ describe('CadastroPerfilBiteplaner', () => {
               name: 'Clínica Esportiva Nexor',
               address: 'Praça da Sé - Sé, São Paulo - SP',
               cep: '01001-000',
+              isAdapted: true,
             }),
           ],
         }),
@@ -297,6 +378,7 @@ describe('CadastroPerfilBiteplaner', () => {
       );
       expect(screen.getByRole('status')).toHaveTextContent(/solicitação enviada/i);
       expect(screen.getByRole('status')).toHaveTextContent(/nexor irá verificar/i);
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/home');
     });
   });
 
@@ -331,6 +413,7 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/telefone da clínica \(\*\)/i), {
       target: { value: '11987654321' },
     });
+    fireEvent.click(within(screen.getByRole('group', { name: /clínica adaptada/i })).getByLabelText('Não'));
 
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
@@ -343,11 +426,13 @@ describe('CadastroPerfilBiteplaner', () => {
           practiceLocation: expect.objectContaining({
             name: 'Clínica Centro',
             cep: '01001-000',
+            isAdapted: false,
           }),
           practiceLocations: [
             expect.objectContaining({
               name: 'Clínica Centro',
               address: 'Praça da Sé - Sé, São Paulo - SP',
+              isAdapted: false,
               serviceHours: 'Segunda a sexta, 8h as 18h',
             }),
           ],
@@ -394,12 +479,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'contato@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Box de Crossfit' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Campinas, SP' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -411,8 +495,8 @@ describe('CadastroPerfilBiteplaner', () => {
           name: 'Performance Partners',
           documentType: 'cnpj',
           documentNumber: '19.131.243/0001-97',
-          contactEmail: 'contato@partner.test',
-          cityState: 'Campinas, SP',
+          partnerType: 'coach_personal',
+          serviceLocations: ['Box de Crossfit'],
         },
         'tok'
       );
@@ -483,12 +567,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cpf/i), {
       target: { value: '52998224725' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'coach@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Parque de treino' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Rio de Janeiro, RJ' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -500,8 +583,8 @@ describe('CadastroPerfilBiteplaner', () => {
           name: 'Coach Performance',
           documentType: 'cpf',
           documentNumber: '529.982.247-25',
-          contactEmail: 'coach@partner.test',
-          cityState: 'Rio de Janeiro, RJ',
+          partnerType: 'coach_personal',
+          serviceLocations: ['Parque de treino'],
         }),
         'tok'
       );
@@ -518,12 +601,11 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '11111111111111' },
     });
-    fireEvent.change(screen.getByLabelText(/e-mail de contato/i), {
-      target: { value: 'contato@partner.test' },
+    fireEvent.click(screen.getByLabelText(/coach\/personal/i));
+    fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
+      target: { value: 'Academia' },
     });
-    fireEvent.change(screen.getByLabelText(/cidade e estado/i), {
-      target: { value: 'Campinas, SP' },
-    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/digite ou selecione um local/i), { key: 'Enter' });
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
 
@@ -538,6 +620,58 @@ describe('CadastroPerfilBiteplaner', () => {
 
     expect(screen.getByLabelText(/^cpf/i)).toHaveValue('111.111.111-11');
     expect(submit).toBeDisabled();
+  });
+
+  it('submits an academy partner request with location filled from CEP', async () => {
+    const fetchMock = mockCepLookup();
+    mockApiPost.mockResolvedValue({
+      productRole: { productKey: 'biteplaner', role: 'partner', status: 'pending' },
+    });
+    renderPage('/painel/biteplaner/cadastro/parceiro');
+
+    fireEvent.change(screen.getByLabelText(/nome da empresa ou parceiro/i), {
+      target: { value: 'Performance Academy' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+
+    const partnerTypeGroup = screen.getByRole('group', { name: /tipo de parceiro/i });
+    fireEvent.click(within(partnerTypeGroup).getByLabelText(/academia/i));
+
+    expect(screen.getByRole('heading', { name: /localização/i })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^cep/i), {
+      target: { value: '01001000' },
+    });
+    fireEvent.blur(screen.getByLabelText(/^cep/i));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/endereço/i)).toHaveValue('Praça da Sé - Sé, São Paulo - SP');
+    });
+
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/política de privacidade/i));
+    fireEvent.click(screen.getByRole('button', { name: /enviar solicita/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/products/biteplaner/roles/partner',
+        expect.objectContaining({
+          name: 'Performance Academy',
+          documentType: 'cnpj',
+          documentNumber: '19.131.243/0001-97',
+          partnerType: 'academy',
+          location: expect.objectContaining({
+            cep: '01001-000',
+            address: 'Praça da Sé - Sé, São Paulo - SP',
+            city: 'São Paulo',
+            state: 'SP',
+          }),
+        }),
+        'tok'
+      );
+    });
   });
 
   it('requires valid CNPJ and laboratory location data before submitting laboratory onboarding', async () => {
@@ -594,6 +728,7 @@ describe('CadastroPerfilBiteplaner', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+      expect(fetchMock).toHaveBeenCalledWith('https://cep.awesomeapi.com.br/json/01001000');
       expect(mockApiPost).toHaveBeenCalledWith(
         '/v1/account/products/biteplaner/roles/lab',
         expect.objectContaining({
@@ -606,6 +741,7 @@ describe('CadastroPerfilBiteplaner', () => {
               address: 'Praça da Sé - Sé, São Paulo - SP',
               cep: '01001-000',
               serviceHours: 'Segunda a sexta, 8h as 18h',
+              coordinates: { lat: -23.5505, lng: -46.6333 },
             }),
           ],
         }),

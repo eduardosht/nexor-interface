@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -34,7 +36,21 @@ function renderPage(path = '/painel/biteplaner/avaliacoes?mode=dentist') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <ThemeProvider theme={lightTheme}>
-        <Avaliacoes />
+        <TestQueryClientProvider>
+          <Avaliacoes />
+        </TestQueryClientProvider>
+      </ThemeProvider>
+    </MemoryRouter>
+  );
+}
+
+function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQueryClient>, path = '/painel/biteplaner/avaliacoes?mode=dentist') {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <ThemeProvider theme={lightTheme}>
+        <QueryClientProvider client={queryClient}>
+          <Avaliacoes />
+        </QueryClientProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -45,6 +61,57 @@ describe('Avaliações', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+  });
+
+  it('does not refetch evaluations when only the auth token changes', async () => {
+    const queryClient = createTestQueryClient();
+    let accessToken = 'tok';
+    mockUseAuth.mockImplementation(() => ({
+      session: { access_token: accessToken, user: { id: '1', email: 'demo@nexor.dev' } },
+      backendUser: { id: 'dentist-user-1', email: 'demo@nexor.dev', roles: ['dentist'] },
+    }));
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-009',
+              status: 'follow_up',
+              statusLabel: 'Em acompanhamento',
+              stage: 'follow_up',
+              created_at: '2026-05-03T14:00:00.000Z',
+              customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: null },
+              dentist: { full_name: 'Dra. Helena Licenciada', email: 'dentista@nexor.dev' },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-009/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    const view = renderPageWithQueryClient(queryClient);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument());
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+
+    accessToken = 'tok-refreshed';
+    view.rerender(
+      <MemoryRouter initialEntries={['/painel/biteplaner/avaliacoes?mode=dentist']}>
+        <ThemeProvider theme={lightTheme}>
+          <QueryClientProvider client={queryClient}>
+            <Avaliacoes />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument());
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
   });
 
   it('filters survey comments by the selected survey moment tab', async () => {
@@ -122,7 +189,7 @@ describe('Avaliações', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'false');
     expect(screen.queryByText(/após consulta de adaptação/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/cliente avaliando dentista/i).length).toBeGreaterThan(0);
@@ -220,7 +287,7 @@ describe('Avaliações', () => {
     renderPage('/painel/biteplaner/avaliacoes?mode=partner');
 
     expect(await screen.findByRole('heading', { name: /avaliações do parceiro/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/cliente avaliando parceiro/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/cliente avaliando parceiro/i)).length).toBeGreaterThan(0);
     expect(screen.getByText(/parceiro explicou bem o fluxo/i)).toBeInTheDocument();
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?as=partner', 'tok'));
   });
@@ -279,7 +346,7 @@ describe('Avaliações', () => {
     renderPage('/painel/biteplaner/avaliacoes?mode=user');
 
     expect(await screen.findByRole('heading', { name: /avaliações enviadas pelo cliente/i })).toBeInTheDocument();
-    expect(screen.getByText(/cadastro via link de recomendação do parceiro/i)).toBeInTheDocument();
+    expect(await screen.findByText(/cadastro via link de recomendação do parceiro/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /responder/i }));
     expect(screen.getByText(/nota de 1 a 5 estrelas/i)).toBeInTheDocument();
@@ -290,7 +357,7 @@ describe('Avaliações', () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /enviar survey/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/gentileza no atendimento/i);
+    expect(screen.getByText(/preencha o campo obrigatório: gentileza no atendimento/i)).toBeInTheDocument();
 
     await user.click(within(screen.getByRole('radiogroup', { name: /gentileza no atendimento/i })).getByRole('radio', { name: /5 estrelas/i }));
     await user.click(
@@ -321,5 +388,42 @@ describe('Avaliações', () => {
       )
     );
     expect(await screen.findByText(/cadastro por link bem orientado/i)).toBeInTheDocument();
+  }, 10_000);
+
+  it('opens a pending survey from the surveyId query parameter', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-006',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-04T10:00:00.000Z',
+            customer: { full_name: 'Marina Costa', email: 'marina@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'review-partner-pending',
+            orderId: 'BP-DEMO-006',
+            templateKey: 'partner_review_by_customer',
+            stepKey: 'partner_review_by_customer',
+            status: 'pending',
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-04T12:00:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage('/painel/biteplaner/avaliacoes?mode=user&surveyId=review-partner-pending');
+
+    expect(await screen.findByRole('dialog', { name: /cliente avaliando parceiro indicador/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/cadastro via link de recomendação do parceiro/i).length).toBeGreaterThan(0);
   });
 });

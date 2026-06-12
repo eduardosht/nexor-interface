@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren
 } from 'react';
@@ -29,6 +30,10 @@ export interface BackendUser {
     productKey: string;
     role: string;
     status: string;
+    stage?: string | null;
+    orderId?: string | null;
+    orderStartedAt?: string | null;
+    metadata?: Record<string, unknown> | null;
   }>;
   clinicIds: string[];
   dentistId?: string;
@@ -154,10 +159,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [backendUserResolved, setBackendUserResolved] = useState(true);
   const [loading, setLoading] = useState(true);
   const [demoPersona, setDemoPersona] = useState<DemoPersona | null>(null);
+  const backendUserResolvedRef = useRef(backendUserResolved);
+  const backendUserRef = useRef(backendUser);
   const isMockMode = isMockModeEnabled();
   const [hasConfiguredAuth, setHasConfiguredAuth] = useState(Boolean(supabase) || isMockMode);
   const isPasswordRecoveryRoute =
     typeof window !== 'undefined' && window.location.pathname === '/recuperar-senha';
+
+  useEffect(() => {
+    backendUserResolvedRef.current = backendUserResolved;
+  }, [backendUserResolved]);
+
+  useEffect(() => {
+    backendUserRef.current = backendUser;
+  }, [backendUser]);
 
   const syncBackendUser = useCallback(
     async (nextSession: AuthSession | null) => {
@@ -288,6 +303,40 @@ export function AuthProvider({ children }: PropsWithChildren) {
       const {
       data: { subscription }
     } = auth.onAuthStateChange((event, nextSession) => {
+      if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && nextSession) {
+        setSession(nextSession);
+        if (
+          backendUserResolvedRef.current &&
+          backendUserRef.current &&
+          backendUserRef.current.authUserId === nextSession.user.id
+        ) {
+          setLoading(false);
+          return;
+        }
+
+        if (backendUserResolvedRef.current) {
+          setLoading(true);
+          setBackendUserResolved(false);
+
+          void syncBackendUser(nextSession)
+            .catch(async (err: unknown) => {
+              if (err instanceof ProfileNotFoundError) {
+                setBackendUser(null);
+              } else {
+                await auth.signOut();
+                setSession(null);
+                setBackendUser(null);
+              }
+            })
+            .finally(() => {
+              if (active) {
+                setLoading(false);
+              }
+            });
+          return;
+        }
+      }
+
       setBackendUser(null);
       setSession(nextSession);
       setLoading(true);

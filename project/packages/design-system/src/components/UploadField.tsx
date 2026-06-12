@@ -80,10 +80,8 @@ const Wrapper = styled.div<{ $tokens: BrandTokens }>`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 `;
 
 const Dropzone = styled.button<{ $tokens: BrandTokens }>`
@@ -135,7 +133,7 @@ const HiddenInput = styled.input`
 const Helper = styled.span<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -204,7 +202,7 @@ export function UploadField({
   onRemoveFile,
   accept,
   multiple = false,
-  browseLabel = 'browse',
+  browseLabel = 'procurar',
 }: UploadFieldProps) {
   const { tokens } = useDesignSystem();
   const inputId = useId();
@@ -220,8 +218,8 @@ export function UploadField({
       <Dropzone $tokens={tokens} type="button" onClick={openPicker}>
         <UploadIcon />
         <DropzoneText $tokens={tokens}>
-          <DropzoneHeadline>Drag &amp; drop file(s) to upload</DropzoneHeadline>
-          <BrowseText>or {browseLabel}</BrowseText>
+          <DropzoneHeadline>Arraste e solte o(s) arquivo(s) para enviar</DropzoneHeadline>
+          <BrowseText>ou {browseLabel}</BrowseText>
         </DropzoneText>
       </Dropzone>
       <HiddenInput

@@ -246,7 +246,7 @@ export const QuickItem = styled.div`
 
 export const QuickLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -346,7 +346,7 @@ export const Card = styled.details`
 
 export const CardSummary = styled.summary`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 16px;
@@ -363,24 +363,30 @@ export const CardSummary = styled.summary`
   }
 `;
 
-export const SectionIcon = styled.span`
-  display: grid;
+export const CardSummaryMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
+export const ExpandIcon = styled.span`
+  display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #eef4ff;
-  color: #0f2f57;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.bgInset};
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
 
-  @media (max-width: 1280px) {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
+  ${Card}[open] & {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    transform: rotate(180deg);
   }
 `;
 
@@ -440,7 +446,7 @@ export const DataField = styled.div<{ $important?: boolean }>`
 
 export const DataLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -524,7 +530,7 @@ export const ModernTable = styled.table`
   th {
     background: ${({ theme }) => theme.colors.bgInset};
     color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -583,24 +589,5 @@ export const TextArea = styled.textarea`
   &:focus {
     border-color: #0f2f57;
     box-shadow: 0 0 0 3px rgba(15, 47, 87, 0.12);
-  }
-`;
-
-export const UploadBox = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border: 1px dashed ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.bgInset};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  font-weight: 400;
-
-  @media (max-width: 1280px) {
-    gap: 8px;
-    padding: 10px;
   }
 `;

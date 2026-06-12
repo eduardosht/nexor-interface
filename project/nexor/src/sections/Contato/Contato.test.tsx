@@ -13,7 +13,7 @@ vi.mock('../../lib/api', () => ({
 
 vi.mock('../../config/env', () => ({
   env: {
-    contactEmail: 'nexor@nexor.com',
+    contactEmail: 'contato@nexoradvance.com.br',
     contactWhatsapp: 'https://wa.me/5511999999999',
   },
 }));
@@ -31,7 +31,7 @@ describe('Contato', () => {
 
   it('renderiza link de email', () => {
     render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
-    expect(screen.getByTestId('contact-email')).toHaveAttribute('href', 'mailto:nexor@nexor.com');
+    expect(screen.getByTestId('contact-email')).toHaveAttribute('href', 'mailto:contato@nexoradvance.com.br');
   });
 
   it('tem id contato para âncora', () => {

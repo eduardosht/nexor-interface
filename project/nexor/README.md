@@ -67,7 +67,7 @@ VITE_BITEPLANER_URL=http://localhost:5174
 VITE_APP_URL=http://localhost:5173
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_CONTACT_EMAIL=contato@nexor.com
+VITE_CONTACT_EMAIL=contato@nexoradvance.com.br
 VITE_CONTACT_WHATSAPP=
 ```
 

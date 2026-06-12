@@ -1,6 +1,62 @@
 import styled, { css, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import {
+  biteplanerButtonHoverStyles,
+  biteplanerButtonSurfaceStyles,
+  biteplanerFormButtonStyles,
+} from '../styles/biteplanerFormButton';
+import {
+  PortalCardText,
+  PortalCardTitle,
+  PortalMetaLabel,
+  PortalModalDescription,
+  PortalModalTitle,
+  PortalPageDescription,
+  PortalPageTitle,
+  PortalSectionDescription,
+  PortalSectionTitle,
+} from '../styles/portalTypography';
+
+type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+
+const workspaceHeroBackground = (mode: WorkspaceHeroMode | undefined, fallback: string) => {
+  switch (mode) {
+    case 'partner':
+      return `radial-gradient(circle at 88% 16%, rgba(34, 197, 94, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(20, 184, 166, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 251, 0.99) 0%, rgba(239, 253, 246, 0.94) 58%, rgba(236, 253, 245, 0.92) 100%),
+    ${fallback}`;
+    case 'dentist':
+      return `radial-gradient(circle at 88% 16%, rgba(14, 165, 233, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(45, 212, 191, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 255, 0.99) 0%, rgba(239, 250, 255, 0.94) 58%, rgba(236, 254, 255, 0.9) 100%),
+    ${fallback}`;
+    case 'lab':
+      return `radial-gradient(circle at 88% 16%, rgba(124, 58, 237, 0.16), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(252, 251, 255, 0.99) 0%, rgba(245, 243, 255, 0.94) 58%, rgba(239, 246, 255, 0.9) 100%),
+    ${fallback}`;
+    default:
+      return `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
+    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
+    ${fallback}`;
+  }
+};
+
+const workspaceHeroAccent = (mode: WorkspaceHeroMode | undefined) => {
+  switch (mode) {
+    case 'partner':
+      return '#16a34a';
+    case 'dentist':
+      return '#0891b2';
+    case 'lab':
+      return '#7c3aed';
+    default:
+      return '#f59e0b';
+  }
+};
 
 export const Page = styled.div`
   display: grid;
@@ -49,7 +105,7 @@ export const RoleTabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-export const Hero = styled.section<{ $showcase?: boolean }>`
+export const Hero = styled.section<{ $showcase?: boolean; $mode?: WorkspaceHeroMode }>`
   display: grid;
   grid-template-columns: ${({ $showcase }) => ($showcase ? 'minmax(0, 1fr) minmax(320px, 0.9fr)' : '1fr')};
   align-items: ${({ $showcase }) => ($showcase ? 'center' : 'stretch')};
@@ -58,12 +114,9 @@ export const Hero = styled.section<{ $showcase?: boolean }>`
   padding: ${({ $showcase }) => ($showcase ? '38px 46px' : '24px')};
   border-radius: ${({ $showcase }) => ($showcase ? '18px' : '16px')};
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ $showcase, theme }) =>
+  background: ${({ $showcase, $mode, theme }) =>
     $showcase
-      ? `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
-    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
-    ${theme.colors.bgElevated}`
+      ? workspaceHeroBackground($mode, theme.colors.bgElevated)
       : theme.colors.bgElevated};
   box-shadow: ${({ $showcase }) => ($showcase ? '0 18px 48px rgba(15, 23, 42, 0.07)' : 'none')};
   overflow: hidden;
@@ -80,29 +133,16 @@ export const HeroCopy = styled.div`
   min-width: 0;
 `;
 
-export const Eyebrow = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const Eyebrow = PortalMetaLabel;
 
-export const Title = styled.h1<{ $showcase?: boolean }>`
-  margin: 0;
-  font-size: ${({ $showcase }) => ($showcase ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(1.8rem, 3vw, 2.4rem)')};
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: ${({ $showcase }) => ($showcase ? '0.98' : '1.1')};
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const Title = styled(PortalPageTitle).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+}))<{ $showcase?: boolean }>``;
 
-export const Description = styled.p<{ $showcase?: boolean }>`
-  margin: 0;
-  max-width: 760px;
-  font-size: ${({ $showcase }) => ($showcase ? 'clamp(1rem, 1.4vw, 1.18rem)' : '14px')};
-  line-height: ${({ $showcase }) => ($showcase ? '1.75' : '1.6')};
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const Description = styled(PortalPageDescription).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+}))<{ $showcase?: boolean }>`
+  ${({ $showcase }) => (!$showcase ? 'font-size: 14px; line-height: 1.6;' : '')}
 `;
 
 export const HeroVisual = styled.div`
@@ -186,17 +226,17 @@ export const HeroChartLine = styled.span`
   transform: skewY(-16deg);
 `;
 
-export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean }>`
+export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean; $mode?: WorkspaceHeroMode }>`
   position: absolute;
   left: ${({ $left }) => $left};
   top: ${({ $top }) => $top};
   width: ${({ $active }) => ($active ? '34px' : '10px')};
   height: ${({ $active }) => ($active ? '34px' : '10px')};
   border-radius: 999px;
-  border: ${({ $active }) => ($active ? '8px solid rgba(245, 158, 11, 0.56)' : '2px solid rgba(15, 23, 42, 0.66)')};
-  background: ${({ $active }) => ($active ? '#f59e0b' : '#fff')};
+  border: ${({ $active, $mode }) => ($active ? `8px solid ${workspaceHeroAccent($mode)}66` : '2px solid rgba(15, 23, 42, 0.66)')};
+  background: ${({ $active, $mode }) => ($active ? workspaceHeroAccent($mode) : 'rgba(255, 255, 255, 0.96)')};
   transform: translate(-50%, -50%);
-  box-shadow: ${({ $active }) => ($active ? '0 0 0 4px rgba(245, 158, 11, 0.2)' : 'none')};
+  box-shadow: ${({ $active, $mode }) => ($active ? `0 0 0 4px ${workspaceHeroAccent($mode)}24` : 'none')};
 `;
 
 export const HeroFloatingCard = styled.div`
@@ -222,21 +262,30 @@ export const HeroFloatingCard = styled.div`
   }
 
   strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 13px;
     font-weight: 600;
     color: ${({ theme }) => theme.colors.textSecondary};
   }
 `;
 
-export const HeroFloatingIcon = styled.span`
+export const HeroFloatingIcon = styled.span<{ $mode?: WorkspaceHeroMode; $tone?: 'success' | 'warning' | 'neutral' }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: #dcfce7;
-  color: #16a34a;
+  background: ${({ $tone, $mode }) =>
+    $tone === 'warning'
+      ? 'rgba(245, 158, 11, 0.14)'
+      : $tone === 'neutral'
+        ? 'rgba(148, 163, 184, 0.16)'
+        : `${workspaceHeroAccent($mode)}18`};
+  color: ${({ $tone, $mode }) =>
+    $tone === 'warning' ? '#d18a00' : $tone === 'neutral' ? '#64748b' : workspaceHeroAccent($mode)};
 `;
 
 export const PartnerHeroVisual = styled.div`
@@ -1003,6 +1052,46 @@ export const PartnerActionCard = styled(Link)`
   }
 `;
 
+export const PartnerActionButton = styled.button`
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 244px;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  > svg:last-child {
+    margin-top: auto;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(23, 23, 23, 0.24);
+    outline-offset: 3px;
+  }
+`;
+
 export const PartnerActionCardPrimary = styled(PartnerActionCard)`
   border-color: #171717;
   background:
@@ -1127,13 +1216,8 @@ export const StatCard = styled.article`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const StatLabel = styled.span`
+export const StatLabel = styled(PortalMetaLabel)`
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const StatValue = styled.strong`
@@ -1236,7 +1320,7 @@ export const ReferralField = styled.div`
   min-width: 0;
 
   > span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1328,19 +1412,9 @@ export const PanelHeaderRow = styled.div`
   }
 `;
 
-export const PanelTitle = styled.h2`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const PanelTitle = styled(PortalSectionTitle).attrs({ $size: 'md' as const })``;
 
-export const PanelText = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const PanelText = PortalSectionDescription;
 
 export const AthleteCasePanel = styled.section`
   display: grid;
@@ -1534,24 +1608,14 @@ export const OrderHeader = styled.div`
   gap: 12px;
 `;
 
-export const OrderTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const OrderTitle = PortalCardTitle;
+
+export const OrderText = PortalCardText;
 
 export const OrderMeta = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-`;
-
-export const OrderText = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const AthleteOrderHighlight = styled.article`
@@ -1571,6 +1635,42 @@ export const AthleteOrderHighlight = styled.article`
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+export const AthletePendingActionsPanel = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(21, 128, 61, 0.28);
+  background:
+    radial-gradient(circle at 6% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.96));
+
+  @media (max-width: 720px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const AthletePendingActionsCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const AthletePendingActionButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+
+  @media (max-width: 720px) {
+    width: 100%;
   }
 `;
 
@@ -1605,12 +1705,19 @@ export const AthleteOrderHeader = styled.div`
 `;
 
 export const EmptyState = styled.div`
+  display: grid;
+  justify-items: start;
+  gap: 12px;
   padding: 18px;
   border-radius: 12px;
   border: 1px dashed ${({ theme }) => theme.colors.borderDefault};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+
+  p {
+    margin: 0;
+  }
 `;
 
 export const LeadTable = styled.div``;
@@ -1622,7 +1729,7 @@ export const SectionStack = styled.div`
 
 export const DentistStatusBar = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+  grid-template-columns: minmax(300px, 1.35fr) minmax(220px, 0.75fr) minmax(220px, 0.9fr);
   gap: 28px;
   padding: 28px 32px;
   border-radius: 16px;
@@ -1631,12 +1738,13 @@ export const DentistStatusBar = styled.section`
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 
   @media (max-width: 1280px) {
+    grid-template-columns: minmax(260px, 1fr) minmax(180px, 0.7fr) minmax(180px, 0.8fr);
     gap: 12px;
     padding: 16px;
     border-radius: 12px;
   }
 
-  @media (max-width: 720px) {
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
     padding: 14px;
   }
@@ -1694,6 +1802,12 @@ export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' 
   overflow-wrap: anywhere;
 `;
 
+export const DentistStatusDescription = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.5;
+`;
+
 export const DentistStatusDot = styled.span<{ $tone: 'success' | 'warning' | 'neutral' }>`
   width: 9px;
   height: 9px;
@@ -1749,7 +1863,7 @@ export const CourseTabButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
 
   span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1767,7 +1881,7 @@ export const CourseCompletionMark = styled.small`
   align-items: center;
   gap: 5px;
   width: fit-content;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1917,25 +2031,16 @@ export const SectionHeading = styled.div`
   gap: 4px;
 `;
 
-export const SectionTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const SectionTitle = styled(PortalSectionTitle).attrs({ as: 'h3', $size: 'sm' as const })``;
 
-export const SectionDescription = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const SectionDescription = styled(PortalSectionDescription).attrs({ $size: 'sm' as const })``;
 
 export const InlineForm = styled.form`
   display: grid;
   grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) auto;
   gap: 12px;
   align-items: end;
+  ${biteplanerFormButtonStyles}
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -1961,6 +2066,11 @@ export const IconActionButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.bgElevated};
     border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
   }
 `;
 
@@ -1999,19 +2109,9 @@ export const ModalHeader = styled.div`
   gap: 16px;
 `;
 
-export const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const ModalTitle = styled(PortalModalTitle).attrs({ as: 'h3' })``;
 
-export const ModalSubtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalSubtitle = PortalModalDescription;
 
 export const ModalCloseButton = styled.button`
   display: inline-flex;
@@ -2036,26 +2136,14 @@ export const QrShell = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const QrCaption = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const QrCaption = PortalMetaLabel;
 
 export const ModalField = styled.div`
   display: grid;
   gap: 8px;
 `;
 
-export const ModalLabel = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalLabel = PortalMetaLabel;
 
 export const LinkPreview = styled.input`
   width: 100%;
@@ -2071,7 +2159,240 @@ export const LinkPreview = styled.input`
 export const ModalActions = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
+
+  @media (max-width: 560px) {
+    justify-content: stretch;
+
+    > button,
+    > a {
+      width: 100%;
+    }
+  }
+`;
+
+export const ReferralInviteModalBox = styled(ModalBox)`
+  width: min(100%, 760px);
+  gap: 20px;
+  padding: 28px;
+  border-radius: 16px;
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+
+  @media (max-width: 720px) {
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    padding: 22px;
+  }
+`;
+
+export const ReferralInviteModalHeader = styled(ModalHeader)`
+  align-items: flex-start;
+  gap: 16px;
+`;
+
+export const ReferralInviteModalTitle = styled(ModalTitle)`
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+`;
+
+export const ReferralInviteModalSubtitle = styled(ModalSubtitle)`
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-weight: 800;
+  }
+`;
+
+export const ReferralInviteModalCloseButton = styled(ModalCloseButton)`
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  svg {
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+`;
+
+export const ReferralInviteQrShell = styled(QrShell)`
+  position: relative;
+  gap: 14px;
+  min-height: 320px;
+  padding: 28px;
+  border-radius: 18px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+
+  @media (max-width: 720px) {
+    min-height: auto;
+    padding: 20px 16px;
+  }
+`;
+
+export const ReferralInviteQrFrame = styled.div`
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+
+  svg {
+    width: min(100%, 240px);
+    height: auto;
+    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.12));
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(#16803b, #16803b) left top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 2px 28px no-repeat;
+    border-radius: 12px;
+  }
+`;
+
+export const ReferralInviteQrCaption = styled(QrCaption)`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  svg {
+    color: #16803b;
+  }
+`;
+
+export const ReferralInviteModalField = styled(ModalField)`
+  gap: 12px;
+`;
+
+export const ReferralInviteModalLabel = styled(ModalLabel)`
+  font-size: 12px;
+  letter-spacing: 0.08em;
+`;
+
+export const ReferralInviteLinkInputGroup = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  min-height: 52px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 12px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    min-height: 58px;
+  }
+`;
+
+export const ReferralInviteLinkPreview = styled(LinkPreview)`
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+export const ReferralInviteInlineCopyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+`;
+
+export const ReferralInviteModalActions = styled(ModalActions)`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 820px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const referralInviteActionBase = css`
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+`;
+
+export const ReferralInviteCopyButton = styled.button`
+  ${referralInviteActionBase}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #16803b, #239655);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(22, 128, 59, 0.24);
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+`;
+
+export const ModalSecondaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  min-height: 44px;
+  padding: 0 18px;
+  border-color: #b91c1c;
+  background: #fff1f2;
+  color: #b91c1c;
+  box-shadow: none;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    border-color: #991b1b;
+    background: #fee2e2;
+    color: #991b1b;
+    box-shadow: 0 10px 22px rgba(185, 28, 28, 0.12);
+  }
+`;
+
+export const ModalPrimaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  min-height: 44px;
+  padding: 0 20px;
 `;
 
 export const ModalActionLink = styled(motion.a)`
@@ -2099,6 +2420,19 @@ export const ModalActionLink = styled(motion.a)`
   }
 `;
 
+export const ReferralInviteActionLink = styled(ModalActionLink)`
+  ${referralInviteActionBase}
+  gap: 10px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 15px;
+
+  svg {
+    color: #16803b;
+  }
+`;
+
 export const ModalForm = styled.form`
   display: grid;
   gap: 14px;
@@ -2123,13 +2457,7 @@ export const DocumentationItem = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const DocumentationLabel = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const DocumentationLabel = PortalMetaLabel;
 
 export const DocumentationValue = styled.p`
   margin: 0;
@@ -2137,6 +2465,41 @@ export const DocumentationValue = styled.p`
   font-size: 13px;
   line-height: 1.55;
   overflow-wrap: anywhere;
+`;
+
+export const DocumentationValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+
+  ${DocumentationValue} {
+    min-width: 0;
+  }
+`;
+
+export const DocumentationIconLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.accent};
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    background: rgba(22, 101, 52, 0.08);
+  }
 `;
 
 export const DocumentationDownloadLink = styled.a`
@@ -2182,7 +2545,7 @@ export const SimpleTable = styled.table`
   }
 
   th {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;

@@ -26,45 +26,45 @@ import * as S from './styles';
 const TRACKS = [
   {
     anchor: 'dentistas',
-    label: 'Dentistas',
+    label: 'Dentistas licenciados',
     title: 'Dentista Licenciado',
-    desc: 'Credenciamento para avaliação, moldagem e acompanhamento dos pacientes que adquirem o Biteplaner. Faça parte da rede de dentistas parceiros da Nexor.',
+    desc: 'Licenciamento para avaliação clínica, registro odontológico e acompanhamento dos atletas que adquirem o dispositivo Biteplaner. Faça parte da rede de dentistas licenciados da Nexor.',
     tipo: 'dentista',
     steps: [
-      { title: 'Credenciamento', body: 'Cadastro e validação do CRO e habilitação profissional.' },
-      { title: 'Capacitação', body: 'Treinamento no protocolo Nexor de avaliação e moldagem.' },
-      { title: 'Atendimento', body: 'Consultas de moldagem e avaliação odontológica dos clientes.' },
-      { title: 'Retornos', body: 'Acompanhamento periódico e suporte técnico contínuo.' },
+      { title: 'Licenciamento', body: 'Cadastro, validação do CRO e aprovação operacional para atuar no protocolo Biteplaner.' },
+      { title: 'Capacitação', body: 'Treinamento no protocolo Nexor de avaliação, indicação, adaptação e acompanhamento do dispositivo.' },
+      { title: 'Atendimento', body: 'Consultas com avaliação odontológica, orientação ao atleta e documentação necessária para a jornada.' },
+      { title: 'Retornos', body: 'Acompanhamento periódico do uso, ajustes do dispositivo e suporte técnico contínuo.' },
     ],
-    benefits: ['Renda adicional por consulta', 'Acesso ao software de acompanhamento', 'Suporte técnico dedicado'],
+    benefits: ['Atuação como dentista licenciado', 'Acesso ao software de acompanhamento', 'Suporte técnico dedicado'],
   },
   {
     anchor: 'parceiros',
-    label: 'Academias e Coaches',
+    label: 'Parceiros licenciados',
     title: 'Academia / Coach Licenciado',
-    desc: 'Programa de indicação para academias e coaches que recomendam o Biteplaner para seus alunos e atletas. Ganhe por cada conversão.',
+    desc: 'Licenciamento para parceiros que recomendam o dispositivo Biteplaner a alunos, atletas e comunidades esportivas com rastreabilidade pela plataforma Nexor.',
     tipo: 'parceiro',
     steps: [
-      { title: 'Cadastro', body: 'Registro como parceiro comercial da Nexor.' },
-      { title: 'Link de indicação', body: 'Geração de link rastreável para indicações.' },
-      { title: 'Indicação', body: 'Compartilhamento com alunos e atletas da sua base.' },
-      { title: 'Comissão', body: 'Recebimento automático por cada conversão realizada.' },
+      { title: 'Licenciamento', body: 'Cadastro e aprovação como parceiro licenciado para atuar no ecossistema Biteplaner.' },
+      { title: 'Link de indicação', body: 'Geração de link rastreável para recomendações do dispositivo aos seus alunos e atletas.' },
+      { title: 'Indicação', body: 'Compartilhamento responsável com a sua base, mantendo a jornada clínica com dentistas licenciados.' },
+      { title: 'Rastreabilidade', body: 'Acompanhamento das indicações, conversões e resultados gerados pelo seu link.' },
     ],
-    benefits: ['Comissão por indicação convertida', 'Dashboard de acompanhamento', 'Material de apoio para divulgação'],
+    benefits: ['Atuação como parceiro licenciado', 'Dashboard de acompanhamento', 'Material de apoio para divulgação'],
   },
   {
     anchor: 'laboratórios',
-    label: 'Laboratórios',
+    label: 'Laboratórios licenciados',
     title: 'Laboratório Licenciado',
-    desc: 'Licenciamento para produção laboratorial de alto padrão dos dispositivos personalizados Biteplaner. Processos rigorosos, materiais premium e rastreabilidade total.',
+    desc: 'Licenciamento para produção laboratorial de alto padrão do dispositivo Biteplaner. Processos rigorosos, materiais premium e rastreabilidade total.',
     tipo: 'laboratório',
     steps: [
-      { title: 'Certificação', body: 'Auditoria e validação dos processos laboratoriais.' },
-      { title: 'Integração', body: 'Conexão com a plataforma de gestão de ordens.' },
-      { title: 'Produção', body: 'Fabricação das moldeiras conforme protocolo Nexor.' },
-      { title: 'Controle', body: 'Inspeção de qualidade e envio rastreado ao cliente.' },
+      { title: 'Licenciamento', body: 'Auditoria e validação dos processos laboratoriais para atuação como laboratório licenciado.' },
+      { title: 'Integração', body: 'Conexão com a plataforma de gestão de ordens e recebimento das solicitações técnicas.' },
+      { title: 'Produção', body: 'Produção do dispositivo conforme protocolo Nexor, com rastreabilidade de materiais e etapas.' },
+      { title: 'Controle', body: 'Inspeção de qualidade e envio rastreado ao dentista licenciado ou local de atendimento.' },
     ],
-    benefits: ['Volume garantido de ordens', 'Integração com plataforma digital', 'Suporte técnico do time Nexor'],
+    benefits: ['Atuação como laboratório licenciado', 'Integração com plataforma digital', 'Suporte técnico do time Nexor'],
   },
 ];
 
@@ -73,8 +73,8 @@ export function Parceiros() {
     <S.Page>
       <S.HeroSection>
         <S.HeroLabel>Ecossistema Nexor</S.HeroLabel>
-        <S.HeroTitle>Seja parceiro<br />da Nexor</S.HeroTitle>
-        <S.HeroSubtitle>Faça parte do ecossistema de produtos de alta performance. Três trilhas de parceria, cada uma desenhada para o seu perfil profissional.</S.HeroSubtitle>
+        <S.HeroTitle>Seja licenciado<br />pela Nexor</S.HeroTitle>
+        <S.HeroSubtitle>Faça parte do ecossistema Biteplaner com três trilhas de licenciamento: parceiro, dentista e laboratório licenciados para uma jornada rastreável, técnica e integrada.</S.HeroSubtitle>
       </S.HeroSection>
 
       {TRACKS.map((track, i) => (

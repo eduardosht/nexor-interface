@@ -56,7 +56,7 @@ const StyledChip = styled.span<{ $tokens: BrandTokens; $tone: ChipTone }>`
   border: 1px solid;
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;

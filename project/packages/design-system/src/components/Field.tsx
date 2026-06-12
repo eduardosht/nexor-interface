@@ -43,10 +43,8 @@ const Wrapper = styled.div<{ $tokens: BrandTokens }>`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
 
   strong {
     color: inherit;
@@ -163,7 +161,7 @@ const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
   color: ${({ $tokens, $tone }) =>
     $tone === 'error' ? $tokens.colors.danger : $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 

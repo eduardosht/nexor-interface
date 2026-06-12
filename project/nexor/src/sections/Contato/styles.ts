@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Surface } from '@nexor/design-system';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const SectionOuter = styled.div`
   ${fullBleedSection}
@@ -9,9 +9,8 @@ export const SectionOuter = styled.div`
 `;
 
 export const Section = styled.section`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
-  padding: 120px 48px;
+  ${pageContainer}
+  padding: 120px 0;
   display: grid;
   grid-template-columns: 2fr 3fr;
   gap: 64px;
@@ -19,7 +18,8 @@ export const Section = styled.section`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    padding: 80px 24px;
+    padding-top: 80px;
+    padding-bottom: 80px;
     gap: 32px;
   }
 `;

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ACTIVE_DEMO_PERSONA_STORAGE_KEY,
   DemoStateError,
+  approveLabLicenseRequest,
   applyOrderAction,
   createProductRole,
   getAccessOptions,
@@ -16,6 +17,7 @@ import {
   listOrders,
   markAccountNotificationRead,
   parseClinicalDecisionPayload,
+  removePartnerInviteLink,
   resetDemoState,
   resolveActiveDemoPersona
 } from './demoState';
@@ -50,6 +52,21 @@ describe('shared Biteplaner demo state', () => {
     );
 
     expect(result.orders.length).toBeGreaterThan(0);
+  });
+
+  it('licenses the laboratory immediately after admin approval without awaiting payment', () => {
+    const context = { requestHeaders: { authorization: 'Bearer demo-athleteRegistered-token' } };
+    const productRole = createProductRole(context, 'lab', {
+      labName: 'Lab Sem Pagamento',
+      cnpj: '12.345.678/0001-90'
+    });
+
+    const approved = approveLabLicenseRequest(productRole.id);
+    const snapshot = getDemoStateSnapshot();
+    const workflow = snapshot.dentistLicensingWorkflows.find((item) => item.productRoleId === productRole.id);
+
+    expect(approved.request.workflowStatus).toBe('licensed');
+    expect(workflow?.status).toBe('licensed');
   });
 
   it('returns a valid auth payload for the active persona and fixes the partner role', () => {
@@ -432,9 +449,10 @@ describe('shared Biteplaner demo state', () => {
       workflowFormId: 'BP-WF-002-INTAKE',
       payload: {
         customer: {
-          fullName: 'Alterádo pelo dentista'
+          fullName: 'Alterado pelo dentista'
         },
         dentist: {
+          biteplannerEligible: 'yes',
           painlessMaxOpeningMm: 42,
           initialEvaluationSummary: 'Sem sinais impeditivos.'
         }
@@ -455,6 +473,7 @@ describe('shared Biteplaner demo state', () => {
         sportRoutine: 'Crossfit'
       },
       dentist: {
+        biteplannerEligible: 'yes',
         painlessMaxOpeningMm: 42,
         initialEvaluationSummary: 'Sem sinais impeditivos.'
       }
@@ -507,6 +526,57 @@ describe('shared Biteplaner demo state', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(DemoStateError);
       expect((error as DemoStateError).status).toBe(403);
+    }
+  });
+
+  it('moves dentist-marked inaptitude to reassessment instead of refund closure', () => {
+    applyOrderAction('BP-DEMO-004', {
+      type: 'submit-workflow-form',
+      workflowFormId: 'BP-WF-004-INTAKE',
+      payload: {
+        dentist: {
+          biteplannerEligible: 'no',
+          ineligibilityDescriptionForCustomer:
+            'No momento existem sinais clínicos que pedem nova avaliação antes do Biteplaner.',
+          consultationDate: '2026-05-12'
+        }
+      }
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    const order = getDemoStateSnapshot().orders.find((item) => item.id === 'BP-DEMO-004');
+
+    expect(order?.status).toBe('ineligible_reassessment');
+    expect(order?.statusLabel).toBe('Inaptidão');
+    expect(order?.stage).toBe('awaiting_initial_consultation');
+    expect(order?.nextActions).toContain('schedule-initial-consultation');
+  });
+
+  it('requires a customer-facing inaptitude description when the dentist marks Biteplaner as not eligible', () => {
+    try {
+      applyOrderAction('BP-DEMO-004', {
+        type: 'submit-workflow-form',
+        workflowFormId: 'BP-WF-004-INTAKE',
+        payload: {
+          dentist: {
+            biteplannerEligible: 'no',
+            consultationDate: '2026-05-12'
+          }
+        }
+      }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+      throw new Error('Expected inaptitude description to be required.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(DemoStateError);
+      expect((error as DemoStateError).status).toBe(422);
+    }
+  });
+
+  it('does not remove partner invite links that are no longer active', () => {
+    try {
+      removePartnerInviteLink('partner-link-expired-001', { requestHeaders: { 'x-demo-persona': 'partner' } });
+      throw new Error('Expected expired partner invite link removal to be rejected.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(DemoStateError);
+      expect((error as DemoStateError).status).toBe(409);
     }
   });
 

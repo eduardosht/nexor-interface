@@ -437,7 +437,7 @@ export const Avatar = styled.span`
   border-radius: 50%;
   background: linear-gradient(135deg, #6d28d9, #8b5cf6);
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 `;
 
@@ -488,7 +488,7 @@ export const CriteriaPill = styled.span`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
+  font-size: 12px;
 
   strong {
     color: #15803d;
@@ -638,7 +638,7 @@ export const SurveyLabel = styled.span`
 
 export const FieldError = styled.span`
   color: #b91c1c;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -714,7 +714,7 @@ export const ScaleHint = styled.div`
   justify-content: space-between;
   gap: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
+  font-size: 12px;
 `;
 
 export const TextArea = styled.textarea`

@@ -51,7 +51,7 @@ const Wrapper = styled.div`
 
 const LabelEl = styled.label<{ $tokens: BrandTokens }>`
   display: block;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: ${({ $tokens }) => $tokens.colors.text};
   margin-bottom: 6px;
@@ -91,7 +91,7 @@ const SelectionChip = styled.span<{ $tokens: BrandTokens }>`
   border: 1px solid ${({ $tokens }) => $tokens.colors.border};
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   padding: 2px 4px 2px 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};

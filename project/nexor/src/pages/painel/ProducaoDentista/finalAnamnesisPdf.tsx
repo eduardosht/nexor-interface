@@ -1,19 +1,15 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
-import type { DemoOrderSummary, DemoWorkflowForm, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
+import {
+  getOrderDisplayId,
+  type DemoOrderSummary,
+  type DemoWorkflowForm,
+  type ProductionRequestDraft,
+} from '../../../features/demo/biteplanerFlow';
+import { getWorkflowFormPayloadSection } from '../components/workflowFormFieldDictionary';
 
 const missingValue = 'Não informado';
 const navy = '#0b3566';
 const border = '#9fb2cc';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getPayloadSection(form: DemoWorkflowForm | undefined, key: 'customer' | 'dentist') {
-  const payload = isRecord(form?.payload) ? form.payload : {};
-  const section = payload[key];
-  return isRecord(section) ? section : {};
-}
 
 function value(rawValue: unknown): string {
   if (Array.isArray(rawValue)) {
@@ -30,8 +26,59 @@ function value(rawValue: unknown): string {
   return String(rawValue);
 }
 
+function dateValue(rawValue: unknown): string {
+  if (typeof rawValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    const [year, month, day] = rawValue.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  return value(rawValue);
+}
+
 function checkText(raw: unknown) {
   return value(raw) === 'Sim' ? '(x) Sim   ( ) Não' : value(raw) === 'Não' ? '( ) Sim   (x) Não' : '( ) Sim   ( ) Não';
+}
+
+function hasFilledValue(rawValue: unknown) {
+  if (Array.isArray(rawValue)) {
+    return rawValue.length > 0;
+  }
+
+  return rawValue !== null && rawValue !== undefined && rawValue !== '';
+}
+
+function calculateAgeYears(birthDate: unknown) {
+  if (typeof birthDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return undefined;
+  }
+
+  const birth = new Date(`${birthDate}T00:00:00`);
+
+  if (Number.isNaN(birth.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDelta = today.getMonth() - birth.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : undefined;
+}
+
+function buildCustomerProfileFallback(onboardingPayload: Record<string, unknown>) {
+  return {
+    ...onboardingPayload,
+    ...(hasFilledValue(onboardingPayload.heightM) && !hasFilledValue(onboardingPayload.heightMeters)
+      ? { heightMeters: onboardingPayload.heightM }
+      : {}),
+    ...(hasFilledValue(onboardingPayload.birthDate) && !hasFilledValue(onboardingPayload.ageYears)
+      ? { ageYears: calculateAgeYears(onboardingPayload.birthDate) }
+      : {}),
+  };
 }
 
 const styles = StyleSheet.create({
@@ -323,19 +370,37 @@ function ClinicalTable({ dentist }: { dentist: Record<string, unknown> }) {
 function FinalAnamnesisDocument({
   order,
   intakeForm,
+  onboardingForm,
   draft,
 }: {
   order: DemoOrderSummary;
   intakeForm: DemoWorkflowForm | undefined;
+  onboardingForm: DemoWorkflowForm | undefined;
   draft: ProductionRequestDraft;
 }) {
-  const customer = getPayloadSection(intakeForm, 'customer');
-  const dentist = getPayloadSection(intakeForm, 'dentist');
-  const generatedAt = new Date().toLocaleDateString('pt-BR');
+  const payloadCustomer = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'customer');
+  const onboardingCustomer = buildCustomerProfileFallback(
+    getWorkflowFormPayloadSection(onboardingForm?.payload, 'customer_new_user_onboarding', 'root')
+  );
+  const baseCustomer: Record<string, unknown> = {
+    ...onboardingCustomer,
+    ...payloadCustomer,
+  };
+  const customer: Record<string, unknown> = {
+    ...baseCustomer,
+    ...(!hasFilledValue(baseCustomer.fullName) && hasFilledValue(order.customer?.full_name)
+      ? { fullName: order.customer?.full_name }
+      : {}),
+    ...(!hasFilledValue(baseCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
+    ...(!hasFilledValue(baseCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
+  };
+  const dentist = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'dentist');
+  const consultationDate = dateValue(dentist.consultationDate);
+  const generatedAt = consultationDate !== missingValue ? consultationDate : new Date().toLocaleDateString('pt-BR');
   const patientName = value(customer.fullName ?? order.customer?.full_name);
 
   return (
-    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${order.id}`}>
+    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${getOrderDisplayId(order)}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.brand}>
@@ -361,8 +426,8 @@ function FinalAnamnesisDocument({
           <View style={styles.column}>
             <Section number={1} title="IDENTIFICACAO DO PACIENTE">
               <FillLine label="Nome completo:">{patientName}</FillLine>
-              <FillLine label="Telefone:">{value(order.customer?.phone ?? customer.phone)}</FillLine>
-              <FillLine label="E-mail:">{value(order.customer?.email)}</FillLine>
+              <FillLine label="Telefone:">{value(customer.phone ?? order.customer?.phone)}</FillLine>
+              <FillLine label="E-mail:">{value(customer.email ?? order.customer?.email)}</FillLine>
               <FillLine label="Modalidade principal:">{value(customer.sportRoutine)}</FillLine>
               <FillLine label="Convenio:">{missingValue}</FillLine>
             </Section>
@@ -461,7 +526,7 @@ function FinalAnamnesisDocument({
             Suas informações estão protegidas. Está ficha segue diretrizes de privacidade e segurança clínica da jornada Biteplaner.
           </Text>
           <Text style={styles.footerText}>
-            Ordem {order.id} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
+            Ordem {getOrderDisplayId(order)} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
           </Text>
         </View>
       </Page>
@@ -472,7 +537,8 @@ function FinalAnamnesisDocument({
 export async function createFinalAnamnesisPdfBlob(
   order: DemoOrderSummary,
   intakeForm: DemoWorkflowForm | undefined,
+  onboardingForm: DemoWorkflowForm | undefined,
   draft: ProductionRequestDraft
 ) {
-  return pdf(<FinalAnamnesisDocument order={order} intakeForm={intakeForm} draft={draft} />).toBlob();
+  return pdf(<FinalAnamnesisDocument order={order} intakeForm={intakeForm} onboardingForm={onboardingForm} draft={draft} />).toBlob();
 }

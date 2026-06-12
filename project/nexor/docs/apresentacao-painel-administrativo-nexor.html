@@ -1,0 +1,1938 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nexor Biteplaner | Jornada do Cliente</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: oklch(98.4% 0.008 160);
+      --panel: oklch(99.2% 0.006 160);
+      --panel-soft: oklch(96.9% 0.012 160);
+      --line: oklch(88.5% 0.018 240);
+      --line-strong: oklch(81% 0.032 240);
+      --ink: oklch(22% 0.052 255);
+      --muted: oklch(48% 0.036 255);
+      --subtle: oklch(62% 0.026 255);
+      --green: oklch(55% 0.145 154);
+      --green-ink: oklch(29% 0.09 154);
+      --green-soft: oklch(95.5% 0.035 154);
+      --blue: oklch(50% 0.11 245);
+      --blue-soft: oklch(96% 0.026 245);
+      --amber: oklch(67% 0.128 72);
+      --amber-soft: oklch(96.5% 0.035 72);
+      --violet: oklch(46% 0.095 285);
+      --violet-soft: oklch(96% 0.026 285);
+      --danger: oklch(54% 0.16 26);
+      --shadow: 0 14px 40px oklch(22% 0.052 255 / 0.08);
+      --radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-size: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 6%, oklch(94% 0.035 154 / 0.65), transparent 28rem),
+        linear-gradient(180deg, var(--bg), oklch(97% 0.006 240));
+    }
+
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    .page-shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 32px;
+      width: min(1460px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      min-height: calc(100vh - 48px);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 26px;
+      padding: 4px 0;
+    }
+
+    .brand {
+      display: grid;
+      gap: 3px;
+      width: fit-content;
+    }
+
+    .brand-mark {
+      font-size: 31px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: oklch(22% 0.065 255);
+    }
+
+    .brand-sub {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--blue);
+      padding-left: 12px;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 31px;
+      top: 30px;
+      bottom: 30px;
+      width: 2px;
+      background: var(--line);
+    }
+
+    .timeline-button {
+      position: relative;
+      display: grid;
+      grid-template-columns: 62px 1fr;
+      gap: 13px;
+      align-items: center;
+      width: 100%;
+      min-height: 72px;
+      padding: 8px 10px 8px 0;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: transparent;
+      text-align: left;
+      transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+    }
+
+    .timeline-button:hover {
+      color: var(--ink);
+      background: oklch(99% 0.006 160 / 0.72);
+    }
+
+    .timeline-button[aria-current="true"] {
+      color: var(--green-ink);
+      background: var(--green-soft);
+      border-color: oklch(74% 0.09 154);
+      box-shadow: 0 8px 24px oklch(55% 0.145 154 / 0.12);
+    }
+
+    .step-dot {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      margin-left: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--subtle);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .timeline-button[aria-current="true"] .step-dot {
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .step-number {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--subtle);
+    }
+
+    .timeline-button[aria-current="true"] .step-number { color: var(--green); }
+
+    .step-title {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .support-card {
+      display: grid;
+      gap: 13px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 10px 30px oklch(22% 0.052 255 / 0.05);
+    }
+
+    .support-card strong { font-size: 14px; }
+
+    .support-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .feedback-map-button {
+      width: 100%;
+      color: var(--ink);
+      text-align: left;
+    }
+
+    .feedback-map-button:hover {
+      border-color: oklch(74% 0.09 154);
+      background: var(--green-soft);
+    }
+
+    .feedback-map-button .help-badge {
+      background: var(--amber);
+    }
+
+    .help-badge {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      font-weight: 800;
+    }
+
+    .main {
+      display: grid;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .topbar,
+    .panel,
+    .section,
+    .screen-stack,
+    .practice-shot,
+    .stage-hero {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 18px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .overview-button {
+      display: grid;
+      grid-template-columns: 34px 1fr 22px;
+      gap: 12px;
+      align-items: center;
+      min-width: 280px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: var(--panel);
+      text-align: left;
+      box-shadow: 0 8px 26px oklch(22% 0.052 255 / 0.04);
+    }
+
+    .overview-button span {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(99% 0.006 160 / 0.82);
+      box-shadow: var(--shadow);
+    }
+
+    .stage-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 28px;
+      padding: 24px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 28px;
+      padding: 0 11px;
+      border: 1px solid oklch(79% 0.09 154);
+      border-radius: 999px;
+      color: var(--green-ink);
+      background: var(--green-soft);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    h2 {
+      margin: 18px 0 8px;
+      font-size: 26px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .stage-summary {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .meta-grid {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 11px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-row strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--blue);
+      background: var(--panel);
+      font-size: 17px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .section {
+      padding: 20px;
+    }
+
+    .section + .section { border-top: 1px solid var(--line); }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .section-head p, .note {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .screen-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .practice-shot {
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .shot-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .shot-toolbar strong {
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: var(--panel);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .shot-frame {
+      max-height: 760px;
+      overflow: auto;
+      background: oklch(96.8% 0.008 240);
+    }
+
+    .shot-frame img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .callout-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .callout {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      min-height: 82px;
+    }
+
+    .callout b {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      font-size: 13px;
+    }
+
+    .callout strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .callout span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .info-card {
+      display: grid;
+      gap: 10px;
+      min-height: 152px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--panel), oklch(97.6% 0.018 154));
+    }
+
+    .info-card strong { font-size: 15px; }
+
+    .info-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr 44px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .flow-card {
+      min-height: 156px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--blue-soft);
+    }
+
+    .flow-card.process { background: var(--amber-soft); }
+    .flow-card.result { background: var(--green-soft); }
+
+    .flow-card h4 {
+      margin: 0 0 10px;
+      color: var(--blue);
+      font-size: 15px;
+    }
+
+    .flow-card.process h4 { color: oklch(43% 0.105 72); }
+    .flow-card.result h4 { color: var(--green-ink); }
+
+    .flow-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .flow-arrow {
+      color: var(--subtle);
+      font-size: 30px;
+      text-align: center;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      min-width: 820px;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      background: oklch(97.8% 0.01 240);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child { font-weight: 700; }
+
+    .overview-panel {
+      display: none;
+      padding: 22px;
+    }
+
+    .overview-panel.is-visible { display: block; }
+
+    .overview-map {
+      display: grid;
+      grid-template-columns: repeat(9, minmax(118px, 1fr));
+      gap: 10px;
+      overflow: auto;
+      padding-bottom: 4px;
+    }
+
+    .overview-step {
+      min-height: 138px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .overview-step b {
+      display: block;
+      color: var(--green);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .overview-step strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .overview-step span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .technical {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px 18px;
+      border: 1px solid oklch(83% 0.05 285);
+      border-radius: var(--radius);
+      background: linear-gradient(90deg, var(--violet-soft), oklch(98.4% 0.012 245));
+    }
+
+    .technical strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--violet);
+    }
+
+    .technical p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-top: 2px;
+    }
+
+    .nav-button {
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--ink);
+      background: var(--panel);
+      font-weight: 800;
+    }
+
+    .nav-button.primary {
+      color: oklch(99% 0.006 160);
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .progress-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      grid-template-rows: auto 1fr;
+      padding: 18px;
+      background: oklch(18% 0.035 255 / 0.82);
+    }
+
+    .image-modal[aria-hidden="false"] { display: grid; }
+
+    .survey-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 19;
+      display: none;
+      padding: 18px;
+      overflow: auto;
+      background: oklch(18% 0.035 255 / 0.72);
+    }
+
+    .survey-modal[aria-hidden="false"] { display: block; }
+
+    .survey-modal-panel {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .survey-modal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: start;
+      padding: 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .survey-modal-head h3 {
+      margin-top: 8px;
+      font-size: 24px;
+    }
+
+    .survey-modal-body {
+      display: grid;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .survey-intro-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .survey-intro-card {
+      min-height: 118px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--green-soft);
+    }
+
+    .survey-intro-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .survey-intro-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .survey-shot {
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+    }
+
+    .survey-shot-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .survey-shot-head strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .survey-shot-head span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .survey-shot-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(270px, 0.85fr);
+      gap: 0;
+      border-top: 1px solid oklch(96% 0.008 240);
+    }
+
+    .survey-shot-frame {
+      max-height: 430px;
+      overflow: auto;
+      background: oklch(96.8% 0.008 240);
+    }
+
+    .survey-shot-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .survey-shot-details {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      padding: 16px;
+      border-left: 1px solid var(--line);
+      background: oklch(99% 0.006 160);
+    }
+
+    .survey-detail {
+      display: grid;
+      gap: 4px;
+    }
+
+    .survey-detail b {
+      color: var(--green-ink);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .survey-detail span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .survey-disabled {
+      padding: 16px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: var(--amber-soft);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .video-section {
+      display: grid;
+      gap: 18px;
+    }
+
+    .video-copy {
+      display: grid;
+      gap: 6px;
+      max-width: 820px;
+    }
+
+    .video-copy h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.22;
+    }
+
+    .video-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .video-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: oklch(14% 0.035 255);
+      box-shadow: 0 18px 42px oklch(22% 0.052 255 / 0.1);
+    }
+
+    .video-frame video {
+      display: block;
+      width: 100%;
+      max-height: 78vh;
+      background: #000;
+    }
+
+    .video-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      color: oklch(94% 0.012 160);
+      background: oklch(18% 0.042 255);
+      font-size: 13px;
+    }
+
+    .video-meta span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 10px;
+      border: 1px solid oklch(94% 0.012 160 / 0.18);
+      border-radius: 999px;
+      background: oklch(100% 0 0 / 0.06);
+    }
+
+    .modal-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      color: oklch(98% 0.008 160);
+      padding: 0 0 14px;
+    }
+
+    .modal-bar strong { font-size: 16px; }
+
+    .modal-close {
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid oklch(98% 0.008 160 / 0.35);
+      border-radius: 6px;
+      color: oklch(98% 0.008 160);
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .modal-image-scroll {
+      overflow: auto;
+      border-radius: var(--radius);
+      background: oklch(98% 0.008 160);
+    }
+
+    .modal-image-scroll img {
+      display: block;
+      width: min(100%, 1440px);
+      height: auto;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 1120px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+        width: min(calc(100% - 28px), 980px);
+      }
+
+      .sidebar {
+        position: static;
+        min-height: 0;
+      }
+
+      .timeline {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .timeline::before { display: none; }
+
+      .timeline-button {
+        grid-template-columns: 42px 1fr;
+        min-height: 66px;
+        padding: 8px;
+      }
+
+      .step-dot {
+        width: 38px;
+        height: 38px;
+        margin-left: 0;
+        font-size: 16px;
+      }
+
+      .support-card { display: none; }
+
+      .stage-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .callout-grid, .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .overview-map { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+
+      .survey-intro-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .survey-shot-body {
+        grid-template-columns: 1fr;
+      }
+
+      .survey-shot-details {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page-shell {
+        width: min(calc(100% - 20px), 620px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .overview-button { min-width: 0; }
+
+      h1 { font-size: 28px; }
+      h2 { font-size: 23px; }
+
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+
+      .timeline-button {
+        grid-template-columns: 48px 1fr;
+      }
+
+      .stage-hero, .section { padding: 16px; }
+
+      .section-head {
+        display: grid;
+        align-items: start;
+      }
+
+      .shot-toolbar {
+        display: grid;
+        align-items: start;
+      }
+
+      .callout-grid, .cards-grid { grid-template-columns: 1fr; }
+
+      .survey-modal {
+        padding: 10px;
+      }
+
+      .survey-modal-head,
+      .survey-shot-head {
+        display: grid;
+      }
+
+      .flow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+
+      .technical {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar" aria-label="Etapas da jornada">
+      <div>
+        <div class="brand" aria-label="Nexor Biteplaner">
+          <div class="brand-mark">NEXOR</div>
+          <div class="brand-sub">BITEPLANER</div>
+        </div>
+        <nav class="timeline" data-timeline></nav>
+      </div>
+
+      <button class="support-card feedback-map-button" type="button" data-feedback-toggle>
+        <div class="help-badge">★</div>
+        <strong>Surveys de feedback</strong>
+        <p>Veja quais pedidos de avaliação aparecem no sistema, quando são liberados e por que ajudam a qualificar a rede.</p>
+      </button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>Jornada do Cliente</h1>
+          <p class="lead">Entenda cada etapa que o atleta percorre na Nexor, desde a indicação inicial até a adaptação e o acompanhamento clínico do Biteplaner.</p>
+        </div>
+        <button class="overview-button" type="button" data-overview-toggle>
+          <span class="icon">↔</span>
+          <strong>Visão geral<span>Fluxo completo da ordem do produto</span></strong>
+          <span aria-hidden="true">→</span>
+        </button>
+      </header>
+
+      <section class="panel overview-panel" data-overview>
+        <div class="section-head">
+          <div>
+            <h3>Mapa visual da jornada</h3>
+            <p>Do convite ao acompanhamento, cada nó indica o responsável principal e a dependência que move a ordem.</p>
+          </div>
+        </div>
+        <div class="overview-map" data-overview-map></div>
+      </section>
+
+      <section class="panel section video-section" aria-labelledby="full-flow-video-title">
+        <div class="section-head">
+          <div class="video-copy">
+            <span class="badge">Vídeo completo</span>
+            <h3 id="full-flow-video-title">Execução E2E da jornada Biteplaner</h3>
+            <p>Gravação única do fluxo completo usando Supabase local real: cadastro, parceiro, admin, cliente, dentista, laboratório, compra, produção e surveys de feedback.</p>
+          </div>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata" poster="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png">
+            <source src="assets/apresentacao-painel-admin/video/biteplaner-fluxo-completo-e2e.webm" type="video/webm">
+            Seu navegador não suporta reprodução de vídeo WebM.
+          </video>
+          <div class="video-meta" aria-label="Conteúdo do vídeo">
+            <span>Fluxo completo da ordem</span>
+            <span>Preenchimento dos formulários</span>
+            <span>Surveys salvos no backend</span>
+            <span>Base local real</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel stage-hero">
+        <div>
+          <span class="badge" data-stage-badge></span>
+          <h2 data-stage-title></h2>
+          <p class="stage-summary" data-stage-summary></p>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-row">
+            <span class="icon">◷</span>
+            <div><strong>Responsável</strong><span data-stage-owner></span></div>
+          </div>
+          <div class="meta-row">
+            <span class="icon">⏱</span>
+            <div><strong>Duração média</strong><span data-stage-duration></span></div>
+          </div>
+          <div class="meta-row">
+            <span class="icon">→</span>
+            <div><strong>Próxima etapa</strong><span data-stage-next></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Como é na prática</h3>
+            <p data-practice-copy></p>
+          </div>
+        </div>
+        <div class="screen-stack" data-screens></div>
+        <div class="callout-grid" data-callouts></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>O que acontece nesta etapa</h3>
+            <p>Eventos, responsabilidades e controles operacionais necessários para a etapa avançar sem ruído.</p>
+          </div>
+        </div>
+        <div class="cards-grid" data-happens></div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Entradas, processamento e resultado</h3>
+            <p>Visão curta para Produto, UX, Desenvolvimento, QA e Operação entenderem dependências.</p>
+          </div>
+        </div>
+        <div class="flow-grid">
+          <article class="flow-card">
+            <h4>Entradas</h4>
+            <ul data-inputs></ul>
+          </article>
+          <div class="flow-arrow">→</div>
+          <article class="flow-card process">
+            <h4>Processamento</h4>
+            <ul data-processing></ul>
+          </article>
+          <div class="flow-arrow">→</div>
+          <article class="flow-card result">
+            <h4>Resultado</h4>
+            <ul data-results></ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h3>Campos e dados relevantes</h3>
+            <p data-fields-copy></p>
+          </div>
+        </div>
+        <div class="table-wrap" data-fields></div>
+      </section>
+
+      <section class="technical">
+        <div>
+          <strong>Detalhes técnicos e operacionais</strong>
+          <p data-technical-copy></p>
+        </div>
+        <button class="ghost-button" type="button" data-overview-toggle-secondary>Ver mapa completo →</button>
+      </section>
+
+      <div class="nav-controls">
+        <button class="nav-button" type="button" data-prev>← Etapa anterior</button>
+        <span class="progress-label" data-progress></span>
+        <button class="nav-button primary" type="button" data-next>Próxima etapa →</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="image-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Print completo" data-modal>
+    <div class="modal-bar">
+      <strong data-modal-title></strong>
+      <button class="modal-close" type="button" data-modal-close>Fechar</button>
+    </div>
+    <div class="modal-image-scroll">
+      <img data-modal-image alt="">
+    </div>
+  </div>
+
+  <div class="survey-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Surveys de feedback Biteplaner" data-feedback-modal>
+    <div class="survey-modal-panel">
+      <div class="survey-modal-head">
+        <div>
+          <span class="badge">Feedback opcional</span>
+          <h3>Pedidos de avaliação no ecossistema Biteplaner</h3>
+          <p class="note">Os surveys aparecem como convite sutil entre etapas, sem bloquear formulários obrigatórios. O usuário pode responder na hora ou deixar para depois.</p>
+        </div>
+        <button class="modal-close" type="button" data-feedback-close>Fechar</button>
+      </div>
+
+      <div class="survey-modal-body">
+        <div class="survey-intro-grid">
+          <article class="survey-intro-card">
+            <strong>Como aparece</strong>
+            <p>Um card discreto ou item em “Surveys pendentes” chama para “Avaliar agora”/“Responder”, mantendo a avaliação opcional.</p>
+          </article>
+          <article class="survey-intro-card">
+            <strong>Regra de prioridade</strong>
+            <p>Apenas um convite deve ganhar destaque por vez, priorizando a avaliação pendente mais relevante e recente para o perfil atual.</p>
+          </article>
+          <article class="survey-intro-card">
+            <strong>Motivo do fluxo</strong>
+            <p>Coletar feedback estruturado qualifica parceiros, dentistas e laboratórios sem aumentar a fricção dos cadastros e formulários clínicos.</p>
+          </article>
+        </div>
+
+        <article class="survey-shot">
+          <div class="survey-shot-head">
+            <div>
+              <strong>Central de surveys pendentes</strong>
+              <span>Home das avaliações do cliente, com pedidos abertos e histórico consolidado.</span>
+            </div>
+            <button class="ghost-button" type="button" data-feedback-open-image="32-feedback-prompt-cliente.png" data-feedback-open-title="Central de surveys pendentes">Abrir print completo</button>
+          </div>
+          <div class="survey-shot-body">
+            <div class="survey-shot-frame">
+              <img src="assets/apresentacao-painel-admin/32-feedback-prompt-cliente.png" alt="Central de surveys pendentes no painel de avaliações">
+            </div>
+            <div class="survey-shot-details">
+              <div class="survey-detail">
+                <b>Quando aparece</b>
+                <span>Depois que existem surveys pendentes para o perfil logado, dentro de “Avaliações” e como destino do convite sutil em páginas de transição.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Para quem</b>
+                <span>Cliente, dentista ou laboratório, sempre filtrado pelo modo de acesso e pelas permissões daquele usuário.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Por que aparece</b>
+                <span>Dar um ponto único para responder agora ou depois, sem transformar feedback em etapa obrigatória.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="survey-shot">
+          <div class="survey-shot-head">
+            <div>
+              <strong>Cliente avaliando parceiro indicador</strong>
+              <span>Feedback sobre gentileza, acompanhamento, orientação técnica e instalações quando aplicável.</span>
+            </div>
+            <button class="ghost-button" type="button" data-feedback-open-image="33-feedback-survey-cliente-parceiro.png" data-feedback-open-title="Cliente avaliando parceiro indicador">Abrir print completo</button>
+          </div>
+          <div class="survey-shot-body">
+            <div class="survey-shot-frame">
+              <img src="assets/apresentacao-painel-admin/33-feedback-survey-cliente-parceiro.png" alt="Formulário Cliente avaliando parceiro indicador">
+            </div>
+            <div class="survey-shot-details">
+              <div class="survey-detail">
+                <b>Quando aparece</b>
+                <span>Após cadastro ou criação da ordem por link de recomendação do parceiro, no primeiro retorno ao hub ou à página de avaliações.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Para quem</b>
+                <span>Cliente indicado por parceiro, sem aparecer para admin ou perfis que não respondem esse survey.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Por que aparece</b>
+                <span>Medir a qualidade da indicação, acompanhamento e orientação inicial sem interromper onboarding, consentimentos ou compra.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="survey-shot">
+          <div class="survey-shot-head">
+            <div>
+              <strong>Cliente avaliando dentista</strong>
+              <span>Feedback pós-atendimento sobre prazo, pontualidade, instalações, gentileza e orientação de uso.</span>
+            </div>
+            <button class="ghost-button" type="button" data-feedback-open-image="34-feedback-survey-cliente-dentista.png" data-feedback-open-title="Cliente avaliando dentista">Abrir print completo</button>
+          </div>
+          <div class="survey-shot-body">
+            <div class="survey-shot-frame">
+              <img src="assets/apresentacao-painel-admin/34-feedback-survey-cliente-dentista.png" alt="Formulário Cliente avaliando dentista">
+            </div>
+            <div class="survey-shot-details">
+              <div class="survey-detail">
+                <b>Quando aparece</b>
+                <span>Após consulta de adaptação ou entrega do dispositivo, quando o cliente já tem base para avaliar atendimento e orientação.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Para quem</b>
+                <span>Cliente da ordem Biteplaner relacionada ao dentista responsável pelo atendimento.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Por que aparece</b>
+                <span>Qualificar a experiência clínica e detectar pontos de melhoria sem competir com tarefas obrigatórias da jornada.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="survey-shot">
+          <div class="survey-shot-head">
+            <div>
+              <strong>Dentista avaliando laboratório</strong>
+              <span>Feedback técnico sobre prazo de entrega, qualidade do dispositivo bruto e facilidade de contato.</span>
+            </div>
+            <button class="ghost-button" type="button" data-feedback-open-image="35-feedback-survey-dentista-laboratorio.png" data-feedback-open-title="Dentista avaliando laboratório">Abrir print completo</button>
+          </div>
+          <div class="survey-shot-body">
+            <div class="survey-shot-frame">
+              <img src="assets/apresentacao-painel-admin/35-feedback-survey-dentista-laboratorio.png" alt="Formulário Dentista avaliando laboratório">
+            </div>
+            <div class="survey-shot-details">
+              <div class="survey-detail">
+                <b>Quando aparece</b>
+                <span>Depois que a produção laboratorial é concluída e o dentista recebe ou valida o dispositivo bruto.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Para quem</b>
+                <span>Dentista responsável pela ordem, dentro do workspace de produção ou em “Avaliações”.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Por que aparece</b>
+                <span>Registrar qualidade operacional do laboratório e apoiar governança da rede licenciada.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="survey-shot">
+          <div class="survey-shot-head">
+            <div>
+              <strong>Laboratório avaliando dentista</strong>
+              <span>Feedback sobre qualidade do arquivo de escaneamento 3D e facilidade de contato.</span>
+            </div>
+            <button class="ghost-button" type="button" data-feedback-open-image="36-feedback-survey-laboratorio-dentista.png" data-feedback-open-title="Laboratório avaliando dentista">Abrir print completo</button>
+          </div>
+          <div class="survey-shot-body">
+            <div class="survey-shot-frame">
+              <img src="assets/apresentacao-painel-admin/36-feedback-survey-laboratorio-dentista.png" alt="Formulário Laboratório avaliando dentista">
+            </div>
+            <div class="survey-shot-details">
+              <div class="survey-detail">
+                <b>Quando aparece</b>
+                <span>Quando o laboratório recebe ou inicia produção e já consegue avaliar arquivo 3D intraoral e contato com o dentista.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Para quem</b>
+                <span>Laboratório vinculado à ordem em produção.</span>
+              </div>
+              <div class="survey-detail">
+                <b>Por que aparece</b>
+                <span>Identificar gargalos de envio técnico antes que eles prejudiquem prazo, retrabalho ou qualidade do dispositivo.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <div class="survey-disabled">
+          <strong>Futuro/desativado:</strong> o survey “Cliente avaliando influencer” fica fora desta entrega até existir campanha ou indicação por influencer. Ele usa a mesma infraestrutura de workflow forms, mas não deve aparecer no MVP ativo.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const assetBase = "assets/apresentacao-painel-admin/";
+
+    const stages = [
+      {
+        number: "01",
+        title: "Parceiro indica",
+        badge: "Entrada 01",
+        owner: "Parceiro Indicador",
+        duration: "1 a 3 minutos",
+        next: "Cadastro do cliente indicado",
+        summary: "O parceiro cria um convite rastreável para o atleta. Esse link conecta a origem comercial à jornada do Biteplaner e permite acompanhar conversão, status e elegibilidade.",
+        practice: "O parceiro preenche os dados essenciais, gera o link e pode compartilhar por URL ou QR Code.",
+        screens: [
+          ["01-parceiro-indicar-formulario.png", "Formulário de indicação", "Dados iniciais do cliente e origem do convite."],
+          ["04-parceiro-link-modal-qr.png", "Link e QR Code gerados", "Convite pronto para envio ao atleta indicado."]
+        ],
+        callouts: [
+          ["Dados do atleta", "Nome e contato que iniciam o vínculo da indicação."],
+          ["Origem comercial", "Parceiro fica associado ao convite e à ordem futura."],
+          ["Link rastreável", "URL direciona o cliente para cadastro com contexto."],
+          ["Status do convite", "Operação acompanha se virou cadastro e ordem."]
+        ],
+        happens: [
+          ["Convite criado", "A plataforma registra origem, parceiro e dados básicos do indicado."],
+          ["Compartilhamento", "Parceiro envia link ou QR Code para o atleta."],
+          ["Rastreabilidade", "A ordem futura preserva a origem da indicação."],
+          ["Próximo passo", "Cliente acessa o link e cria sua conta."]
+        ],
+        flow: {
+          inputs: ["Nome e contato do cliente", "Parceiro autenticado", "Campanha ou contexto da indicação"],
+          processing: ["Criação do convite", "Geração do link público", "Registro da origem comercial"],
+          results: ["Convite ativo", "Cliente direcionado ao cadastro", "Parceiro consegue acompanhar evolução"]
+        },
+        fields: [
+          ["Nome do cliente", "Texto", "Sim", "Parceiro", "Convites", "Min. 3 caracteres", "Parceiro"],
+          ["Contato", "E-mail ou telefone", "Sim", "Parceiro", "Convites", "Formato válido", "Parceiro"],
+          ["Link de convite", "URL", "Automático", "Sistema", "Convites", "Token único", "Sistema"],
+          ["Origem", "Relacionamento", "Automático", "Sessão do parceiro", "Ordens", "Parceiro ativo", "Sistema"]
+        ],
+        technical: "Entidades principais: convites, parceiros, usuários e ordens. O token do convite precisa persistir até a compra para manter atribuição."
+      },
+      {
+        number: "02",
+        title: "Onboarding do cliente",
+        badge: "Entrada 02",
+        owner: "Cliente",
+        duration: "2 a 5 minutos",
+        next: "Pré-requisito e pré-consulta",
+        summary: "O cliente aceita consentimentos, informa dados pessoais, contexto esportivo e objetivos. O sistema cria o perfil necessário para iniciar a triagem clínica.",
+        practice: "A tela combina consentimento LGPD, dados pessoais, modalidade esportiva e objetivos de uso do Biteplaner.",
+        screens: [
+          ["05-cliente-cadastro-conta-convite.png", "Cadastro pelo link indicado", "Cliente entra pela origem do parceiro e cria acesso."],
+          ["06-cliente-cadastro-consentimentos.png", "Consentimentos iniciais", "Bloqueio de continuidade enquanto os termos não forem aceitos."],
+          ["08-cliente-onboarding-formulario.png", "Step 2: formulário completo", "Dados pessoais, perfil esportivo, objetivo e contexto clínico inicial."]
+        ],
+        callouts: [
+          ["Consentimento LGPD", "Autorização para tratar dados pessoais e de saúde."],
+          ["Dados pessoais", "Identificação e contato para comunicações da jornada."],
+          ["Perfil esportivo", "Modalidade, rotina e intensidade de uso."],
+          ["Objetivos", "Motivo de compra e expectativa do atleta."]
+        ],
+        happens: [
+          ["Conta criada", "O usuário passa a existir como cliente autenticado."],
+          ["Consentimentos salvos", "A jornada só avança com aceite obrigatório."],
+          ["Perfil formado", "Dados esportivos orientam a avaliação odontológica."],
+          ["Jornada aberta", "Cliente é liberado para pré-requisito e pré-consulta."]
+        ],
+        flow: {
+          inputs: ["Link de indicação", "Consentimento LGPD", "Dados pessoais", "Perfil esportivo", "Objetivos com o produto"],
+          processing: ["Validação das informações", "Criação do usuário", "Criação da jornada", "Armazenamento dos dados"],
+          results: ["Cliente cadastrado", "Origem comercial preservada", "Próxima etapa liberada"]
+        },
+        fields: [
+          ["Consentimento LGPD", "Checkbox", "Sim", "Formulário", "Consentimentos", "Aceite obrigatório", "Cliente"],
+          ["Nome completo", "Texto", "Sim", "Formulário", "Usuários", "Min. 3 caracteres", "Cliente"],
+          ["Data de nascimento", "Data", "Sim", "Formulário", "Perfil do cliente", "Data válida", "Cliente"],
+          ["E-mail", "E-mail", "Sim", "Formulário", "Usuários", "E-mail válido", "Cliente"],
+          ["Telefone/WhatsApp", "Telefone", "Sim", "Formulário", "Perfil do cliente", "Formato válido", "Cliente"],
+          ["Modalidade principal", "Select", "Sim", "Formulário", "Perfil esportivo", "Seleção obrigatória", "Cliente"],
+          ["Nível", "Select", "Sim", "Formulário", "Perfil esportivo", "Seleção obrigatória", "Cliente"],
+          ["Objetivos", "Texto longo", "Sim", "Formulário", "Jornada", "Min. 10 caracteres", "Cliente"]
+        ],
+        technical: "O onboarding cria usuário, perfil de cliente, consentimentos e a jornada inicial. QA deve validar bloqueio sem consentimento e persistência do segundo passo."
+      },
+      {
+        number: "03",
+        title: "Pré-requisito e pré-consulta",
+        badge: "Etapa 01",
+        owner: "Cliente",
+        duration: "5 a 10 minutos",
+        next: "Consulta inicial e match",
+        summary: "O cliente responde critérios de elegibilidade e informa condições clínicas preliminares. Essa etapa reduz risco antes da avaliação presencial ou teleorientada.",
+        practice: "O fluxo coleta respostas estruturadas e sinais de atenção antes de liberar o match com dentista.",
+        screens: [
+          ["09a-cliente-pre-requisito-secao-1.png", "Pré-requisito: elegibilidade", "Primeira parte dos critérios e confirmações."],
+          ["09b-cliente-pre-requisito-secao-2.png", "Pré-requisito: informações adicionais", "Complemento das respostas para triagem."],
+          ["11-cliente-pre-consulta-clinica.png", "Pré-consulta clínica", "Informações de histórico e contexto odontológico."]
+        ],
+        callouts: [
+          ["Critérios mínimos", "Confirma requisitos para continuar."],
+          ["Histórico clínico", "Sinais, restrições e antecedentes relevantes."],
+          ["Alertas", "Respostas críticas podem exigir avaliação ou bloqueio."],
+          ["Liberação", "Conclusão permite seguir para escolha ou match."]
+        ],
+        happens: [
+          ["Triagem registrada", "Respostas ficam disponíveis para dentista e operação."],
+          ["Risco reduzido", "Condições impeditivas aparecem antes da compra."],
+          ["Dados clínicos iniciais", "O dentista recebe contexto antes da consulta."],
+          ["Status atualizado", "Jornada avança para seleção de clínica ou match."]
+        ],
+        flow: {
+          inputs: ["Respostas de elegibilidade", "Histórico odontológico", "Condições de saúde", "Observações do cliente"],
+          processing: ["Validação dos requisitos", "Marcação de alertas", "Atualização do status da jornada"],
+          results: ["Pré-requisito concluído", "Pré-consulta disponível", "Cliente pronto para match"]
+        },
+        fields: [
+          ["Uso pretendido", "Select", "Sim", "Cliente", "Pré-requisito", "Seleção obrigatória", "Cliente"],
+          ["Histórico ATM", "Radio/Texto", "Sim", "Cliente", "Pré-consulta", "Resposta válida", "Cliente"],
+          ["Dor ou desconforto", "Radio", "Sim", "Cliente", "Pré-consulta", "Sim/Não", "Cliente"],
+          ["Observações", "Texto longo", "Não", "Cliente", "Pré-consulta", "Até limite configurado", "Cliente"]
+        ],
+        technical: "Estados esperados: pré-requisito, pré-consulta e pendência clínica. Respostas críticas devem ser auditáveis e visíveis ao dentista."
+      },
+      {
+        number: "04",
+        title: "Consulta inicial e match",
+        badge: "Etapa 02",
+        owner: "Cliente e Dentista",
+        duration: "Variável por agenda",
+        next: "Decisão clínica",
+        summary: "O cliente escolhe clínica ou dentista disponível. O profissional recebe o caso com contexto suficiente para conduzir a avaliação clínica.",
+        practice: "A seleção conecta preferência do cliente, disponibilidade operacional e responsabilidade clínica do dentista.",
+        screens: [
+          ["10b-cliente-selecao-clinica-full.png", "Seleção de clínica", "Cliente escolhe atendimento disponível com a tela completa."],
+          ["20-dentista-listagem-ordens.png", "Dentista recebe ordens", "Profissional visualiza casos atribuídos e próximos passos."]
+        ],
+        callouts: [
+          ["Clínicas disponíveis", "Opções habilitadas para atendimento."],
+          ["Dados do caso", "Dentista acessa triagem e contexto do cliente."],
+          ["Responsável clínico", "Caso passa a ter profissional executor."],
+          ["Agendamento", "Consulta inicial prepara a decisão clínica."]
+        ],
+        happens: [
+          ["Match realizado", "Cliente fica vinculado a uma clínica ou dentista."],
+          ["Caso aparece ao dentista", "Profissional passa a consumir dados da jornada."],
+          ["Atendimento preparado", "Triagem orienta a conversa clínica."],
+          ["Responsabilidade transferida", "Próxima ação principal é do dentista."]
+        ],
+        flow: {
+          inputs: ["Perfil do cliente", "Localização ou escolha de clínica", "Dentistas habilitados", "Pré-consulta concluída"],
+          processing: ["Vinculação do caso", "Exibição na fila do dentista", "Registro do responsável clínico"],
+          results: ["Dentista definido", "Consulta inicial pronta", "Jornada aguardando decisão clínica"]
+        },
+        fields: [
+          ["Clínica escolhida", "Relacionamento", "Sim", "Cliente", "Jornada", "Clínica ativa", "Cliente"],
+          ["Dentista responsável", "Relacionamento", "Automático", "Sistema/Operação", "Caso clínico", "Dentista aprovado", "Sistema"],
+          ["Status da consulta", "Status", "Sim", "Dentista", "Jornada", "Valores permitidos", "Dentista"],
+          ["Observações iniciais", "Texto longo", "Não", "Dentista", "Avaliação", "Até limite configurado", "Dentista"]
+        ],
+        technical: "A regra central é vínculo entre jornada, clínica e dentista aprovado. O cliente não deve avançar para compra sem decisão clínica apta."
+      },
+      {
+        number: "05",
+        title: "Decisão clínica",
+        badge: "Etapa 03",
+        owner: "Dentista",
+        duration: "Após avaliação",
+        next: "Compra ou encerramento",
+        summary: "O dentista avalia o caso e define se o cliente está apto, inapto ou se precisa de tratamento prévio. Essa decisão controla a liberação da compra.",
+        practice: "A decisão clínica transforma a triagem em um status operacional que abre ou bloqueia a etapa comercial.",
+        screens: [
+          ["13a-dentista-decisao-clinica.png", "Decisão clínica pelo dentista", "Dentista revisa a triagem e registra aptidão, inaptidão ou tratamento prévio."],
+          ["16b-cliente-jornada-inaptidao.png", "Cenário de inaptidão", "Jornada encerrada ou pausada quando há impeditivo clínico."]
+        ],
+        callouts: [
+          ["Avaliação", "Dentista registra análise clínica."],
+          ["Apto", "Libera pagamento e produção futura."],
+          ["Inapto", "Bloqueia compra e encerra ou pausa jornada."],
+          ["Tratamento prévio", "Cliente deve resolver pendência antes de avançar."]
+        ],
+        happens: [
+          ["Critério clínico aplicado", "A plataforma respeita decisão profissional."],
+          ["Status muda", "Jornada passa para pagamento ou pausa clínica."],
+          ["Cliente informado", "Tela mostra o próximo passo esperado."],
+          ["Operação rastreia", "Admin consegue consultar motivos e histórico."]
+        ],
+        flow: {
+          inputs: ["Triagem", "Pré-consulta", "Avaliação do dentista", "Fotos ou registros clínicos"],
+          processing: ["Análise profissional", "Registro de decisão", "Atualização do status"],
+          results: ["Apto para compra", "Inapto", "Necessita tratamento prévio"]
+        },
+        fields: [
+          ["Parecer clínico", "Select", "Sim", "Dentista", "Avaliação clínica", "Apto/Inapto/Tratamento", "Dentista"],
+          ["Motivo", "Texto longo", "Condicional", "Dentista", "Avaliação clínica", "Obrigatório quando inapto", "Dentista"],
+          ["Data da avaliação", "Data/hora", "Automático", "Sistema", "Avaliação clínica", "Carimbo de criação", "Sistema"],
+          ["Status da jornada", "Status", "Automático", "Sistema", "Jornada", "Transição permitida", "Sistema"]
+        ],
+        technical: "Transições críticas devem ser protegidas por permissão de dentista. A compra só aparece quando a avaliação retorna apto."
+      },
+      {
+        number: "06",
+        title: "Compra",
+        badge: "Etapa 04",
+        owner: "Cliente",
+        duration: "3 a 8 minutos",
+        next: "Envio de produção pelo dentista",
+        summary: "Com a elegibilidade aprovada, o cliente conclui a compra do Biteplaner. O pagamento aprovado cria a ordem que seguirá para produção sob protocolo.",
+        practice: "A etapa mostra produto, preço, redirecionamento para checkout e retorno de sucesso após pagamento.",
+        screens: [
+          ["12-cliente-compra-biteplanner.png", "Tela de compra", "Cliente revisa a oferta e clica para concluir pagamento."],
+          ["12c-stripe-checkout-redirecionamento.png", "Checkout redirecionado", "Página externa de pagamento exibida após concluir pagamento."],
+          ["12b-cliente-compra-sucesso-stripe.png", "Pagamento aprovado", "Cliente retorna com confirmação e próxima etapa."]
+        ],
+        callouts: [
+          ["Produto", "Biteplaner associado à jornada apta."],
+          ["Checkout", "Redirecionamento seguro para pagamento."],
+          ["Confirmação", "Retorno atualiza compra e ordem."],
+          ["Ordem criada", "Fluxo pós-compra passa ao dentista."]
+        ],
+        happens: [
+          ["Pagamento iniciado", "Sistema cria sessão de checkout vinculada à jornada."],
+          ["Cliente paga", "Dados sensíveis ficam no provedor de pagamento."],
+          ["Webhook confirma", "Status financeiro atualiza a ordem."],
+          ["Produção habilitada", "Dentista pode enviar materiais ao laboratório."]
+        ],
+        flow: {
+          inputs: ["Jornada apta", "Produto Biteplaner", "Cliente autenticado", "Valor e condição comercial"],
+          processing: ["Criação do checkout", "Pagamento externo", "Confirmação do provedor", "Atualização da ordem"],
+          results: ["Pagamento aprovado", "Ordem de produção criada", "Cliente acompanha pós-compra"]
+        },
+        fields: [
+          ["Produto", "Texto", "Automático", "Catálogo", "Compra", "Produto ativo", "Sistema"],
+          ["Valor", "Moeda", "Automático", "Regra comercial", "Pagamento", "Valor válido", "Sistema"],
+          ["E-mail de cobrança", "E-mail", "Sim", "Cliente", "Checkout", "E-mail válido", "Cliente"],
+          ["Status do pagamento", "Status", "Automático", "Provedor", "Pagamento", "Webhook assinado", "Sistema"],
+          ["ID da sessão", "Texto", "Automático", "Provedor", "Pagamento", "Único", "Sistema"]
+        ],
+        technical: "A integração de pagamento precisa manter idempotência de webhook e vínculo entre pagamento, jornada, parceiro de origem e ordem."
+      },
+      {
+        number: "07",
+        title: "Produção laboratorial",
+        badge: "Pós-compra",
+        owner: "Dentista e Laboratório",
+        duration: "Conforme protocolo",
+        next: "Adaptação",
+        summary: "Após pagamento, o dentista prepara a solicitação de produção e anexa arquivos para o laboratório. O laboratório recebe, produz e atualiza o status da ordem.",
+        practice: "Esta etapa explicita o envio de arquivos pelo dentista e a continuidade no painel do laboratório.",
+        screens: [
+          ["21e-dentista-producao-completa-sem-loading.png", "Dados de produção pelo dentista", "Dentista revisa dados iniciais, dados clínicos e complemento sem loading."],
+          ["21d-dentista-producao-anexos-laboratorio.png", "Anexos para laboratório", "Dentista adiciona arquivos, fotos ou documentos necessários à produção."],
+          ["21f-dentista-selecao-laboratorio.png", "Seleção do laboratório", "Dentista escolhe o laboratório licenciado e confirma o envio da solicitação."],
+          ["22-laboratorio-listagem-ordens.png", "Fila do laboratório", "Laboratório visualiza ordens recebidas e status de produção."],
+          ["14b-cliente-jornada-laboratorio-ativo.png", "Cliente acompanha produção", "Cliente vê a jornada com o status Laboratório ativo."]
+        ],
+        callouts: [
+          ["Protocolo técnico", "Dentista define dados necessários à confecção."],
+          ["Arquivos anexados", "Materiais digitais seguem junto da solicitação."],
+          ["Fila laboratorial", "Laboratório recebe ordem e atualiza progresso."],
+          ["Transparência", "Cliente acompanha sem editar dados técnicos."]
+        ],
+        happens: [
+          ["Solicitação enviada", "Dentista transfere responsabilidade produtiva ao laboratório."],
+          ["Arquivos validados", "Anexos reduzem retrabalho e dúvidas técnicas."],
+          ["Produção acompanhada", "Status mostra recebimento, produção e entrega."],
+          ["Entrega preparada", "Após finalização, fluxo segue para adaptação."]
+        ],
+        flow: {
+          inputs: ["Pagamento aprovado", "Avaliação clínica", "Dados técnicos do dentista", "Arquivos e anexos"],
+          processing: ["Criação da solicitação", "Upload de anexos", "Recebimento pelo laboratório", "Atualização de status"],
+          results: ["Ordem em produção", "Laboratório responsável", "Cliente informado sobre andamento"]
+        },
+        fields: [
+          ["Tipo de produção", "Select", "Sim", "Dentista", "Produção", "Seleção obrigatória", "Dentista"],
+          ["Observações técnicas", "Texto longo", "Sim", "Dentista", "Produção", "Conteúdo mínimo", "Dentista"],
+          ["Arquivo anexo", "Upload", "Sim", "Dentista", "Anexos", "Tipo e tamanho permitidos", "Dentista"],
+          ["Status laboratorial", "Status", "Sim", "Laboratório", "Produção", "Transição permitida", "Laboratório"],
+          ["Previsão de entrega", "Data", "Condicional", "Laboratório", "Produção", "Data futura", "Laboratório"]
+        ],
+        technical: "Os anexos precisam ficar vinculados à ordem e acessíveis ao laboratório autorizado. QA deve validar upload, visualização e transições de status."
+      },
+      {
+        number: "08",
+        title: "Adaptação",
+        badge: "Etapa 06",
+        owner: "Dentista e Cliente",
+        duration: "Após entrega",
+        next: "Acompanhamento e evolução",
+        summary: "Com o dispositivo produzido e entregue, o dentista conduz adaptação e ajustes. O cliente recebe orientações de uso e passa a registrar percepção inicial.",
+        practice: "A tela orienta o cliente sobre status de entrega, adaptação e próximos cuidados.",
+        screens: [
+          ["15-cliente-jornada-adaptacao.png", "Adaptação do Biteplaner", "Cliente acompanha entrega e orientações iniciais."]
+        ],
+        callouts: [
+          ["Entrega", "Dispositivo sai da produção para o cliente."],
+          ["Ajustes", "Dentista avalia encaixe e necessidade de adaptação."],
+          ["Orientações", "Cliente recebe instruções de uso e cuidado."],
+          ["Liberação", "Uso acompanhado inicia após adaptação."]
+        ],
+        happens: [
+          ["Produto entregue", "A jornada deixa produção e entra em experiência clínica."],
+          ["Uso orientado", "Dentista define instruções iniciais."],
+          ["Ajustes registrados", "Ocorrências ficam disponíveis para histórico."],
+          ["Cliente preparado", "Próxima etapa passa a acompanhar evolução."]
+        ],
+        flow: {
+          inputs: ["Produto entregue", "Dados de produção", "Orientações do dentista", "Feedback inicial do cliente"],
+          processing: ["Registro de entrega", "Adaptação clínica", "Ajustes se necessário"],
+          results: ["Dispositivo adaptado", "Cliente orientado", "Acompanhamento liberado"]
+        },
+        fields: [
+          ["Data de entrega", "Data", "Sim", "Dentista/Operação", "Entrega", "Data válida", "Dentista"],
+          ["Orientações", "Texto longo", "Sim", "Dentista", "Adaptação", "Conteúdo mínimo", "Dentista"],
+          ["Ajustes", "Texto/Status", "Condicional", "Dentista", "Adaptação", "Obrigatório se houver ajuste", "Dentista"],
+          ["Confirmação do cliente", "Status", "Não", "Cliente", "Jornada", "Transição permitida", "Cliente"]
+        ],
+        technical: "A adaptação deve preservar histórico entre entrega, ajustes e acompanhamento para evitar perda de contexto clínico."
+      },
+      {
+        number: "09",
+        title: "Acompanhamento e evolução",
+        badge: "Etapa 07",
+        owner: "Cliente e Dentista",
+        duration: "Ciclos definidos pelo protocolo",
+        next: "Conclusão ou novo ciclo",
+        summary: "O cliente registra evolução e o dentista acompanha adaptação, sintomas e resultados. A jornada se encerra quando o acompanhamento previsto é concluído.",
+        practice: "A etapa final consolida feedback, evolução clínica e conclusão operacional da jornada.",
+        screens: [
+          ["16-cliente-jornada-acompanhamento.png", "Acompanhamento clínico", "Cliente visualiza evolução e próximos retornos."]
+        ],
+        callouts: [
+          ["Feedback", "Cliente informa adaptação e percepção de uso."],
+          ["Evolução", "Dentista acompanha sinais e ajustes."],
+          ["Retornos", "Novos contatos podem ser abertos por protocolo."],
+          ["Conclusão", "Jornada fecha com histórico completo."]
+        ],
+        happens: [
+          ["Uso monitorado", "Dados pós-entrega entram no histórico clínico."],
+          ["Ações corretivas", "Dentista pode orientar ajustes ou retorno."],
+          ["Resultado documentado", "Operação entende sucesso e pendências."],
+          ["Ciclo concluído", "Jornada termina ou inicia acompanhamento adicional."]
+        ],
+        flow: {
+          inputs: ["Feedback do cliente", "Dados de adaptação", "Orientações anteriores", "Eventos clínicos"],
+          processing: ["Registro de evolução", "Análise do dentista", "Atualização de status"],
+          results: ["Acompanhamento concluído", "Novo retorno solicitado", "Histórico completo da jornada"]
+        },
+        fields: [
+          ["Feedback de uso", "Texto longo", "Sim", "Cliente", "Acompanhamento", "Conteúdo mínimo", "Cliente"],
+          ["Nível de conforto", "Escala", "Sim", "Cliente", "Acompanhamento", "Valor permitido", "Cliente"],
+          ["Parecer do dentista", "Texto longo", "Condicional", "Dentista", "Acompanhamento", "Obrigatório ao revisar", "Dentista"],
+          ["Status final", "Status", "Sim", "Dentista/Sistema", "Jornada", "Concluído ou retorno", "Dentista"]
+        ],
+        technical: "A conclusão deve ser reversível apenas por perfis autorizados e manter trilha de auditoria para Produto, QA e Operação."
+      }
+    ];
+
+    const icons = ["⌁", "+", "▣", "⌕", "✓", "◴", "△", "◇", "↗"];
+    let current = 1;
+
+    const el = (selector) => document.querySelector(selector);
+    const timeline = el("[data-timeline]");
+    const overviewMap = el("[data-overview-map]");
+    const modal = el("[data-modal]");
+    const modalImage = el("[data-modal-image]");
+    const modalTitle = el("[data-modal-title]");
+    const feedbackModal = el("[data-feedback-modal]");
+
+    function listItems(items) {
+      return items.map((item) => `<li>${item}</li>`).join("");
+    }
+
+    function renderTimeline() {
+      timeline.innerHTML = stages.map((stage, index) => `
+        <button class="timeline-button" type="button" data-stage-index="${index}" aria-current="${index === current}">
+          <span class="step-dot">${icons[index]}</span>
+          <span>
+            <span class="step-number">${stage.number}</span>
+            <span class="step-title">${stage.title}</span>
+          </span>
+        </button>
+      `).join("");
+
+      timeline.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => setStage(Number(button.dataset.stageIndex)));
+      });
+    }
+
+    function renderOverview() {
+      overviewMap.innerHTML = stages.map((stage, index) => `
+        <button class="overview-step" type="button" data-stage-index="${index}">
+          <b>${stage.number} · ${stage.owner}</b>
+          <strong>${stage.title}</strong>
+          <span>${stage.next}</span>
+        </button>
+      `).join("");
+
+      overviewMap.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          setStage(Number(button.dataset.stageIndex));
+          el("[data-overview]").classList.remove("is-visible");
+        });
+      });
+    }
+
+    function renderStage() {
+      const stage = stages[current];
+      el("[data-stage-badge]").textContent = stage.badge;
+      el("[data-stage-title]").textContent = stage.title;
+      el("[data-stage-summary]").textContent = stage.summary;
+      el("[data-stage-owner]").textContent = stage.owner;
+      el("[data-stage-duration]").textContent = stage.duration;
+      el("[data-stage-next]").textContent = stage.next;
+      el("[data-practice-copy]").textContent = stage.practice;
+      el("[data-fields-copy]").textContent = `Campos críticos consumidos ou alterados por ${stage.owner}.`;
+      el("[data-technical-copy]").textContent = stage.technical;
+      el("[data-progress]").textContent = `${stage.number} de ${String(stages.length).padStart(2, "0")}`;
+
+      el("[data-screens]").innerHTML = stage.screens.map(([file, title, description]) => `
+        <article class="practice-shot">
+          <div class="shot-toolbar">
+            <div><strong>${title}</strong><span> · ${description}</span></div>
+            <button class="ghost-button" type="button" data-open-image="${file}" data-open-title="${title}">Abrir print completo</button>
+          </div>
+          <div class="shot-frame">
+            <img src="${assetBase}${file}" alt="${title}" loading="lazy">
+          </div>
+        </article>
+      `).join("");
+
+      el("[data-screens]").querySelectorAll("[data-open-image]").forEach((button) => {
+        button.addEventListener("click", () => openModal(button.dataset.openImage, button.dataset.openTitle));
+      });
+
+      el("[data-callouts]").innerHTML = stage.callouts.map(([title, text], index) => `
+        <article class="callout">
+          <b>${index + 1}</b>
+          <span><strong>${title}</strong><span>${text}</span></span>
+        </article>
+      `).join("");
+
+      el("[data-happens]").innerHTML = stage.happens.map(([title, text]) => `
+        <article class="info-card">
+          <span class="icon">✓</span>
+          <strong>${title}</strong>
+          <p>${text}</p>
+        </article>
+      `).join("");
+
+      el("[data-inputs]").innerHTML = listItems(stage.flow.inputs);
+      el("[data-processing]").innerHTML = listItems(stage.flow.processing);
+      el("[data-results]").innerHTML = listItems(stage.flow.results);
+
+      el("[data-fields]").innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>Tipo</th>
+              <th>Obrigatório</th>
+              <th>Origem</th>
+              <th>Destino</th>
+              <th>Validação</th>
+              <th>Responsável</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stage.fields.map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+
+      renderTimeline();
+    }
+
+    function setStage(index) {
+      current = Math.max(0, Math.min(stages.length - 1, index));
+      renderStage();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openModal(file, title) {
+      modalTitle.textContent = title;
+      modalImage.src = `${assetBase}${file}`;
+      modalImage.alt = title;
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeModal() {
+      modal.setAttribute("aria-hidden", "true");
+      modalImage.removeAttribute("src");
+    }
+
+    function openFeedbackModal() {
+      feedbackModal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeFeedbackModal() {
+      feedbackModal.setAttribute("aria-hidden", "true");
+    }
+
+    document.querySelectorAll("[data-overview-toggle], [data-overview-toggle-secondary]").forEach((button) => {
+      button.addEventListener("click", () => {
+        el("[data-overview]").classList.toggle("is-visible");
+        el("[data-overview]").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    el("[data-prev]").addEventListener("click", () => setStage(current - 1));
+    el("[data-next]").addEventListener("click", () => setStage(current + 1));
+    el("[data-modal-close]").addEventListener("click", closeModal);
+    el("[data-feedback-toggle]").addEventListener("click", openFeedbackModal);
+    el("[data-feedback-close]").addEventListener("click", closeFeedbackModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+    feedbackModal.addEventListener("click", (event) => {
+      if (event.target === feedbackModal) closeFeedbackModal();
+    });
+    document.querySelectorAll("[data-feedback-open-image]").forEach((button) => {
+      button.addEventListener("click", () => openModal(button.dataset.feedbackOpenImage, button.dataset.feedbackOpenTitle));
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeModal();
+      if (event.key === "Escape") closeFeedbackModal();
+      if (event.key === "ArrowRight") setStage(current + 1);
+      if (event.key === "ArrowLeft") setStage(current - 1);
+    });
+
+    renderTimeline();
+    renderOverview();
+    renderStage();
+  </script>
+</body>
+</html>

@@ -1,8 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, DataTable, Field, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
-import { Eye, X } from 'lucide-react';
+import {
+  AdminDataTable,
+  AdminMetricGrid,
+  AdminModal,
+  AdminModalAction,
+  AdminModalActions,
+  AdminModalDetailCard,
+  AdminModalDetailContent,
+  AdminModalDetailGrid,
+  AdminModalDetailIcon,
+  AdminModalDetailLabel,
+  AdminModalDetailValue,
+  AdminModalTextArea,
+  AdminModalTextAreaGroup,
+  AdminModalTextAreaLabel,
+  AdminStatusPill,
+  Button,
+  type AdminDataTableColumn,
+  type AdminMetric,
+} from '@nexor/design-system';
+import { Eye, FileText, HeartPulse, MapPin, UserRoundCheck } from 'lucide-react';
 import styled from 'styled-components';
-import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
+import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAdminPortal } from '../../../features/admin/portal';
 import {
@@ -13,18 +32,7 @@ import {
   rejectPartnerRequest,
   type PartnerRequest,
 } from '../../../features/demo/biteplanerFlow';
-import {
-  FilterBar,
-  PageHeader,
-  PageStack,
-  PageSubtitle,
-  PageTitle,
-  StatCard,
-  StatGrid,
-  StatLabel,
-  StatValue,
-  TableSection,
-} from './styles';
+import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
 import { AdminProductGate } from './AdminProductGate';
 
 const statusLabel: Record<string, string> = {
@@ -35,14 +43,48 @@ const statusLabel: Record<string, string> = {
 };
 
 function getStatusColor(status: string) {
-  if (status === 'active') return '#15803D';
-  if (status === 'rejected') return '#B91C1C';
+  if (status === 'active') return '#15803d';
+  if (status === 'rejected') return '#b91c1c';
   if (status === 'suspended') return '#525252';
-  return '#D18A00';
+  return '#d18a00';
 }
 
 function formatDocumentType(value: string) {
   return value.toLowerCase() === 'cpf' ? 'CPF' : 'CNPJ';
+}
+
+function formatPartnerType(value?: string) {
+  if (value === 'academy') return 'Academia';
+  if (value === 'coach_personal') return 'Coach/Personal';
+  return 'Não informado';
+}
+
+function getPartnerEmail(request: PartnerRequest) {
+  const fallbackEmail = (request as PartnerRequest & { email?: string }).email;
+  return request.contactEmail || fallbackEmail || '';
+}
+
+function formatPartnerLocation(request: PartnerRequest) {
+  const location = request.location;
+  if (!location) return '';
+  return [
+    location.address,
+    location.city && location.state ? `${location.city} - ${location.state}` : location.city,
+    location.cep,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+}
+
+function getPartnerContextLabel(request: PartnerRequest) {
+  return request.partnerType === 'academy' ? 'Localização' : 'Locais de atuação';
+}
+
+function getPartnerContextValue(request: PartnerRequest) {
+  if (request.partnerType === 'academy') {
+    return formatPartnerLocation(request) || 'Não informado';
+  }
+  return (request.serviceLocations ?? []).join(', ') || 'Não informado';
 }
 
 export function AdminPartnerLicensing() {
@@ -74,19 +116,18 @@ export function AdminPartnerLicensing() {
   const filteredRequests = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return requests;
-
     return requests.filter((request) =>
-      `${request.partnerName} ${request.documentNumber} ${request.contactEmail} ${request.cityState}`
+      `${request.partnerName} ${getPartnerEmail(request)} ${request.documentNumber} ${formatPartnerType(request.partnerType)} ${formatPartnerLocation(request)} ${(request.serviceLocations ?? []).join(' ')}`
         .toLowerCase()
         .includes(query)
     );
   }, [requests, search]);
 
-  const stats = useMemo(
+  const metrics = useMemo<AdminMetric[]>(
     () => [
-      { label: 'Aguardando análise', value: String(requests.filter((item) => item.status === 'pending').length) },
-      { label: 'Aprovados', value: String(requests.filter((item) => item.status === 'active').length) },
-      { label: 'Recusados', value: String(requests.filter((item) => item.status === 'rejected').length) },
+      { label: 'Aguardando análise', value: requests.filter((item) => item.status === 'pending').length, tone: 'success' },
+      { label: 'Aprovados', value: requests.filter((item) => item.status === 'active').length, tone: 'success' },
+      { label: 'Recusados', value: requests.filter((item) => item.status === 'rejected').length, tone: 'danger' },
     ],
     [requests]
   );
@@ -117,33 +158,69 @@ export function AdminPartnerLicensing() {
     }
   }
 
-  const columns: DataTableColumn<PartnerRequest>[] = [
-    { key: 'name', label: 'Parceiro', render: (row) => row.partnerName || 'Não informado' },
-    { key: 'document', label: 'Documento', render: (row) => `${formatDocumentType(row.documentType)} ${row.documentNumber}` },
-    { key: 'email', label: 'Contato', render: (row) => row.contactEmail || 'Não informado' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => <StatusIndicator color={getStatusColor(row.status)} label={statusLabel[row.status] ?? row.status} />,
-    },
-    { key: 'date', label: 'Enviado em', render: (row) => formatDate(row.submittedAt) },
-    {
-      key: 'actions',
-      label: 'Visualizar',
-      render: (row) => (
-        <IconButton
-          type="button"
-          aria-label={`Visualizar solicitação de ${row.partnerName}`}
-          onClick={() => {
-            setSelectedRequest(row);
-            setRejectReason('');
-          }}
-        >
-          <Eye size={16} aria-hidden />
-        </IconButton>
-      ),
-    },
-  ];
+  const columns = useMemo<AdminDataTableColumn<PartnerRequest>[]>(
+    () => [
+      {
+        key: 'partner',
+        label: 'Parceiro',
+        width: '17%',
+        sortValue: (row) => row.partnerName,
+        render: (row) => (
+          <PartnerCell>
+            <PartnerName>{row.partnerName || 'Não informado'}</PartnerName>
+            {getPartnerEmail(row) ? <PartnerEmail>{getPartnerEmail(row)}</PartnerEmail> : null}
+          </PartnerCell>
+        ),
+      },
+      {
+        key: 'document',
+        label: 'Documento',
+        width: '18%',
+        sortValue: (row) => `${formatDocumentType(row.documentType)} ${row.documentNumber}`,
+        render: (row) => `${formatDocumentType(row.documentType)} ${row.documentNumber}`,
+      },
+      {
+        key: 'type',
+        label: 'Tipo',
+        width: '14%',
+        sortValue: (row) => formatPartnerType(row.partnerType),
+        render: (row) => formatPartnerType(row.partnerType),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        width: '19%',
+        sortValue: (row) => statusLabel[row.status] ?? row.status,
+        render: (row) => <AdminStatusPill color={getStatusColor(row.status)} label={statusLabel[row.status] ?? row.status} />,
+      },
+      {
+        key: 'submittedAt',
+        label: 'Enviado em',
+        width: '18%',
+        sortValue: (row) => new Date(row.submittedAt).getTime(),
+        render: (row) => formatDate(row.submittedAt),
+      },
+      {
+        key: 'actions',
+        label: 'Visualizar',
+        width: '14%',
+        align: 'center',
+        render: (row) => (
+          <ViewButton
+            type="button"
+            aria-label={`Visualizar solicitação de ${row.partnerName}`}
+            onClick={() => {
+              setSelectedRequest(row);
+              setRejectReason('');
+            }}
+          >
+            <Eye size={18} aria-hidden />
+          </ViewButton>
+        ),
+      },
+    ],
+    []
+  );
 
   return (
     <PageStack>
@@ -158,213 +235,157 @@ export function AdminPartnerLicensing() {
 
       {selectedProduct ? (
         <>
-          {loading ? (
-            <SkeletonGrid cards={3} minCardWidth="180px" />
-          ) : (
-            <StatGrid>
-              {stats.map((stat) => (
-                <StatCard key={stat.label} padding="lg">
-                  <StatValue>{stat.value}</StatValue>
-                  <StatLabel>{stat.label}</StatLabel>
-                </StatCard>
-              ))}
-            </StatGrid>
-          )}
-
-          <TableSection padding="lg">
-            <FilterBar>
-              <Field
-                as="input"
-                label="Buscar"
-                placeholder="Buscar por nome, documento, e-mail ou cidade..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </FilterBar>
-            {loading ? (
-              <SkeletonTable rows={6} columns={5} />
-            ) : (
-              <div data-testid="admin-partner-requests-table">
-                <DataTable
-                  data={filteredRequests}
-                  columns={columns}
-                  keyExtractor={(row) => row.id}
-                  pageSize={6}
-                  emptyMessage="Nenhuma solicitação encontrada."
-                />
-              </div>
-            )}
-          </TableSection>
+          {loading ? <SkeletonGrid cards={3} minCardWidth="180px" /> : <AdminMetricGrid metrics={metrics} />}
+          <AdminDataTable
+            data={filteredRequests}
+            columns={columns}
+            keyExtractor={(row) => row.id}
+            searchLabel="Buscar"
+            searchPlaceholder="Buscar por nome, e-mail, documento, tipo ou localização..."
+            searchValue={search}
+            onSearchChange={setSearch}
+            emptyMessage="Nenhuma solicitação encontrada."
+            testId="admin-partner-requests-table"
+          />
         </>
       ) : null}
 
-      {selectedRequest ? (
-        <ModalOverlay role="dialog" aria-modal="true" aria-label="Dados enviados pelo parceiro">
-          <ModalBox>
-            <ModalHeader>
-              <div>
-                <ModalTitle>Dados enviados pelo parceiro</ModalTitle>
-                <ModalSubtitle>
-                  {selectedRequest.partnerName} - {formatDocumentType(selectedRequest.documentType)} {selectedRequest.documentNumber}
-                </ModalSubtitle>
-              </div>
-              <IconButton type="button" aria-label="Fechar dados do parceiro" onClick={() => setSelectedRequest(null)}>
-                <X size={16} aria-hidden />
-              </IconButton>
-            </ModalHeader>
-
-            <DetailGrid>
-              <DetailItem>
-                <DetailLabel>E-mail de contato</DetailLabel>
-                <DetailValue>{selectedRequest.contactEmail || 'Não informado'}</DetailValue>
-              </DetailItem>
-              <DetailItem>
-                <DetailLabel>Cidade e estado</DetailLabel>
-                <DetailValue>{selectedRequest.cityState || 'Não informado'}</DetailValue>
-              </DetailItem>
-              <DetailItem>
-                <DetailLabel>Canais de atuação</DetailLabel>
-                <DetailValue>{selectedRequest.channels || 'Não informado'}</DetailValue>
-              </DetailItem>
-              <DetailItem>
-                <DetailLabel>Status</DetailLabel>
-                <DetailValue>{statusLabel[selectedRequest.status] ?? selectedRequest.status}</DetailValue>
-              </DetailItem>
-            </DetailGrid>
-
-            <Field
-              as="textarea"
-              label="Motivo da recusa"
-              placeholder="Obrigatório apenas para recusar."
-              value={rejectReason}
-              onChange={(event) => setRejectReason(event.target.value)}
-            />
-
-            <ModalActions>
-              <Button type="button" variant="secondary" disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'} onClick={handleApprove}>
-                {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
-              </Button>
-              <DangerButton type="button" disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'} onClick={handleReject}>
+      <AdminModal
+        open={Boolean(selectedRequest)}
+        title="Dados enviados pelo parceiro"
+        ariaLabel="Dados enviados pelo parceiro"
+        icon={<UserRoundCheck size={32} />}
+        subtitle={
+          selectedRequest ? (
+            <>
+              {selectedRequest.partnerName}
+              <InlineDot aria-hidden />
+              {formatDocumentType(selectedRequest.documentType)} {selectedRequest.documentNumber}
+            </>
+          ) : null
+        }
+        onClose={() => setSelectedRequest(null)}
+        footer={
+          selectedRequest ? (
+            <AdminModalActions>
+              <AdminModalAction
+                type="button"
+                actionTone="attention"
+                disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
+                onClick={handleReject}
+              >
                 {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
-              </DangerButton>
-            </ModalActions>
-          </ModalBox>
-        </ModalOverlay>
-      ) : null}
+              </AdminModalAction>
+              <AdminModalAction
+                type="button"
+                disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                onClick={handleApprove}
+              >
+                {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
+              </AdminModalAction>
+            </AdminModalActions>
+          ) : null
+        }
+      >
+        {selectedRequest ? (
+          <>
+            <AdminModalDetailGrid>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
+                  <FileText size={24} />
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
+                  <AdminModalDetailLabel>Tipo de parceiro</AdminModalDetailLabel>
+                  <AdminModalDetailValue>{formatPartnerType(selectedRequest.partnerType)}</AdminModalDetailValue>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
+                  <HeartPulse size={24} />
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
+                  <AdminModalDetailLabel>Status do fluxo</AdminModalDetailLabel>
+                  <AdminStatusPill color={getStatusColor(selectedRequest.status)} label={statusLabel[selectedRequest.status] ?? selectedRequest.status} />
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+            </AdminModalDetailGrid>
+
+            <AdminModalDetailCard>
+              <AdminModalDetailIcon aria-hidden>
+                <MapPin size={26} />
+              </AdminModalDetailIcon>
+              <AdminModalDetailContent>
+                <AdminModalDetailLabel>{getPartnerContextLabel(selectedRequest)}</AdminModalDetailLabel>
+                <AdminModalDetailValue>{getPartnerContextValue(selectedRequest)}</AdminModalDetailValue>
+              </AdminModalDetailContent>
+            </AdminModalDetailCard>
+
+            <AdminModalTextAreaGroup>
+              <AdminModalTextAreaLabel htmlFor="partner-reject-reason">Motivo da recusa</AdminModalTextAreaLabel>
+              <AdminModalTextArea
+                id="partner-reject-reason"
+                placeholder="Obrigatório apenas para recusar."
+                value={rejectReason}
+                onChange={(event) => setRejectReason(event.target.value)}
+              />
+            </AdminModalTextAreaGroup>
+          </>
+        ) : null}
+      </AdminModal>
     </PageStack>
   );
 }
 
-const IconButton = styled.button`
-  width: 36px;
-  height: 36px;
-  border: 1px solid #E0E0E0;
-  border-radius: 6px;
-  background: #FFFFFF;
-  color: #171717;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.36);
-  z-index: 50;
+const PartnerCell = styled.div`
   display: grid;
-  place-items: center;
-  padding: 24px;
-
-  @media (max-width: 1280px) {
-    padding: 16px;
-  }
+  gap: 3px;
+  min-width: 0;
 `;
 
-const ModalBox = styled.div`
-  width: min(760px, 100%);
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  display: grid;
-  gap: 18px;
-
-  @media (max-width: 1280px) {
-    max-height: calc(100vh - 32px);
-    gap: 12px;
-    padding: 16px;
-  }
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-
-  @media (max-width: 1280px) {
-    gap: 10px;
-  }
-`;
-
-const ModalTitle = styled.h2`
-  margin: 0;
-  font-size: 20px;
+const PartnerName = styled.span`
+  min-width: 0;
+  overflow: hidden;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
   line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const ModalSubtitle = styled.p`
-  margin: 6px 0 0;
-  color: #525252;
+const PartnerEmail = styled.span`
+  min-width: 0;
+  overflow: hidden;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 10px;
+  line-height: 1.2;
+  text-transform: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const DetailGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const DetailItem = styled.div`
-  border: 1px solid #E5E5E5;
+const ViewButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as const })`
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 8px;
-  padding: 12px;
-  background: #FAFAFA;
-`;
+  display: inline-grid;
+  place-items: center;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.bgElevated};
 
-const DetailLabel = styled.span`
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: #737373;
-  margin-bottom: 6px;
-`;
-
-const DetailValue = styled.p`
-  margin: 0;
-  color: #171717;
-`;
-
-const ModalActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-`;
-
-const DangerButton = styled(Button)`
-  background: #B91C1C;
-  border-color: #B91C1C;
-  color: #FFFFFF;
-
-  &:disabled {
-    background: #E5E5E5;
-    border-color: #E5E5E5;
-    color: #737373;
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.bgInset};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
   }
+`;
+
+const InlineDot = styled.span`
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.green};
 `;

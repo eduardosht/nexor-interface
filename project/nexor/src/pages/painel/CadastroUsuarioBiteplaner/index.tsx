@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, CirclePlus, Database, Info, ShieldCheck, UserRound, UserRoundCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonCard } from '../../../components/Skeleton';
@@ -6,19 +6,24 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
   fetchWorkflowForms,
+  getAthleteNextPath,
   getAuthToken,
+  getEffectiveAthleteOrder,
+  isCustomerOnboardingComplete,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
-import { OrderStepHeader } from '../components/OrderStepHeader';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from '../PreRequisito/styles';
 
-const SUCCESS_REDIRECT_SECONDS = 7;
 const ONBOARDING_TEMPLATE_KEY = 'customer_new_user_onboarding';
 
 function onboardingIsSubmitted(form: DemoWorkflowForm) {
-  return form.status === 'submitted';
+  return isCustomerOnboardingComplete(form);
+}
+
+function getNextPathAfterOnboarding(order: DemoOrderSummary | null, forms: DemoWorkflowForm[]) {
+  return getAthleteNextPath(getEffectiveAthleteOrder(order, forms));
 }
 
 function getBlockerMessage(form: DemoWorkflowForm | undefined) {
@@ -48,7 +53,6 @@ export function CadastroUsuarioBiteplaner() {
   const [privacyGateChecked, setPrivacyGateChecked] = useState(false);
   const [privacyGateUnlocked, setPrivacyGateUnlocked] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
-  const [completionCountdown, setCompletionCountdown] = useState(SUCCESS_REDIRECT_SECONDS);
 
   useEffect(() => {
     if (!token) {
@@ -120,28 +124,27 @@ export function CadastroUsuarioBiteplaner() {
   }, [order?.id, token]);
 
   useEffect(() => {
-    if (!onboardingCompleted) {
-      return undefined;
+    if (loading || formsLoading || onboardingCompleted || !order) {
+      return;
     }
 
-    setCompletionCountdown(SUCCESS_REDIRECT_SECONDS);
-    const interval = setInterval(() => {
-      setCompletionCountdown((current) => Math.max(current - 1, 0));
-    }, 1000);
-    const timeout = setTimeout(() => {
-      navigate('/painel/biteplaner/jornada');
-    }, SUCCESS_REDIRECT_SECONDS * 1000);
+    const submittedOnboarding = workflowForms.find(
+      (form) => form.templateKey === ONBOARDING_TEMPLATE_KEY && onboardingIsSubmitted(form)
+    );
 
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
-  }, [navigate, onboardingCompleted]);
+    if (!submittedOnboarding) {
+      return;
+    }
 
-  const onboardingForms = useMemo(
-    () => workflowForms.filter((form) => form.templateKey === ONBOARDING_TEMPLATE_KEY),
-    [workflowForms]
-  );
+    const blockerMessage = getBlockerMessage(submittedOnboarding);
+
+    if (blockerMessage) {
+      setError(blockerMessage);
+      return;
+    }
+
+    navigate(getNextPathAfterOnboarding(order, workflowForms), { replace: true });
+  }, [formsLoading, loading, navigate, onboardingCompleted, order, workflowForms]);
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
     setWorkflowForms(nextForms);
@@ -163,34 +166,15 @@ export function CadastroUsuarioBiteplaner() {
 
     setError('');
     setOnboardingCompleted(true);
+    navigate(getNextPathAfterOnboarding(order, nextForms), { replace: true });
   }
+
+  const submittedOnboarding = workflowForms.find(
+    (form) => form.templateKey === ONBOARDING_TEMPLATE_KEY && onboardingIsSubmitted(form)
+  );
 
   return (
     <S.Page>
-      <OrderStepHeader
-        title={
-          <S.OnboardingHeroTitle>
-            <S.OnboardingHeroIcon aria-hidden="true">
-              <UserRound size={48} strokeWidth={1.9} />
-              <S.OnboardingHeroIconBadge>
-                <CirclePlus size={20} strokeWidth={2.5} />
-              </S.OnboardingHeroIconBadge>
-            </S.OnboardingHeroIcon>
-            <span>Cadastro de novos usuários</span>
-          </S.OnboardingHeroTitle>
-        }
-        description={
-          <>
-            Este cadastro é o primeiro passo para quem optou por adquirir o <strong>Biteplaner</strong>.
-            Depois dele, a jornada segue para a pré-consulta clínica compartilhada com o dentista.
-          </>
-        }
-        currentStep="prerequisite"
-        order={order}
-        showOrderSummary={false}
-        orderHelpText="Este pedido ainda precisa do cadastro Biteplaner antes da pré-consulta."
-      />
-
       {loading ? (
         <S.Content aria-label="Carregando pedido Biteplaner">
           <SkeletonCard lines={5} blockHeight="96px" />
@@ -214,27 +198,59 @@ export function CadastroUsuarioBiteplaner() {
                 <br />
                 Equipe NEXOR
               </S.OnboardingCompletionText>
-              <S.OnboardingCountdown>
-                Você será redirecionado em {completionCountdown} segundos
-              </S.OnboardingCountdown>
+              <S.OnboardingCountdown>Redirecionando para a próxima etapa.</S.OnboardingCountdown>
+            </S.OnboardingCompletion>
+          ) : submittedOnboarding ? (
+            <S.OnboardingCompletion role="status" aria-live="polite">
+              <S.OnboardingCompletionIcon aria-hidden="true">✓</S.OnboardingCompletionIcon>
+              <S.OnboardingCompletionTitle>Cadastro já enviado.</S.OnboardingCompletionTitle>
+              <S.OnboardingCompletionText>Vamos abrir a próxima etapa da sua jornada.</S.OnboardingCompletionText>
             </S.OnboardingCompletion>
           ) : (
             <S.OnboardingCard>
-              <S.OnboardingIntro>
-                <S.OnboardingIntroCopy>
-                  <S.OnboardingCardTitle>Cadastro Biteplaner</S.OnboardingCardTitle>
-                  <p>
-                    A NEXOR é uma empresa de bioengenharia que desenvolve pesquisas científicas e dispositivos técnicos
-                    personalizados para auxiliar atletas de elite e pessoas como você a treinarem com mais Conforto,
-                    Segurança, Performance, Consistência, Saúde e Longevidade.
-                  </p>
-                  <p>
-                    Este cadastro é seu primeiro passo para o time de especialistas projetar seu dispositivo
-                    personalizado e integrar você ao ecossistema NEXOR.
-                  </p>
+              <S.OnboardingHero>
+                <S.OnboardingHeroContent>
+                  <S.OnboardingMainTitle>
+                    <S.OnboardingHeroIcon aria-hidden="true">
+                      <UserRound size={48} strokeWidth={1.9} />
+                      <S.OnboardingHeroIconBadge>
+                        <CirclePlus size={20} strokeWidth={2.5} />
+                      </S.OnboardingHeroIconBadge>
+                    </S.OnboardingHeroIcon>
+                    <span>Cadastro de novos usuários</span>
+                  </S.OnboardingMainTitle>
+                  <S.OnboardingHeroLead>
+                    Este cadastro é o primeiro passo para quem optou por adquirir o <strong>Biteplaner</strong>.
+                    Depois dele, a jornada segue para a pré-consulta clínica compartilhada com o dentista.
+                  </S.OnboardingHeroLead>
+                  <S.OnboardingInfoCallout>
+                    <Info size={24} strokeWidth={2.4} aria-hidden="true" />
+                    <span>
+                      A NEXOR é uma empresa de bioengenharia que desenvolve pesquisas científicas e dispositivos
+                      técnicos personalizados para auxiliar atletas de elite e pessoas a treinar com mais Conforto,
+                      Segurança, Performance, Consistência, Saúde e Longevidade.
+                    </span>
+                  </S.OnboardingInfoCallout>
                   <S.RequiredHint>* Indica uma pergunta obrigatória.</S.RequiredHint>
-                </S.OnboardingIntroCopy>
-              </S.OnboardingIntro>
+                </S.OnboardingHeroContent>
+                <S.OnboardingHeroVisual aria-hidden="true">
+                  <S.OnboardingHeroClipboard>
+                    <S.ClipboardClip />
+                    <S.ClipboardAvatar>
+                      <UserRound size={48} strokeWidth={1.8} />
+                    </S.ClipboardAvatar>
+                    <S.ClipboardLines>
+                      <span />
+                      <span />
+                      <span />
+                      <span />
+                    </S.ClipboardLines>
+                    <S.ClipboardShield>
+                      <ShieldCheck size={58} strokeWidth={2.2} />
+                    </S.ClipboardShield>
+                  </S.OnboardingHeroClipboard>
+                </S.OnboardingHeroVisual>
+              </S.OnboardingHero>
 
               {!privacyGateUnlocked ? (
                 <>
@@ -259,20 +275,20 @@ export function CadastroUsuarioBiteplaner() {
                       <S.PrivacyGateList>
                         <li>
                           <UserRoundCheck size={18} strokeWidth={2} aria-hidden="true" />
-                          <span>viabilizar meu cadastro, meu atendimento e o uso dos serviços e dispositivos da NEXOR;</span>
+                          <span>Viabilizar meu cadastro, meu atendimento e o uso dos serviços e dispositivos da NEXOR</span>
                         </li>
                         <li>
                           <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
                           <span>
-                            registrar informações necessárias para meu cuidado, minha segurança e meu acompanhamento ao
-                            longo do tempo;
+                            Registrar informações necessárias para meu cuidado, minha segurança e meu acompanhamento ao
+                            longo do tempo
                           </span>
                         </li>
                         <li>
                           <Database size={18} strokeWidth={2} aria-hidden="true" />
                           <span>
-                            formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e
-                            desenvolvimento de produtos, sempre de acordo com a Lei Geral de Proteção de Dados (LGPD).
+                            Formar bases de dados, preferencialmente anonimizadas, para análise, pesquisa e
+                            desenvolvimento de produtos, sempre de acordo com a Lei Geral de Proteção de Dados (LGPD)
                           </span>
                         </li>
                       </S.PrivacyGateList>
@@ -324,9 +340,6 @@ export function CadastroUsuarioBiteplaner() {
             </S.OnboardingCard>
           )}
 
-          {!onboardingCompleted && onboardingForms.length === 0 && !formsLoading && !formsError ? (
-            <S.Banner role="status">O cadastro Biteplaner ainda não foi liberado para este pedido.</S.Banner>
-          ) : null}
         </S.Content>
       ) : null}
     </S.Page>

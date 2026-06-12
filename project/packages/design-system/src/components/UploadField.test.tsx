@@ -13,7 +13,6 @@ describe('UploadField', () => {
         <UploadField
           label="Arquivo 3D"
           hint="Aceita STL, OBJ, PLY ou ZIP."
-          browseLabel="browse"
           files={[
             {
               id: 'file-success',
@@ -33,7 +32,8 @@ describe('UploadField', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.getByText(/drag & drop file\(s\) to upload/i)).toBeInTheDocument();
+    expect(screen.getByText(/arraste e solte o\(s\) arquivo\(s\) para enviar/i)).toBeInTheDocument();
+    expect(screen.getByText(/ou procurar/i)).toBeInTheDocument();
     expect(screen.getByText(/arcada.stl/i)).toBeInTheDocument();
     expect(screen.getByText(/video.mov/i)).toBeInTheDocument();
     expect(screen.getByText(/file is too large\. max size is 25 mb/i)).toBeInTheDocument();

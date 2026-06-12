@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -21,18 +23,36 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
   });
 
-  it('renders the Biteplaner hero without the FAQ product image', () => {
+  it('does not inject the deprecated Orbitron font stack', () => {
+    renderPage();
+    expect(document.head.textContent).not.toContain('Orbitron');
+  });
+
+  it('renders the Biteplaner hero and the comparison product image only in the comparison section', () => {
     renderPage();
     expect(screen.getAllByText('Biteplaner').length).toBeGreaterThan(0);
-    expect(screen.queryByRole('img', { name: /biteplaner/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /dispositivo biteplaner na comparação/i })).toBeInTheDocument();
   });
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /segurança\. conforto\. performance/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /segurança\.\s+conforto\.\s+performance\./i })).toBeInTheDocument();
     expect(screen.getByText(/dispositivo intraoral personalizado para atletas e praticantes de esportes/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
+  });
+
+  it('layers the decorative hero item above the background and below the hero copy', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(pageSource).toContain("import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png'");
+    expect(pageSource).toContain('<S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />');
+    expect(stylesSource).toContain('export const HeroForegroundItem = styled.img');
+    expect(stylesSource).toContain('right: -90px;');
+    expect(stylesSource).toContain('bottom: -200px;');
+    expect(stylesSource).toContain('z-index: 1;');
+    expect(stylesSource).toContain('z-index: 2;');
   });
 
   it('renders the approved journey with payment after clinical eligibility', () => {
@@ -54,25 +74,33 @@ describe('BiteplanerPage', () => {
     expect(screen.getByTestId('biteplaner-process-journey')).toBeInTheDocument();
   });
 
-  it('renders athlete storytelling, use cases, and comparison content', () => {
+  it('keeps the process journey mobile cards compact without the detached step rail', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+    const journeyStyles = stylesSource.slice(
+      stylesSource.indexOf('export const JourneyGrid'),
+      stylesSource.indexOf('export const WarningSection'),
+    );
+
+    expect(pageSource).not.toContain('<S.JourneyIndexRail');
+    expect(pageSource).not.toContain('<S.StepChevron');
+    expect(stylesSource).not.toContain('export const JourneyIndexRail');
+    expect(stylesSource).not.toContain('export const StepChevron');
+    expect(journeyStyles).toContain('grid-template-columns: auto minmax(0, 1fr);');
+    expect(journeyStyles).toContain('display: inline-grid;');
+    expect(journeyStyles).not.toContain('padding-left: 32px;');
+    expect(journeyStyles).not.toContain('transform: translateY(-68%) rotate(45deg);');
+  });
+
+  it('renders athlete storytelling with contextual sport cards', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /feito para a rotina real de treinos e competições/i })).toBeInTheDocument();
     expect(screen.getByText(/nos esportes individuais ou coletivos de combate, força e alta intensidade/i)).toBeInTheDocument();
-    expect(screen.getByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
-    const strengthDumbbellIcon = screen.getByTestId('biteplaner-strength-dumbbell-icon');
-    const strengthZapIcon = screen.getByTestId('biteplaner-strength-zap-icon');
-
-    expect(screen.getByTestId('biteplaner-combat-glove-icon')).toBeInTheDocument();
-    expect(strengthDumbbellIcon).toBeInTheDocument();
-    expect(strengthZapIcon).toBeInTheDocument();
-    expect(strengthDumbbellIcon).toHaveAttribute('width', '48');
-    expect(strengthDumbbellIcon).toHaveAttribute('height', '48');
-    expect(strengthZapIcon).toHaveAttribute('width', '48');
-    expect(strengthZapIcon).toHaveAttribute('height', '48');
-    expect(screen.getByTestId('biteplaner-team-sport-icon')).toBeInTheDocument();
-    expect(screen.queryByTestId('biteplaner-team-strength-energy-icon')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /genérico vs biteplaner/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /força e alta intensidade/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /esportes coletivos/i })).toBeInTheDocument();
+    expect(screen.getByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /protetores bucais vs biteplaner/i })).toBeInTheDocument();
     expect(screen.getByText(/adequação para treinos e competições de lutas/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^alta$/i).length).toBeGreaterThan(0);
   });
@@ -84,6 +112,10 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('columnheader', { name: /protetor genérico/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /protetor tradicional/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toBeInTheDocument();
+    expect(screen.getByText(/compare e entenda por que o Biteplaner oferece mais proteção/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId('comparison-criterion-icon')).toHaveLength(7);
+    expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toHaveAttribute('data-highlighted-column', 'true');
+    expect(screen.queryByTestId('comparison-status-dot')).not.toBeInTheDocument();
     expect(screen.getByText(/conforto em uso prolongado/i)).toBeInTheDocument();
     expect(screen.queryByText(/interferência na fala/i)).not.toBeInTheDocument();
 
@@ -109,11 +141,83 @@ describe('BiteplanerPage', () => {
   it('renders educational and trust sections without absolute medical claims', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId('education-layout-item')).toHaveLength(3);
+    expect(screen.getAllByTestId('trust-rail-item')).toHaveLength(4);
     expect(screen.getByText(/pode auxiliar no conforto e prevenção/i)).toBeInTheDocument();
     expect(screen.getByText(/não promete resultados imediatos/i)).toBeInTheDocument();
     expect(screen.getByText(/produção sob padrões de excelência/i)).toBeInTheDocument();
     expect(screen.queryByText(/garante proteção/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/previne lesões/i)).not.toBeInTheDocument();
+  });
+
+  it('matches the reference education layout with contextual icons', () => {
+    renderPage();
+
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+    const educationStyles = stylesSource.slice(
+      stylesSource.indexOf('export const TrustOuter'),
+      stylesSource.indexOf('export const TrustRail'),
+    );
+
+    expect(screen.getByText(/informações e tecnologia para transformar performance/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId('education-icon')).toHaveLength(3);
+    expect(pageSource).toContain('icon: Activity');
+    expect(pageSource).toContain('icon: Heart');
+    expect(pageSource).toContain('icon: ShieldCheck');
+    expect(pageSource).toContain('<S.EducationIcon data-testid="education-icon">');
+    expect(stylesSource).toContain('MarketingSectionLead');
+    expect(stylesSource).toContain('export const EducationIcon');
+    expect(stylesSource).toContain('MarketingSectionTitle');
+    expect(stylesSource).toContain('MarketingSectionLead');
+    expect(educationStyles).toContain('font-size: ${typeScale.contentTitle};');
+    expect(educationStyles).toContain('font-size: ${typeScale.contentBody};');
+    expect(educationStyles).not.toContain('font-size: clamp(38px, 4.5vw, 64px);');
+    expect(educationStyles).not.toContain('font-size: clamp(18px, 1.7vw, 22px);');
+    expect(educationStyles).toContain('repeating-radial-gradient');
+    expect(educationStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(educationStyles).toContain('border-right: 1px solid #d9e2dd;');
+  });
+
+  it('keeps the education section free of background image assets', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+    const optimizedImagesSource = readFileSync(join(process.cwd(), 'src/assets/publicOptimizedImages.ts'), 'utf8');
+    const optimizerSource = readFileSync(join(process.cwd(), 'scripts/optimize-public-images.mjs'), 'utf8');
+
+    expect(optimizerSource).not.toContain("source: 'backgrounds/hero-section-2.png'");
+    expect(optimizerSource).not.toContain("name: 'biteplaner/education'");
+    expect(optimizedImagesSource).not.toContain('biteplanerEducation');
+    expect(optimizedImagesSource).not.toContain('education:');
+    expect(stylesSource).not.toContain('publicOptimizedImages.biteplaner.education');
+    expect(stylesSource).not.toContain('imageSet(publicOptimizedImages.biteplaner.education');
+  });
+
+  it('uses dedicated sport backgrounds on the real routine cards', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(stylesSource).toContain("import esportesCombateBackground from '../../assets/backgrounds/esportes-combate.jpg'");
+    expect(stylesSource).toContain("import forcaAltaIntensidadeBackground from '../../assets/backgrounds/forca-alta-intensidade.jpg'");
+    expect(stylesSource).toContain("import esportesColetivosBackground from '../../assets/backgrounds/esportes-coletivos.jpg'");
+    expect(stylesSource).toContain('export const RealRoutineSection');
+    expect(stylesSource).toContain('export const RealRoutineContent');
+    expect(stylesSource).toContain('MarketingSectionLead');
+    expect(stylesSource).toContain('export const RealRoutineVisual');
+    expect(stylesSource).toContain('export const RealRoutineCard');
+    expect(stylesSource).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(stylesSource).toContain('left: esportesCombateBackground');
+    expect(stylesSource).toContain('center: forcaAltaIntensidadeBackground');
+    expect(stylesSource).toContain('right: esportesColetivosBackground');
+    expect(stylesSource).toContain('background-size: cover;');
+    expect(stylesSource).toContain('background-image: url(${({ $imagePosition }) => sportContextBackgrounds[$imagePosition]});');
+  });
+
+  it('uses the horizontal banner background on the final CTA', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(stylesSource).toContain("import finalCtaBackground from '../../assets/backgrounds/banner-horizontal.jpg'");
+    expect(stylesSource).toContain('export const FinalCtaOuter');
+    expect(stylesSource).toContain('url(${finalCtaBackground}) 24% center / cover no-repeat;');
+    expect(stylesSource).not.toContain('publicOptimizedImages.biteplaner.finalCta');
   });
 
   it('renders the automatic customer comments carousel', () => {

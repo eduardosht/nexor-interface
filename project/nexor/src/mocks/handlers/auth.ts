@@ -4,9 +4,11 @@ import {
   DemoStateError,
   createAccountNotification,
   getAuthPayload,
+  listAdminProfiles,
   listAccountNotifications,
   markAccountNotificationRead,
-  markAccountNotificationUnread
+  markAccountNotificationUnread,
+  updateAdminProfileStatus
 } from '../demoState';
 
 function parseBody(request: { requestBody: string }) {
@@ -70,4 +72,35 @@ export function authHandlers(server: Server) {
   server.post('/v1/admin/notifications', withDemoErrors((_schema, request) =>
     createAccountNotification(parseBody(request), { requestHeaders: request.requestHeaders })
   ));
+  server.get('/v1/admin/profiles', withDemoErrors((_schema, request) => {
+    const rawLimit = request.queryParams.limit;
+    const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
+    const rawRole = request.queryParams.role;
+    const rawSearch = request.queryParams.search;
+    const role = Array.isArray(rawRole) ? rawRole[0] : rawRole;
+    const search = Array.isArray(rawSearch) ? rawSearch[0] : rawSearch;
+    const limit = limitValue === undefined ? 50 : Number(limitValue);
+
+    return listAdminProfiles({
+      role,
+      search,
+      limit: Number.isFinite(limit) ? limit : 50
+    });
+  }));
+  server.patch('/v1/admin/profiles/:profileId/status', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const status = body.status;
+
+    if (
+      status !== 'pending' &&
+      status !== 'active' &&
+      status !== 'inactive' &&
+      status !== 'suspended' &&
+      status !== 'blocked'
+    ) {
+      return new Response(400, {}, { error: 'bad_request', message: 'Invalid profile status.' });
+    }
+
+    return updateAdminProfileStatus(request.params.profileId, status);
+  }));
 }

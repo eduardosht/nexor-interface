@@ -1,23 +1,91 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Flag,
+  Hourglass,
+  Info,
+  LockKeyhole,
+  PartyPopper,
+  ShieldCheck,
+} from 'lucide-react';
 import * as S from './styles';
-import { Button, StatusIndicator } from '@nexor/design-system';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  confirmPayment,
+  createCheckoutSession,
   fetchOrders,
+  getOrderDisplayId,
   getAuthToken,
-  getOrderStatusPresentation,
+  reconcileCheckoutSession,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
 import { OrderStepHeader } from '../components/OrderStepHeader';
 
 const NEXT_STEPS = [
-  'Confirmação do pagamento mock',
-  'Liberação para o dentista preencher a ordem de produção',
-  'Encaminhamento controlado ao laboratório',
-  'Retorno de adaptação e acompanhamento',
+  {
+    title: 'Aguardando pagamento pelo cliente',
+    status: 'Aguardando',
+    Icon: Hourglass,
+  },
+  {
+    title: 'Pedido será feito para a produção',
+    status: 'Pendente',
+    Icon: Clock3,
+  },
+  {
+    title: 'Dentista licenciado receberá o pedido e agendará a consulta de retorno e adaptação.',
+    status: 'Pendente',
+    Icon: Clock3,
+  },
 ];
+
+function getPurchaseSteps(checkoutSuccess: boolean) {
+  if (!checkoutSuccess) {
+    return NEXT_STEPS.map((step, index) => ({
+      ...step,
+      state: index === 0 ? ('active' as const) : ('pending' as const),
+    }));
+  }
+
+  return NEXT_STEPS.map((step, index) => {
+    if (index === 0) {
+      return {
+        ...step,
+        title: 'Pagamento confirmado',
+        status: 'Confirmado',
+        Icon: CheckCircle2,
+        state: 'confirmed' as const,
+      };
+    }
+
+    if (index === 1) {
+      return {
+        ...step,
+        status: 'Aguardando',
+        Icon: Hourglass,
+        state: 'active' as const,
+      };
+    }
+
+    return {
+      ...step,
+      state: 'pending' as const,
+    };
+  });
+}
+
+function formatOrderDate(value?: string) {
+  const date = value ? new Date(value) : new Date();
+
+  return {
+    date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date),
+    time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(date),
+  };
+}
 
 type CompraProps = {
   embedded?: boolean;
@@ -25,14 +93,20 @@ type CompraProps = {
   onOrderChange?: (order: DemoOrderSummary) => void;
 };
 
-export function Compra({ embedded = false, initialOrder = null, onOrderChange }: CompraProps) {
+export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const { session } = useAuth();
+  const [searchParams] = useSearchParams();
   const token = getAuthToken(session);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
   const [loading, setLoading] = useState(!initialOrder);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const checkoutSuccess = searchParams.get('checkout') === 'success';
+  const checkoutSessionId = searchParams.get('session_id');
+  const orderDate = formatOrderDate(order?.created_at);
+  const orderLabel = getOrderDisplayId(order);
+  const purchaseSteps = getPurchaseSteps(checkoutSuccess);
 
   useEffect(() => {
     if (initialOrder) {
@@ -76,6 +150,41 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
     };
   }, [initialOrder, token]);
 
+  useEffect(() => {
+    if (!checkoutSuccess || !checkoutSessionId || !token || !order || order.status !== 'awaiting_payment') {
+      return;
+    }
+
+    let active = true;
+
+    async function reconcilePayment() {
+      try {
+        const checkoutOrderId = order?.checkoutOrderId ?? order?.id;
+
+        if (!checkoutOrderId) {
+          return;
+        }
+
+        const response = await reconcileCheckoutSession(checkoutOrderId, checkoutSessionId as string, token);
+
+        if (active) {
+          setOrder(response.order);
+          setNotice('Pagamento confirmado com sucesso.');
+        }
+      } catch {
+        if (active) {
+          setError('Pagamento recebido pela Stripe, mas ainda não foi possível sincronizar a ordem. Atualize a página em alguns instantes.');
+        }
+      }
+    }
+
+    void reconcilePayment();
+
+    return () => {
+      active = false;
+    };
+  }, [checkoutSessionId, checkoutSuccess, order, token]);
+
   const ctaDisabled = useMemo(
     () => submitting || !order || order.status !== 'awaiting_payment',
     [order, submitting]
@@ -91,12 +200,11 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
     setError('');
 
     try {
-      const response = await confirmPayment(order.id, token);
-      setOrder(response.order);
-      onOrderChange?.(response.order);
-      setNotice(`${response.order.id} agora está com pagamento confirmado e pronto para o laboratório.`);
+      const checkoutOrderId = order.checkoutOrderId ?? order.id;
+      const response = await createCheckoutSession(checkoutOrderId, token);
+      window.location.assign(response.url);
     } catch {
-      setError('Não foi possível confirmar a compra mock agora.');
+      setError('Não foi possível iniciar o checkout Stripe agora.');
     } finally {
       setSubmitting(false);
     }
@@ -104,10 +212,23 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
 
   return (
     <S.Page>
-      {!embedded ? (
+      {!embedded && checkoutSuccess ? (
+        <S.SuccessHeader>
+          <S.SuccessHeroCopy>
+            <S.SuccessTitle>Confirmação de compra da demo</S.SuccessTitle>
+            <S.SuccessKicker>Caso liberado para produção</S.SuccessKicker>
+            <S.SuccessDescription>
+              O caso clinicamente aprovado está liberado para produção. A ordem será disponibilizada para o dentista em
+              breve.
+            </S.SuccessDescription>
+          </S.SuccessHeroCopy>
+        </S.SuccessHeader>
+      ) : null}
+
+      {!embedded && !checkoutSuccess ? (
         <OrderStepHeader
           title="Confirmação de compra da demo"
-          description="Está tela simula o momento em que um caso clinicamente aprovado avança para pagamento e liberação operacional."
+          description="Esta tela inicia o pagamento real quando um caso clinicamente aprovado avança para liberação operacional."
           currentStep="purchase"
           order={order}
           orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
@@ -128,53 +249,137 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
             <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento. Use o caso já aprovado como referência visual.</S.Banner>
           ) : null}
 
+          {checkoutSuccess ? (
+            <S.SuccessOrderBanner data-testid="payment-success-order-card">
+              <S.SuccessOrderSummary>
+                <S.SuccessOrderIcon aria-hidden>
+                  <ClipboardList size={42} strokeWidth={1.9} />
+                  <S.SuccessOrderIconBadge>
+                    <CheckCircle2 size={16} strokeWidth={2.4} />
+                  </S.SuccessOrderIconBadge>
+                </S.SuccessOrderIcon>
+                <S.SuccessOrderText>
+                  <S.OrderEyebrow>Pedido</S.OrderEyebrow>
+                  <S.SuccessOrderId>{orderLabel}</S.SuccessOrderId>
+                  <S.SuccessOrderHelp>
+                    Este pedido está na etapa financeira da demo antes da liberação operacional para produção.
+                  </S.SuccessOrderHelp>
+                </S.SuccessOrderText>
+              </S.SuccessOrderSummary>
+
+              <S.SuccessOrderMeta>
+                <S.SuccessMetaLabel>Status atual</S.SuccessMetaLabel>
+                <S.SuccessStatusPill>Pagamento realizado</S.SuccessStatusPill>
+              </S.SuccessOrderMeta>
+
+              <S.SuccessOrderMeta>
+                <S.SuccessMetaLabel>Data do pagamento</S.SuccessMetaLabel>
+                <S.SuccessMetaValue>
+                  <CalendarDays size={20} strokeWidth={1.8} aria-hidden />
+                  <span>
+                    {orderDate.date}
+                    <br />
+                    às {orderDate.time}
+                  </span>
+                </S.SuccessMetaValue>
+              </S.SuccessOrderMeta>
+
+              <S.SuccessOrderMeta>
+                <S.SuccessMetaLabel>Última atualização</S.SuccessMetaLabel>
+                <S.SuccessMetaValue>
+                  <CalendarDays size={20} strokeWidth={1.8} aria-hidden />
+                  <span>
+                    {orderDate.date}
+                    <br />
+                    às {orderDate.time}
+                  </span>
+                </S.SuccessMetaValue>
+              </S.SuccessOrderMeta>
+
+              <S.SuccessOrderMeta>
+                <S.SuccessMetaLabel>Etapa atual</S.SuccessMetaLabel>
+                <S.SuccessMetaValue>
+                  <Flag size={20} strokeWidth={1.8} aria-hidden />
+                  <span>Pagamento concluído</span>
+                </S.SuccessMetaValue>
+              </S.SuccessOrderMeta>
+            </S.SuccessOrderBanner>
+          ) : null}
+
           <S.Layout>
             <S.Card>
-              <S.CardTitle>Biteplaner personalizado</S.CardTitle>
-              <S.Description>
-                O pedido inclui avaliação odontológica, moldagem individual, etapa laboratorial e acompanhamento posterior.
-              </S.Description>
-              <S.List>
-                <S.ListItem>Consulta inicial e decisão clínica do dentista parceiro.</S.ListItem>
-                <S.ListItem>Preenchimento da ordem de produção com dados mockados.</S.ListItem>
-                <S.ListItem>Envio controlado ao laboratório e retorno por ajuste quando necessário.</S.ListItem>
-              </S.List>
-
-              <S.CardTitle>Proximos passos observaveis</S.CardTitle>
-              <S.List>
-                {NEXT_STEPS.map((step) => (
-                  <S.ListItem key={step}>{step}</S.ListItem>
+              <S.CardTitle>Próximos passos</S.CardTitle>
+              <S.StepList>
+                {purchaseSteps.map((step) => (
+                  <S.StepItem key={step.title}>
+                    <S.StepNumber $state={step.state}>
+                      <step.Icon size={16} strokeWidth={2.2} aria-hidden />
+                    </S.StepNumber>
+                    <S.StepCopy>
+                      <span>{step.title}</span>
+                      <S.StepStatus $state={step.state}>{step.status}</S.StepStatus>
+                    </S.StepCopy>
+                  </S.StepItem>
                 ))}
-              </S.List>
+              </S.StepList>
+
             </S.Card>
 
-            <S.Card>
+            <S.SummaryCard>
               <S.CardTitle>Resumo do pedido</S.CardTitle>
+              <S.Divider />
               <S.SummaryRow>
                 <span>Biteplaner</span>
-                <strong>R$ 400,00</strong>
+                <strong>R$ 1.000,00</strong>
               </S.SummaryRow>
-              <S.SummaryRow>
-                <span>Situação da demo</span>
-                {order ? (
-                  <StatusIndicator
-                    color={getOrderStatusPresentation(order).color}
-                    label={getOrderStatusPresentation(order).label}
-                  />
-                ) : (
-                  <span>Aguardando caso elegível</span>
-                )}
-              </S.SummaryRow>
+              <S.Divider />
               <S.SummaryRow>
                 <span>Total</span>
-                <S.Total>R$ 400,00</S.Total>
+                <S.Total>R$ 1.000,00</S.Total>
               </S.SummaryRow>
 
-              <Button onClick={handleConfirmPurchase} disabled={ctaDisabled}>
-                {submitting ? 'Confirmando...' : 'Confirmar compra mock'}
-              </Button>
-            </S.Card>
+              {checkoutSuccess ? (
+                <>
+                  <S.PaymentApprovedBox>
+                    <ShieldCheck size={24} aria-hidden />
+                    <span>
+                      <strong>Pagamento aprovado</strong>
+                      Transação processada com sucesso via Stripe.
+                    </span>
+                  </S.PaymentApprovedBox>
+                  <S.DetailsLink to="/painel/biteplaner/jornada">Ver detalhes do pedido</S.DetailsLink>
+                </>
+              ) : (
+                <S.CheckoutButton onClick={handleConfirmPurchase} disabled={ctaDisabled} data-tone="success">
+                  <LockKeyhole size={18} aria-hidden />
+                  <span>{submitting ? 'Abrindo checkout...' : 'Concluir pagamento'}</span>
+                </S.CheckoutButton>
+              )}
+            </S.SummaryCard>
           </S.Layout>
+
+          {checkoutSuccess ? (
+            <S.SuccessFooter>
+              <S.SuccessFooterIcon aria-hidden>
+                <PartyPopper size={38} strokeWidth={1.8} />
+              </S.SuccessFooterIcon>
+              <S.SuccessFooterCopy>
+                <strong>Pagamento realizado com sucesso!</strong>
+                <span>Sua compra foi confirmada e o processo continuará automaticamente.</span>
+                <span>O comprovante e os informativos do pagamento serão enviados para o e-mail cadastrado.</span>
+              </S.SuccessFooterCopy>
+            </S.SuccessFooter>
+          ) : (
+            <S.InfoPanel>
+              <S.InfoIcon aria-hidden>
+                <Info size={22} />
+              </S.InfoIcon>
+              <S.InfoCopy>
+                <strong>Importante</strong>
+                <span>O pagamento será processado de forma segura via Stripe. Seus dados estão protegidos.</span>
+              </S.InfoCopy>
+            </S.InfoPanel>
+          )}
         </>
       )}
     </S.Page>

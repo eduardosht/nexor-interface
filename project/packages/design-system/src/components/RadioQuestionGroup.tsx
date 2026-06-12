@@ -46,6 +46,7 @@ const Wrapper = styled.fieldset<{ $tokens: BrandTokens; $variant: RadioQuestionV
 `;
 
 const Legend = styled.legend<{ $tokens: BrandTokens }>`
+  display: contents;
   margin: 0;
   padding: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
@@ -53,6 +54,24 @@ const Legend = styled.legend<{ $tokens: BrandTokens }>`
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
+`;
+
+const LegendStack = styled.span<{ $tokens: BrandTokens; $inline: boolean; $variant: RadioQuestionVariant }>`
+  display: block;
+  grid-column: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '1' : '1 / -1')};
+  grid-row: 1;
+  min-width: 0;
+  color: ${({ $tokens }) => $tokens.colors.text};
+  font-family: ${({ $tokens }) => $tokens.fonts.body};
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.35;
+`;
+
+const LegendLabel = styled.span`
+  display: flex;
+  align-items: center;
+  min-height: 44px;
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
@@ -68,11 +87,12 @@ const Hint = styled.p<{ $tokens: BrandTokens }>`
   line-height: 1.45;
 `;
 
-const ErrorText = styled.span<{ $tokens: BrandTokens }>`
-  grid-column: 1 / -1;
+const LegendError = styled.span<{ $tokens: BrandTokens }>`
+  display: block;
+  margin-top: 4px;
   color: ${({ $tokens }) => $tokens.colors.danger};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -82,6 +102,9 @@ const Options = styled.div<{
   $columns: RadioQuestionColumns;
   $inline: boolean;
 }>`
+  grid-column: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '2' : '1')};
+  grid-row: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '1' : 'auto')};
+  align-self: start;
   display: ${({ $inline }) => ($inline ? 'flex' : 'grid')};
   flex-wrap: ${({ $inline }) => ($inline ? 'wrap' : undefined)};
   justify-content: ${({ $inline }) => ($inline ? 'flex-end' : undefined)};
@@ -104,6 +127,8 @@ const Options = styled.div<{
         `}
 
   @media (max-width: 640px) {
+    grid-column: 1;
+    grid-row: auto;
     grid-template-columns: 1fr;
   }
 `;
@@ -237,7 +262,16 @@ export function RadioQuestionGroup({
   return (
     <Wrapper $tokens={tokens} $variant={variant} $inline={inline} onBlur={onBlur}>
       <Legend $tokens={tokens}>
-        {label} {required ? <RequiredMark $tokens={tokens}>(*)</RequiredMark> : null}
+        <LegendStack $tokens={tokens} $inline={inline} $variant={variant}>
+          <LegendLabel>
+            {label} {required ? <RequiredMark $tokens={tokens}>(*)</RequiredMark> : null}
+          </LegendLabel>
+          {error ? (
+            <LegendError $tokens={tokens} role="alert">
+              {error}
+            </LegendError>
+          ) : null}
+        </LegendStack>
       </Legend>
       {hint ? <Hint $tokens={tokens}>{hint}</Hint> : null}
       <Options
@@ -284,7 +318,6 @@ export function RadioQuestionGroup({
           );
         })}
       </Options>
-      {error ? <ErrorText $tokens={tokens} role="alert">{error}</ErrorText> : null}
     </Wrapper>
   );
 }

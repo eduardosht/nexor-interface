@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   display: grid;
@@ -116,11 +117,12 @@ export const OnboardingHeroIconBadge = styled.span`
 export const OnboardingCard = styled.section`
   display: grid;
   gap: 28px;
-  padding: 34px 42px 28px;
+  padding: 38px 34px 28px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 14px;
   background:
-    linear-gradient(180deg, rgba(247, 255, 249, 0.72) 0%, rgba(255, 255, 255, 0) 36%),
+    radial-gradient(circle at 82% 8%, rgba(34, 197, 94, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(248, 252, 255, 0.96) 0%, rgba(255, 255, 255, 0) 42%),
     ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
 
@@ -131,6 +133,263 @@ export const OnboardingCard = styled.section`
   @media (max-width: 560px) {
     padding: 18px;
   }
+`;
+
+export const OnboardingHero = styled.header`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  align-items: center;
+  gap: 32px;
+  min-height: 320px;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+`;
+
+export const OnboardingHeroContent = styled.div`
+  display: grid;
+  gap: 20px;
+  max-width: 660px;
+`;
+
+export const OnboardingMainTitle = styled.h1`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: 0;
+  color: #07152f;
+  font-size: 2rem;
+  font-weight: 950;
+  line-height: 1.1;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    font-size: 1.75rem;
+    line-height: 1.05;
+  }
+`;
+
+export const OnboardingHeroLead = styled.p`
+  max-width: 610px;
+  margin: 0;
+  color: #334155;
+  font-size: 1rem;
+  line-height: 1.55;
+
+  strong {
+    color: #008d3f;
+  }
+
+  @media (max-width: 640px) {
+    line-height: 1.5;
+  }
+`;
+
+export const PrerequisiteHero = styled.header`
+  display: grid;
+  gap: 20px;
+  max-width: 980px;
+
+  ${OnboardingMainTitle} {
+    max-width: 760px;
+  }
+
+  ${OnboardingHeroLead} {
+    max-width: 760px;
+  }
+`;
+
+export const PrerequisiteMetaGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 920px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PrerequisiteMetaItem = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+`;
+
+export const PrerequisiteMetaLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 700;
+`;
+
+export const PrerequisiteMetaValue = styled.span`
+  min-width: 0;
+  color: #07152f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+`;
+
+export const PrerequisiteStatus = styled(PrerequisiteMetaValue)`
+  color: #008d3f;
+`;
+
+export const OnboardingInfoCallout = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  max-width: 650px;
+  padding: 20px 22px;
+  border: 1px solid rgba(0, 156, 74, 0.24);
+  border-left: 4px solid #009c4a;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(240, 253, 244, 0.96) 0%, rgba(248, 255, 251, 0.88) 100%);
+  color: #07152f;
+  font-size: 0.875rem;
+  line-height: 1.62;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+
+  svg {
+    color: #009c4a;
+  }
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+    padding: 16px;
+  }
+`;
+
+export const OnboardingHeroVisual = styled.div`
+  position: relative;
+  min-height: 300px;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.14);
+  }
+
+  &::before {
+    inset: 18px 12px 62px 12px;
+  }
+
+  &::after {
+    right: 0;
+    bottom: 18px;
+    width: 150px;
+    height: 150px;
+    background: rgba(20, 184, 166, 0.12);
+  }
+
+  @media (max-width: 980px) {
+    display: none;
+  }
+`;
+
+export const OnboardingHeroClipboard = styled.div`
+  position: absolute;
+  right: 54px;
+  top: 38px;
+  width: 220px;
+  min-height: 270px;
+  padding: 56px 28px 30px;
+  border: 3px solid #00a94f;
+  border-left-color: #dbe6f3;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 26px 54px rgba(15, 23, 42, 0.18);
+  transform: rotate(2deg);
+`;
+
+export const ClipboardClip = styled.span`
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  width: 116px;
+  height: 34px;
+  border-radius: 10px 10px 6px 6px;
+  background: #24344d;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+  transform: translateX(-50%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    border: 8px solid #5c6d86;
+    border-radius: 999px;
+    background: #ffffff;
+    transform: translateX(-50%);
+  }
+`;
+
+export const ClipboardAvatar = styled.span`
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  margin-bottom: 22px;
+  border-radius: 18px;
+  background: #ecfdf3;
+  color: #009c4a;
+`;
+
+export const ClipboardLines = styled.div`
+  display: grid;
+  gap: 14px;
+
+  span {
+    display: block;
+    height: 9px;
+    border-radius: 999px;
+    background: #dce5f1;
+  }
+
+  span:nth-child(1) {
+    width: 86%;
+    background: linear-gradient(90deg, #22c55e 0 62%, #dce5f1 62% 100%);
+  }
+
+  span:nth-child(2) {
+    width: 72%;
+  }
+
+  span:nth-child(3) {
+    width: 94%;
+  }
+
+  span:nth-child(4) {
+    width: 66%;
+    background: #22c55e;
+  }
+`;
+
+export const ClipboardShield = styled.span`
+  position: absolute;
+  right: -44px;
+  bottom: 28px;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 104px;
+  border-radius: 999px 999px 22px 22px;
+  background: linear-gradient(180deg, #36d579 0%, #008d3f 100%);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(0, 156, 74, 0.26);
 `;
 
 export const OnboardingIntro = styled.div`
@@ -326,37 +585,8 @@ export const PrivacyGateText = styled.p`
 
 export const PrivacyGateAction = styled.button`
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 22px;
-  min-height: 52px;
-  padding: 0 22px 0 30px;
-  border: 1px solid #15803d;
-  border-radius: 8px;
-  background: #15803d;
-  color: #f8fbff;
-  box-shadow: 0 14px 30px rgba(21, 128, 61, 0.24);
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background 180ms ease;
-
-  &:not(:disabled):hover {
-    transform: translateY(-1px);
-    background: #166534;
-    box-shadow: 0 18px 38px rgba(21, 128, 61, 0.28);
-  }
-
-  &:disabled {
-    border-color: ${({ theme }) => theme.colors.borderDefault};
-    background: ${({ theme }) => theme.colors.bgInset};
-    color: ${({ theme }) => theme.colors.textMuted};
-    box-shadow: none;
-    cursor: not-allowed;
-  }
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
 `;
 
 export const OnboardingCompletion = styled.div`

@@ -35,7 +35,7 @@ export const TopGrid = styled.div`
 `;
 
 export const SectionTitle = styled.h2`
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -48,6 +48,11 @@ export const Card = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   overflow: hidden;
+`;
+
+export const OnboardingStack = styled.div`
+  display: grid;
+  gap: 16px;
 `;
 
 export const DangerCard = styled(Card)`
@@ -80,7 +85,7 @@ export const Field = styled.div<{ $editable?: boolean }>`
 `;
 
 export const FieldLabel = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -90,6 +95,33 @@ export const FieldValue = styled.span`
   font-size: 14px;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const EditableValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 24px;
+`;
+
+export const EditIconButton = styled.button`
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
 `;
 
 export const FieldInput = styled.input`
@@ -123,7 +155,7 @@ export const FieldSelect = styled.select`
 `;
 
 export const FieldLocked = styled.span`
-  font-size: 10px;
+  font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
   opacity: 0.6;
 `;
@@ -217,7 +249,7 @@ export const ProductBadge = styled.span`
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.green}1a;
   color: ${({ theme }) => theme.colors.green};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 `;
 
