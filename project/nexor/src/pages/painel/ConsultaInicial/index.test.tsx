@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -271,5 +273,15 @@ describe('ConsultaInicial', () => {
       'href',
       expect.stringContaining(encodeURIComponent('/parceiros#dentistas'))
     );
+  });
+
+  it('uses admin modal buttons for the schedule confirmation modal', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/ConsultaInicial/index.tsx'), 'utf8');
+    const styles = readFileSync(join(process.cwd(), 'src/pages/painel/ConsultaInicial/styles.ts'), 'utf8');
+
+    expect(source).toContain('AdminModalActions');
+    expect(source).toContain('AdminModalAction');
+    expect(source).not.toContain('<S.ModalActions>');
+    expect(styles).not.toContain('export const ModalActions');
   });
 });

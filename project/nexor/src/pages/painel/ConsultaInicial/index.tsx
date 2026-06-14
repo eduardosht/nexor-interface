@@ -4,6 +4,7 @@ import * as S from './styles';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { divIcon, latLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { AdminModalAction, AdminModalActions } from '@nexor/design-system';
 import { SkeletonBlock, SkeletonCard, SkeletonLine } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -1179,18 +1180,18 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               <br />
               Clínica: {activeDisplayedLocation?.name ?? activeLocation.name}
             </S.GuidanceCard>
-            <S.ModalActions>
-              <S.SecondaryButton type="button" onClick={() => setShowScheduleConfirmation(false)}>
+            <AdminModalActions>
+              <AdminModalAction type="button" onClick={() => setShowScheduleConfirmation(false)}>
                 Cancelar
-              </S.SecondaryButton>
-              <S.SearchButton
+              </AdminModalAction>
+              <AdminModalAction
                 type="button"
                 onClick={() => void handleScheduleConsultation()}
                 disabled={schedulingConsultation}
               >
                 {schedulingConsultation ? 'Confirmando...' : 'Sim, ja combinei'}
-              </S.SearchButton>
-            </S.ModalActions>
+              </AdminModalAction>
+            </AdminModalActions>
           </S.ConfirmationDialog>
         </S.ModalOverlay>
       ) : null}

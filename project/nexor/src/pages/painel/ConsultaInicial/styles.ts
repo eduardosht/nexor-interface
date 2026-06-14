@@ -377,22 +377,6 @@ export const ConfirmationDialog = styled.div`
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
 `;
 
-export const ModalActions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-
-  @media (max-width: 520px) {
-    justify-content: stretch;
-
-    > button {
-      width: 100%;
-      justify-self: stretch;
-    }
-  }
-`;
-
 export const ReferralCard = styled.section`
   display: grid;
   gap: 18px;
