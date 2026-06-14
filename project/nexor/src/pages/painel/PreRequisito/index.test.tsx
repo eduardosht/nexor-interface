@@ -277,6 +277,11 @@ describe('PreRequisito', () => {
     renderPage();
 
     expect(await screen.findByText(/preencheu este formulário/i)).toBeInTheDocument();
+    expect(screen.getByText(/próxima etapa da jornada biteplaner já está disponível/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /fluxo da jornada/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/jornada'
+    );
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /enviar formulário/i })).not.toBeInTheDocument();
   });

@@ -96,7 +96,7 @@ const cepMarkerIcon = divIcon({
 const DENTIST_PARTNER_PATH = '/parceiros#dentistas';
 const FALLBACK_COORDINATES = { lat: -23.5923, lng: -46.6843 };
 const CLINIC_WHATSAPP_MESSAGE = 'Olá! Quero agendar uma consulta para uso do Biteplaner e saber valores.';
-const DEFAULT_CEP = '04567-000';
+const DEFAULT_CEP = '';
 const EARTH_RADIUS_KM = 6371;
 const CLINIC_CARDS_PAGE_SIZE = 4;
 const INTAKE_TEMPLATE_KEY = 'customer_pre_consultation_intake';
@@ -497,18 +497,16 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
   const token = getAuthToken(session);
   const dentistPartnerUrl = getDentistPartnerUrl();
   const [cep, setCep] = useState(DEFAULT_CEP);
-  const [cepLocation, setCepLocation] = useState<CepLocation | null>(() =>
-    getConsultationCepLocation(DEFAULT_CEP, listConsultationLocationsByCep(DEFAULT_CEP))
-  );
+  const [cepLocation, setCepLocation] = useState<CepLocation | null>(null);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
   const [dentistReferralMessage, setDentistReferralMessage] = useState(() =>
     getDefaultDentistReferralMessage(dentistPartnerUrl)
   );
   const [visibleLocations, setVisibleLocations] = useState<DemoPracticeLocationSelection[]>(
-    () => (isMockMode ? listConsultationLocationsByCep('04567-000') : [])
+    () => (isMockMode ? listConsultationLocationsByCep('') : [])
   );
   const [activeLocation, setActiveLocation] = useState<DemoPracticeLocationSelection | null>(
-    () => (isMockMode ? listConsultationLocationsByCep('04567-000')[0] ?? null : null)
+    () => (isMockMode ? listConsultationLocationsByCep('')[0] ?? null : null)
   );
   const [loading, setLoading] = useState(!initialOrder);
   const [error, setError] = useState('');
@@ -617,6 +615,18 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
 
   useEffect(() => {
     if (isMockMode) {
+      if (normalizeCep(cep).length !== 8) {
+        const demoLocations = listConsultationLocationsByCep('');
+        setCepLocation(null);
+        setVisibleLocations(demoLocations);
+        setActiveLocation((current) =>
+          current && demoLocations.some((location) => location.id === current.id)
+            ? current
+            : demoLocations[0] ?? null
+        );
+        return;
+      }
+
       const demoLocations = listConsultationLocationsByCep(cep);
       setVisibleLocations(demoLocations);
       setActiveLocation((current) => current ?? demoLocations[0] ?? null);
@@ -822,9 +832,14 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
           lng: position.coords.longitude,
           label: 'Sua localização atual',
         };
-        const nextLocationsWithDistances = withDistances(visibleLocations, nextCepLocation);
+        const locationSource =
+          visibleLocations.length > 0 || !isMockMode
+            ? visibleLocations
+            : listConsultationLocationsByCep('');
+        const nextLocationsWithDistances = withDistances(locationSource, nextCepLocation);
 
         setCepLocation(nextCepLocation);
+        setVisibleLocations(locationSource);
         setActiveLocation(nextLocationsWithDistances[0] ?? null);
         setLocatingUser(false);
       },
@@ -993,7 +1008,11 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     </S.ClinicHeader>
                     <S.ClinicMeta>{location.address}</S.ClinicMeta>
                     <S.ClinicFooter>
-                      <S.ClinicMeta>{formatDistanceKm(location.distanceKm)} km do CEP informado</S.ClinicMeta>
+                      <S.ClinicMeta>
+                        {cepLocation
+                          ? `${formatDistanceKm(location.distanceKm)} km do CEP informado`
+                          : 'Informe um CEP ou use sua localização para calcular distância'}
+                      </S.ClinicMeta>
                       <RatingStars score={location.dentistReviewScore} label="avaliações do dentista" />
                     </S.ClinicFooter>
                   </S.ClinicButton>

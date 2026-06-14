@@ -17,7 +17,7 @@ import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys'
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from './styles';
 
-const SUCCESS_REDIRECT_DELAY_MS = 700;
+const SUCCESS_REDIRECT_DELAY_MS = 2400;
 const INTAKE_TEMPLATE_KEY = 'customer_pre_consultation_intake';
 const EMPTY_WORKFLOW_DEFAULT_VALUES: Record<string, string> = {};
 const BITEPLANER_CONSENT_PAYLOAD = {
@@ -71,6 +71,7 @@ export function PreRequisito() {
   const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [isProcessingSubmittedIntake, setIsProcessingSubmittedIntake] = useState(false);
 
   const ordersQuery = useQuery({
     queryKey: biteplanerQueryKeys.orders('user', queryOwnerId),
@@ -146,6 +147,7 @@ export function PreRequisito() {
 
     setNotice('');
     setError('');
+    setIsProcessingSubmittedIntake(true);
 
     queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
       biteplanerQueryKeys.orders('user', queryOwnerId),
@@ -256,9 +258,28 @@ export function PreRequisito() {
                 <>
                   <S.OnboardingDivider />
                   {completedIntake ? (
-                    <S.Banner role="status">
-                      Você já preencheu este formulário. O pré-requisito foi concluído e a próxima etapa da jornada Biteplaner já está disponível.
-                    </S.Banner>
+                    <S.ProcessingBanner role="status" aria-live="polite">
+                      <S.ProcessingSpinner aria-hidden="true" />
+                      <S.ProcessingContent>
+                        <strong>
+                          {isProcessingSubmittedIntake
+                            ? 'Estamos processando sua ordem'
+                            : 'Você já preencheu este formulário'}
+                        </strong>
+                        <span>
+                          {isProcessingSubmittedIntake
+                            ? 'O pré-requisito foi concluído. Aguarde alguns instantes: você será redirecionado para escolher a clínica da consulta inicial.'
+                            : 'O pré-requisito foi concluído e a próxima etapa da jornada Biteplaner já está disponível.'}
+                        </span>
+                        <span>
+                          Se preferir, acompanhe pelo{' '}
+                          <S.ProcessingLink to="/painel/biteplaner/jornada">
+                            fluxo da jornada
+                          </S.ProcessingLink>
+                          .
+                        </span>
+                      </S.ProcessingContent>
+                    </S.ProcessingBanner>
                   ) : (
                     <WorkflowFormsPanel
                     orderId={order?.id ?? null}

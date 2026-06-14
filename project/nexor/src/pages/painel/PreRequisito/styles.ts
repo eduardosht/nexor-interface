@@ -17,6 +17,60 @@ export const Banner = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
+export const ProcessingBanner = styled(Banner)`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  border-color: rgba(21, 128, 61, 0.24);
+  background: linear-gradient(90deg, rgba(240, 253, 244, 0.96) 0%, rgba(255, 255, 255, 0.96) 100%);
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ProcessingSpinner = styled.span`
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(21, 128, 61, 0.16);
+  border-top-color: ${({ theme }) => theme.colors.green};
+  border-radius: 999px;
+  animation: processingSpin 0.8s linear infinite;
+
+  @keyframes processingSpin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+export const ProcessingContent = styled.p`
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    line-height: 1.55;
+  }
+`;
+
+export const ProcessingLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.green};
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+`;
+
 export const GuidanceBanner = styled(Banner)`
   display: grid;
   grid-template-columns: auto 1fr;
