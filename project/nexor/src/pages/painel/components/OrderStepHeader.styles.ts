@@ -20,10 +20,12 @@ export const Title = PortalPageTitle;
 export const Description = PortalPageDescription;
 
 export const OrderBanner = styled.section`
+  container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(190px, 0.9fr) minmax(180px, 0.85fr);
   align-items: center;
   gap: 0;
+  min-width: 0;
   min-height: 148px;
   padding: 28px 34px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -47,6 +49,18 @@ export const OrderBanner = styled.section`
 
   @media (max-width: 560px) {
     padding: 18px;
+  }
+
+  @container (max-width: 720px) {
+    grid-template-columns: minmax(0, 1.35fr) minmax(118px, 0.65fr);
+    align-items: start;
+    row-gap: 18px;
+    min-height: auto;
+    padding: 20px;
+  }
+
+  @container (max-width: 420px) {
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -188,6 +202,7 @@ export const OrderMeta = styled.div`
   display: grid;
   align-content: center;
   gap: 20px;
+  min-width: 0;
   min-height: 96px;
   padding-right: 34px;
   padding-left: 34px;
@@ -215,6 +230,27 @@ export const OrderMeta = styled.div`
   @media (max-width: 860px) {
     padding-right: 0;
     padding-left: 0;
+  }
+
+  @container (max-width: 720px) {
+    gap: 10px;
+    min-height: auto;
+    padding-right: 0;
+    padding-left: 18px;
+
+    &:nth-child(3) {
+      padding-left: 0;
+      border-left: 0;
+      border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+      padding-top: 16px;
+    }
+  }
+
+  @container (max-width: 420px) {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    padding-top: 16px;
   }
 `;
 
@@ -249,7 +285,8 @@ export const StatusPill = styled.span<{ $color: string }>`
   display: inline-flex;
   align-items: flex-start;
   width: fit-content;
-  max-width: 260px;
+  max-width: min(260px, 100%);
+  min-width: 0;
   gap: 12px;
   padding: 0;
   border: 0;
@@ -258,6 +295,8 @@ export const StatusPill = styled.span<{ $color: string }>`
   font-size: 14px;
   font-weight: 800;
   line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: anywhere;
 
   &::before {
     content: '';

@@ -1181,9 +1181,9 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               Clínica: {activeDisplayedLocation?.name ?? activeLocation.name}
             </S.GuidanceCard>
             <AdminModalActions>
-              <AdminModalAction type="button" onClick={() => setShowScheduleConfirmation(false)}>
+              <S.CancelModalAction type="button" onClick={() => setShowScheduleConfirmation(false)}>
                 Cancelar
-              </AdminModalAction>
+              </S.CancelModalAction>
               <AdminModalAction
                 type="button"
                 onClick={() => void handleScheduleConsultation()}

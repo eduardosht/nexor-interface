@@ -460,6 +460,10 @@ describe('ProducaoDentista', () => {
     expect(anamnesisStyles).toContain('height: 32px');
     expect(stepHeaderStyles).toContain('@media (max-width: 1280px)');
     expect(stepHeaderStyles).toContain('width: 32px');
+    expect(stepHeaderStyles).toContain('container-type: inline-size');
+    expect(stepHeaderStyles).toContain('@container (max-width: 720px)');
+    expect(stepHeaderStyles).toContain('grid-template-columns: minmax(0, 1.35fr) minmax(118px, 0.65fr)');
+    expect(stepHeaderStyles).toContain('overflow-wrap: anywhere');
     expect(formsPanelStyles).toContain('@media (max-width: 1280px)');
     expect(formsPanelStyles).toContain('padding: 14px');
 

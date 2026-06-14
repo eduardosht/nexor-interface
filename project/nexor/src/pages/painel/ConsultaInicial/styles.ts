@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Button } from '@nexor/design-system';
+import { AdminModalAction, Button } from '@nexor/design-system';
 import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
@@ -375,6 +375,20 @@ export const ConfirmationDialog = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+`;
+
+export const CancelModalAction = styled(AdminModalAction)`
+  background: ${({ theme }) => theme.colors.bgElevated};
+  border-color: ${({ theme }) => theme.colors.borderDefault};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.bgBase};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    box-shadow: none;
+  }
 `;
 
 export const ReferralCard = styled.section`

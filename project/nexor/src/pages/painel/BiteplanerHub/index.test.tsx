@@ -1393,8 +1393,8 @@ describe('BiteplanerHub', () => {
     expect(screen.getAllByText(/fundamentos clínicos do biteplaner/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/neste modulo, o dentista revisa os fundamentos clínicos/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /baixar pdf/i })).toHaveAttribute('download', 'fundamentos-biteplaner.pdf');
-    expect(screen.getByRole('button', { name: /vídeo 2 fluxo operacional e documentação/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /vídeo 2 fluxo operacional e documentação/i }));
+    expect(screen.getByRole('button', { name: /vídeo 2\s*fluxo operacional e documentação/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /vídeo 2\s*fluxo operacional e documentação/i }));
     expect(screen.getAllByText(/fluxo operacional e documentação/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/checklist operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/este modulo organiza o fluxo operacional/i)).toBeInTheDocument();

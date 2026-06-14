@@ -281,7 +281,10 @@ describe('ConsultaInicial', () => {
 
     expect(source).toContain('AdminModalActions');
     expect(source).toContain('AdminModalAction');
+    expect(source).toContain('<S.CancelModalAction type="button"');
     expect(source).not.toContain('<S.ModalActions>');
     expect(styles).not.toContain('export const ModalActions');
+    expect(styles).toContain('export const CancelModalAction = styled(AdminModalAction)');
+    expect(styles).toContain('box-shadow: none');
   });
 });

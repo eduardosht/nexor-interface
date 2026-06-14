@@ -2823,9 +2823,6 @@ export function BiteplanerHub() {
                     )}
                   </S.ActionRow>
                 */}
-                {athleteOrder.status === 'appointment_confirmed' ? (
-                  <S.OrderText>Consulta confirmada por paciente e dentista.</S.OrderText>
-                ) : null}
               </S.AthleteOrderHighlight>
             ) : (
               <S.EmptyState data-testid="athlete-onboarding-empty-state">
