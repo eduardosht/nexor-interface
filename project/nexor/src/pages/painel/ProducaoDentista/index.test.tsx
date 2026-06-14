@@ -557,15 +557,15 @@ describe('ProducaoDentista', () => {
       '../packages/design-system/src/components/TagAutocompleteField.tsx',
     ].map((path) => readFileSync(join(process.cwd(), path), 'utf8'));
 
-    expect(onboardingStyles).toContain('font-size: 2rem;');
-    expect(onboardingStyles).toContain('font-size: 1rem;');
+    expect(onboardingStyles).toContain('font-size: clamp(1.25rem, 2vw, 1.75rem);');
+    expect(onboardingStyles).toContain('font-size: 14px;');
     expect(onboardingStyles).toContain('font-size: 0.875rem;');
     expect(adminStyles).toContain('export const PageTitle');
     expect(adminStyles).toContain('PortalPageTitle');
     expect(adminStyles).toContain('PortalPageDescription');
     expect(portalTypography).toContain('font-size: ${({ $size = \'default\' }) =>');
-    expect(portalTypography).toContain('clamp(2rem, 3.4vw, 2.75rem)');
-    expect(portalTypography).toContain('16px');
+    expect(portalTypography).toContain('clamp(1.25rem, 2vw, 1.75rem)');
+    expect(portalTypography).toContain('14px');
 
     designSystemFormSources.forEach((source) => {
       const labelBlock = source.slice(source.indexOf('const Label'), source.indexOf('const RequiredMark'));

@@ -56,6 +56,7 @@ interface AuthContextValue {
   session: AuthSession | null;
   backendUser: BackendUser | null;
   backendUserResolved: boolean;
+  authError: string;
   demoPersona: DemoPersona | null;
   signIn(email: string, password: string): Promise<void>;
   signInDemo(persona: DemoPersona): Promise<void>;
@@ -71,6 +72,7 @@ const AuthContext = createContext<AuthContextValue>({
   session: null,
   backendUser: null,
   backendUserResolved: true,
+  authError: '',
   demoPersona: null,
   async signIn() {},
   async signInDemo() {},
@@ -80,6 +82,18 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 const unconfiguredError = new Error('Autenticação não configurada neste ambiente.');
+
+function resolveAccountAuthErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    return error.message || 'Não foi possível acessar sua conta. Tente novamente ou entre em contato com a Nexor.';
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Não foi possível acessar sua conta. Tente novamente ou entre em contato com a Nexor.';
+}
 
 function resolveAuthRedirectUrl(path: string) {
   const baseUrl = env.appUrl ?? window.location.origin;
@@ -157,6 +171,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [backendUser, setBackendUser] = useState<BackendUser | null>(null);
   const [backendUserResolved, setBackendUserResolved] = useState(true);
+  const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(true);
   const [demoPersona, setDemoPersona] = useState<DemoPersona | null>(null);
   const backendUserResolvedRef = useRef(backendUserResolved);
@@ -187,10 +202,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         const nextUser = await fetchBackendUser(nextSession.access_token);
         setBackendUser(nextUser);
+        setAuthError('');
       } catch (err) {
         if (err instanceof ProfileNotFoundError) {
           setBackendUser(null);
+          setAuthError('');
         } else {
+          setAuthError(resolveAccountAuthErrorMessage(err));
           throw err;
         }
       } finally {
@@ -379,6 +397,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       throw unconfiguredError;
     }
 
+    setAuthError('');
+
     const auth = supabase.auth as {
       signInWithPassword(credentials: {
         email: string;
@@ -394,6 +414,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const signInDemo = useCallback(async (persona: DemoPersona) => {
+    setAuthError('');
     writeActiveDemoPersona(persona);
     setDemoPersona(persona);
     setLoading(true);
@@ -417,6 +438,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [syncBackendUser]);
 
   const signOut = useCallback(async () => {
+    setAuthError('');
+
     if (isMockMode) {
       clearActiveDemoPersona();
       setDemoPersona(null);
@@ -468,10 +491,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       const nextUser = await fetchBackendUser(session.access_token);
       setBackendUser(nextUser);
+      setAuthError('');
     } catch (err) {
       if (err instanceof ProfileNotFoundError) {
         setBackendUser(null);
+        setAuthError('');
       } else {
+        setAuthError(resolveAccountAuthErrorMessage(err));
         throw err;
       }
     }
@@ -485,6 +511,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       session,
       backendUser,
       backendUserResolved,
+      authError,
       demoPersona,
       signIn,
       signInDemo,
@@ -495,6 +522,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [
       backendUser,
       backendUserResolved,
+      authError,
       demoPersona,
       hasConfiguredAuth,
       isMockMode,

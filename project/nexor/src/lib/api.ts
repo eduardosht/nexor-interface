@@ -32,12 +32,19 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     const errorBody = await response.json().catch(() => null) as {
       error?: unknown;
       message?: unknown;
+      localizedMessage?: unknown;
       requestId?: unknown;
       details?: unknown;
     } | null;
+    const message =
+      typeof errorBody?.localizedMessage === 'string'
+        ? errorBody.localizedMessage
+        : typeof errorBody?.message === 'string'
+          ? errorBody.message
+          : fallbackMessage;
 
     throw new ApiError(
-      typeof errorBody?.message === 'string' ? errorBody.message : fallbackMessage,
+      message,
       response.status,
       typeof errorBody?.error === 'string' ? errorBody.error : undefined,
       typeof errorBody?.requestId === 'string' ? errorBody.requestId : undefined,

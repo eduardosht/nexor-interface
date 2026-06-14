@@ -408,6 +408,10 @@ function getInitialPayload(
       const rawValue = payloadSource[field.key] ?? defaultValues[field.key] ?? '';
       const value = Array.isArray(rawValue) ? rawValue.join('|') : String(rawValue);
 
+      if (isSliderScoreField(field) && value.trim() === '') {
+        return [field.key, String(field.min ?? 0)];
+      }
+
       if (field.key === 'phone') {
         return [field.key, formatPhoneValue(value)];
       }

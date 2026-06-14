@@ -36,6 +36,7 @@ const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBitepl
 const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
 const AdminLabLicensing = lazy(() => import('../pages/painel/admin/AdminLabLicensing').then(({ AdminLabLicensing }) => ({ default: AdminLabLicensing })));
 const AdminPartnerLicensing = lazy(() => import('../pages/painel/admin/AdminPartnerLicensing').then(({ AdminPartnerLicensing }) => ({ default: AdminPartnerLicensing })));
+const AdminAccountDeletions = lazy(() => import('../pages/painel/admin/AdminAccountDeletions').then(({ AdminAccountDeletions }) => ({ default: AdminAccountDeletions })));
 const AdminUsers = lazy(() => import('../pages/painel/admin/AdminUsers').then(({ AdminUsers }) => ({ default: AdminUsers })));
 const AdminBusinessSettings = lazy(() => import('../pages/painel/admin/AdminBusinessSettings').then(({ AdminBusinessSettings }) => ({ default: AdminBusinessSettings })));
 const AdminSystemSettings = lazy(() => import('../pages/painel/admin/AdminSystemSettings').then(({ AdminSystemSettings }) => ({ default: AdminSystemSettings })));
@@ -144,6 +145,7 @@ export const router = createBrowserRouter([
   { path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> },
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
   { path: '/painel/admin/parceiros', element: <AdminPainelRoute><AdminPartnerLicensing /></AdminPainelRoute> },
+  { path: '/painel/admin/remocoes-conta', element: <AdminPainelRoute><AdminAccountDeletions /></AdminPainelRoute> },
   { path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/laboratórios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },

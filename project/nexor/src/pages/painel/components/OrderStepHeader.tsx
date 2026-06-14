@@ -40,6 +40,12 @@ export interface OrderStepHeaderProps {
   children?: ReactNode;
 }
 
+export interface OrderInfoCardProps {
+  order: DemoOrderSummary;
+  orderHelpText: ReactNode;
+  testId?: string;
+}
+
 function formatOrderUpdate(value: string) {
   const date = new Date(value);
 
@@ -47,6 +53,57 @@ function formatOrderUpdate(value: string) {
     date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date),
     time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(date),
   };
+}
+
+export function OrderInfoCard({ order, orderHelpText, testId = 'athlete-order-card' }: OrderInfoCardProps) {
+  const orderUpdate = formatOrderUpdate(order.created_at);
+  const status = getOrderStatusPresentation(order);
+  const orderLabel = getOrderDisplayId(order);
+
+  return (
+    <S.OrderBanner data-testid={testId}>
+      <S.OrderSummary aria-label="Informações do pedido">
+        <S.OrderIcon aria-hidden="true">
+          <ClipboardList size={38} strokeWidth={1.8} />
+          <S.OrderIconBadge>
+            <Clock3 size={15} strokeWidth={2.2} />
+          </S.OrderIconBadge>
+        </S.OrderIcon>
+        <S.OrderSummaryText>
+          <S.OrderEyebrow>PEDIDO</S.OrderEyebrow>
+          <S.OrderId>{orderLabel}</S.OrderId>
+          <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
+        </S.OrderSummaryText>
+      </S.OrderSummary>
+
+      <S.OrderMeta aria-label="Status atual do pedido">
+        <S.OrderMetaLabel>STATUS ATUAL</S.OrderMetaLabel>
+        <S.StatusPill $color={status.color} data-testid="athlete-order-status">
+          {status.label}
+        </S.StatusPill>
+      </S.OrderMeta>
+
+      <S.OrderMeta aria-label="Última atualização do pedido">
+        <S.OrderMetaLabel>ÚLTIMA ATUALIZAÇÃO</S.OrderMetaLabel>
+        <S.OrderMetaValue>
+          <CalendarDays size={25} strokeWidth={1.9} aria-hidden="true" />
+          <span>
+            {orderUpdate.date}
+            <br />
+            às {orderUpdate.time}
+          </span>
+        </S.OrderMetaValue>
+      </S.OrderMeta>
+
+      <S.OrderMeta aria-label="Etapa atual do pedido">
+        <S.OrderMetaLabel>ETAPA ATUAL</S.OrderMetaLabel>
+        <S.OrderMetaValue>
+          <Flag size={25} strokeWidth={1.9} aria-hidden="true" />
+          <span>{getStageLabel(order)}</span>
+        </S.OrderMetaValue>
+      </S.OrderMeta>
+    </S.OrderBanner>
+  );
 }
 
 export function OrderStepHeader({
@@ -58,10 +115,6 @@ export function OrderStepHeader({
   showOrderSummary = true,
   children
 }: OrderStepHeaderProps) {
-  const orderUpdate = order ? formatOrderUpdate(order.created_at) : null;
-  const status = order ? getOrderStatusPresentation(order) : null;
-  const orderLabel = getOrderDisplayId(order);
-
   return (
     <S.Header>
       <S.Copy>
@@ -71,50 +124,7 @@ export function OrderStepHeader({
 
       {children}
 
-      {showOrderSummary && order && orderUpdate && status ? (
-        <S.OrderBanner data-testid="athlete-order-card">
-          <S.OrderSummary>
-            <S.OrderIcon aria-hidden="true">
-              <ClipboardList size={38} strokeWidth={1.8} />
-              <S.OrderIconBadge>
-                <Clock3 size={13} strokeWidth={2.2} />
-              </S.OrderIconBadge>
-            </S.OrderIcon>
-            <S.OrderSummaryText>
-              <S.OrderEyebrow>Pedido</S.OrderEyebrow>
-              <S.OrderId>{orderLabel}</S.OrderId>
-              <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
-            </S.OrderSummaryText>
-          </S.OrderSummary>
-
-          <S.OrderMeta>
-            <S.OrderMetaLabel>Status atual</S.OrderMetaLabel>
-            <S.StatusPill $color={status.color} data-testid="athlete-order-status">
-              {status.label}
-            </S.StatusPill>
-          </S.OrderMeta>
-
-          <S.OrderMeta>
-            <S.OrderMetaLabel>Última atualização</S.OrderMetaLabel>
-            <S.OrderMetaValue>
-              <CalendarDays size={20} strokeWidth={1.8} aria-hidden="true" />
-              <span>
-                {orderUpdate.date}
-                <br />
-                as {orderUpdate.time}
-              </span>
-            </S.OrderMetaValue>
-          </S.OrderMeta>
-
-          <S.OrderMeta>
-            <S.OrderMetaLabel>Etapa atual</S.OrderMetaLabel>
-            <S.OrderMetaValue>
-              <Flag size={20} strokeWidth={1.8} aria-hidden="true" />
-              <span>{getStageLabel(order)}</span>
-            </S.OrderMetaValue>
-          </S.OrderMeta>
-        </S.OrderBanner>
-      ) : null}
+      {showOrderSummary && order ? <OrderInfoCard order={order} orderHelpText={orderHelpText} /> : null}
     </S.Header>
   );
 }

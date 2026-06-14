@@ -666,4 +666,31 @@ describe('Jornada', () => {
     expect(screen.queryByRole('link', { name: /enviar e-mail para a nexor/i })).not.toBeInTheDocument();
     expectNoEmbeddedStepContent();
   });
+
+  it('explains when the journey was interrupted by an approved account removal', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-011',
+            status: 'cancelled',
+            statusLabel: 'Cancelada',
+            statusReason: 'account_deletion_approved',
+            stage: 'awaiting_initial_consultation',
+            created_at: '2026-05-04T09:00:00.000Z',
+            customer: { full_name: 'Marina Lutadora', email: 'marina.demo@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] })
+      .mockResolvedValueOnce({ appointments: [] });
+
+    renderPage();
+
+    const problem = await screen.findByTestId('journey-order-problem');
+    expect(problem).toHaveTextContent(/jornada interrompida/i);
+    expect(problem).toHaveTextContent(/remoção de conta/i);
+    expect(problem).toHaveTextContent(/sem gerar ressarcimento automático/i);
+    expectNoEmbeddedStepContent();
+  });
 });

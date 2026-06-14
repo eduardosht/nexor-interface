@@ -48,6 +48,30 @@ type ProductRolesResponse = {
   productRoles: ProductRole[];
 };
 
+type AccountDeletionStatus =
+  | 'pending_confirmation'
+  | 'pending_admin_review'
+  | 'cancelled_by_user'
+  | 'rejected'
+  | 'approved_direct'
+  | 'approved_processing_privacy'
+  | 'completed';
+
+type AccountDeletionResponse = {
+  request: {
+    id: string;
+    status: AccountDeletionStatus;
+    active_order_ids?: string[];
+    admin_decision_note?: string | null;
+  };
+  requiresAdminReview: boolean;
+  message: string;
+};
+
+type CurrentAccountDeletionResponse = {
+  deletionRequest: AccountDeletionResponse | null;
+};
+
 type PracticeLocationMetadata = {
   name: string;
   address: string;
@@ -259,6 +283,8 @@ export function MinhaConta() {
   const [deletionReasonDetails, setDeletionReasonDetails] = useState('');
   const [deletionConfirmation, setDeletionConfirmation] = useState('');
   const [deletionSubmitting, setDeletionSubmitting] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<AccountDeletionResponse | null>(null);
+  const [deletionActionSubmitting, setDeletionActionSubmitting] = useState(false);
   const [snackbar, setSnackbar] = useState<AccountSnackbar | null>(null);
 
   const email = backendUser?.email ?? session?.user.email ?? '—';
@@ -267,6 +293,7 @@ export function MinhaConta() {
   const firstName = getFirstName(fullName, email);
   const canConfirmDeletion = deletionConfirmation.trim() === firstName;
   const acquiredProducts = useMemo(() => getMockAcquiredProducts(email), [email]);
+  const deletionStatus = deletionRequest?.request?.status;
 
   function getOnboardingEditKey(role: ProductRole, field: string) {
     return `${role.id ?? `${role.productKey}:${role.role}`}:${field}`;
@@ -773,9 +800,10 @@ export function MinhaConta() {
     async function load() {
       setLoadingProfile(true);
       try {
-        const [resp, productRolesResp] = await Promise.all([
+        const [resp, productRolesResp, deletionResp] = await Promise.all([
           api.get<MeResponse>('/v1/auth/me', session!.access_token),
           api.get<ProductRolesResponse>('/v1/account/product-roles', session!.access_token),
+          api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', session!.access_token),
         ]);
         if (!active) {
           return;
@@ -790,6 +818,7 @@ export function MinhaConta() {
 
         setLoadedRoles(nextRoles);
         setProductRoles(productRolesResp?.productRoles ?? []);
+        setDeletionRequest(deletionResp?.deletionRequest ?? null);
       } catch {
         /* silently skip — name stays empty */
       } finally {
@@ -1000,15 +1029,16 @@ export function MinhaConta() {
     setSnackbar(null);
 
     try {
-      const response = await api.post<{ message?: string }>(
+      const response = await api.post<AccountDeletionResponse>(
         '/v1/account/deletion-request',
         {
           confirmationFirstName: deletionConfirmation.trim(),
-          reason: deletionReason,
+          ...(deletionReason ? { reason: deletionReason } : {}),
           reasonDetails: deletionReasonDetails.trim(),
         },
         session.access_token
       );
+      setDeletionRequest(response);
 
       setSnackbar({
         tone: 'success',
@@ -1027,6 +1057,71 @@ export function MinhaConta() {
       setDeletionReasonDetails('');
       setDeletionConfirmation('');
       setDeletionSubmitting(false);
+    }
+  }
+
+  async function handleForceAdminReview() {
+    if (!session || deletionActionSubmitting) {
+      return;
+    }
+
+    setDeletionActionSubmitting(true);
+    setSnackbar(null);
+
+    try {
+      const response = await api.post<AccountDeletionResponse>(
+        '/v1/account/deletion-request',
+        {
+          confirmationFirstName: firstName,
+          forceAdminReview: true,
+        },
+        session.access_token
+      );
+      setDeletionRequest(response);
+      setSnackbar({
+        tone: 'success',
+        title: 'Enviado para análise',
+        message: response.message,
+      });
+    } catch {
+      setSnackbar({
+        tone: 'error',
+        title: 'Falha ao enviar',
+        message: 'Não foi possível enviar a solicitação para análise.',
+      });
+    } finally {
+      setDeletionActionSubmitting(false);
+    }
+  }
+
+  async function handleCancelDeletionRequest() {
+    if (!session || !deletionRequest || deletionActionSubmitting) {
+      return;
+    }
+
+    setDeletionActionSubmitting(true);
+    setSnackbar(null);
+
+    try {
+      const response = await api.post<AccountDeletionResponse>(
+        `/v1/account/deletion-request/${deletionRequest.request.id}/cancel`,
+        {},
+        session.access_token
+      );
+      setDeletionRequest(response);
+      setSnackbar({
+        tone: 'success',
+        title: 'Remoção cancelada',
+        message: response.message,
+      });
+    } catch {
+      setSnackbar({
+        tone: 'error',
+        title: 'Falha ao cancelar',
+        message: 'Não foi possível cancelar a solicitação de remoção.',
+      });
+    } finally {
+      setDeletionActionSubmitting(false);
     }
   }
 
@@ -1183,15 +1278,71 @@ export function MinhaConta() {
           <S.SectionTitle>Excluir conta</S.SectionTitle>
           <S.DangerCard>
             <S.SecurityContent>
-              <S.SecurityTitle>Solicitar exclusão da conta</S.SecurityTitle>
+              <S.SecurityTitle>
+                {deletionStatus === 'rejected'
+                  ? 'Remoção de conta rejeitada'
+                  : deletionStatus === 'pending_admin_review'
+                    ? 'Remoção em análise'
+                    : deletionStatus === 'pending_confirmation'
+                      ? 'Fluxos ativos encontrados'
+                      : deletionStatus === 'cancelled_by_user'
+                        ? 'Remoção cancelada'
+                        : deletionStatus === 'approved_direct' ||
+                            deletionStatus === 'approved_processing_privacy'
+                          ? 'Remoção aprovada'
+                          : 'Solicitar exclusão da conta'}
+              </S.SecurityTitle>
               <S.SecurityText>
-                Por segurança, a exclusão pode ficar pendente quando houver ordens em andamento vinculadas à conta.
+                {deletionRequest?.message ??
+                  'Por segurança, a exclusão pode ficar pendente quando houver ordens em andamento vinculadas à conta.'}
               </S.SecurityText>
+              {deletionStatus === 'pending_confirmation' ? (
+                <S.DeletionStatusNotice role="status" aria-label="Status da remoção">
+                  <S.DeletionStatusTitle>Status alterado</S.DeletionStatusTitle>
+                  <S.DeletionStatusMessage>
+                    {deletionRequest?.message ??
+                      'Encontramos fluxos ativos vinculados à sua conta. Para continuar, envie a solicitação para análise da Nexor.'}
+                  </S.DeletionStatusMessage>
+                </S.DeletionStatusNotice>
+              ) : null}
             </S.SecurityContent>
             <S.FormActions>
-              <S.DangerButton type="button" onClick={() => setDeletionModalOpen(true)}>
-                Excluir conta
-              </S.DangerButton>
+              {deletionStatus === 'pending_confirmation' ? (
+                <>
+                  <S.DangerButton
+                    type="button"
+                    disabled={deletionActionSubmitting}
+                    onClick={handleForceAdminReview}
+                  >
+                    Enviar para análise da Nexor
+                  </S.DangerButton>
+                  <S.CancelButton
+                    type="button"
+                    disabled={deletionActionSubmitting}
+                    onClick={handleCancelDeletionRequest}
+                  >
+                    Cancelar remoção
+                  </S.CancelButton>
+                </>
+              ) : deletionStatus === 'pending_admin_review' ? (
+                <S.CancelButton
+                  type="button"
+                  disabled={deletionActionSubmitting}
+                  onClick={handleCancelDeletionRequest}
+                >
+                  Cancelar remoção
+                </S.CancelButton>
+              ) : deletionStatus === 'rejected' && deletionRequest?.request ? (
+                <S.CancelButton as="a" href={`mailto:suporte@nexor.com.br?subject=Remoção de conta ${deletionRequest.request.id}`}>
+                  Entrar em contato
+                </S.CancelButton>
+              ) : deletionStatus === 'approved_direct' ||
+                deletionStatus === 'approved_processing_privacy' ||
+                deletionStatus === 'completed' ? null : (
+                <S.DangerButton type="button" onClick={() => setDeletionModalOpen(true)}>
+                  Excluir conta
+                </S.DangerButton>
+              )}
             </S.FormActions>
           </S.DangerCard>
         </S.Section>
@@ -1241,7 +1392,7 @@ export function MinhaConta() {
                 label={<>Digite <strong>{firstName}</strong> para confirmar</>}
                 aria-label={`Digite ${firstName} para confirmar`}
                 value={deletionConfirmation}
-                onChange={(event) => setDeletionConfirmation(sanitizePersonName(event.target.value))}
+                onChange={(event) => setDeletionConfirmation(event.target.value)}
               />
             </S.ModalBody>
             <S.ModalActions>

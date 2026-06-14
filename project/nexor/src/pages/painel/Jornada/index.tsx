@@ -47,6 +47,8 @@ type JourneyStep = {
   icon: LucideIcon;
 };
 
+const ACCOUNT_DELETION_APPROVED_REASON = 'account_deletion_approved';
+
 const JOURNEY_STEPS: JourneyStep[] = [
   {
     key: 'prerequisite',
@@ -139,6 +141,30 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getOrderStatusReason(order: DemoOrderSummary) {
+  const record = order as unknown as Record<string, unknown>;
+  const directReason =
+    record.statusReason ??
+    record.status_reason ??
+    record.cancellationReason ??
+    record.cancellation_reason ??
+    record.cancelReason ??
+    record.cancel_reason;
+
+  if (typeof directReason === 'string') {
+    return directReason;
+  }
+
+  const metadata = isRecord(record.metadata) ? record.metadata : null;
+  const metadataReason = metadata?.reason ?? metadata?.cancellationReason ?? metadata?.cancellation_reason;
+
+  return typeof metadataReason === 'string' ? metadataReason : '';
+}
+
+function wasInterruptedByAccountDeletion(order: DemoOrderSummary) {
+  return getOrderStatusReason(order) === ACCOUNT_DELETION_APPROVED_REASON;
 }
 
 function formatCurrencyFromCents(value: number) {
@@ -241,6 +267,15 @@ function getOrderProblemContext(order: DemoOrderSummary, workflowForms: DemoWork
   }
 
   if (order.status === 'cancelled') {
+    if (wasInterruptedByAccountDeletion(order)) {
+      return {
+        title: 'Jornada interrompida',
+        stageTitle: getStageLabel(order),
+        reason:
+          'Esta jornada foi interrompida porque a remoção de conta de um usuário vinculado foi aprovada pela Nexor. As ordens foram canceladas sem gerar ressarcimento automático.'
+      };
+    }
+
     return {
       title: 'Ordem cancelada',
       stageTitle: getStageLabel(order),

@@ -30,6 +30,7 @@ function createAuthMock(overrides: Record<string, unknown> = {}) {
     session: null,
     backendUser: null,
     backendUserResolved: true,
+    authError: '',
     loading: false,
     hasConfiguredAuth: true,
     isMockMode: false,

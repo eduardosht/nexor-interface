@@ -356,6 +356,46 @@ describe('MinhaConta', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/solicitação registrada/i);
   });
 
+  it('accepts numeric characters in the account deletion confirmation input', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      user: {
+        email: 'joao2@nexor.dev',
+        fullName: 'Joao2 Silva',
+        roles: ['user'],
+      },
+    });
+    mockApiPost.mockResolvedValueOnce({
+      request: { id: 'request-2', status: 'pending_confirmation', active_order_ids: [] },
+      requiresAdminReview: false,
+      message: 'Solicitação registrada.',
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /excluir conta/i }));
+
+    const confirmationInput = screen.getByLabelText(/digite joao2 para confirmar/i);
+    fireEvent.change(confirmationInput, {
+      target: { value: 'Joao2' },
+    });
+
+    expect(confirmationInput).toHaveValue('Joao2');
+    expect(screen.getByRole('button', { name: /confirmar exclusão/i })).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /confirmar exclusão/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/deletion-request',
+        {
+          confirmationFirstName: 'Joao2',
+          reasonDetails: '',
+        },
+        'tok'
+      );
+    });
+  });
+
   it('allows an optional custom account deletion reason', async () => {
     mockApiGet.mockResolvedValueOnce({
       user: {
@@ -416,6 +456,95 @@ describe('MinhaConta', () => {
       expect(screen.queryByRole('dialog', { name: /confirmar exclusão da conta/i })).not.toBeInTheDocument();
     });
     expect(await screen.findByRole('alert')).toHaveTextContent(/não foi possível registrar/i);
+  });
+
+  it('shows pending confirmation actions and lets the user send to admin review or cancel', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'dentista@nexor.dev',
+          fullName: 'Joao Silva',
+          roles: ['dentist'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [] })
+      .mockResolvedValueOnce({
+        deletionRequest: {
+          request: { id: 'request-1', status: 'pending_confirmation', active_order_ids: ['order-1'] },
+          requiresAdminReview: true,
+          message: 'Encontramos fluxos ativos vinculados à sua conta.',
+        },
+      });
+    mockApiPost
+      .mockResolvedValueOnce({
+        request: { id: 'request-1', status: 'pending_admin_review', active_order_ids: ['order-1'] },
+        requiresAdminReview: true,
+        message: 'Sua solicitação está em análise.',
+      })
+      .mockResolvedValueOnce({
+        request: { id: 'request-1', status: 'cancelled_by_user', active_order_ids: ['order-1'] },
+        requiresAdminReview: false,
+        message: 'A solicitação de remoção da conta foi cancelada por você.',
+      });
+
+    renderPage({ backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] } });
+
+    expect(await screen.findByText(/fluxos ativos encontrados/i)).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /status da remoção/i })).toHaveTextContent(
+      /encontramos fluxos ativos vinculados/i
+    );
+    fireEvent.click(screen.getByRole('button', { name: /enviar para análise da nexor/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/deletion-request',
+        {
+          confirmationFirstName: 'Joao',
+          forceAdminReview: true,
+        },
+        'tok'
+      );
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: /cancelar remoção/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/deletion-request/request-1/cancel',
+        {},
+        'tok'
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getAllByText(/remoção cancelada/i).length).toBeGreaterThan(0);
+    });
+  });
+
+  it('shows rejected account deletion requests with contact action', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'joao@nexor.dev',
+          fullName: 'Joao Silva',
+          roles: ['user'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [] })
+      .mockResolvedValueOnce({
+        deletionRequest: {
+          request: { id: 'request-rejected', status: 'rejected', active_order_ids: [] },
+          requiresAdminReview: false,
+          message: 'A remoção da conta foi rejeitada pelo administrador.',
+        },
+      });
+
+    renderPage();
+
+    expect(await screen.findByText(/remoção de conta rejeitada/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /entrar em contato/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('mailto:suporte@nexor.com.br')
+    );
   });
 
   it('does not show account deletion controls for admins', async () => {

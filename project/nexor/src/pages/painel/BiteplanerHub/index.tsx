@@ -304,6 +304,8 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   product_received: 'Produto recebido pelo dentista ou local de atendimento.',
   adaptation_completed: 'Adaptação concluída e ordem finalizada.',
   follow_up_completed: 'Ciclo de acompanhamento concluído.',
+  account_deletion_approved:
+    'Jornada interrompida por remoção de conta aprovada pela Nexor. A ordem foi cancelada e não foi gerado ressarcimento automático.',
   pre_lab_requirements_missing:
     'A ordem ainda possui pendências antes de ser enviada ao laboratório.',
 };

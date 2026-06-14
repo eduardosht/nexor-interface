@@ -1,4 +1,5 @@
 export { AdminBusinessSettings } from './AdminBusinessSettings';
+export { AdminAccountDeletions } from './AdminAccountDeletions';
 export { AdminHome } from './AdminHome';
 export { AdminDentistLicensing } from './AdminDentistLicensing';
 export { AdminOrders } from './AdminOrders';

@@ -739,8 +739,57 @@ describe('BiteplanerHub', () => {
     await waitFor(() => {
       expect(screen.getByText('BP-DEMO-202')).toBeInTheDocument();
       expect(screen.queryByText('BP-DEMO-201')).not.toBeInTheDocument();
-      expect(screen.queryByText('BP-DEMO-205')).not.toBeInTheDocument();
+    expect(screen.queryByText('BP-DEMO-205')).not.toBeInTheDocument();
     });
+  });
+
+  it('explains account-removal interruptions in the operational timeline', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-301',
+            status: 'cancelled',
+            statusLabel: 'Cancelada',
+            stage: 'awaiting_initial_consultation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Paciente Demo', email: 'paciente@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ appointments: [] })
+      .mockResolvedValueOnce({
+        events: [
+          {
+            id: 'event-account-deletion',
+            orderId: 'BP-DEMO-301',
+            fromStatus: 'awaiting_scheduling',
+            toStatus: 'cancelled',
+            reason: 'account_deletion_approved',
+            createdAt: '2026-05-01T11:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce(licensedDentistWorkflow());
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentist',
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizacoes da ordem bp-demo-301/i }));
+
+    const timelineDialog = await screen.findByRole('dialog', { name: /atualizacoes da ordem/i });
+    expect(within(timelineDialog).getByText(/jornada interrompida/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/remoção de conta aprovada/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/não foi gerado ressarcimento automático/i)).toBeInTheDocument();
   });
 
   it('does not expose the old dentist-side consultation linking modal', async () => {

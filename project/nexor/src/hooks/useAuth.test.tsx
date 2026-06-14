@@ -48,7 +48,7 @@ import { ApiError } from '../lib/api';
 import { AuthProvider, useAuth } from './useAuth';
 
 function Consumer() {
-  const { backendUser, backendUserResolved, loading } = useAuth();
+  const { backendUser, backendUserResolved, authError, loading } = useAuth();
 
   if (loading) {
     return <span>loading</span>;
@@ -58,6 +58,7 @@ function Consumer() {
     <>
       <span data-testid="role">{backendUser?.roles[0] ?? 'none'}</span>
       <span data-testid="resolved">{backendUserResolved ? 'yes' : 'no'}</span>
+      <span data-testid="auth-error">{authError}</span>
     </>
   );
 }
@@ -96,6 +97,20 @@ describe('useAuth backendUser', () => {
     );
 
     await waitFor(() => expect(screen.getByTestId('role').textContent).toBe('none'));
+    expect(screen.getByTestId('resolved')).toHaveTextContent('yes');
+  });
+
+  it('exposes account access errors from /v1/auth/me and signs out', async () => {
+    mockGet.mockRejectedValue(new ApiError('Account is blocked.', 403));
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('role').textContent).toBe('none'));
+    expect(screen.getByTestId('auth-error')).toHaveTextContent('Account is blocked.');
     expect(screen.getByTestId('resolved')).toHaveTextContent('yes');
   });
 

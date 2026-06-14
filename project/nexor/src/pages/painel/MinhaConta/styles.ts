@@ -225,6 +225,29 @@ export const SecurityText = styled.p`
   line-height: 1.5;
 `;
 
+export const DeletionStatusNotice = styled.div`
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(185, 28, 28, 0.28);
+  border-left: 4px solid #b91c1c;
+  border-radius: 6px;
+  background: rgba(185, 28, 28, 0.08);
+`;
+
+export const DeletionStatusTitle = styled.strong`
+  display: block;
+  margin-bottom: 4px;
+  color: #991b1b;
+  font-size: 13px;
+`;
+
+export const DeletionStatusMessage = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  line-height: 1.5;
+`;
+
 export const ProductContent = styled.div`
   padding: 18px 20px;
 `;

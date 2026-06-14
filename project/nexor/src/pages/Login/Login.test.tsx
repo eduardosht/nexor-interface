@@ -29,6 +29,7 @@ function createAuthMock(overrides: Record<string, unknown> = {}) {
     loading: false,
     hasConfiguredAuth: true,
     isMockMode: true,
+    authError: '',
     demoPersona: null,
     signIn: mockSignIn,
     signInDemo: mockSignInDemo,
@@ -82,6 +83,18 @@ describe('Login', () => {
     fireEvent.click(getSubmitButton());
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+  });
+
+  it('shows account errors reported by auth sync', () => {
+    vi.mocked(useAuth).mockReturnValue(createAuthMock({
+      authError: 'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.'
+    }));
+
+    renderLogin('?next=%2Fpainel%2Fconta');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.'
+    );
   });
 
   it('shows validation error when email is empty', async () => {

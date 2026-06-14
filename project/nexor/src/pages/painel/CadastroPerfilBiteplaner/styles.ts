@@ -97,26 +97,18 @@ export const BackLink = styled(Link)`
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 38px;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 900;
   line-height: 1.06;
   letter-spacing: 0;
-
-  @media (max-width: 560px) {
-    font-size: 30px;
-  }
 `;
 
 export const Description = styled.p`
   max-width: 720px;
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.65;
-
-  @media (max-width: 560px) {
-    font-size: 14px;
-  }
 `;
 
 export const HeroInfoCallout = styled.div`

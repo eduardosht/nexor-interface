@@ -154,6 +154,7 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/remocoes-conta', label: 'Remoções', Icon: ShieldCheck },
   { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
   { to: '/painel/admin/parceiros', label: 'Parceiros', Icon: Handshake },
   { to: '/painel/admin/dentistas', label: 'Dentistas', Icon: Stethoscope },
@@ -166,6 +167,7 @@ const ADMIN_NAV_ITEMS = [
 const ADMIN_OVERVIEW_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => item.to === '/painel/admin/home');
 const ADMIN_BITEPLANER_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
   item.to === '/painel/admin/ordens' ||
+  item.to === '/painel/admin/remocoes-conta' ||
   item.to === '/painel/admin/relatorios' ||
   item.to === '/painel/admin/parceiros' ||
   item.to === '/painel/admin/dentistas' ||

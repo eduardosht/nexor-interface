@@ -31,6 +31,30 @@ describe('api', () => {
     });
   });
 
+  it('uses localizedMessage as the user-facing ApiError message when provided', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: vi.fn().mockResolvedValue({
+          error: 'forbidden',
+          message: 'Account is blocked.',
+          localizedMessage: 'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.',
+          requestId: 'req-123',
+        }),
+      })
+    );
+
+    await expect(api.get('/v1/auth/me', 'token')).rejects.toMatchObject({
+      name: 'ApiError',
+      message: 'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.',
+      status: 403,
+      code: 'forbidden',
+      requestId: 'req-123',
+    });
+  });
+
   it('falls back to a generic message when the error body is not JSON', async () => {
     vi.stubGlobal(
       'fetch',

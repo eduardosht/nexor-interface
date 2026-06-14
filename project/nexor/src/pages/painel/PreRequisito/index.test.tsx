@@ -430,6 +430,27 @@ describe('PreRequisito', () => {
     expect(screen.getByRole('button', { name: /próxima etapa/i })).toBeDisabled();
   });
 
+  it('uses the minimum slider value as a filled default in the prerequisite clinical flow', async () => {
+    const user = userEvent.setup();
+    const { sleepQualityScore: _sleepQualityScore, ...payloadWithoutSleepScore } =
+      completeClinicalSectionPayload();
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({
+        forms: [
+          sharedIntakeWithClinicalPayload(payloadWithoutSleepScore),
+        ],
+      });
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /pr.xima etapa/i }));
+
+    const sleepQualitySlider = await screen.findByRole('slider', { name: /qualidade do sono/i });
+    expect(sleepQualitySlider).toHaveValue('0');
+    expect(screen.getByRole('button', { name: /pr.xima etapa/i })).not.toBeDisabled();
+  });
+
   it('maps 0 to 10 health scores to accessible slider fields with endpoint descriptions', () => {
     const source = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
 

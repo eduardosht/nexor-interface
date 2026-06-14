@@ -15,15 +15,18 @@ function renderPage() {
 }
 
 describe('ConhecaOBiteplaner', () => {
-  it('renders an informative care guide based on the mouthguard PDF', () => {
-    renderPage();
+  it('renders a documentation-style care guide without decorative icons', () => {
+    const { container } = renderPage();
 
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
     expect(screen.getByRole('heading', { name: /cuidados com o protetor bucal esportivo/i })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: /seções do guia/i })).toBeInTheDocument();
     expect(screen.getByText(/lugar de protetor bucal é em boca/i)).toBeInTheDocument();
     expect(screen.getByText(/não lavar em água quente/i)).toBeInTheDocument();
     expect(screen.getByText(/nunca compartilhe seu protetor/i)).toBeInTheDocument();
     expect(screen.getByText(/protetor bucal não é eterno/i)).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /referência rápida de uso/i })).toBeInTheDocument();
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /iniciar minha jornada/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /ver página completa/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/atleta usando protetor bucal biteplaner/i)).not.toBeInTheDocument();

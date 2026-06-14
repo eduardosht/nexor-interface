@@ -91,13 +91,22 @@ type DemoTabKey = (typeof DEMO_TABS)[number]['key'];
 export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { session, backendUser, backendUserResolved, loading, signIn, signInDemo, isMockMode } =
-    useAuth();
+  const {
+    session,
+    backendUser,
+    backendUserResolved,
+    authError,
+    loading,
+    signIn,
+    signInDemo,
+    isMockMode
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeDemoTab, setActiveDemoTab] = useState<DemoTabKey>('cliente');
+  const visibleError = error || authError;
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -176,7 +185,7 @@ export function Login() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </Field>
-            {error ? <Alert role="alert">{error}</Alert> : null}
+            {visibleError ? <Alert role="alert">{visibleError}</Alert> : null}
             <Button type="submit" disabled={submitting} aria-busy={submitting}>
               {submitting ? 'Entrando...' : 'Entrar'}
             </Button>

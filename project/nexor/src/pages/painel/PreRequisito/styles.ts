@@ -161,14 +161,13 @@ export const OnboardingMainTitle = styled.h1`
   gap: 24px;
   margin: 0;
   color: #07152f;
-  font-size: 2rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 950;
   line-height: 1.1;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
     gap: 14px;
-    font-size: 1.75rem;
     line-height: 1.05;
   }
 `;
@@ -177,7 +176,7 @@ export const OnboardingHeroLead = styled.p`
   max-width: 610px;
   margin: 0;
   color: #334155;
-  font-size: 1rem;
+  font-size: 14px;
   line-height: 1.55;
 
   strong {

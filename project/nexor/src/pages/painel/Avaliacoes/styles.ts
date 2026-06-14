@@ -37,7 +37,7 @@ export const HeaderIcon = styled.span`
 
 export const Title = styled.h1`
   margin: 0;
-  font-size: 28px;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 850;
   color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.1;

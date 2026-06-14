@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, FileText, Search, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronRight, ClipboardCheck, Search, Star } from 'lucide-react';
 import {
    Button,
   Field,
@@ -24,7 +24,6 @@ import {
 } from '../../../features/biteplaner/orders/orders.api';
 import {
   getOrderDisplayId,
-  getStageLabel,
   getAuthToken,
   registerClinicalDecision,
   type DemoOrderSummary,
@@ -46,6 +45,7 @@ import {
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
+import { OrderInfoCard } from '../components/OrderStepHeader';
 import { DentalAnamnesisRecord } from './DentalAnamnesisRecord';
 import { ProductionRequestFields } from './ProductionRequestFields';
 import * as S from './styles';
@@ -341,19 +341,6 @@ function getDentistSystemValues(backendUser: unknown, sessionEmail?: string | nu
     dentistCro: getStringValue(metadata.croNumber),
     dentistProfessionalContact: contact,
   };
-}
-
-function formatOrderDate(value: string) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return '-';
-  }
-
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date);
 }
 
 function formatCep(value: string) {
@@ -908,8 +895,6 @@ export function ProducaoDentista() {
   const shouldHoldAtAnamnesisSummary =
     currentStep === 1 && dentistReviewCompleted && !canProceedToProductionAfterPayment;
   const anamnesisSourceDataReady = hasFormPayload(intakeForm);
-  const completedStepCount = stepCompletion.filter(Boolean).length;
-  const progressPercent = Math.round((completedStepCount / STEP_DEFINITIONS.length) * 100);
   const dentistSystemValues = useMemo(
     () => getDentistSystemValues(backendUser, session?.user.email),
     [backendUser, session?.user.email]
@@ -1223,36 +1208,10 @@ export function ProducaoDentista() {
               </S.ProductionLead>
             </S.ProductionHeroCopy>
 
-            <S.OrderContextCard data-testid="athlete-order-card">
-              <S.OrderContextHeader>
-                <S.OrderContextIcon aria-hidden="true">
-                  <FileText size={22} />
-                </S.OrderContextIcon>
-                <span>
-                  <S.ContextLabel>Pedido</S.ContextLabel>
-                  <S.ContextStrong>{getOrderDisplayId(order)}</S.ContextStrong>
-                </span>
-              </S.OrderContextHeader>
-
-              <S.ContextGrid>
-                <S.ContextItem>
-                  <S.ContextLabel>Status atual</S.ContextLabel>
-                  <S.StatusBadge>{order.statusLabel ?? order.status}</S.StatusBadge>
-                </S.ContextItem>
-                <S.ContextItem>
-                  <S.ContextLabel>Etapa atual</S.ContextLabel>
-                  <S.ContextValue>{getStageLabel(order)}</S.ContextValue>
-                </S.ContextItem>
-                <S.ContextItem>
-                  <S.ContextLabel>Última atualização</S.ContextLabel>
-                  <S.ContextValue>{formatOrderDate(order.created_at)}</S.ContextValue>
-                </S.ContextItem>
-                <S.ContextItem>
-                  <S.ContextLabel>Progresso</S.ContextLabel>
-                  <S.ContextValue>{progressPercent}% completo</S.ContextValue>
-                </S.ContextItem>
-              </S.ContextGrid>
-            </S.OrderContextCard>
+            <OrderInfoCard
+              order={order}
+              orderHelpText="Complete a revisão clínica e envie os dados necessários ao laboratório licenciado."
+            />
           </S.ProductionHero>
           {canShowFeedbackPrompt ? (
             <PendingFeedbackPrompt mode="dentist" orders={[order]} forms={workflowForms} />

@@ -26,27 +26,20 @@ export const SuccessHeroCopy = styled.div`
 export const SuccessTitle = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   line-height: 1.08;
   font-weight: 800;
-
-  @media (max-width: 1280px) {
-    font-size: clamp(1.5rem, 2.4vw, 2.1rem);
-  }
 `;
 
 export const SuccessKicker = styled.strong`
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.4;
 
   &::after {
     content: '';
   }
 
-  @media (max-width: 640px) {
-    font-size: 14px;
-  }
 `;
 
 export const SuccessDescription = styled.p`

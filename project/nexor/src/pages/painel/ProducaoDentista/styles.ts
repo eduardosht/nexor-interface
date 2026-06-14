@@ -69,12 +69,11 @@ export const HeroEyebrow = styled.span`
 export const ProductionTitle = styled.h1`
   margin: 0;
   color: #07152f;
-  font-size: 2rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 950;
   line-height: 1.1;
 
   @media (max-width: 640px) {
-    font-size: 1.75rem;
     line-height: 1.08;
   }
 `;
@@ -83,93 +82,8 @@ export const ProductionLead = styled.p`
   max-width: 680px;
   margin: 0;
   color: #334155;
-  font-size: 1rem;
-  line-height: 1.55;
-`;
-
-export const OrderContextCard = styled.section`
-  display: grid;
-  gap: 18px;
-  min-width: 0;
-  padding: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.78);
-`;
-
-export const OrderContextHeader = styled.div`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-`;
-
-export const OrderContextIcon = styled.span`
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #d8ffe9 0%, #f3fff8 100%);
-  color: #008d3f;
-`;
-
-export const ContextGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-export const ContextItem = styled.div`
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.68);
-`;
-
-export const ContextLabel = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 700;
-`;
-
-export const ContextStrong = styled.strong`
-  display: block;
-  color: #07152f;
-  font-size: 18px;
-  font-weight: 900;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
-`;
-
-export const ContextValue = styled.span`
-  color: #07152f;
   font-size: 14px;
-  font-weight: 800;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-`;
-
-export const StatusBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid rgba(0, 156, 74, 0.24);
-  border-radius: 999px;
-  background: #f0fdf4;
-  color: #008d3f;
-  font-size: 13px;
-  font-weight: 800;
+  line-height: 1.55;
 `;
 
 export const WizardShell = styled.section`

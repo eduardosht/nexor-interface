@@ -5,22 +5,26 @@ export const PortalPageTitle = styled.h1<{ $size?: 'default' | 'showcase' }>`
   max-width: 760px;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: ${({ $size = 'default' }) =>
-    $size === 'showcase' ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(2rem, 3.4vw, 2.75rem)'};
+    $size === 'showcase' ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(1.25rem, 2vw, 1.75rem)'};
   line-height: ${({ $size = 'default' }) => ($size === 'showcase' ? '0.98' : '1.08')};
   font-weight: 800;
   letter-spacing: 0;
 
-  @media (max-width: 1280px) {
-    font-size: ${({ $size = 'default' }) =>
-      $size === 'showcase' ? 'clamp(1.8rem, 3vw, 2.4rem)' : 'clamp(1.5rem, 2.4vw, 2.1rem)'};
-  }
+  ${({ $size = 'default' }) =>
+    $size === 'showcase'
+      ? `
+        @media (max-width: 1280px) {
+          font-size: clamp(1.8rem, 3vw, 2.4rem);
+        }
+      `
+      : ''}
 `;
 
 export const PortalPageDescription = styled.p<{ $size?: 'default' | 'showcase' }>`
   max-width: 760px;
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: ${({ $size = 'default' }) => ($size === 'showcase' ? 'clamp(1rem, 1.4vw, 1.18rem)' : '16px')};
+  font-size: ${({ $size = 'default' }) => ($size === 'showcase' ? 'clamp(1rem, 1.4vw, 1.18rem)' : '14px')};
   line-height: ${({ $size = 'default' }) => ($size === 'showcase' ? '1.75' : '1.5')};
 
   strong {
@@ -28,9 +32,14 @@ export const PortalPageDescription = styled.p<{ $size?: 'default' | 'showcase' }
     font-weight: 700;
   }
 
-  @media (max-width: 1280px) {
-    font-size: 14px;
-  }
+  ${({ $size = 'default' }) =>
+    $size === 'showcase'
+      ? `
+        @media (max-width: 1280px) {
+          font-size: 14px;
+        }
+      `
+      : ''}
 `;
 
 export const PortalSectionTitle = styled.h2<{ $size?: 'sm' | 'md' | 'lg' }>`

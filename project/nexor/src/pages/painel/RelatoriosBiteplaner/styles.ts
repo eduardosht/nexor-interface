@@ -36,7 +36,7 @@ export const Eyebrow = styled.span`
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 2rem;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   line-height: 1.12;
   letter-spacing: 0;
 `;
@@ -44,6 +44,7 @@ export const Title = styled.h1`
 export const Subtitle = styled.p`
   margin: 8px 0 0;
   color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
   line-height: 1.55;
   max-width: 860px;
 `;
