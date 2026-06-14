@@ -12,12 +12,16 @@ const execFileAsync = promisify(execFile);
 
 const FRONTEND_URL = process.env.E2E_FRONTEND_URL ?? 'http://127.0.0.1:5173';
 const API_URL = process.env.E2E_API_URL ?? 'http://127.0.0.1:3333';
-const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'eduardoshoitifujiwara@gmail.com';
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'NexorLocal123!';
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD;
 const DEFAULT_PASSWORD = process.env.E2E_USER_PASSWORD ?? 'NexorLocal123!';
 const ACTION_DELAY_MS = Number(process.env.E2E_ACTION_DELAY_MS ?? 120);
 const STEP_PAUSE_MS = Number(process.env.E2E_STEP_PAUSE_MS ?? 4000);
 const MODAL_PAUSE_MS = Number(process.env.E2E_MODAL_PAUSE_MS ?? 3000);
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  throw new Error('Define E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD before running the full-flow recording.');
+}
 
 const runId = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '').replace('T', '-');
 const artifactsDir = path.join(rootDir, 'e2e-artifacts', `full-flow-${runId}`);

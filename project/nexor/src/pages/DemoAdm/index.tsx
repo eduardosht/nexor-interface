@@ -3,8 +3,9 @@ import presentationHtml from '../../../docs/apresentacao-painel-administrativo-n
 
 const SESSION_KEY = 'nexor-demo-adm-authorized';
 const DEFAULT_PASSCODE = 'nexor-demo-adm-2026';
-const VIDEO_SRC = '/demo-adm/assets/apresentacao-painel-admin/video/biteplaner-fluxo-completo-e2e.webm';
-const VIDEO_POSTER = '/demo-adm/assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png';
+const DEMO_ASSET_BASE = '/demo-adm-assets/assets/apresentacao-painel-admin/';
+const VIDEO_SRC = `${DEMO_ASSET_BASE}video/biteplaner-fluxo-completo-e2e.webm`;
+const VIDEO_POSTER = `${DEMO_ASSET_BASE}09b-cliente-pre-requisito-secao-2.png`;
 
 type DemoMode = 'video' | 'content';
 
@@ -43,7 +44,7 @@ function buildContentHtml() {
   return presentationHtml
     .replace(/\s*<section class="panel section video-section"[\s\S]*?<\/section>/, '')
     .replace('let current = 1;', 'let current = 0;')
-    .replaceAll('assets/apresentacao-painel-admin/', '/demo-adm/assets/apresentacao-painel-admin/');
+    .replaceAll('assets/apresentacao-painel-admin/', DEMO_ASSET_BASE);
 }
 
 export function DemoAdm() {
