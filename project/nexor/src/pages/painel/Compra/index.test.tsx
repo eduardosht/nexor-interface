@@ -138,6 +138,55 @@ describe('Compra', () => {
     expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
   });
 
+  it('renders the paid success state when the current order was already paid', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: '11111111-1111-4111-8111-111111111003',
+          displayId: 'BP-DEMO-003',
+          status: 'payment_confirmed',
+          statusLabel: 'Pagamento confirmado',
+          stage: 'payment_confirmed',
+          created_at: '2026-05-01T10:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+        },
+      ],
+    });
+
+    renderPage('/painel/compra');
+
+    await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
+    expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('payment-success-order-card')).toHaveTextContent(/pagamento confirmado/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
+    expect(screen.getByText(/pagamento aprovado/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
+  });
+
+  it('renders the paid success state when the current order already advanced after payment', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: '11111111-1111-4111-8111-111111111004',
+          displayId: 'BP-DEMO-004',
+          status: 'lab_processing',
+          statusLabel: 'Em processo - Laboratório',
+          stage: 'laboratory',
+          created_at: '2026-05-02T10:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+        },
+      ],
+    });
+
+    renderPage('/painel/compra');
+
+    await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
+    expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId('payment-success-order-card')).toHaveTextContent(/em produção/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
+    expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
+  });
+
   it('reconciles Stripe payment when checkout success returns with a session id', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [

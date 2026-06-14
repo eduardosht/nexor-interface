@@ -39,6 +39,22 @@ const NEXT_STEPS = [
   },
 ];
 
+const PAYMENT_COMPLETED_STATUSES = new Set([
+  'payment_confirmed',
+  'awaiting_dentist_forms',
+  'awaiting_lab_start',
+  'lab_processing',
+  'dentist_adjustment_required',
+  'product_received_by_clinic',
+  'awaiting_adaptation',
+  'follow_up',
+  'completed',
+]);
+
+function isPaymentCompletedStatus(status?: string) {
+  return Boolean(status && PAYMENT_COMPLETED_STATUSES.has(status));
+}
+
 function getPurchaseSteps(checkoutSuccess: boolean) {
   if (!checkoutSuccess) {
     return NEXT_STEPS.map((step, index) => ({
@@ -91,7 +107,8 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const [error, setError] = useState('');
   const checkoutSuccess = searchParams.get('checkout') === 'success';
   const checkoutSessionId = searchParams.get('session_id');
-  const purchaseSteps = getPurchaseSteps(checkoutSuccess);
+  const paymentCompleted = checkoutSuccess || isPaymentCompletedStatus(order?.status);
+  const purchaseSteps = getPurchaseSteps(paymentCompleted);
 
   useEffect(() => {
     if (initialOrder) {
@@ -111,7 +128,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
         const response = await fetchOrders('user', token);
         const nextOrder =
           response.orders.find((item) => item.status === 'awaiting_payment') ??
-          response.orders.find((item) => item.status === 'payment_confirmed') ??
+          response.orders.find((item) => isPaymentCompletedStatus(item.status)) ??
           null;
 
         if (active) {
@@ -197,7 +214,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
 
   return (
     <S.Page>
-      {!embedded && checkoutSuccess ? (
+      {!embedded && paymentCompleted ? (
         <S.SuccessHeader>
           <S.SuccessHeroCopy>
             <S.SuccessTitle>Confirmação de compra da demo</S.SuccessTitle>
@@ -210,7 +227,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
         </S.SuccessHeader>
       ) : null}
 
-      {!embedded && !checkoutSuccess ? (
+      {!embedded && !paymentCompleted ? (
         <OrderStepHeader
           title="Confirmação de compra da demo"
           description="Esta tela inicia o pagamento real quando um caso clinicamente aprovado avança para liberação operacional."
@@ -234,7 +251,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
             <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento. Use o caso já aprovado como referência visual.</S.Banner>
           ) : null}
 
-          {checkoutSuccess ? (
+          {paymentCompleted ? (
             order ? (
               <OrderInfoCard
                 order={order}
@@ -277,7 +294,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                 <S.Total>R$ 1.000,00</S.Total>
               </S.SummaryRow>
 
-              {checkoutSuccess ? (
+              {paymentCompleted ? (
                 <>
                   <S.PaymentApprovedBox>
                     <ShieldCheck size={24} aria-hidden />
@@ -297,7 +314,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
             </S.SummaryCard>
           </S.Layout>
 
-          {checkoutSuccess ? (
+          {paymentCompleted ? (
             <S.SuccessFooter>
               <S.SuccessFooterIcon aria-hidden>
                 <PartyPopper size={38} strokeWidth={1.8} />
