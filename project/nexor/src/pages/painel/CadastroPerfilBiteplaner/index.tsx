@@ -126,6 +126,8 @@ const PARTNER_SERVICE_LOCATION_OPTIONS = [
   { value: 'Box de Crossfit', label: 'Box de Crossfit' },
 ];
 
+const PROFESSIONAL_SUMMARY_MIN_LENGTH = 10;
+
 let clinicIdSequence = 0;
 
 const createEmptyClinic = (): ClinicValues => ({
@@ -209,6 +211,33 @@ const isValidCro = (value: string) => {
   const match = value.trim().toUpperCase().match(/^CRO-([A-Z]{2})\s(\d{4,6})$/);
 
   return Boolean(match && BRAZILIAN_STATES.includes(match[1]));
+};
+
+const isValidProfessionalSummary = (value: string | undefined) =>
+  (value ?? '').trim().length >= PROFESSIONAL_SUMMARY_MIN_LENGTH;
+
+const hasShortProfessionalSummary = (value: string | undefined) => {
+  const trimmedLength = (value ?? '').trim().length;
+
+  return trimmedLength > 0 && trimmedLength < PROFESSIONAL_SUMMARY_MIN_LENGTH;
+};
+
+const getProfessionalSummaryError = (value: string | undefined, label: 'profissional' | 'operacional') => {
+  const fieldLabel = label === 'operacional' ? 'resumo operacional' : 'resumo profissional';
+
+  if (hasShortProfessionalSummary(value)) {
+    return `O ${fieldLabel} deve ter pelo menos ${PROFESSIONAL_SUMMARY_MIN_LENGTH} caracteres.`;
+  }
+
+  return undefined;
+};
+
+const getProfessionalSummaryHint = (value: string | undefined) => {
+  if (hasShortProfessionalSummary(value)) {
+    return undefined;
+  }
+
+  return `Mínimo de ${PROFESSIONAL_SUMMARY_MIN_LENGTH} caracteres.`;
 };
 
 const isValidCnpj = (value: string) => {
@@ -402,7 +431,7 @@ export function CadastroPerfilBiteplaner() {
       return Boolean(
         values.fullName?.trim() &&
         isValidCro(values.croNumber ?? '') &&
-        values.professionalSummary?.trim() &&
+        isValidProfessionalSummary(values.professionalSummary) &&
         clinics.length > 0 &&
         hasValidClinics
       );
@@ -423,7 +452,7 @@ export function CadastroPerfilBiteplaner() {
       return Boolean(
         values.labName?.trim() &&
         isValidCnpj(values.cnpj ?? '') &&
-        values.professionalSummary?.trim() &&
+        isValidProfessionalSummary(values.professionalSummary) &&
         clinics.length > 0 &&
         hasValidLocations
       );
@@ -583,6 +612,19 @@ export function CadastroPerfilBiteplaner() {
 
     if (!token) {
       setError('Sessão expirada. Entre novamente para enviar o cadastro.');
+      return;
+    }
+
+    if (
+      (config.apiRole === 'dentist' || config.apiRole === 'lab') &&
+      values.professionalSummary?.trim() &&
+      !isValidProfessionalSummary(values.professionalSummary)
+    ) {
+      setError(
+        config.apiRole === 'lab'
+          ? 'O resumo operacional deve ter pelo menos 10 caracteres.'
+          : 'O resumo profissional deve ter pelo menos 10 caracteres.'
+      );
       return;
     }
 
@@ -856,7 +898,8 @@ export function CadastroPerfilBiteplaner() {
                       label="Resumo profissional"
                       value={values.professionalSummary ?? ''}
                       required
-                      hint="Campo preliminar para detalhamento futuro."
+                      error={getProfessionalSummaryError(values.professionalSummary, 'profissional')}
+                      hint={getProfessionalSummaryHint(values.professionalSummary)}
                       onChange={updateField('professionalSummary')}
                     />
                   </S.FullField>
@@ -1000,7 +1043,8 @@ export function CadastroPerfilBiteplaner() {
                       label="Resumo operacional"
                       value={values.professionalSummary ?? ''}
                       required
-                      hint="Campo preliminar para detalhamento futuro."
+                      error={getProfessionalSummaryError(values.professionalSummary, 'operacional')}
+                      hint={getProfessionalSummaryHint(values.professionalSummary)}
                       onChange={updateField('professionalSummary')}
                     />
                   </S.FullField>

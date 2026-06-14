@@ -19,10 +19,13 @@ export const Title = PortalPageTitle;
 
 export const Description = PortalPageDescription;
 
-export const OrderBanner = styled.section`
+export const OrderBanner = styled.section<{ $hideLastUpdate?: boolean }>`
   container-type: inline-size;
   display: grid;
-  grid-template-columns: minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(190px, 0.9fr) minmax(180px, 0.85fr);
+  grid-template-columns: ${({ $hideLastUpdate }) =>
+    $hideLastUpdate
+      ? 'minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(180px, 0.85fr)'
+      : 'minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(190px, 0.9fr) minmax(180px, 0.85fr)'};
   align-items: center;
   gap: 0;
   min-width: 0;
@@ -283,11 +286,10 @@ export const OrderMetaValue = styled.div`
 
 export const StatusPill = styled.span<{ $color: string }>`
   display: inline-flex;
-  align-items: flex-start;
+  align-items: center;
   width: fit-content;
   max-width: min(260px, 100%);
   min-width: 0;
-  gap: 12px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -298,18 +300,7 @@ export const StatusPill = styled.span<{ $color: string }>`
   white-space: normal;
   overflow-wrap: anywhere;
 
-  &::before {
-    content: '';
-    flex: 0 0 auto;
-    width: 8px;
-    height: 8px;
-    margin-top: 8px;
-    border-radius: 999px;
-    background: ${({ $color }) => $color};
-  }
-
   @media (max-width: 1280px) {
-    gap: 9px;
     font-size: 13px;
   }
 `;

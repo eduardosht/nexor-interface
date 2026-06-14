@@ -5,6 +5,7 @@ import { Layout } from '../Layout';
 import { PortalLayout } from '../components/portal/PortalLayout';
 import { AdminPortalProvider } from '../features/admin/portal';
 import { useAuth } from '../hooks/useAuth';
+import { ErrorBoundary, RouteErrorFallback } from './RouteErrorFallback';
 
 const Home = lazy(() => import('../pages/Home').then(({ Home }) => ({ default: Home })));
 const Privacidade = lazy(() => import('../pages/Privacidade').then(({ Privacidade }) => ({ default: Privacidade })));
@@ -42,7 +43,11 @@ const AdminBusinessSettings = lazy(() => import('../pages/painel/admin/AdminBusi
 const AdminSystemSettings = lazy(() => import('../pages/painel/admin/AdminSystemSettings').then(({ AdminSystemSettings }) => ({ default: AdminSystemSettings })));
 
 function LazyRoute({ children }: { children: ReactNode }) {
-  return <Suspense fallback={null}>{children}</Suspense>;
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={null}>{children}</Suspense>
+    </ErrorBoundary>
+  );
 }
 
 function PainelRoute({ children }: { children: ReactNode }) {
@@ -107,9 +112,12 @@ function ProtectedRedirect({ children }: { children: ReactNode }) {
   );
 }
 
+const routeErrorElement = <RouteErrorFallback />;
+
 export const router = createBrowserRouter([
   {
     element: <Layout />,
+    errorElement: routeErrorElement,
     children: [
       { path: '/', element: <LazyRoute><Home /></LazyRoute> },
       { path: '/sobre', element: <LazyRoute><Sobre /></LazyRoute> },
@@ -134,7 +142,7 @@ export const router = createBrowserRouter([
   { path: '/painel/conta', element: <PainelRoute><MinhaConta /></PainelRoute> },
   { path: '/painel/pre-requisito', element: <PainelRoute><PreRequisito /></PainelRoute> },
   { path: '/painel/consulta-inicial', element: <PainelRoute><ConsultaInicial /></PainelRoute> },
-  { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute> },
+  { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
   { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
   { path: '/painel/biteplaner/licenciamento', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },

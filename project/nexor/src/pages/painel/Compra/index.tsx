@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  CalendarDays,
   CheckCircle2,
-  ClipboardList,
   Clock3,
-  Flag,
   Hourglass,
   Info,
   LockKeyhole,
@@ -18,12 +15,11 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   createCheckoutSession,
   fetchOrders,
-  getOrderDisplayId,
   getAuthToken,
   reconcileCheckoutSession,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
-import { OrderStepHeader } from '../components/OrderStepHeader';
+import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
 
 const NEXT_STEPS = [
   {
@@ -78,15 +74,6 @@ function getPurchaseSteps(checkoutSuccess: boolean) {
   });
 }
 
-function formatOrderDate(value?: string) {
-  const date = value ? new Date(value) : new Date();
-
-  return {
-    date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date),
-    time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(date),
-  };
-}
-
 type CompraProps = {
   embedded?: boolean;
   initialOrder?: DemoOrderSummary | null;
@@ -104,8 +91,6 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const [error, setError] = useState('');
   const checkoutSuccess = searchParams.get('checkout') === 'success';
   const checkoutSessionId = searchParams.get('session_id');
-  const orderDate = formatOrderDate(order?.created_at);
-  const orderLabel = getOrderDisplayId(order);
   const purchaseSteps = getPurchaseSteps(checkoutSuccess);
 
   useEffect(() => {
@@ -250,60 +235,14 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
           ) : null}
 
           {checkoutSuccess ? (
-            <S.SuccessOrderBanner data-testid="payment-success-order-card">
-              <S.SuccessOrderSummary>
-                <S.SuccessOrderIcon aria-hidden>
-                  <ClipboardList size={42} strokeWidth={1.9} />
-                  <S.SuccessOrderIconBadge>
-                    <CheckCircle2 size={16} strokeWidth={2.4} />
-                  </S.SuccessOrderIconBadge>
-                </S.SuccessOrderIcon>
-                <S.SuccessOrderText>
-                  <S.OrderEyebrow>Pedido</S.OrderEyebrow>
-                  <S.SuccessOrderId>{orderLabel}</S.SuccessOrderId>
-                  <S.SuccessOrderHelp>
-                    Este pedido está na etapa financeira da demo antes da liberação operacional para produção.
-                  </S.SuccessOrderHelp>
-                </S.SuccessOrderText>
-              </S.SuccessOrderSummary>
-
-              <S.SuccessOrderMeta>
-                <S.SuccessMetaLabel>Status atual</S.SuccessMetaLabel>
-                <S.SuccessStatusPill>Pagamento realizado</S.SuccessStatusPill>
-              </S.SuccessOrderMeta>
-
-              <S.SuccessOrderMeta>
-                <S.SuccessMetaLabel>Data do pagamento</S.SuccessMetaLabel>
-                <S.SuccessMetaValue>
-                  <CalendarDays size={20} strokeWidth={1.8} aria-hidden />
-                  <span>
-                    {orderDate.date}
-                    <br />
-                    às {orderDate.time}
-                  </span>
-                </S.SuccessMetaValue>
-              </S.SuccessOrderMeta>
-
-              <S.SuccessOrderMeta>
-                <S.SuccessMetaLabel>Última atualização</S.SuccessMetaLabel>
-                <S.SuccessMetaValue>
-                  <CalendarDays size={20} strokeWidth={1.8} aria-hidden />
-                  <span>
-                    {orderDate.date}
-                    <br />
-                    às {orderDate.time}
-                  </span>
-                </S.SuccessMetaValue>
-              </S.SuccessOrderMeta>
-
-              <S.SuccessOrderMeta>
-                <S.SuccessMetaLabel>Etapa atual</S.SuccessMetaLabel>
-                <S.SuccessMetaValue>
-                  <Flag size={20} strokeWidth={1.8} aria-hidden />
-                  <span>Pagamento concluído</span>
-                </S.SuccessMetaValue>
-              </S.SuccessOrderMeta>
-            </S.SuccessOrderBanner>
+            order ? (
+              <OrderInfoCard
+                order={order}
+                orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
+                testId="payment-success-order-card"
+                showLastUpdate={false}
+              />
+            ) : null
           ) : null}
 
           <S.Layout>

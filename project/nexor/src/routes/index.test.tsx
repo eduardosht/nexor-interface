@@ -14,6 +14,12 @@ describe('routes', () => {
     expect(routesSource).not.toContain("import { BiteplanerPage } from '../pages/BiteplanerPage'");
   });
 
+  it('wraps lazy routes with an application error boundary', () => {
+    expect(routesSource).toContain("import { ErrorBoundary, RouteErrorFallback } from './RouteErrorFallback'");
+    expect(routesSource).toContain('<ErrorBoundary>');
+    expect(routesSource).toContain('errorElement: routeErrorElement');
+  });
+
   it('exposes the Biteplaner care guide at the requested public URL', () => {
     expect(routesSource).toContain("{ path: '/conheca-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> }");
   });

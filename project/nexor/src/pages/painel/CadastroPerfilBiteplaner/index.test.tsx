@@ -280,6 +280,41 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(submit).toBeDisabled();
   });
 
+  it('keeps dentist submit disabled while the professional summary is too short', async () => {
+    mockCepLookup();
+    renderPage();
+
+    const submit = screen.getByRole('button', { name: /enviar solicita/i });
+
+    fireEvent.change(screen.getByLabelText(/nome profissional/i), {
+      target: { value: 'Eduardo Shoiti Fujiwara' },
+    });
+    fireEvent.change(screen.getByLabelText(/cro/i), {
+      target: { value: 'CRO-SP 12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
+      target: { value: 'Teste' },
+    });
+    fireEvent.change(screen.getByLabelText(/nome da cl.nica/i), {
+      target: { value: 'Clinica TESTE' },
+    });
+    fireEvent.change(screen.getByLabelText(/dia e hor.rio de atendimento/i), {
+      target: { value: 'Segunda a sexta, 8h as 18h' },
+    });
+    fireEvent.change(screen.getByLabelText(/telefone da cl.nica/i), {
+      target: { value: '11111111111' },
+    });
+    fireEvent.click(within(screen.getByRole('group', { name: /cl.nica adaptada/i })).getByLabelText('Não'));
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/privacidade/i));
+
+    await fillCepAndWaitForAddress();
+
+    expect(screen.getByText(/resumo profissional deve ter pelo menos 10 caracteres/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/resumo profissional/i)).toHaveAttribute('aria-invalid', 'true');
+    expect(submit).toBeDisabled();
+  });
+
   it('keeps submit enabled when the optional complement is empty', async () => {
     mockCepLookup();
     renderPage();

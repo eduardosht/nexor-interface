@@ -44,24 +44,31 @@ export interface OrderInfoCardProps {
   order: DemoOrderSummary;
   orderHelpText: ReactNode;
   testId?: string;
+  showLastUpdate?: boolean;
 }
 
-function formatOrderUpdate(value: string) {
-  const date = new Date(value);
+function formatOrderUpdate(value?: string) {
+  const date = value ? new Date(value) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
 
   return {
-    date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(date),
-    time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(date),
+    date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(safeDate),
+    time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(safeDate),
   };
 }
 
-export function OrderInfoCard({ order, orderHelpText, testId = 'athlete-order-card' }: OrderInfoCardProps) {
+export function OrderInfoCard({
+  order,
+  orderHelpText,
+  testId = 'athlete-order-card',
+  showLastUpdate = true,
+}: OrderInfoCardProps) {
   const orderUpdate = formatOrderUpdate(order.created_at);
   const status = getOrderStatusPresentation(order);
   const orderLabel = getOrderDisplayId(order);
 
   return (
-    <S.OrderBanner data-testid={testId}>
+    <S.OrderBanner data-testid={testId} $hideLastUpdate={!showLastUpdate}>
       <S.OrderSummary aria-label="Informações do pedido">
         <S.OrderIcon aria-hidden="true">
           <ClipboardList size={38} strokeWidth={1.8} />
@@ -83,17 +90,19 @@ export function OrderInfoCard({ order, orderHelpText, testId = 'athlete-order-ca
         </S.StatusPill>
       </S.OrderMeta>
 
-      <S.OrderMeta aria-label="Última atualização do pedido">
-        <S.OrderMetaLabel>ÚLTIMA ATUALIZAÇÃO</S.OrderMetaLabel>
-        <S.OrderMetaValue>
-          <CalendarDays size={25} strokeWidth={1.9} aria-hidden="true" />
-          <span>
-            {orderUpdate.date}
-            <br />
-            às {orderUpdate.time}
-          </span>
-        </S.OrderMetaValue>
-      </S.OrderMeta>
+      {showLastUpdate ? (
+        <S.OrderMeta aria-label="Última atualização do pedido">
+          <S.OrderMetaLabel>ÚLTIMA ATUALIZAÇÃO</S.OrderMetaLabel>
+          <S.OrderMetaValue>
+            <CalendarDays size={25} strokeWidth={1.9} aria-hidden="true" />
+            <span>
+              {orderUpdate.date}
+              <br />
+              às {orderUpdate.time}
+            </span>
+          </S.OrderMetaValue>
+        </S.OrderMeta>
+      ) : null}
 
       <S.OrderMeta aria-label="Etapa atual do pedido">
         <S.OrderMetaLabel>ETAPA ATUAL</S.OrderMetaLabel>

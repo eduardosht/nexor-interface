@@ -117,7 +117,13 @@ describe('Compra', () => {
     renderPage('/painel/compra?checkout=success');
 
     await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
-    expect(screen.getByText(/pagamento confirmado/i)).toBeInTheDocument();
+    const orderCard = screen.getByTestId('payment-success-order-card');
+    expect(orderCard).toHaveTextContent(/pedido/i);
+    expect(orderCard).toHaveTextContent(/status atual/i);
+    expect(orderCard).not.toHaveTextContent(/última atualização/i);
+    expect(orderCard).not.toHaveTextContent(/data do pagamento/i);
+    expect(orderCard).toHaveTextContent(/etapa atual/i);
+    expect(orderCard).toHaveTextContent(/pagamento confirmado/i);
     expect(screen.queryByText(/aguardando pagamento pelo cliente/i)).not.toBeInTheDocument();
     expect(screen.getByText(/pedido será feito para a produção/i)).toBeInTheDocument();
     expect(screen.getByText(/aguardando/i)).toBeInTheDocument();
