@@ -222,6 +222,41 @@ describe('MinhaConta', () => {
     });
   });
 
+  it('translates product role badges to Portuguese', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'dentista@nexor.dev',
+          fullName: 'Dra. Eduarda',
+          roles: ['dentist'],
+        },
+      })
+      .mockResolvedValueOnce({
+        productRoles: [
+          {
+            id: 'role-rejected-1',
+            productKey: 'biteplaner',
+            role: 'dentist',
+            status: 'rejected',
+            metadata: {
+              fullName: 'Dra. Eduarda',
+            },
+          },
+        ],
+      });
+
+    renderPage({
+      session: { access_token: 'tok', user: { id: 'dentist', email: 'dentista@nexor.dev' } },
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    const badge = await screen.findByText('Rejeitado');
+
+    expect(badge).toBeInTheDocument();
+    expect(screen.queryByText(/^rejected$/i)).not.toBeInTheDocument();
+    expect(getComputedStyle(badge).backgroundColor).toBe('rgba(185, 28, 28, 0.08)');
+  });
+
   it('shows the acquired Biteplaner product for a user that has it', async () => {
     mockApiGet.mockResolvedValueOnce({
       user: {

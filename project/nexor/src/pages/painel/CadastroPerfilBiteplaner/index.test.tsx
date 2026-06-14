@@ -403,6 +403,7 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.queryByRole('button', { name: /\+ clínica/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /remover clínica/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/nome da clínica 2/i)).not.toBeInTheDocument();
+    expect(screen.getByText('Ex: Segunda a Sexta - 9h as 18h')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/nome da clínica \(\*\)/i), {
       target: { value: 'Clínica Centro' },
     });

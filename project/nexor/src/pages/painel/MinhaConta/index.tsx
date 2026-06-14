@@ -250,6 +250,22 @@ function getRoleLabel(role: ProductRole['role']) {
   return labels[role];
 }
 
+function getProductStatusLabel(status: string) {
+  if (status === 'active') {
+    return 'Ativo';
+  }
+
+  if (status === 'rejected') {
+    return 'Rejeitado';
+  }
+
+  return status;
+}
+
+function getProductStatusTone(status: string): 'success' | 'error' {
+  return status === 'rejected' ? 'error' : 'success';
+}
+
 async function fetchCepCoordinates(cep: string) {
   const digits = cep.replace(/\D/g, '');
   if (digits.length !== 8 || typeof fetch !== 'function') {
@@ -1181,7 +1197,9 @@ export function MinhaConta() {
                 <S.ProductContent key={product.key}>
                   <S.ProductHeader>
                     <S.ProductTitle>{product.name}</S.ProductTitle>
-                    <S.ProductBadge>{product.status}</S.ProductBadge>
+                    <S.ProductBadge $tone={getProductStatusTone(product.status)}>
+                      {getProductStatusLabel(product.status)}
+                    </S.ProductBadge>
                   </S.ProductHeader>
                   <S.ProductText>{product.description}</S.ProductText>
                   <S.ProductLink as={Link} to={product.href}>Abrir Biteplaner</S.ProductLink>
@@ -1219,7 +1237,9 @@ export function MinhaConta() {
                   <S.ProductContent>
                     <S.ProductHeader>
                       <S.ProductTitle>{getRoleLabel(role.role)}</S.ProductTitle>
-                      <S.ProductBadge>{role.status}</S.ProductBadge>
+                      <S.ProductBadge $tone={getProductStatusTone(role.status)}>
+                        {getProductStatusLabel(role.status)}
+                      </S.ProductBadge>
                     </S.ProductHeader>
                     {role.role === 'dentist'
                       ? renderDentistOnboardingFields(role, metadata, primaryLocation, isSavingRole)

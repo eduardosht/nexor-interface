@@ -267,11 +267,12 @@ export const ProductTitle = styled.h3`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-export const ProductBadge = styled.span`
+export const ProductBadge = styled.span<{ $tone?: 'success' | 'error' }>`
   padding: 4px 8px;
   border-radius: 999px;
-  background: ${({ theme }) => theme.colors.green}1a;
-  color: ${({ theme }) => theme.colors.green};
+  border: 1px solid ${({ $tone, theme }) => ($tone === 'error' ? theme.colors.errorBorder : `${theme.colors.green}33`)};
+  background: ${({ $tone, theme }) => ($tone === 'error' ? theme.colors.errorBg : `${theme.colors.green}1a`)};
+  color: ${({ $tone, theme }) => ($tone === 'error' ? theme.colors.error : theme.colors.green)};
   font-size: 12px;
   font-weight: 700;
 `;
