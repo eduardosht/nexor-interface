@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +27,10 @@ const runId = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '')
 const artifactsDir = path.join(rootDir, 'e2e-artifacts', `full-flow-${runId}`);
 const screenshotsDir = path.join(artifactsDir, 'screenshots');
 const videosDir = path.join(artifactsDir, 'videos');
+const demoAdmAssetsDir = path.join(rootDir, 'public', 'demo-adm-assets', 'assets', 'apresentacao-painel-admin');
+const demoAdmVideoDir = path.join(demoAdmAssetsDir, 'video');
+const demoAdmDocsAssetsDir = path.join(rootDir, 'docs', 'assets', 'apresentacao-painel-admin');
+const demoAdmDocsVideoDir = path.join(demoAdmDocsAssetsDir, 'video');
 
 const report = {
   runId,
@@ -673,7 +677,15 @@ function readableStepName(name) {
     'admin-aprovacao-parceiros': 'Admin vê solicitações de parceiros',
     'admin-aprovacao-parceiro-modal': 'Admin analisa solicitação do parceiro',
     'admin-aprovacao-parceiro-aprovado': 'Admin aprova parceiro',
-    'parceiro-dashboard-gerar-link': 'Parceiro gera link de indicação'
+    'parceiro-dashboard-gerar-link': 'Parceiro gera link de indicação',
+    'cliente-remocao-jornada-ativa': 'Cliente com ordem ativa',
+    'cliente-remocao-conta-abertura': 'Cliente abre Minha Conta',
+    'cliente-remocao-conta-pendente': 'Cliente solicita remoção',
+    'cliente-remocao-conta-analise': 'Cliente envia para análise',
+    'admin-remocao-lista': 'Admin abre remoções de conta',
+    'admin-remocao-modal': 'Admin analisa remoção',
+    'admin-remocao-aprovada': 'Admin aprova remoção',
+    'cliente-remocao-jornada-interrompida': 'Jornada interrompida'
   };
   if (labels[name]) {
     return labels[name];
@@ -720,7 +732,15 @@ function readableStepDescription(name) {
     'admin-aprovacao-parceiros': 'Admin entra na listagem de solicitações para analisar o parceiro.',
     'admin-aprovacao-parceiro-modal': 'Modal com dados enviados pelo parceiro fica visível antes da aprovação.',
     'admin-aprovacao-parceiro-aprovado': 'Solicitação aprovada; parceiro pode acessar recursos de indicação.',
-    'parceiro-dashboard-gerar-link': 'Parceiro abre o dashboard, entra em Indicar e gera o link usado no cadastro do cliente.'
+    'parceiro-dashboard-gerar-link': 'Parceiro abre o dashboard, entra em Indicar e gera o link usado no cadastro do cliente.',
+    'cliente-remocao-jornada-ativa': 'Uma segunda conta inicia uma ordem que ainda pode ser interrompida.',
+    'cliente-remocao-conta-abertura': 'Cliente acessa Minha Conta para iniciar a solicitação de remoção.',
+    'cliente-remocao-conta-pendente': 'Sistema calcula impacto e exige confirmação antes da análise administrativa.',
+    'cliente-remocao-conta-analise': 'Cliente confirma o impacto e envia a solicitação para análise da Nexor.',
+    'admin-remocao-lista': 'Admin visualiza solicitações pendentes de remoção de conta.',
+    'admin-remocao-modal': 'Admin confere o impacto operacional antes da decisão.',
+    'admin-remocao-aprovada': 'Aprovação cancela a ordem ativa sem gerar ressarcimento automático.',
+    'cliente-remocao-jornada-interrompida': 'Jornada mostra o motivo account_deletion_approved após a aprovação.'
   };
   if (descriptions[name]) {
     return descriptions[name];
@@ -1625,6 +1645,120 @@ async function advanceFullPurchaseFlow(actors, page) {
   return report.order.final;
 }
 
+async function demonstrateAccountDeletionViaUi(actors, page) {
+  const deletionCustomer = await registerAccountViaUi(
+    page,
+    'deletionCustomer',
+    'Cliente Remoção E2E Biteplaner',
+    { referralInviteToken: actors.invite.token }
+  );
+  await api(deletionCustomer.token, 'POST', '/v1/account/products/biteplaner/roles/customer', {});
+  const refreshedDeletionCustomer = await signIn(deletionCustomer.email);
+  report.actors.deletionCustomer = {
+    email: refreshedDeletionCustomer.email,
+    profile: profileFromMe(refreshedDeletionCustomer.me)
+  };
+
+  const partnerId =
+    profileFromMe(actors.partner.me).partnerId ??
+    profileFromMe(actors.partner.me).productRoles?.find((item) => item.role === 'partner')?.metadata?.operationalPartnerId ??
+    actors.invite?.partner?.id;
+  const createdOrder = await api(refreshedDeletionCustomer.token, 'POST', '/v1/orders', {
+    ...(partnerId ? { partnerId } : {})
+  });
+  const orderId = createdOrder.order?.id ?? createdOrder.id;
+  const interruptibleOrder = await api(actors.admin.token, 'PATCH', `/v1/admin/orders/${orderId}/status`, {
+    status: 'awaiting_payment',
+    reason: 'Preparacao E2E para validar analise administrativa de remocao de conta.'
+  });
+  const orderStatus = interruptibleOrder.order?.status ?? interruptibleOrder.status;
+  if (orderStatus !== 'awaiting_payment') {
+    throw new Error(`Expected account deletion fixture order ${orderId} to become awaiting_payment, got ${orderStatus}.`);
+  }
+  report.order.accountDeletion = { id: orderId, status: orderStatus };
+  logStep('Created interruptible order for account deletion review', {
+    orderId,
+    status: orderStatus,
+    partnerId: partnerId ?? null
+  });
+
+  await clearBrowserSession(page);
+  await loginByUi(page, refreshedDeletionCustomer.email);
+  await gotoAndRecord(page, `/painel/biteplaner/jornada?orderId=${orderId}`, 'cliente-remocao-jornada-ativa');
+  await gotoAndRecord(page, '/painel/conta', 'cliente-remocao-conta-abertura');
+
+  await slowClick(page.getByRole('button', { name: /excluir conta/i }).first());
+  await slowFill(page.getByLabel(/digite cliente para confirmar/i), 'Cliente');
+  await screenshot(page, 'cliente-remocao-conta-modal-confirmacao');
+  await slowClick(page.getByRole('button', { name: /confirmar exclus/i }).first());
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+  await page.getByRole('status', { name: /status da remo/i }).waitFor({ state: 'visible', timeout: 30000 });
+  await setVideoStep(page, readableStepName('cliente-remocao-conta-pendente'), readableStepDescription('cliente-remocao-conta-pendente'));
+  await page.waitForTimeout(STEP_PAUSE_MS);
+  await screenshot(page, 'cliente-remocao-conta-pendente');
+
+  await slowClick(page.getByRole('button', { name: /enviar para an.lise/i }).first());
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+  await page.waitForTimeout(STEP_PAUSE_MS);
+  await setVideoStep(page, readableStepName('cliente-remocao-conta-analise'), readableStepDescription('cliente-remocao-conta-analise'));
+  await screenshot(page, 'cliente-remocao-conta-analise');
+
+  const pendingRequest = await api(refreshedDeletionCustomer.token, 'GET', '/v1/account/deletion-request/current');
+  const requestId = pendingRequest.deletionRequest?.request?.id ?? pendingRequest.request?.id;
+  if (!requestId) {
+    throw new Error('Account deletion request was not created through the UI.');
+  }
+  report.validations.push({
+    title: 'Account deletion request reached admin review through UI',
+    requestId,
+    orderId,
+    status: pendingRequest.deletionRequest?.request?.status ?? pendingRequest.request?.status
+  });
+
+  await clearBrowserSession(page);
+  await loginByUi(page, ADMIN_EMAIL, ADMIN_PASSWORD);
+  const adminQueue = await api(actors.admin.token, 'GET', '/v1/admin/account-deletion-requests');
+  const queuedRequest = (adminQueue.requests ?? []).find((request) => request.id === requestId);
+  if (!queuedRequest) {
+    throw new Error(`Account deletion request ${requestId} was not visible in the admin queue.`);
+  }
+  await gotoAndRecord(page, '/painel/admin/remocoes-conta', 'admin-remocao-lista');
+  const viewButton = page.getByRole('button', { name: /visualizar remo/i }).first();
+  await slowClick(viewButton);
+  const dialog = page.getByRole('dialog', { name: /an.lise de remo/i });
+  await dialog.waitFor({ state: 'visible', timeout: 30000 });
+  await setVideoStep(page, readableStepName('admin-remocao-modal'), readableStepDescription('admin-remocao-modal'));
+  await page.waitForTimeout(MODAL_PAUSE_MS);
+  await screenshot(page, 'admin-remocao-modal');
+  await slowFill(dialog.getByLabel(/nota administrativa/i), 'Aprovado no fluxo E2E para validar interrupção operacional por remoção de conta.');
+  await slowClick(dialog.getByRole('button', { name: /aprovar remo/i }));
+  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
+  await page.waitForTimeout(STEP_PAUSE_MS);
+  await setVideoStep(page, readableStepName('admin-remocao-aprovada'), readableStepDescription('admin-remocao-aprovada'));
+  await screenshot(page, 'admin-remocao-aprovada');
+
+  const deletedOrder = await api(actors.admin.token, 'GET', `/v1/orders/${orderId}`);
+  const order = deletedOrder.order ?? deletedOrder;
+  if (order.status !== 'cancelled') {
+    throw new Error(`Expected account deletion approval to cancel order ${orderId}, got ${order.status}.`);
+  }
+  const timelineResponse = await api(actors.admin.token, 'GET', `/v1/orders/${orderId}/timeline`);
+  const timeline = timelineResponse.timeline ?? timelineResponse.events ?? timelineResponse.statusEvents ?? [];
+  const hasAccountDeletionEvent = timeline.some((event) => event.reason === 'account_deletion_approved');
+  if (!hasAccountDeletionEvent) {
+    throw new Error(`Order ${orderId} was cancelled without account_deletion_approved event.`);
+  }
+  report.validations.push({
+    title: 'Account deletion approval cancelled interruptible order',
+    requestId,
+    orderId,
+    status: order.status,
+    reason: 'account_deletion_approved'
+  });
+
+  await gotoAndRecord(page, `/painel/biteplaner/jornada?orderId=${orderId}`, 'cliente-remocao-jornada-interrompida');
+}
+
 async function loginByUi(page, email, password = DEFAULT_PASSWORD) {
   await page.goto(`${FRONTEND_URL}/entrar`, { waitUntil: 'domcontentloaded' });
   await slowFill(page.getByLabel('E-mail'), email);
@@ -1931,6 +2065,29 @@ async function writeReport() {
   await writeFile(path.join(artifactsDir, 'report.md'), markdown, 'utf8');
 }
 
+async function publishDemoAdmArtifacts() {
+  await mkdir(demoAdmAssetsDir, { recursive: true });
+  await mkdir(demoAdmVideoDir, { recursive: true });
+  await mkdir(demoAdmDocsAssetsDir, { recursive: true });
+  await mkdir(demoAdmDocsVideoDir, { recursive: true });
+
+  const screenshotFiles = await readdir(screenshotsDir);
+  for (const fileName of screenshotFiles.filter((item) => item.toLowerCase().endsWith('.png'))) {
+    const source = path.join(screenshotsDir, fileName);
+    const publishedName = `e2e-${fileName}`;
+    await copyFile(source, path.join(demoAdmAssetsDir, publishedName));
+    await copyFile(source, path.join(demoAdmDocsAssetsDir, publishedName));
+  }
+
+  const fullFlowVideo = path.join(videosDir, 'full-flow-complete.webm');
+  await copyFile(fullFlowVideo, path.join(demoAdmVideoDir, 'biteplaner-fluxo-completo-e2e.webm'));
+  await copyFile(fullFlowVideo, path.join(demoAdmDocsVideoDir, 'biteplaner-fluxo-completo-e2e.webm'));
+  logStep('Published refreshed demo-adm screenshots and video', {
+    screenshots: screenshotFiles.filter((item) => item.toLowerCase().endsWith('.png')).length,
+    video: path.join(demoAdmVideoDir, 'biteplaner-fluxo-completo-e2e.webm')
+  });
+}
+
 async function main() {
   await mkdir(screenshotsDir, { recursive: true });
   await mkdir(videosDir, { recursive: true });
@@ -1946,6 +2103,7 @@ async function main() {
   try {
     const actors = await createActorsAndRoles(page);
     await advanceFullPurchaseFlow(actors, page);
+    await demonstrateAccountDeletionViaUi(actors, page);
     await clearBrowserSession(page);
     await loginByUi(page, actors.partner.email);
     await gotoAndRecord(page, '/painel/biteplaner?mode=partner', 'parceiro-hub-final');
@@ -1962,6 +2120,7 @@ async function main() {
     }
   }
 
+  await publishDemoAdmArtifacts();
   await writeReport();
   console.log(`[e2e] Artifacts: ${artifactsDir}`);
 }

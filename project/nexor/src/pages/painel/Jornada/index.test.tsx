@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -422,15 +422,15 @@ describe('Jornada', () => {
     expectNoEmbeddedStepContent();
   });
 
-  it('shows payment details on the purchase step after Stripe confirmation', async () => {
+  it('shows collapsed payment details and advances the journey to laboratory after Stripe confirmation', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
           {
             id: 'BP-DEMO-004',
-            status: 'awaiting_dentist_forms',
+            status: 'payment_confirmed',
             statusLabel: 'Aguardando envio ao laboratório',
-            stage: 'awaiting_dentist_forms',
+            stage: 'payment_confirmed',
             created_at: '2026-05-02T15:56:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
             payment: {
@@ -452,8 +452,12 @@ describe('Jornada', () => {
 
     const paymentBox = await screen.findByTestId('journey-payment-confirmation');
     const nextStepBox = await screen.findByTestId('journey-payment-next-step');
-    expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/atual/i);
+    expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/conclu.do/i);
+    expect(screen.getByTestId('journey-step-laboratory')).toHaveTextContent(/atual/i);
     expect(paymentBox).toHaveTextContent(/detalhes do pagamento/i);
+    expect(paymentBox).not.toHaveAttribute('open');
+    fireEvent.click(within(paymentBox).getByText(/detalhes do pagamento/i));
+    expect(paymentBox).toHaveAttribute('open');
     expect(paymentBox).toHaveTextContent(/próximo passo/i);
     expect(paymentBox).toHaveTextContent(/dentista dar o ok/i);
     expect(paymentBox).toHaveTextContent(/enviar a produção para o laboratório/i);

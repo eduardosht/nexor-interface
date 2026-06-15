@@ -151,28 +151,42 @@ export const StepDisclaimerText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-export const PaymentConfirmationCard = styled.section`
+export const PaymentConfirmationCard = styled.details`
   display: grid;
-  gap: 28px;
-  padding: 34px 36px;
+  gap: 0;
+  padding: 0;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.34);
   background: ${({ theme }) => theme.colors.surface};
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
 
+  &[open] {
+    padding-bottom: 24px;
+  }
+
   @media (max-width: 560px) {
-    padding: 18px;
+    &[open] {
+      padding-bottom: 18px;
+    }
   }
 `;
 
 export const PaymentConfirmationHeader = styled.div`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 28px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
 
   @media (max-width: 560px) {
-    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 18px;
   }
 `;
 
@@ -180,15 +194,15 @@ export const PaymentConfirmationIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   background: rgba(37, 99, 235, 0.1);
   color: #2563eb;
 
   svg {
-    width: 30px;
-    height: 30px;
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -199,7 +213,7 @@ export const PaymentConfirmationCopy = styled.div`
 
   strong {
     color: #0f172a;
-    font-size: 22px;
+    font-size: 17px;
     font-weight: 850;
     line-height: 1.35;
   }
@@ -211,14 +225,34 @@ export const PaymentConfirmationCopy = styled.div`
   }
 `;
 
+export const PaymentCollapseIndicator = styled.span`
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid #667085;
+  border-bottom: 2px solid #667085;
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+
+  ${PaymentConfirmationCard}[open] & {
+    transform: rotate(-135deg);
+  }
+
+  @media (max-width: 560px) {
+    grid-column: 2;
+    justify-self: end;
+  }
+`;
+
 export const PaymentDetailsGrid = styled.dl`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
+  gap: 16px;
   margin: 0;
+  padding: 0 24px;
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
+    padding: 0 18px;
   }
 `;
 
@@ -251,8 +285,8 @@ export const NextStepCard = styled.section`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 28px;
-  padding: 28px 34px;
+  gap: 18px;
+  padding: 24px 28px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.28);
   background: ${({ theme }) => theme.colors.surface};
@@ -268,11 +302,11 @@ export const NextStepIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 46px;
+  height: 46px;
   border-radius: 16px;
-  background: rgba(21, 128, 61, 0.1);
-  color: #15803d;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
 `;
 
 export const NextStepCopy = styled.div`

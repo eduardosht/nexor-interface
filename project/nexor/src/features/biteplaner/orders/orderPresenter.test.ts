@@ -19,6 +19,7 @@ describe('orderPresenter', () => {
     expect(getStageLabel({ stage: 'awaiting_initial_consultation' })).toBe('Consulta inicial');
     expect(getStageLabel({ stage: 'awaiting_clinical_decision' })).toBe('Decisão clínica');
     expect(getStageLabel({ stage: 'awaiting_payment' })).toBe('Compra');
+    expect(getStageLabel({ stage: 'payment_confirmed' })).toBe('Laboratório');
     expect(getStageLabel({ stage: 'awaiting_dentist_forms' })).toBe('Laboratório');
     expect(getStageLabel({ stage: 'lab_production' })).toBe('Laboratório');
     expect(getStageLabel({ stage: 'awaiting_adaptation' })).toBe('Adaptação e acompanhamento');

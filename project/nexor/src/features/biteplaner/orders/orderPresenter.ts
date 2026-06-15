@@ -42,7 +42,7 @@ export const STAGE_LABELS: Record<string, (typeof JOURNEY_STAGE_LABELS)[number]>
   treatment_required: 'Decisão clínica',
   ineligible_reassessment: 'Consulta inicial',
   awaiting_payment: 'Compra',
-  payment_confirmed: 'Compra',
+  payment_confirmed: 'Laboratório',
   awaiting_dentist_forms: 'Laboratório',
   awaiting_lab_start: 'Laboratório',
   ready_for_lab: 'Laboratório',

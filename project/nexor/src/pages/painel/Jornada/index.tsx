@@ -11,8 +11,8 @@ import {
   Clock3,
   CreditCard,
   FlaskConical,
+  CircleHelp,
   Info,
-  ShieldCheck,
   Stethoscope,
   UserRound,
   type LucideIcon,
@@ -273,15 +273,16 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
     return 2;
   }
 
-  if (
-    order.status === 'awaiting_payment' ||
-    order.status === 'payment_confirmed' ||
-    order.status === 'awaiting_dentist_forms'
-  ) {
+  if (order.status === 'awaiting_payment') {
     return 3;
   }
 
-  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
+  if (
+    order.status === 'payment_confirmed' ||
+    order.status === 'awaiting_dentist_forms' ||
+    order.status === 'awaiting_lab_start' ||
+    order.status === 'lab_processing'
+  ) {
     return 4;
   }
 
@@ -781,19 +782,6 @@ export function Jornada() {
             </S.OverviewCard>
           </S.JourneyDashboardGrid>
 
-          <S.InfoCallout>
-            <S.InfoCalloutIcon aria-hidden>
-              <Info size={20} />
-            </S.InfoCalloutIcon>
-            <S.InfoCalloutCopy>
-              <S.InfoCalloutTitle>{journeySummary?.whyTitle}</S.InfoCalloutTitle>
-              <S.Description>{journeySummary?.whyText}</S.Description>
-            </S.InfoCalloutCopy>
-            <S.InfoCalloutLink to={currentStepActionPath}>
-              <span>Saiba mais</span>
-              <ChevronRight size={18} aria-hidden />
-            </S.InfoCalloutLink>
-          </S.InfoCallout>
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
           {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
           {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
@@ -810,7 +798,7 @@ export function Jornada() {
               ) : null}
             </S.Banner>
           ) : null}
-          {!orderProblem && currentStepNotice && currentStepDisclaimer ? (
+          {!orderProblem && currentStepNotice && currentStepDisclaimer && !paymentDetails ? (
             <S.StepDisclaimer
               role="status"
               data-testid="journey-step-notice"
@@ -829,9 +817,9 @@ export function Jornada() {
           ) : null}
           {!orderProblem && paymentDetails ? (
             <S.PaymentConfirmationCard data-testid="journey-payment-confirmation">
-              <S.PaymentConfirmationHeader>
+              <S.PaymentConfirmationHeader as="summary">
                 <S.PaymentConfirmationIcon aria-hidden>
-                  <CreditCard size={22} />
+                  <CreditCard size={18} />
                 </S.PaymentConfirmationIcon>
                 <S.PaymentConfirmationCopy>
                   <strong>Detalhes do pagamento</strong>
@@ -840,6 +828,7 @@ export function Jornada() {
                     laboratório licenciado.
                   </span>
                 </S.PaymentConfirmationCopy>
+                <S.PaymentCollapseIndicator aria-hidden />
               </S.PaymentConfirmationHeader>
               <S.PaymentDetailsGrid>
                 <S.PaymentDetailItem>
@@ -872,7 +861,7 @@ export function Jornada() {
           {!orderProblem && paymentDetails ? (
             <S.NextStepCard data-testid="journey-payment-next-step">
               <S.NextStepIcon aria-hidden>
-                <ShieldCheck size={34} />
+                <CircleHelp size={24} />
               </S.NextStepIcon>
               <S.NextStepCopy>
                 <S.NextStepTitle>O que acontece agora?</S.NextStepTitle>
