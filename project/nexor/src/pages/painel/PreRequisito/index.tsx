@@ -9,6 +9,7 @@ import {
   fetchOrders,
   fetchWorkflowForms,
   getAuthToken,
+  getOrderDisplayId,
   isCustomerOnboardingComplete,
   type DemoOrderSummary,
   type DemoWorkflowForm,
@@ -232,7 +233,9 @@ export function PreRequisito() {
                 <S.PrerequisiteMetaGrid>
                   <S.PrerequisiteMetaItem>
                     <S.PrerequisiteMetaLabel>Pedido</S.PrerequisiteMetaLabel>
-                    <S.PrerequisiteMetaValue>{order?.id ?? 'Pedido Biteplaner'}</S.PrerequisiteMetaValue>
+                    <S.PrerequisiteMetaValue>
+                      {order ? getOrderDisplayId(order) : 'Pedido Biteplaner'}
+                    </S.PrerequisiteMetaValue>
                   </S.PrerequisiteMetaItem>
                   <S.PrerequisiteMetaItem>
                     <S.PrerequisiteMetaLabel>Status atual</S.PrerequisiteMetaLabel>

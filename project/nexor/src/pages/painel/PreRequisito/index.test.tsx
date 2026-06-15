@@ -80,6 +80,7 @@ function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQuer
 function demoOrder(status = 'registration_started') {
   return {
     id: 'BP-DEMO-001',
+    display_number: 39,
     status,
     statusLabel: status === 'registration_started' ? 'Pre-requisito pendente' : 'Aguardando consulta inicial',
     stage: status === 'registration_started' ? 'pre_requisite_pending' : 'awaiting_initial_consultation',
@@ -212,6 +213,8 @@ describe('PreRequisito', () => {
     expect(screen.getByTestId('pre-requisito-onboarding-card')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
+    expect(screen.getByText('#39')).toBeInTheDocument();
+    expect(screen.queryByText('BP-DEMO-001')).not.toBeInTheDocument();
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();

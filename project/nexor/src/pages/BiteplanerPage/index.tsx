@@ -1,6 +1,9 @@
 import {
   Activity,
   BadgeCheck,
+  Box,
+  ClipboardList,
+  CreditCard,
   Dumbbell,
   Heart,
   Quote,
@@ -8,7 +11,9 @@ import {
   SlidersHorizontal,
   Star,
   Target,
+  TrendingUp,
   Trophy,
+  UserRound,
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -35,14 +40,14 @@ const cardVariants: Variants = {
 const JOURNEY_STEPS = [
   {
     n: 1,
-    icon: Dumbbell,
+    icon: UserRound,
     label: 'Entrada',
     title: 'Conta Nexor',
     body: 'Crie ou acesse sua conta para iniciar o processo de elegibilidade e garantir segurança dos dados.',
   },
   {
     n: 2,
-    icon: Trophy,
+    icon: ClipboardList,
     label: 'Elegibilidade',
     title: 'Pré-consulta',
     body: 'Informe esporte, rotina, histórico e sintomas para selecionar um dentista licenciado.',
@@ -56,21 +61,21 @@ const JOURNEY_STEPS = [
   },
   {
     n: 4,
-    icon: Activity,
+    icon: CreditCard,
     label: 'Compra segura',
     title: 'Pagamento após aptidão',
     body: 'Confirmada sua aptidão na primeira consulta, o pagamento será realizado através da plataforma Nexor.',
   },
   {
     n: 5,
-    icon: SlidersHorizontal,
+    icon: Box,
     label: 'Laboratório',
     title: 'Produção personalizada',
     body: 'A fabricação ocorre após confirmação do pagamento.',
   },
   {
     n: 6,
-    icon: BadgeCheck,
+    icon: TrendingUp,
     label: 'Uso real',
     title: 'Adaptação e acompanhamento',
     body: 'A instalação inicial do dispositivo será feita pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
@@ -397,18 +402,27 @@ export function BiteplanerPage() {
               >
                 <S.StepHeader>
                   <S.StepNumber>{step.n}</S.StepNumber>
-                  <div>
-                    <S.StepLabel>{step.label}</S.StepLabel>
-                    <S.StepTitle>{step.title}</S.StepTitle>
-                  </div>
                 </S.StepHeader>
-                <S.StepBody>{step.body}</S.StepBody>
                 <S.StepIcon aria-hidden="true">
                   <Icon size={34} strokeWidth={1.5} />
                 </S.StepIcon>
+                <S.StepCopy>
+                  <S.StepLabel>{step.label}</S.StepLabel>
+                  <S.StepTitle>{step.title}</S.StepTitle>
+                </S.StepCopy>
+                <S.StepBody>{step.body}</S.StepBody>
               </S.StepCard>
             ))}
           </S.JourneyGrid>
+          <S.ProcessAssurance>
+            <S.ProcessAssuranceIcon aria-hidden="true">
+              <ShieldCheck size={48} strokeWidth={1.45} />
+            </S.ProcessAssuranceIcon>
+            <div>
+              <strong>Transparência em cada etapa</strong>
+              <p>Você sempre saberá em que etapa está e o que vem a seguir.</p>
+            </div>
+          </S.ProcessAssurance>
         </S.SplitSection>
       </S.ProcessOuter>
 
@@ -487,6 +501,54 @@ export function BiteplanerPage() {
             </tbody>
           </S.ComparisonTable>
         </S.ComparisonTableViewport>
+        <S.MobileComparisonLayout aria-label="Comparação entre protetores bucais e Biteplaner">
+          <S.MobileComparisonLegend aria-hidden="true">
+            <S.MobileComparisonLegendItem>
+              <ShieldCheck size={34} strokeWidth={1.5} />
+              <span>Protetor genérico</span>
+            </S.MobileComparisonLegendItem>
+            <S.MobileComparisonLegendItem>
+              <ShieldCheck size={34} strokeWidth={1.5} />
+              <span>Protetor tradicional</span>
+            </S.MobileComparisonLegendItem>
+            <S.MobileComparisonLegendItem $highlighted>
+              <ShieldCheck size={34} strokeWidth={1.6} />
+              <span>Biteplaner</span>
+            </S.MobileComparisonLegendItem>
+          </S.MobileComparisonLegend>
+
+          <S.MobileComparisonCards>
+            {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
+              <S.MobileComparisonCard
+                key={`mobile-${row.criterion}`}
+                aria-label={`${row.criterion}: protetor genérico ${row.generic}, protetor tradicional ${row.traditional}, Biteplaner ${row.biteplaner}`}
+              >
+                <S.MobileComparisonCriterion>
+                  <S.MobileComparisonCriterionIcon aria-hidden="true">
+                    <Icon size={34} strokeWidth={1.7} />
+                  </S.MobileComparisonCriterionIcon>
+                  <h3 aria-label={row.criterion} data-label={row.criterion} />
+                </S.MobileComparisonCriterion>
+
+                <S.MobileComparisonValueRow>
+                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+                  <strong aria-label="Protetor genérico" data-label="Protetor genérico" />
+                  <span aria-label={row.generic} data-value={row.generic} />
+                </S.MobileComparisonValueRow>
+                <S.MobileComparisonValueRow>
+                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+                  <strong aria-label="Protetor tradicional" data-label="Protetor tradicional" />
+                  <span aria-label={row.traditional} data-value={row.traditional} />
+                </S.MobileComparisonValueRow>
+                <S.MobileComparisonValueRow $highlighted>
+                  <ShieldCheck size={24} strokeWidth={1.6} aria-hidden="true" />
+                  <strong aria-label="Biteplaner" data-label="Biteplaner" />
+                  <span aria-label={row.biteplaner} data-value={row.biteplaner} />
+                </S.MobileComparisonValueRow>
+              </S.MobileComparisonCard>
+            ))}
+          </S.MobileComparisonCards>
+        </S.MobileComparisonLayout>
         {!comparisonExpanded ? (
           <S.ComparisonToggleButton type="button" onClick={() => setComparisonExpanded(true)}>
             Mostrar comparação completa
@@ -545,7 +607,6 @@ export function BiteplanerPage() {
 
       <S.FinalCtaOuter>
         <S.FinalCtaInner>
-          <S.FinalCtaMedia aria-hidden="true" />
           <S.FinalCtaContent>
             <S.MarketingSectionTitle $tone="light">Comece pela elegibilidade</S.MarketingSectionTitle>
             <S.MarketingSectionLead $tone="light">

@@ -21,6 +21,7 @@ export const Nav = styled(motion.nav)`
 
   @media (max-width: 768px) {
     padding: 0 24px;
+    justify-content: space-between;
   }
 `;
 

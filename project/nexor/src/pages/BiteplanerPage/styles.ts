@@ -403,13 +403,13 @@ export const CardBody = MarketingBodyText;
 
 export const ProcessOuter = styled.div`
   ${fullBleedSection}
-  min-height: 920px;
+  min-height: 1000px;
   position: relative;
   overflow: hidden;
   display: grid;
   align-items: stretch;
   isolation: isolate;
-  background: #031912;
+  background: #001918;
 
   &::before,
   &::after {
@@ -421,15 +421,14 @@ export const ProcessOuter = styled.div`
 
   &::before {
     z-index: 0;
-    background: ${imageSet(publicOptimizedImages.biteplaner.process.desktop)} center / cover no-repeat;
+    background: ${imageSet(publicOptimizedImages.biteplaner.process.desktop)} center top / cover no-repeat;
   }
 
   &::after {
     z-index: 1;
     background:
-      linear-gradient(90deg, rgba(0, 26, 18, 0.96) 0%, rgba(0, 32, 23, 0.8) 22%, rgba(1, 18, 16, 0.36) 56%, rgba(0, 0, 0, 0.5) 100%),
-      linear-gradient(180deg, rgba(3, 14, 18, 0.1) 0%, rgba(2, 18, 14, 0.14) 38%, rgba(0, 24, 17, 0.94) 100%),
-      radial-gradient(ellipse at 12% 86%, rgba(48, 204, 110, 0.2), transparent 42%);
+      linear-gradient(90deg, rgba(0, 28, 27, 0.98) 0%, rgba(0, 35, 32, 0.82) 38%, rgba(0, 0, 0, 0.26) 68%, rgba(5, 5, 5, 0.42) 100%),
+      linear-gradient(180deg, rgba(0, 12, 12, 0.06) 0%, rgba(0, 21, 20, 0.24) 38%, rgba(0, 23, 22, 0.96) 76%, #001918 100%);
   }
 
   @media (max-width: 768px) {
@@ -442,8 +441,8 @@ export const ProcessOuter = styled.div`
 
     &::after {
       background:
-        linear-gradient(90deg, rgba(0, 27, 19, 0.96) 0%, rgba(0, 29, 20, 0.78) 46%, rgba(0, 0, 0, 0.34) 100%),
-        linear-gradient(180deg, rgba(3, 14, 18, 0.04) 0%, rgba(1, 19, 15, 0.12) 32%, rgba(0, 24, 17, 0.98) 58%, rgba(0, 24, 17, 1) 100%);
+        linear-gradient(90deg, rgba(0, 27, 25, 0.98) 0%, rgba(0, 29, 27, 0.82) 48%, rgba(0, 0, 0, 0.34) 100%),
+        linear-gradient(180deg, rgba(3, 14, 18, 0.04) 0%, rgba(1, 19, 18, 0.2) 30%, rgba(0, 24, 23, 0.98) 56%, #001918 100%);
     }
   }
 
@@ -454,15 +453,21 @@ export const ProcessOuter = styled.div`
     font-size: clamp(12px, 1.2vw, 16px);
   }
 
+  ${SplitSection} {
+    gap: 0;
+  }
+
   ${MarketingSectionTitle} {
-    max-width: 660px;
+    max-width: 920px;
     color: #ffffff;
-    line-height: 1.04;
+    font-size: clamp(46px, 4.45vw, 64px);
+    line-height: 1.06;
+    text-transform: uppercase;
     text-shadow: 0 6px 24px rgba(0, 0, 0, 0.58);
   }
 
   ${MarketingSectionLead} {
-    max-width: 680px;
+    max-width: 520px;
     margin-top: 66px;
     color: rgba(255, 255, 255, 0.86);
     font-size: clamp(17px, 1.25vw, 20px);
@@ -472,7 +477,9 @@ export const ProcessOuter = styled.div`
 
   @media (max-width: 900px) {
     ${MarketingSectionTitle} {
-      max-width: 620px;
+      max-width: 680px;
+      font-size: clamp(40px, 7.2vw, 56px);
+      line-height: 1.08;
     }
 
     ${MarketingSectionLead} {
@@ -485,7 +492,7 @@ export const ProcessOuter = styled.div`
 
   @media (max-width: 560px) {
     ${MarketingEyebrow} {
-      margin-bottom: 24px;
+      margin-bottom: 18px;
 
       &::after {
         bottom: -84px;
@@ -494,164 +501,115 @@ export const ProcessOuter = styled.div`
 
     ${MarketingSectionTitle} {
       max-width: 350px;
-      line-height: 1.1;
+      font-size: clamp(28px, 7.4vw, 34px);
+      line-height: 1.12;
     }
 
     ${MarketingSectionLead} {
-      margin-top: 48px;
-      font-size: 17px;
+      margin-top: 30px;
+      font-size: 15px;
+      line-height: 1.6;
     }
   }
 `;
 
 export const JourneyGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: 84px 96px minmax(220px, 0.78fr) minmax(320px, 1fr);
   gap: 0;
   position: relative;
-  padding-top: 76px;
+  margin-top: 72px;
 
-  &::before {
-    content: '';
-    position: absolute;
-    left: 3.2%;
-    right: 3.2%;
-    top: 33px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent 0%, rgba(82, 214, 104, 0.2) 4%, #57d36d 16%, #57d36d 84%, rgba(82, 214, 104, 0.2) 96%, transparent 100%);
-    box-shadow: 0 0 18px rgba(82, 214, 104, 0.38);
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 3.2%;
-    right: 3.2%;
-    top: 94px;
-    bottom: 0;
-    opacity: 0.68;
-    pointer-events: none;
+  @media (max-width: 980px) {
+    grid-template-columns: 72px 88px minmax(190px, 0.82fr) minmax(260px, 1fr);
   }
 
   @media (max-width: 760px) {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding-top: 0;
-
-    &::before {
-      display: none;
-    }
-
-    &::after {
-      display: none;
-    }
+    grid-template-columns: 68px 76px minmax(0, 1fr);
+    margin-top: 42px;
   }
 `;
 
 export const StepCard = styled(motion.article)`
-  min-height: 176px;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  min-height: 150px;
   position: relative;
-  padding: 0 22px 0 28px;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   color: #ffffff;
 
   &:last-child {
-    border-right: 0;
+    border-bottom: 0;
   }
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    pointer-events: none;
-  }
-
-  &::before {
-    top: -76px;
-    left: 50%;
-    width: 58px;
-    height: 58px;
-    border: 2px solid #57d36d;
-    background: rgba(0, 25, 18, 0.82);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-      0 0 18px rgba(87, 211, 109, 0.34);
-    transform: translateX(-50%);
-    z-index: 2;
-  }
-
-  &::after {
-    top: -55px;
-    left: 50%;
-    content: attr(data-step-number);
-    width: 20px;
-    height: 20px;
-    display: grid;
-    place-items: center;
-    color: #ffffff;
-    font-family: ${({ theme }) => theme.fonts.display};
-    font-size: 20px;
-    font-weight: 900;
-    line-height: 1;
-    transform: translateX(-50%);
-    z-index: 3;
+  @supports not (grid-template-columns: subgrid) {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   @media (max-width: 760px) {
-    min-height: 0;
-    padding: 22px;
-    border: 1px solid rgba(167, 238, 178, 0.18);
-    border-radius: 8px;
-    background: rgba(9, 42, 31, 0.74);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
-
-    &::before,
-    &::after {
-      display: none;
-    }
+    grid-template-columns: subgrid;
+    min-height: 122px;
   }
 
   @media (max-width: 520px) {
-    padding: 20px;
+    min-height: 0;
+    padding: 15px 0;
   }
 `;
 
 export const StepHeader = styled.div`
-  display: block;
+  grid-column: 1;
+  position: relative;
+  display: grid;
+  place-items: start center;
+  padding-right: 8px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.68);
+    transform: translateX(-50%);
+  }
+
+  ${StepCard}:first-child &::before {
+    top: 28px;
+  }
+
+  ${StepCard}:last-child &::before {
+    bottom: calc(100% - 28px);
+  }
 
   @media (max-width: 760px) {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 18px;
-    align-items: center;
+    padding-top: 0;
   }
 `;
 
 export const StepNumber = styled.div`
-  display: none;
-
-  @media (max-width: 760px) {
-    width: 50px;
-    height: 50px;
-    display: inline-grid;
-    place-items: center;
-    border: 2px solid #57d36d;
-    border-radius: 50%;
-    background: rgba(0, 25, 18, 0.82);
-    color: #ffffff;
-    font-family: ${({ theme }) => theme.fonts.display};
-    font-size: 17px;
-    font-weight: 900;
-    line-height: 1;
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-      0 0 18px rgba(87, 211, 109, 0.3);
-  }
+  position: relative;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  background: rgba(0, 22, 21, 0.84);
+  color: #ffffff;
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.32);
 
   @media (max-width: 520px) {
-    width: 46px;
-    height: 46px;
+    width: 42px;
+    height: 42px;
     font-size: 16px;
   }
 `;
@@ -670,7 +628,7 @@ export const StepLabel = styled.p`
 export const StepTitle = styled.h3`
   margin: 0;
   color: #ffffff;
-  font-size: clamp(17px, 1.28vw, 22px);
+  font-size: clamp(20px, 1.45vw, 25px);
   line-height: 1.12;
   font-weight: 900;
 
@@ -681,20 +639,96 @@ export const StepTitle = styled.h3`
 `;
 
 export const StepBody = styled.p`
-  margin: 18px 0 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: clamp(13px, 0.95vw, 16px);
-  line-height: 1.68;
+  grid-column: 4;
+  align-self: center;
+  margin: 0;
+  padding: 0 0 0 34px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: clamp(16px, 1.08vw, 18px);
+  line-height: 1.7;
 
   @media (max-width: 760px) {
-    margin-top: 16px;
+    grid-column: 3;
+    margin-top: 9px;
+    padding: 0 0 18px;
     font-size: ${typeScale.contentBody};
-    line-height: 1.62;
+    line-height: 1.55;
   }
 `;
 
 export const StepIcon = styled.div`
-  display: none;
+  grid-column: 2;
+  align-self: center;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(87, 211, 109, 0.12);
+  color: #57d36d;
+  box-shadow:
+    inset 0 0 0 1px rgba(87, 211, 109, 0.06),
+    0 18px 40px rgba(0, 0, 0, 0.18);
+
+  @media (max-width: 760px) {
+    width: 56px;
+    height: 56px;
+
+    svg {
+      width: 27px;
+      height: 27px;
+    }
+  }
+`;
+
+export const StepCopy = styled.div`
+  grid-column: 3;
+  align-self: center;
+  min-width: 0;
+  padding-right: 28px;
+
+  @media (max-width: 760px) {
+    padding-right: 0;
+  }
+`;
+
+export const ProcessAssurance = styled.div`
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 26px;
+  margin-top: 48px;
+  padding: 34px 42px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(12, 33, 34, 0.44);
+  color: #ffffff;
+  backdrop-filter: blur(2px);
+
+  strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: clamp(20px, 1.5vw, 24px);
+    line-height: 1.2;
+    font-weight: 900;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.86);
+    font-size: clamp(15px, 1.1vw, 18px);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 26px 22px;
+  }
+`;
+
+export const ProcessAssuranceIcon = styled.div`
+  color: rgba(255, 255, 255, 0.7);
 `;
 
 export const WarningSection = styled.section`
@@ -897,6 +931,10 @@ export const ComparisonTableViewport = styled.div`
     outline: 3px solid rgba(7, 132, 90, 0.35);
     outline-offset: 4px;
   }
+
+  @media (max-width: 900px) {
+    display: none;
+  }
 `;
 
 export const ComparisonTable = styled.table`
@@ -1018,6 +1056,211 @@ export const ComparisonValue = styled.span`
   max-width: 270px;
 `;
 
+export const MobileComparisonLayout = styled.div`
+  display: none;
+
+  @media (max-width: 900px) {
+    display: grid;
+    gap: 14px;
+  }
+`;
+
+export const MobileComparisonLegend = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid #dfe7e3;
+  border-radius: 14px 14px 0 0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(7, 16, 29, 0.06);
+
+  @media (max-width: 560px) {
+    border-radius: 10px 10px 0 0;
+  }
+`;
+
+export const MobileComparisonLegendItem = styled.div<{ $highlighted?: boolean }>`
+  min-height: 96px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  border-right: 1px solid #dfe7e3;
+  color: ${({ $highlighted = false }) => ($highlighted ? bp.accentStrong : '#465164')};
+  text-align: center;
+
+  &:last-child {
+    border-right: 0;
+  }
+
+  span {
+    color: ${({ $highlighted = false }) => ($highlighted ? bp.accentStrong : '#1f2937')};
+    font-family: ${({ theme }) => theme.fonts.display};
+    font-size: clamp(11px, 2vw, 13px);
+    line-height: 1.18;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 560px) {
+    min-height: 82px;
+    padding: 11px 6px;
+    gap: 6px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+export const MobileComparisonCards = styled.div`
+  display: grid;
+  gap: 14px;
+
+  @media (max-width: 560px) {
+    gap: 10px;
+  }
+`;
+
+export const MobileComparisonCard = styled.article`
+  padding: 18px 20px 14px;
+  border: 1px solid #dfe7e3;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(7, 16, 29, 0.07);
+
+  @media (max-width: 560px) {
+    padding: 14px 14px 12px;
+    border-radius: 12px;
+  }
+`;
+
+export const MobileComparisonCriterion = styled.div`
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 0 4px 16px;
+  border-bottom: 1px solid #dfe7e3;
+
+  h3 {
+    margin: 0;
+    color: #07101d;
+    font-size: clamp(17px, 2.7vw, 20px);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  h3::before {
+    content: attr(data-label);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 46px minmax(0, 1fr);
+    gap: 10px;
+    padding: 0 0 12px;
+
+    h3 {
+      font-size: clamp(15px, 3.75vw, 17px);
+      line-height: 1.18;
+    }
+  }
+`;
+
+export const MobileComparisonCriterionIcon = styled.span`
+  width: 58px;
+  height: 58px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #eef7f1;
+  color: ${bp.accentStrong};
+
+  @media (max-width: 560px) {
+    width: 44px;
+    height: 44px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+export const MobileComparisonValueRow = styled.div<{ $highlighted?: boolean }>`
+  display: grid;
+  grid-template-columns: 28px minmax(132px, 0.85fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 48px;
+  padding: 9px 0;
+  border-bottom: 1px solid #dfe7e3;
+  color: ${({ $highlighted = false }) => ($highlighted ? bp.accentStrong : '#07101d')};
+
+  &:last-child {
+    margin-top: 0;
+    padding-inline: 10px;
+    border: 1px solid rgba(28, 94, 58, 0.16);
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(28, 94, 58, 0.08), rgba(28, 94, 58, 0.025));
+    font-weight: 900;
+  }
+
+  strong {
+    color: ${({ $highlighted = false }) => ($highlighted ? bp.accentStrong : '#6b7280')};
+    font-family: ${({ theme }) => theme.fonts.display};
+    font-size: clamp(12px, 2.1vw, 14px);
+    line-height: 1.2;
+    font-weight: ${({ $highlighted = false }) => ($highlighted ? 850 : 750)};
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  strong::before {
+    content: attr(data-label);
+  }
+
+  span {
+    min-width: 0;
+    color: currentColor;
+    font-size: clamp(14px, 2.25vw, 16px);
+    line-height: 1.32;
+    overflow-wrap: anywhere;
+  }
+
+  span::before {
+    content: attr(data-value);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 22px minmax(96px, 0.85fr) minmax(0, 1fr);
+    gap: 8px;
+    min-height: 42px;
+    padding: 8px 0;
+
+    &:last-child {
+      padding-inline: 7px;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    strong {
+      font-size: 10px;
+    }
+
+    span {
+      font-size: 13px;
+    }
+  }
+`;
+
 export const ComparisonToggleButton = styled.button`
   justify-self: center;
   min-height: 50px;
@@ -1039,7 +1282,7 @@ export const ComparisonToggleButton = styled.button`
     content: '→';
     margin-left: 18px;
     font-size: 20px;
-    line-height: 1;
+    line-height: 0;
   }
 
   &:hover {
@@ -1510,7 +1753,6 @@ export const FaqList = styled.div`
 `;
 
 export const FinalCtaOuter = styled.section`
-  ${fullBleedSection}
   min-height: 180px;
   position: relative;
   overflow: hidden;
@@ -1541,9 +1783,10 @@ export const FinalCtaInner = styled.div`
   ${pageContainer}
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(220px, 0.55fr) minmax(0, 1fr) minmax(240px, 0.55fr);
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 34px;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
