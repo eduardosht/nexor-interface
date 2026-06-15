@@ -312,7 +312,7 @@ export function BiteplanerPage() {
       <S.HeroSection>
         <S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />
         <S.HeroCopy>
-          <S.HeroTitle>
+          <S.HeroTitle aria-label="Segurança. Conforto. Performance.">
             Segurança.
             <br />
             <span style={{ color: '#1c5e3a' }}>Conforto.</span>

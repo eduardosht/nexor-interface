@@ -33,8 +33,7 @@ export const MarketingSectionTitle = styled.h2<{ $size?: 'default' | 'feature'; 
   max-width: ${({ $size = 'default' }) => ($size === 'feature' ? '820px' : 'none')};
   margin: ${({ $size = 'default' }) => ($size === 'feature' ? '26px 0 0' : '0')};
   color: ${({ $tone = 'dark' }) => toneColor[$tone].title};
-  font-size: ${({ $size = 'default' }) =>
-    $size === 'feature' ? 'clamp(36px, 4.8vw, 62px)' : 'clamp(32px, 3.1vw, 44px)'};
+  font-size: clamp(3rem, 3.5vw, 5rem);
   line-height: ${({ $size = 'default' }) => ($size === 'feature' ? '1.04' : '1')};
   font-weight: ${({ $size = 'default' }) => ($size === 'feature' ? 900 : 950)};
   letter-spacing: 0;
@@ -45,8 +44,7 @@ export const MarketingSectionTitle = styled.h2<{ $size?: 'default' | 'feature'; 
   }
 
   @media (max-width: 640px) {
-    font-size: ${({ $size = 'default' }) =>
-    $size === 'feature' ? 'clamp(30px, 10vw, 42px)' : 'clamp(26px, 7vw, 34px)'};
+    font-size: clamp(2.25rem, 10vw, 3rem);
     line-height: 1.08;
   }
 `;

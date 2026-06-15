@@ -29,12 +29,16 @@ export const SectionLabel = styled.p`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(1.75rem, 2.5vw, 2.25rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-align: center;
   margin: 0 0 48px;
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Grid = styled.div`

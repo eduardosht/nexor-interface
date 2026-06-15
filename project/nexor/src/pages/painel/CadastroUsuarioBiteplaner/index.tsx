@@ -172,6 +172,18 @@ export function CadastroUsuarioBiteplaner() {
   const submittedOnboarding = workflowForms.find(
     (form) => form.templateKey === ONBOARDING_TEMPLATE_KEY && onboardingIsSubmitted(form)
   );
+  const hasReleasedOnboardingForm = workflowForms.some(
+    (form) =>
+      form.templateKey === ONBOARDING_TEMPLATE_KEY &&
+      form.status !== 'superseded' &&
+      form.status !== 'cancelled'
+  );
+  const showUnavailableOnboardingForm = Boolean(
+    privacyGateUnlocked &&
+    !submittedOnboarding &&
+    !formsError &&
+    (!order || !hasReleasedOnboardingForm)
+  );
 
   return (
     <S.Page>
@@ -317,26 +329,44 @@ export function CadastroUsuarioBiteplaner() {
                 </>
               ) : null}
 
-              <WorkflowFormsPanel
-                orderId={order?.id ?? null}
-                token={token}
-                title="Cadastro Biteplaner"
-                description=""
-                formsLocked={!privacyGateUnlocked}
-                payloadExtras={privacyGateUnlocked ? { privacyConsent: ['accepted'] } : undefined}
-                templateFilter={[ONBOARDING_TEMPLATE_KEY]}
-                defaultValues={{
-                  fullName: order?.customer?.full_name ?? '',
-                  email: order?.customer?.email ?? backendUser?.email ?? '',
-                  phone: order?.customer?.phone ?? '',
-                }}
-                forms={workflowForms}
-                onFormsChange={handleWorkflowFormsChange}
-                actorRole="user"
-                formPresentation="flat"
-                showFormHeader={false}
-                variant="embedded"
-              />
+              {showUnavailableOnboardingForm ? (
+                <>
+                  <S.OnboardingDivider />
+                  <S.GuidanceBanner role="status" data-testid="onboarding-form-unavailable">
+                    <Info size={22} strokeWidth={2.4} aria-hidden="true" />
+                    <div>
+                      <p>
+                        <strong>Cadastro Biteplaner ainda não foi liberado.</strong>
+                      </p>
+                      <p>
+                        Não encontramos o formulário de cadastro inicial vinculado ao seu pedido. Volte ao painel e
+                        tente novamente em alguns instantes.
+                      </p>
+                    </div>
+                  </S.GuidanceBanner>
+                </>
+              ) : (
+                <WorkflowFormsPanel
+                  orderId={order?.id ?? null}
+                  token={token}
+                  title="Cadastro Biteplaner"
+                  description=""
+                  formsLocked={!privacyGateUnlocked}
+                  payloadExtras={privacyGateUnlocked ? { privacyConsent: ['accepted'] } : undefined}
+                  templateFilter={[ONBOARDING_TEMPLATE_KEY]}
+                  defaultValues={{
+                    fullName: order?.customer?.full_name ?? '',
+                    email: order?.customer?.email ?? backendUser?.email ?? '',
+                    phone: order?.customer?.phone ?? '',
+                  }}
+                  forms={workflowForms}
+                  onFormsChange={handleWorkflowFormsChange}
+                  actorRole="user"
+                  formPresentation="flat"
+                  showFormHeader={false}
+                  variant="embedded"
+                />
+              )}
             </S.OnboardingCard>
           )}
 

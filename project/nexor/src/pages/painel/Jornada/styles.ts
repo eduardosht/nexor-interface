@@ -1,15 +1,18 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import journeyCardBackground from '../../../assets/backgrounds/background-card-jornada.png';
 import {
   biteplanerButtonHoverStyles,
   biteplanerButtonSurfaceStyles,
 } from '../styles/biteplanerFormButton';
+import { PortalPageTitle } from '../styles/portalTypography';
 
 export type StepTone = 'complete' | 'current' | 'upcoming';
 
 export const Page = styled.div`
   display: grid;
   gap: 28px;
+  justify-items: center;
 `;
 
 export const Description = styled.p`
@@ -38,6 +41,30 @@ export const BannerActionLink = styled(Link)`
   min-height: 40px;
   padding: 0 16px;
   text-decoration: none;
+`;
+
+export const EmptyJourneyCard = styled.section`
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  width: min(100%, 720px);
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px dashed ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 560px) {
+    padding: 20px;
+  }
+`;
+
+export const EmptyJourneyTitle = styled.h1`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  font-weight: 850;
+  line-height: 1.2;
 `;
 
 const disclaimerTone = {
@@ -75,8 +102,8 @@ export const StepDisclaimer = styled.div<{ $tone?: keyof typeof disclaimerTone }
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 18px;
-  padding: 22px 28px;
+  gap: 28px;
+  padding: 34px 36px;
   border-radius: 12px;
   border: 1px solid ${({ $tone = 'info' }) => disclaimerTone[$tone].border};
   background: ${({ $tone = 'info' }) => disclaimerTone[$tone].bg};
@@ -93,11 +120,16 @@ export const StepDisclaimerIcon = styled.span<{ $tone?: keyof typeof disclaimerT
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
   border-radius: 999px;
   background: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconBg};
   color: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconColor};
+
+  svg {
+    width: 34px;
+    height: 34px;
+  }
 `;
 
 export const StepDisclaimerContent = styled.div`
@@ -108,7 +140,7 @@ export const StepDisclaimerContent = styled.div`
 
 export const StepDisclaimerTitle = styled.strong<{ $tone?: keyof typeof disclaimerTone }>`
   color: ${({ $tone = 'info' }) => disclaimerTone[$tone].title};
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 850;
   line-height: 1.35;
 `;
@@ -121,8 +153,8 @@ export const StepDisclaimerText = styled.span`
 
 export const PaymentConfirmationCard = styled.section`
   display: grid;
-  gap: 20px;
-  padding: 24px 28px;
+  gap: 28px;
+  padding: 34px 36px;
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.34);
   background: ${({ theme }) => theme.colors.surface};
@@ -136,8 +168,8 @@ export const PaymentConfirmationCard = styled.section`
 export const PaymentConfirmationHeader = styled.div`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 16px;
+  align-items: start;
+  gap: 28px;
 
   @media (max-width: 560px) {
     align-items: start;
@@ -148,11 +180,16 @@ export const PaymentConfirmationIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
+  width: 64px;
+  height: 64px;
   border-radius: 999px;
   background: rgba(37, 99, 235, 0.1);
   color: #2563eb;
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
 `;
 
 export const PaymentConfirmationCopy = styled.div`
@@ -162,7 +199,7 @@ export const PaymentConfirmationCopy = styled.div`
 
   strong {
     color: #0f172a;
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 850;
     line-height: 1.35;
   }
@@ -176,13 +213,9 @@ export const PaymentConfirmationCopy = styled.div`
 
 export const PaymentDetailsGrid = styled.dl`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
   margin: 0;
-
-  @media (max-width: 860px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
@@ -193,10 +226,10 @@ export const PaymentDetailItem = styled.div`
   display: grid;
   gap: 6px;
   min-width: 0;
-  padding: 13px 14px;
+  padding: 20px 22px;
   border-radius: 8px;
-  border: 1px solid rgba(21, 128, 61, 0.14);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.82);
 
   span {
     color: ${({ theme }) => theme.colors.textSecondary};
@@ -207,11 +240,53 @@ export const PaymentDetailItem = styled.div`
 
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 800;
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
+`;
+
+export const NextStepCard = styled.section`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 28px 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+`;
+
+export const NextStepIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+`;
+
+export const NextStepCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const NextStepTitle = styled.h2`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 18px;
+  font-weight: 850;
+  line-height: 1.3;
 `;
 
 export const PendingActionCard = styled.section`
@@ -259,18 +334,50 @@ export const PendingActionButton = styled.button`
 
 export const StepFlow = styled.section`
   display: grid;
-  gap: 34px;
-  padding: 48px 58px 46px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(205, 252, 221, 0.5), rgba(255, 255, 255, 0) 15%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(252, 253, 255, 0.98)),
-    ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 22px 62px rgba(15, 23, 42, 0.07);
+  gap: 22px;
+  width: min(100%, 1120px);
+  padding: 26px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 14px;
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.04);
 
   @media (max-width: 920px) {
-    padding: 24px;
+    width: 100%;
+    padding: 20px;
+  }
+
+  @media (max-width: 560px) {
+    gap: 18px;
+    padding: 16px;
+  }
+`;
+
+export const SectionHeader = styled.div`
+  display: grid;
+  gap: 8px;
+  max-width: 760px;
+`;
+
+export const SectionTitle = PortalPageTitle;
+
+export const JourneyHeroCard = styled.section`
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  align-items: center;
+  gap: 32px;
+  min-height: 360px;
+  padding: 22px 28px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background:
+    radial-gradient(circle at 88% 18%, rgba(253, 224, 71, 0.11), transparent 26%),
+    linear-gradient(135deg, #ffffff 0%, #fffdf8 100%);
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    min-height: 0;
   }
 
   @media (max-width: 560px) {
@@ -278,30 +385,651 @@ export const StepFlow = styled.section`
   }
 `;
 
-export const SectionHeader = styled.div`
+export const OrderSummaryGrid = styled.div`
   display: grid;
-  gap: 18px;
-  max-width: 760px;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+  min-width: 0;
 
-  &::after {
-    content: '';
-    width: 56px;
-    height: 2px;
-    background: #15803d;
-    order: 1;
-  }
-
-  ${Description} {
-    order: 2;
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 `;
 
-export const SectionTitle = styled.h2`
-  margin: 0;
-  color: #091235;
-  font-size: 32px;
+export const OrderBrandMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 999px;
+  background: #fee89a;
+  color: #07101d;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+`;
+
+export const OrderSummaryContent = styled.div`
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 18px;
+  min-width: 0;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const OrderEyebrow = styled.span`
+  grid-column: 1 / -1;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+`;
+
+export const OrderSummaryText = styled.p`
+  grid-column: 1 / -1;
+  max-width: 430px;
+  margin: 10px 0 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.48;
+`;
+
+export const StatusPill = styled.span<{ $tone: StepTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 28px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid ${({ $tone }) => ($tone === 'current' ? 'rgba(217, 119, 6, 0.26)' : 'transparent')};
+  background: ${({ $tone }) =>
+    $tone === 'complete'
+      ? 'rgba(21, 128, 61, 0.1)'
+      : $tone === 'current'
+        ? 'rgba(245, 158, 11, 0.12)'
+        : 'rgba(248, 250, 252, 0.92)'};
+  color: ${({ $tone }) =>
+    $tone === 'complete' ? '#15803d' : $tone === 'current' ? '#a16207' : '#667085'};
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+
+  > span {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+`;
+
+export const NextStepPreview = styled.div`
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 16px;
+  max-width: 430px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(148, 163, 184, 0.28);
+`;
+
+export const NextStepPreviewIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+`;
+
+export const NextStepPreviewCopy = styled.div`
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 20px;
+    font-weight: 850;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 14px;
+    line-height: 1.45;
+  }
+`;
+
+export const HeroActions = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 4px;
+`;
+
+export const PrimaryActionLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 44px;
+  min-width: 188px;
+  padding: 0 22px;
+  border-radius: 7px;
+  border: 1px solid #15803d;
+  background: linear-gradient(135deg, #15803d, #168b43);
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 850;
-  line-height: 1.15;
+  line-height: 1.1;
+  text-decoration: none;
+  box-shadow: 0 12px 22px rgba(21, 128, 61, 0.2);
+
+  &:hover {
+    border-color: #0f6b31;
+    background: linear-gradient(135deg, #166534, #15803d);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #15803d;
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
+  }
+`;
+
+export const SecondaryActionAnchor = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 44px;
+  min-width: 188px;
+  padding: 0 22px;
+  border-radius: 7px;
+  border: 1px solid rgba(148, 163, 184, 0.48);
+  background: rgba(255, 255, 255, 0.86);
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-decoration: none;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.textPrimary};
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
+  }
+`;
+
+export const JourneyIllustration = styled.div`
+  position: relative;
+  min-height: 260px;
+  border-radius: 16px;
+  background: url(${journeyCardBackground}) center / contain no-repeat;
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+`;
+
+export const IllustrationCloud = styled.span`
+  position: absolute;
+  top: 52px;
+  left: 34px;
+  width: 112px;
+  height: 36px;
+  border-radius: 999px 999px 16px 16px;
+  background: linear-gradient(180deg, rgba(226, 232, 240, 0.5), rgba(226, 232, 240, 0.18));
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    border-radius: 999px;
+    background: inherit;
+  }
+
+  &::before {
+    left: 18px;
+    width: 54px;
+    height: 54px;
+  }
+
+  &::after {
+    right: 18px;
+    width: 42px;
+    height: 42px;
+  }
+`;
+
+export const IllustrationRoute = styled.div`
+  position: absolute;
+  inset: 98px 36px 42px 0;
+  border-radius: 72px;
+  background:
+    radial-gradient(circle at 14% 36%, rgba(21, 128, 61, 0.14) 0 16px, transparent 17px),
+    linear-gradient(90deg, rgba(21, 128, 61, 0.08), rgba(21, 128, 61, 0.04));
+
+  span {
+    position: absolute;
+    left: 44px;
+    right: 52px;
+    top: 42px;
+    height: 46px;
+    border-bottom: 3px dashed rgba(21, 128, 61, 0.48);
+    border-right: 3px dashed rgba(21, 128, 61, 0.48);
+    border-radius: 0 0 34px 0;
+  }
+`;
+
+export const IllustrationPin = styled.span`
+  position: absolute;
+  top: 94px;
+  left: 28px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50% 50% 50% 0;
+  background: #15803d;
+  transform: rotate(-45deg);
+  box-shadow: 0 14px 22px rgba(21, 128, 61, 0.22);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 14px;
+    border-radius: 999px;
+    background: #ffffff;
+  }
+`;
+
+export const IllustrationFlag = styled.span`
+  position: absolute;
+  right: 48px;
+  bottom: 78px;
+  width: 48px;
+  height: 58px;
+  border-left: 4px solid #15803d;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 0;
+    width: 38px;
+    height: 24px;
+    border-radius: 0 16px 16px 0;
+    background: #15803d;
+  }
+`;
+
+export const ProgressCard = styled.section`
+  display: grid;
+  gap: 22px;
+  padding: 22px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: ${({ theme }) => theme.colors.surface};
+
+  @media (max-width: 560px) {
+    padding: 18px;
+  }
+`;
+
+export const ProgressHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+`;
+
+export const CardTitle = styled.h2`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.25;
+`;
+
+export const ProgressPercent = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+`;
+
+export const ProgressTrackList = styled.ol`
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(88px, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 10px 4px 0;
+  overflow-x: auto;
+`;
+
+export const ProgressStep = styled.li<{ $tone: StepTone }>`
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 10px;
+  min-width: 88px;
+  color: ${({ $tone }) => ($tone === 'upcoming' ? '#667085' : '#15803d')};
+
+  &:not(:first-child)::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: calc(-50% + 18px);
+    right: calc(50% + 18px);
+    height: 2px;
+    background: ${({ $tone }) => ($tone === 'upcoming' ? '#d7dde7' : '#15803d')};
+  }
+`;
+
+export const ProgressStepMarker = styled.span<{ $tone: StepTone }>`
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: ${({ $tone }) => ($tone === 'complete' ? '0' : '2px solid currentColor')};
+  background: ${({ $tone }) => ($tone === 'complete' ? '#15803d' : '#ffffff')};
+  color: ${({ $tone }) =>
+    $tone === 'complete' ? '#ffffff' : $tone === 'current' ? '#15803d' : '#98a2b3'};
+  box-shadow: ${({ $tone }) => ($tone === 'current' ? '0 0 0 5px rgba(21, 128, 61, 0.1)' : 'none')};
+`;
+
+export const ProgressStepLabel = styled.span`
+  color: currentColor;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+`;
+
+export const JourneyDashboardGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 22px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ActionCard = styled.section`
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  padding: 26px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: ${({ theme }) => theme.colors.surface};
+
+  ${PrimaryActionLink} {
+    width: 100%;
+  }
+
+  @media (max-width: 560px) {
+    padding: 18px;
+  }
+`;
+
+export const ActionHeader = styled.div`
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+`;
+
+export const ActionIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+`;
+
+export const ActionCopy = styled.div`
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+`;
+
+export const EstimateBox = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+  padding: 20px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
+    rgba(240, 253, 244, 0.62);
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  svg {
+    grid-row: span 2;
+    color: #15803d;
+  }
+
+  span {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 15px;
+    font-weight: 850;
+    line-height: 1.2;
+  }
+`;
+
+export const OverviewCard = styled.section`
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 26px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: ${({ theme }) => theme.colors.surface};
+  scroll-margin-top: 90px;
+
+  @media (max-width: 560px) {
+    padding: 18px;
+  }
+`;
+
+export const OverviewList = styled.ol`
+  list-style: none;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+`;
+
+export const OverviewItem = styled.li<{ $tone: StepTone }>`
+  position: relative;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: ${({ $tone }) =>
+    $tone === 'current' ? 'linear-gradient(90deg, rgba(21, 128, 61, 0.1), rgba(21, 128, 61, 0.02))' : 'transparent'};
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: calc(50% + 12px);
+    left: 24px;
+    bottom: calc(-50% + 12px);
+    width: 1px;
+    border-left: 1px dashed ${({ $tone }) => ($tone === 'upcoming' ? '#d7dde7' : 'rgba(21, 128, 61, 0.36)')};
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 28px minmax(0, 1fr);
+
+    ${StatusPill} {
+      grid-column: 2;
+      justify-self: start;
+      margin-bottom: 8px;
+    }
+  }
+`;
+
+export const OverviewMarker = styled.span<{ $tone: StepTone }>`
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
+  background: ${({ $tone }) => ($tone === 'complete' ? '#15803d' : '#ffffff')};
+  color: ${({ $tone }) => ($tone === 'complete' ? '#ffffff' : $tone === 'current' ? '#15803d' : '#98a2b3')};
+`;
+
+export const OverviewStepName = styled.span`
+  min-width: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+`;
+
+export const InfoCallout = styled.aside`
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  background: linear-gradient(135deg, rgba(239, 247, 255, 0.96), rgba(255, 255, 255, 0.98));
+
+  @media (max-width: 720px) {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+`;
+
+export const InfoCalloutIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+`;
+
+export const InfoCalloutCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const InfoCalloutTitle = styled.strong`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.25;
+`;
+
+export const InfoCalloutLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 38px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 850;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    color: #1d4ed8;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 3px;
+  }
+
+  @media (max-width: 720px) {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  @media (max-width: 560px) {
+    grid-column: auto;
+  }
 `;
 
 export const StepList = styled.ol`
@@ -309,15 +1037,14 @@ export const StepList = styled.ol`
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
-  min-width: 1120px;
+  min-width: 0;
 `;
 
 export const StepScroll = styled.div`
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 8px 0 0;
+  overflow: visible;
+  padding: 0;
 `;
 
 export const StepFormsSection = styled.div`
@@ -344,44 +1071,113 @@ export const StepFormsGroup = styled.div`
 
 export const StepItem = styled.li<{ $tone: StepTone }>`
   position: relative;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
   min-width: 0;
-  text-align: center;
+  min-height: 136px;
 
-  &:not(:last-child)::after {
+  &:not(:last-child)::before {
     content: '';
     position: absolute;
-    top: 26px;
-    left: calc(50% + 22px);
-    width: calc(100% - 44px);
-    height: 1px;
-    background: ${({ $tone }) => ($tone === 'upcoming' ? 'repeating-linear-gradient(90deg, #d6dbe3 0 5px, transparent 5px 9px)' : '#15803d')};
+    top: 45px;
+    bottom: -38px;
+    left: 29px;
+    width: 1px;
+    background: ${({ $tone }) => ($tone === 'upcoming' ? '#d7dde7' : 'rgba(21, 128, 61, 0.4)')};
+    z-index: 0;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    min-height: 0;
+
+    &:not(:last-child)::before {
+      left: 22px;
+      bottom: -26px;
+    }
   }
 `;
 
 export const StepPanel = styled.div<{ $tone: StepTone }>`
   display: grid;
-  justify-items: center;
-  align-content: start;
-  grid-template-rows: 54px 82px minmax(132px, auto) 38px;
-  gap: 12px;
-  min-height: 304px;
-  padding: 0 16px;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 132px;
+  padding: 24px 32px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   opacity: ${({ $tone }) => ($tone === 'upcoming' ? 0.7 : 1)};
+
+  @media (max-width: 760px) {
+    grid-template-columns: 70px minmax(0, 1fr);
+    padding: 22px;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
 export const StepBadge = styled.span<{ $tone: StepTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 1;
+  margin-top: 24px;
+  width: 38px;
+  height: 38px;
+  justify-self: center;
   border-radius: 999px;
-  border: 1.5px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
+  border: 3px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
   background: #ffffff;
-  color: ${({ $tone }) => ($tone === 'upcoming' ? '#343b49' : '#101828')};
-  font-size: 16px;
+  color: ${({ $tone }) => ($tone === 'upcoming' ? '#647083' : '#101828')};
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 0;
+
+  @media (max-width: 640px) {
+    width: 38px;
+    height: 38px;
+    margin-top: 22px;
+    font-size: 14px;
+  }
+`;
+
+export const StepConnectorCheck = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 76px;
+  left: 19px;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #15803d;
+  color: #ffffff;
+
+  @media (max-width: 640px) {
+    top: 70px;
+    left: 12px;
+    width: 20px;
+    height: 20px;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
 `;
 
 export const StepIconBox = styled.span<{ $tone: StepTone }>`
@@ -390,36 +1186,47 @@ export const StepIconBox = styled.span<{ $tone: StepTone }>`
   justify-content: center;
   width: 64px;
   height: 64px;
-  align-self: end;
-  border-radius: 10px;
+  border-radius: 14px;
   background: ${({ $tone }) =>
     $tone === 'upcoming'
       ? 'linear-gradient(180deg, #f4f4f5, #ededee)'
       : 'linear-gradient(180deg, rgba(205, 252, 221, 0.58), rgba(234, 247, 239, 0.78))'};
   color: ${({ $tone }) => ($tone === 'upcoming' ? '#5f6672' : '#2f8650')};
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  @media (max-width: 760px) {
+    width: 62px;
+    height: 62px;
+  }
 `;
 
 export const StepText = styled.div`
   display: grid;
-  justify-items: center;
-  gap: 14px;
+  justify-items: start;
+  gap: 8px;
   min-width: 0;
 `;
 
 export const StepName = styled.h3`
   margin: 0;
-  max-width: 210px;
   font-size: 18px;
   font-weight: 800;
   line-height: 1.18;
   color: #101828;
+
+  @media (max-width: 760px) {
+    font-size: 16px;
+  }
 `;
 
 export const StepCopy = styled.p`
   margin: 0;
-  max-width: 182px;
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 1.58;
   color: #586174;
 `;
 
@@ -429,7 +1236,7 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   justify-content: center;
   gap: 6px;
   width: fit-content;
-  justify-self: center;
+  justify-self: end;
   min-height: 32px;
   padding: 0 13px;
   border-radius: 7px;
@@ -438,6 +1245,16 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   color: ${({ $tone }) => ($tone === 'complete' ? '#2f6f45' : '#666d7a')};
   font-size: 12px;
   font-weight: 800;
+  white-space: nowrap;
+
+  @media (max-width: 760px) {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  @media (max-width: 480px) {
+    grid-column: auto;
+  }
 `;
 
 export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
@@ -446,7 +1263,7 @@ export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
   justify-content: center;
   gap: 6px;
   width: fit-content;
-  justify-self: center;
+  justify-self: end;
   min-height: 32px;
   padding: 0 13px;
   border-radius: 7px;
@@ -456,6 +1273,7 @@ export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
   font-size: 12px;
   font-weight: 800;
   text-decoration: none;
+  white-space: nowrap;
 
   &:hover {
     border-color: ${({ theme }) => theme.colors.textPrimary};
@@ -464,6 +1282,15 @@ export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.textPrimary};
     outline-offset: 2px;
+  }
+
+  @media (max-width: 760px) {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  @media (max-width: 480px) {
+    grid-column: auto;
   }
 `;
 
@@ -483,9 +1310,14 @@ export const OrderCard = styled.article<{ $active: boolean }>`
 
 export const OrderTitle = styled.h2`
   margin: 0;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 40px;
+  font-weight: 900;
   color: ${({ theme }) => theme.colors.textPrimary};
+  line-height: 0.95;
+
+  @media (max-width: 560px) {
+    font-size: 34px;
+  }
 `;
 
 export const SecondaryActionButton = styled.button`
@@ -524,11 +1356,6 @@ export const OrderProblemSection = styled.section`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
-
-  ${SectionTitle} {
-    font-size: clamp(1.65rem, 2.4vw, 2.35rem);
-    line-height: 1.1;
-  }
 
   @media (max-width: 720px) {
     padding: 22px;

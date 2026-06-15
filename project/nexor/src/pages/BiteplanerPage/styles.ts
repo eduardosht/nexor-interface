@@ -24,8 +24,8 @@ const typeScale = {
   action: '12px',
   heroTitle: 'clamp(48px, 5vw, 72px)',
   heroTitleMobile: 'clamp(36px, 10vw, 48px)',
-  sectionTitle: 'clamp(32px, 3.1vw, 44px)',
-  sectionTitleMobile: 'clamp(26px, 7vw, 34px)',
+  sectionTitle: 'clamp(3rem, 3.5vw, 5rem)',
+  sectionTitleMobile: 'clamp(2.25rem, 10vw, 3rem)',
   sectionLead: '15px',
   contentTitle: '17px',
   contentBody: '14px',
@@ -457,7 +457,6 @@ export const ProcessOuter = styled.div`
   ${MarketingSectionTitle} {
     max-width: 660px;
     color: #ffffff;
-    font-size: clamp(32px, 3.1vw, 44px);
     line-height: 1.04;
     text-shadow: 0 6px 24px rgba(0, 0, 0, 0.58);
   }
@@ -474,7 +473,6 @@ export const ProcessOuter = styled.div`
   @media (max-width: 900px) {
     ${MarketingSectionTitle} {
       max-width: 620px;
-      font-size: clamp(36px, 7.4vw, 50px);
     }
 
     ${MarketingSectionLead} {
@@ -496,7 +494,6 @@ export const ProcessOuter = styled.div`
 
     ${MarketingSectionTitle} {
       max-width: 350px;
-      font-size: clamp(29px, 8.4vw, 36px);
       line-height: 1.1;
     }
 

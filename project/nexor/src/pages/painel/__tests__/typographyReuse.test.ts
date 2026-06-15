@@ -14,6 +14,7 @@ describe('shared typography styled components', () => {
     expect(marketingTypography).toContain('export const MarketingSectionTitle');
     expect(marketingTypography).toContain('export const MarketingSectionLead');
     expect(marketingTypography).toContain('export const MarketingCardTitle');
+    expect(marketingTypography).toContain('font-size: clamp(3rem, 3.5vw, 5rem);');
     expect(biteplanerPage).toContain('<S.MarketingSectionTitle');
     expect(biteplanerPage).toContain('<S.MarketingSectionLead');
     expect(biteplanerPage).not.toContain('<S.RealRoutineTitle');
@@ -33,6 +34,8 @@ describe('shared typography styled components', () => {
     const prerequisiteStyles = readSource('src/pages/painel/PreRequisito/styles.ts');
     const purchaseStyles = readSource('src/pages/painel/Compra/styles.ts');
     const productionStyles = readSource('src/pages/painel/ProducaoDentista/styles.ts');
+    const journeyStyles = readSource('src/pages/painel/Jornada/styles.ts');
+    const accountStyles = readSource('src/pages/painel/MinhaConta/styles.ts');
 
     expect(portalTypography).toContain('export const PortalPageTitle');
     expect(portalTypography).toContain('export const PortalPageDescription');
@@ -43,6 +46,9 @@ describe('shared typography styled components', () => {
     expect(hubStyles).toContain("from '../styles/portalTypography'");
     expect(adminStyles).toContain("from '../styles/portalTypography'");
     expect(orderHeaderStyles).toContain("from '../styles/portalTypography'");
+    expect(journeyStyles).toContain('export const SectionTitle = PortalPageTitle;');
+    expect(accountStyles).toContain('PortalPageTitle');
+    expect(accountStyles).toContain('PortalPageDescription');
     expect(reportsStyles).toContain('font-size: clamp(1.25rem, 2vw, 1.75rem);');
     expect(reportsStyles).toContain('font-size: 14px;');
     expect(reviewsStyles).toContain('font-size: clamp(1.25rem, 2vw, 1.75rem);');

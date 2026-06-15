@@ -380,7 +380,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
   });
 
-  it('does not show an unavailable-registration message when onboarding form is absent', async () => {
+  it('shows a clear unavailable-registration message when onboarding form is absent after privacy consent', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
       .mockResolvedValueOnce({ forms: [] });
@@ -389,8 +389,13 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     expect(await screen.findByRole('heading', { name: /cadastro de novos usu.*rios/i })).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText(/carregando cadastro inicial/i)).not.toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText(/declaro que li e entendi/i));
+    fireEvent.click(await screen.findByRole('button', { name: /continuar/i }));
 
-    expect(screen.queryByText(/cadastro biteplaner ainda n.*o foi liberado/i)).not.toBeInTheDocument();
+    const unavailableMessage = await screen.findByTestId('onboarding-form-unavailable');
+    expect(unavailableMessage).toHaveTextContent(/cadastro biteplaner ainda n.*o foi liberado/i);
+    expect(unavailableMessage).toHaveTextContent(/n.o encontramos o formul.rio de cadastro inicial/i);
+    expect(screen.queryByLabelText(/cpf/i, { selector: 'input, textarea' })).not.toBeInTheDocument();
   });
 
   it('blocks submission when CPF is invalid', async () => {

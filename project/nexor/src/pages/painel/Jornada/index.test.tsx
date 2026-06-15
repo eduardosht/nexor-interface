@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -192,10 +194,56 @@ describe('Jornada', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
-    expect(screen.getByRole('heading', { level: 1, name: /fluxo visual da jornada/i })).toBeInTheDocument();
-    expect(screen.getByText(/jornada bp-demo-006/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: /sua jornada biteplaner/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /bp-demo-006/i })).toBeInTheDocument();
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
     expectNoEmbeddedStepContent();
+  });
+
+  it('uses the provided journey card background and consolidates progress into the overview title', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-006',
+            status: 'awaiting_dentist_acceptance',
+            statusLabel: 'Aguardando aceite do dentista',
+            stage: 'dentist_acceptance_pending',
+            created_at: '2026-05-03T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] })
+      .mockResolvedValueOnce({ appointments: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
+    expect(screen.queryByRole('link', { name: /continuar jornada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /abrir jornada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: /progresso da jornada/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /visão geral da jornada.*\d+% concluído/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: /o que fazer agora\?/i })).toBeInTheDocument();
+    expect(screen.getByText(/aguarde o aceite do dentista/i)).toBeInTheDocument();
+
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Jornada/styles.ts'), 'utf8');
+    expect(stylesSource).toContain('background-card-jornada.png');
+  });
+
+  it('shows an empty state instead of a blank page when the user has no Biteplaner order', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [] });
+
+    renderPage();
+
+    const emptyState = await screen.findByTestId('journey-empty-state');
+    expect(emptyState).toHaveTextContent(/nenhuma jornada biteplaner encontrada/i);
+    expect(emptyState).toHaveTextContent(/não encontramos pedido biteplaner ativo/i);
+    expect(screen.queryByTestId('athlete-journey-steps')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /iniciar onboarding/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/onboarding'
+    );
   });
 
   it('redirects new-user-onboarding orders to the Biteplaner onboarding page', async () => {
@@ -254,8 +302,8 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/etapa atual/i));
-    expect(screen.getByRole('link', { name: /etapa atual/i })).toHaveAttribute('href', '/painel/pre-requisito');
+    await waitFor(() => expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/atual/i));
+    expect(screen.getByRole('link', { name: /iniciar pré-requisito/i })).toHaveAttribute('href', '/painel/pre-requisito');
     expectNoEmbeddedStepContent();
   });
 
@@ -293,9 +341,9 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i));
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/conclu.do com sucesso/i);
-    expect(screen.getByRole('link', { name: /etapa atual/i })).toHaveAttribute('href', '/painel/consulta-inicial');
+    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i));
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/conclu.do/i);
+    expect(screen.getByRole('link', { name: /abrir consulta inicial/i })).toHaveAttribute('href', '/painel/consulta-inicial');
     expectNoEmbeddedStepContent();
   });
 
@@ -318,9 +366,9 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i));
-    expect(screen.getByRole('link', { name: /etapa atual/i })).toHaveAttribute('href', '/painel/consulta-inicial');
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/conclu.do com sucesso/i);
+    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i));
+    expect(screen.getByRole('link', { name: /abrir consulta inicial/i })).toHaveAttribute('href', '/painel/consulta-inicial');
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/conclu.do/i);
     expectNoEmbeddedStepContent();
   });
 
@@ -343,8 +391,8 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i));
-    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/concluído com sucesso/i);
+    await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i));
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/concluído/i);
     expect(screen.getByTestId('journey-step-clinical_decision')).toHaveTextContent(/pendente/i);
     expectNoEmbeddedStepContent();
   });
@@ -369,7 +417,7 @@ describe('Jornada', () => {
     renderPage();
 
     const notice = await screen.findByTestId('journey-step-notice');
-    expect(screen.getByTestId('journey-step-clinical_decision')).toHaveTextContent(/etapa atual/i);
+    expect(screen.getByTestId('journey-step-clinical_decision')).toHaveTextContent(/atual/i);
     expect(notice).toHaveTextContent(/aguarda a decis/i);
     expectNoEmbeddedStepContent();
   });
@@ -403,7 +451,8 @@ describe('Jornada', () => {
     renderPage();
 
     const paymentBox = await screen.findByTestId('journey-payment-confirmation');
-    expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/etapa atual/i);
+    const nextStepBox = await screen.findByTestId('journey-payment-next-step');
+    expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/atual/i);
     expect(paymentBox).toHaveTextContent(/detalhes do pagamento/i);
     expect(paymentBox).toHaveTextContent(/próximo passo/i);
     expect(paymentBox).toHaveTextContent(/dentista dar o ok/i);
@@ -413,6 +462,8 @@ describe('Jornada', () => {
     expect(paymentBox).toHaveTextContent(/nexor10/i);
     expect(paymentBox).toHaveTextContent(/r\$ 100,00/i);
     expect(paymentBox).toHaveTextContent(/joao@nexor.dev/i);
+    expect(nextStepBox).toHaveTextContent(/o que acontece agora/i);
+    expect(nextStepBox).toHaveTextContent(/aguarde o dentista confirmar os dados operacionais/i);
     expectNoEmbeddedStepContent();
   });
 
@@ -593,7 +644,7 @@ describe('Jornada', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getAllByText(/bp-demo-001/i).length).toBeGreaterThan(0));
-    expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i);
+    expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i);
     expect(screen.queryByText(/bp-demo-003/i)).not.toBeInTheDocument();
     expectNoEmbeddedStepContent();
   });
@@ -659,8 +710,8 @@ describe('Jornada', () => {
     expect(problem).toHaveTextContent(/nova reavalia/i);
     expect(problem).toHaveTextContent(/dentista respons.*vel registrou/i);
     await waitFor(() => expect(screen.getByTestId('journey-order-problem')).toHaveTextContent(inaptitudeReason));
-    expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/etapa atual/i);
-    expect(screen.getByTestId('journey-step-clinical_decision')).not.toHaveTextContent(/etapa atual/i);
+    expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i);
+    expect(screen.getByTestId('journey-step-clinical_decision')).not.toHaveTextContent(/atual/i);
     expect(screen.getByRole('link', { name: /marcar uma nova consulta/i })).toHaveAttribute('href', '/painel/consulta-inicial');
     expect(screen.queryByRole('textbox', { name: /mensagem/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /enviar e-mail para a nexor/i })).not.toBeInTheDocument();

@@ -20,12 +20,16 @@ export const Section = styled.section`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   line-height: 1.05;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 48px;
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const ProductGrid = styled.div`

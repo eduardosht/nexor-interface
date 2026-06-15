@@ -27,12 +27,16 @@ export const SectionLabel = styled.p`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.15;
   margin: 0 0 12px;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Subtitle = styled.p`

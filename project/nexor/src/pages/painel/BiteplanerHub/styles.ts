@@ -1,6 +1,7 @@
 import styled, { css, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import journeyCardBackground from '../../../assets/backgrounds/background-card-jornada.png';
 import {
   biteplanerButtonHoverStyles,
   biteplanerButtonSurfaceStyles,
@@ -137,11 +138,11 @@ export const Eyebrow = PortalMetaLabel;
 
 export const Title = styled(PortalPageTitle).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
   $size: $showcase ? 'showcase' : 'default',
-}))<{ $showcase?: boolean }>``;
+})) <{ $showcase?: boolean }>``;
 
 export const Description = styled(PortalPageDescription).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
   $size: $showcase ? 'showcase' : 'default',
-}))<{ $showcase?: boolean }>`
+})) <{ $showcase?: boolean }>`
   ${({ $showcase }) => (!$showcase ? 'font-size: 14px; line-height: 1.6;' : '')}
 `;
 
@@ -917,7 +918,7 @@ export const PartnerPanelIcon = styled.span<{ $tone: 'blue' | 'purple' | 'green'
       ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.13), rgba(59, 130, 246, 0.05))'
       : $tone === 'green'
         ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))'
-      : 'linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(124, 58, 237, 0.05))'};
+        : 'linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(124, 58, 237, 0.05))'};
   color: ${({ $tone }) => ($tone === 'blue' ? '#3b82f6' : $tone === 'green' ? '#16a34a' : '#7c3aed')};
 `;
 
@@ -1418,23 +1419,18 @@ export const PanelText = PortalSectionDescription;
 
 export const AthleteCasePanel = styled.section`
   display: grid;
-  gap: 24px;
-  padding: 28px 30px;
-  border-radius: 18px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+  gap: 0;
+`;
 
-  ${PanelTitle} {
-    font-size: clamp(1.5rem, 2vw, 1.85rem);
-  }
+export const AthleteCaseTitle = styled.h2`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: clamp(24px, 2.4vw, 30px);
+  font-weight: 850;
+  line-height: 1.15;
 
-  ${PanelText} {
-    font-size: 15px;
-  }
-
-  @media (max-width: 720px) {
-    padding: 22px;
+  @media (max-width: 560px) {
+    font-size: 22px;
   }
 `;
 
@@ -1619,22 +1615,35 @@ export const OrderMeta = styled.div`
 `;
 
 export const AthleteOrderHighlight = styled.article`
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 22px;
-  padding: 24px;
-  border-radius: 14px;
-  border: 1px solid rgba(245, 158, 11, 0.32);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-height: 250px;
+  padding: 24px 34px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background:
-    radial-gradient(circle at 8% 0%, rgba(245, 158, 11, 0.12), transparent 32%),
-    linear-gradient(135deg, rgba(255, 251, 235, 0.72), rgba(255, 255, 255, 0.94));
+    linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 48%, rgba(255, 255, 255, 0.48) 68%, rgba(255, 255, 255, 0.04) 100%),
+    url(${journeyCardBackground}) right center / auto 100% no-repeat,
+    #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
 
-  ${OrderText} {
-    font-size: 14px;
+  @media (max-width: 1100px) {
+    min-height: auto;
+    background:
+      linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 55%, rgba(255, 255, 255, 0.5) 100%),
+      url(${journeyCardBackground}) right center / auto 100% no-repeat,
+      #ffffff;
   }
 
   @media (max-width: 720px) {
-    grid-template-columns: 1fr;
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.96)),
+      url(${journeyCardBackground}) right bottom / 78% auto no-repeat,
+      #ffffff;
   }
 `;
 
@@ -1678,29 +1687,185 @@ export const AthleteOrderAvatar = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 62px;
-  height: 62px;
+  width: 86px;
+  height: 86px;
+  align-self: start;
   border-radius: 999px;
-  background: #fef3c7;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 18px;
-  font-weight: 800;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.72), transparent 28%),
+    linear-gradient(135deg, #fff4c8 0%, #f7df83 100%);
+  color: #081225;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+
+  @media (max-width: 720px) {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+  }
 `;
 
 export const AthleteOrderMain = styled.div`
   display: grid;
-  gap: 16px;
+  gap: 14px;
+  width: 100%;
   min-width: 0;
+  align-self: stretch;
+  align-content: start;
+  position: relative;
+  z-index: 1;
+`;
+
+export const AthleteCardHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 10px;
+  }
 `;
 
 export const AthleteOrderHeader = styled.div`
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
+  justify-content: flex-start;
+  gap: 14px;
 
   @media (max-width: 720px) {
     flex-direction: column;
+  }
+`;
+
+export const AthleteOrderMeta = styled.span`
+  display: block;
+  margin-bottom: 6px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+`;
+
+export const AthleteOrderTitle = styled.h3`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.16;
+  letter-spacing: 0;
+`;
+
+export const AthleteOrderStage = styled.p`
+  margin: 8px 0 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.45;
+
+  strong {
+    color: #16803b;
+    font-weight: 800;
+  }
+`;
+
+export const AthleteOrderDescription = styled.p`
+  margin: 0;
+  max-width: 460px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.55;
+`;
+
+export const AthleteOrderAssistiveText = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`;
+
+const athleteStatusTone = {
+  success: {
+    bg: '#ecfdf5',
+    border: '#bbf7d0',
+    color: '#15803d',
+    dot: '#15803d',
+  },
+  warning: {
+    bg: '#fff8eb',
+    border: '#f3d39a',
+    color: '#a96a10',
+    dot: '#d18a00',
+  },
+  neutral: {
+    bg: '#f8fafc',
+    border: '#dbe3ec',
+    color: '#475569',
+    dot: '#94a3b8',
+  },
+} satisfies Record<'success' | 'warning' | 'neutral', { bg: string; border: string; color: string; dot: string }>;
+
+export const AthleteOrderStatusBadge = styled.span<{ $tone: 'success' | 'warning' | 'neutral' }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid ${({ $tone }) => athleteStatusTone[$tone].border};
+  background: ${({ $tone }) => athleteStatusTone[$tone].bg};
+  color: ${({ $tone }) => athleteStatusTone[$tone].color};
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+
+  span {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 999px;
+    background: ${({ $tone }) => athleteStatusTone[$tone].dot};
+  }
+
+  @media (max-width: 720px) {
+    position: static;
+    width: fit-content;
+    max-width: 100%;
+  }
+`;
+
+export const AthleteJourneyAction = styled(Link)`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: fit-content;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+
+  @media (max-width: 520px) {
+    width: 100%;
+    min-width: 0;
   }
 `;
 
@@ -1817,11 +1982,11 @@ export const DentistStatusDot = styled.span<{ $tone: 'success' | 'warning' | 'ne
     $tone === 'success' ? '#16A34A' : $tone === 'warning' ? '#D18A00' : '#9CA3AF'};
   box-shadow: 0 0 0 3px
     ${({ $tone }) =>
-      $tone === 'success'
-        ? 'rgba(22, 163, 74, 0.14)'
-        : $tone === 'warning'
-          ? 'rgba(209, 138, 0, 0.16)'
-          : 'rgba(156, 163, 175, 0.14)'};
+    $tone === 'success'
+      ? 'rgba(22, 163, 74, 0.14)'
+      : $tone === 'warning'
+        ? 'rgba(209, 138, 0, 0.16)'
+        : 'rgba(156, 163, 175, 0.14)'};
 `;
 
 export const LicensingCard = styled.div`

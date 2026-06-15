@@ -31,11 +31,15 @@ export const Header = styled.div`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #fafafa;
   margin: 0 0 16px;
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Cards = styled.div`

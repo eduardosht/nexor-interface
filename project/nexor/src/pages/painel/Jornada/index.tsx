@@ -4,14 +4,15 @@ import { Navigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Box,
+  ChevronRight,
   Check,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
   CreditCard,
   FlaskConical,
-  HandHelping,
   Info,
+  ShieldCheck,
   Stethoscope,
   UserRound,
   type LucideIcon,
@@ -39,12 +40,17 @@ import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 import * as S from './styles';
 
 type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
+type VisualJourneyStepKey = 'registration' | JourneyStepKey;
 
 type JourneyStep = {
   key: JourneyStepKey;
   title: string;
   description: string;
   icon: LucideIcon;
+};
+
+type VisualJourneyStep = Omit<JourneyStep, 'key'> & {
+  key: VisualJourneyStepKey;
 };
 
 const ACCOUNT_DELETION_APPROVED_REASON = 'account_deletion_approved';
@@ -88,18 +94,165 @@ const JOURNEY_STEPS: JourneyStep[] = [
   }
 ];
 
+const VISUAL_JOURNEY_STEPS: VisualJourneyStep[] = [
+  {
+    key: 'registration',
+    title: 'Cadastro',
+    description: 'Cadastro criado para iniciar a jornada Biteplaner.',
+    icon: CheckCircle2,
+  },
+  ...JOURNEY_STEPS,
+];
+
 function getStepStatusLabel(tone: StepTone) {
   if (tone === 'complete') {
-    return 'Concluído com sucesso';
+    return 'Concluído';
   }
 
   if (tone === 'current') {
-    return 'Etapa atual';
+    return 'Atual';
   }
 
   return 'Pendente';
 }
 
+function getHeroStatusLabel(order: DemoOrderSummary) {
+  return order.statusLabel || getStageLabel(order);
+}
+
+function getVisualStepTone(index: number, currentVisualStepIndex: number, order: DemoOrderSummary): StepTone {
+  if (order.status === 'completed') {
+    return 'complete';
+  }
+
+  if (index < currentVisualStepIndex) {
+    return 'complete';
+  }
+
+  if (index === currentVisualStepIndex) {
+    return 'current';
+  }
+
+  return 'upcoming';
+}
+
+function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneyStep | null) {
+  if (order.status === 'registration_started') {
+    return {
+      text: 'Você criou sua jornada com sucesso. Continue preenchendo as informações iniciais para avançar para a próxima etapa.',
+      actionTitle: 'O que fazer agora?',
+      actionText: 'Esta etapa depende de você. Preencha o pré-requisito para liberar a escolha da clínica e avançar na jornada.',
+      estimate: '3 minutos',
+      buttonLabel: 'Iniciar pré-requisito',
+      whyTitle: 'Por que preciso preencher o pré-requisito?',
+      whyText: 'Essas informações são essenciais para que possamos indicar a clínica mais adequada para o seu caso.',
+    };
+  }
+
+  if (order.status === 'awaiting_scheduling' || order.status === 'awaiting_dentist_acceptance') {
+    const isWaitingForDentist = order.status === 'awaiting_dentist_acceptance';
+
+    return {
+      text: isWaitingForDentist
+        ? 'Sua consulta inicial foi solicitada. Agora a jornada aguarda o aceite do dentista para continuar.'
+        : 'Sua triagem inicial foi concluída. Agora escolha o local da consulta inicial para continuar.',
+      actionTitle: 'O que fazer agora?',
+      actionText: isWaitingForDentist
+        ? 'Aguarde o aceite do dentista. Nenhuma ação do usuário é necessária neste momento; assim que o dentista aceitar, a próxima etapa será liberada.'
+        : 'Esta etapa depende de você. Escolha o consultório da consulta inicial para que o atendimento possa ser confirmado.',
+      estimate: isWaitingForDentist ? 'Aguardando dentista' : '5 minutos',
+      buttonLabel: isWaitingForDentist ? null : 'Abrir consulta inicial',
+      whyTitle: 'Por que essa etapa importa?',
+      whyText: 'A consulta inicial conecta seu caso a uma clínica licenciada e ao dentista responsável pela avaliação.',
+    };
+  }
+
+  if (order.status === 'awaiting_payment') {
+    return {
+      text: 'Seu caso foi aprovado clinicamente. Conclua a compra para liberar a próxima fase da jornada.',
+      actionTitle: 'O que fazer agora?',
+      actionText: 'Esta etapa depende de você. Finalize o pagamento para liberar os registros operacionais e a produção.',
+      estimate: '3 minutos',
+      buttonLabel: 'Ir para compra',
+      whyTitle: 'Por que o pagamento libera a jornada?',
+      whyText: 'A confirmação do pagamento autoriza a continuidade operacional com dentista e laboratório licenciados.',
+    };
+  }
+
+  return {
+    text: currentStep
+      ? `Sua jornada está na etapa ${currentStep.title}. Acompanhe as atualizações e siga a ação indicada quando estiver disponível.`
+      : 'Acompanhe as atualizações da sua jornada Biteplaner em tempo real.',
+    actionTitle: 'O que fazer agora?',
+    actionText: getPassiveStepActionText(order, currentStep),
+    estimate: getPassiveStepEstimate(order),
+    buttonLabel: null,
+    whyTitle: 'Por que acompanhar a jornada?',
+    whyText: 'Cada etapa libera a próxima ação somente quando as informações necessárias forem confirmadas.',
+  };
+}
+
+function getPassiveStepActionText(order: DemoOrderSummary, currentStep: VisualJourneyStep | null) {
+  const stepName = currentStep?.title ?? 'jornada';
+
+  if (order.status === 'in_progress') {
+    return 'A consulta inicial está em andamento. Se houver confirmação pendente, use o aviso abaixo; depois disso, a continuidade depende da validação do dentista.';
+  }
+
+  if (order.status === 'appointment_confirmed') {
+    return 'A consulta foi confirmada. Agora é necessário aguardar a decisão clínica do dentista para saber se a compra será liberada.';
+  }
+
+  if (order.status === 'payment_confirmed' || order.status === 'awaiting_dentist_forms') {
+    return 'O pagamento foi confirmado. Aguarde o dentista concluir os registros operacionais para enviar o caso ao laboratório.';
+  }
+
+  if (order.status === 'awaiting_lab_start') {
+    return 'A solicitação chegou ao laboratório. Agora é preciso aguardar o aceite e o início da produção.';
+  }
+
+  if (order.status === 'lab_processing') {
+    return 'O Biteplaner está em produção. Nenhuma ação do usuário é necessária enquanto o laboratório conclui esta etapa.';
+  }
+
+  if (order.status === 'awaiting_adaptation') {
+    return 'O produto foi recebido pela clínica. Aguarde as orientações do dentista para adaptação e acompanhamento.';
+  }
+
+  if (order.status === 'follow_up') {
+    return 'A adaptação já aconteceu e o acompanhamento está ativo. Siga as orientações combinadas com o dentista.';
+  }
+
+  if (order.status === 'completed') {
+    return 'Sua jornada foi concluída. Este painel permanece como histórico do processo e das etapas realizadas.';
+  }
+
+  return `Acompanhe a etapa ${stepName}. Quando houver ação do usuário ou de algum profissional, ela aparecerá aqui.`;
+}
+
+function getPassiveStepEstimate(order: DemoOrderSummary) {
+  if (order.status === 'completed') {
+    return 'Concluído';
+  }
+
+  if (order.status === 'follow_up') {
+    return 'Acompanhamento ativo';
+  }
+
+  if (
+    order.status === 'appointment_confirmed' ||
+    order.status === 'payment_confirmed' ||
+    order.status === 'awaiting_dentist_forms'
+  ) {
+    return 'Aguardando dentista';
+  }
+
+  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
+    return 'Aguardando laboratório';
+  }
+
+  return 'Acompanhe por aqui';
+}
 function getCurrentStepIndex(order: DemoOrderSummary) {
   if (order.status === 'registration_started') {
     return 0;
@@ -450,6 +603,17 @@ export function Jornada() {
   const shouldRedirectToOnboarding = selectedFormsOrder?.stage === 'new_user_onboarding';
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
+  const currentVisualStepIndex = selectedFormsOrder ? Math.max(0, currentStepIndex + 1) : -1;
+  const currentVisualStep =
+    currentVisualStepIndex >= 0 ? VISUAL_JOURNEY_STEPS[currentVisualStepIndex] ?? null : null;
+  const journeyProgress = selectedFormsOrder
+    ? Math.max(
+        selectedFormsOrder.status === 'completed' ? 100 : 25,
+        Math.round((currentVisualStepIndex / Math.max(VISUAL_JOURNEY_STEPS.length - 1, 1)) * 100)
+      )
+    : 0;
+  const journeySummary = selectedFormsOrder ? getJourneySummary(selectedFormsOrder, currentVisualStep) : null;
+  const CurrentVisualStepIcon = currentVisualStep?.icon ?? ClipboardCheck;
   const currentStepActionPath = getAthleteNextPath(selectedFormsOrder);
   const orderProblem = useMemo(
     () => (selectedFormsOrder ? getOrderProblemContext(selectedFormsOrder, workflowForms) : null),
@@ -516,54 +680,120 @@ export function Jornada() {
       ) : null}
       {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
+      {!loading && ordersQuery.isSuccess && !selectedFormsOrder ? (
+        <S.EmptyJourneyCard data-testid="journey-empty-state">
+          <S.EmptyJourneyTitle>Nenhuma jornada Biteplaner encontrada</S.EmptyJourneyTitle>
+          <S.Description>
+            Não encontramos pedido Biteplaner ativo para este usuário. Inicie o onboarding para criar a jornada ou
+            volte ao painel para acompanhar outros dados da conta.
+          </S.Description>
+          <S.BannerActionLink to="/painel/biteplaner/onboarding">
+            <UserRound size={16} aria-hidden />
+            <span>Iniciar onboarding</span>
+          </S.BannerActionLink>
+        </S.EmptyJourneyCard>
+      ) : null}
+
       {selectedFormsOrder ? (
         <S.StepFlow ref={stepFlowRef} data-testid="athlete-journey-steps">
           <S.SectionHeader>
-            <S.SectionTitle as="h1">Fluxo visual da jornada</S.SectionTitle>
+            <S.SectionTitle as="h1">Sua jornada Biteplaner</S.SectionTitle>
             <S.Description>
-              Os passos abaixo mostram em que ponto a jornada {getOrderDisplayId(selectedFormsOrder)} está. As etapas são apenas informativas e a visualização permanece na etapa atual.
+              Acompanhe sua jornada em tempo real e saiba o que fazer agora para continuar.
             </S.Description>
           </S.SectionHeader>
-          <S.StepScroll>
-            <S.StepList>
-              {JOURNEY_STEPS.map((step, index) => {
+          <S.JourneyHeroCard>
+            <S.OrderSummaryGrid>
+              <S.OrderBrandMark aria-hidden>BP</S.OrderBrandMark>
+              <S.OrderSummaryContent>
+                <S.OrderEyebrow>Pedido</S.OrderEyebrow>
+                <S.OrderTitle>{getOrderDisplayId(selectedFormsOrder)}</S.OrderTitle>
+                <S.StatusPill $tone="current">
+                  <span aria-hidden />
+                  {getHeroStatusLabel(selectedFormsOrder)}
+                </S.StatusPill>
+                <S.OrderSummaryText>{journeySummary?.text}</S.OrderSummaryText>
+                <S.NextStepPreview>
+                  {currentVisualStep ? (
+                    <>
+                      <S.NextStepPreviewIcon aria-hidden>
+                        <CurrentVisualStepIcon size={22} />
+                      </S.NextStepPreviewIcon>
+                      <S.NextStepPreviewCopy>
+                        <span>Próxima etapa</span>
+                        <strong>{currentVisualStep.title}</strong>
+                        <p>{currentVisualStep.description}</p>
+                      </S.NextStepPreviewCopy>
+                    </>
+                  ) : null}
+                </S.NextStepPreview>
+              </S.OrderSummaryContent>
+            </S.OrderSummaryGrid>
+            <S.JourneyIllustration aria-hidden />
+          </S.JourneyHeroCard>
+
+          <S.JourneyDashboardGrid>
+            <S.ActionCard>
+              <S.ActionHeader>
+                <S.ActionIcon aria-hidden>
+                  <CurrentVisualStepIcon size={24} />
+                </S.ActionIcon>
+                <S.ActionCopy>
+                  <S.CardTitle>{journeySummary?.actionTitle}</S.CardTitle>
+                  <S.Description>{journeySummary?.actionText}</S.Description>
+                </S.ActionCopy>
+              </S.ActionHeader>
+              <S.EstimateBox>
+                <Clock3 size={26} aria-hidden />
+                <span>Tempo estimado</span>
+                <strong>{journeySummary?.estimate}</strong>
+              </S.EstimateBox>
+              {journeySummary?.buttonLabel ? (
+                <S.PrimaryActionLink to={currentStepActionPath}>
+                  <span>{journeySummary.buttonLabel}</span>
+                  <ChevronRight size={18} aria-hidden />
+                </S.PrimaryActionLink>
+              ) : null}
+            </S.ActionCard>
+
+            <S.OverviewCard id="visao-geral-jornada">
+              <S.CardTitle>Visão geral da jornada <S.ProgressPercent>{journeyProgress}% concluído</S.ProgressPercent></S.CardTitle>
+              <S.OverviewList>
+                {VISUAL_JOURNEY_STEPS.map((step, index) => {
                 const tone =
-                  index < currentStepIndex ? 'complete' : index === currentStepIndex ? 'current' : 'upcoming';
+                    getVisualStepTone(index, currentVisualStepIndex, selectedFormsOrder);
                 const StepIcon = step.icon;
-                const content = (
-                  <>
-                    <S.StepBadge $tone={tone}>{index + 1}</S.StepBadge>
-                    <S.StepIconBox $tone={tone}>
-                      <StepIcon size={24} aria-hidden />
-                    </S.StepIconBox>
-                    <S.StepText>
-                      <S.StepName>{step.title}</S.StepName>
-                      <S.StepCopy>{step.description}</S.StepCopy>
-                    </S.StepText>
-                    {tone === 'current' ? (
-                      <S.StepStatusLink $tone={tone} to={currentStepActionPath}>
-                        <HandHelping size={14} aria-hidden />
-                        {getStepStatusLabel(tone)}
-                      </S.StepStatusLink>
-                    ) : (
-                      <S.StepStatus $tone={tone}>
-                        {tone === 'complete' ? <CheckCircle2 size={14} aria-hidden /> : null}
-                        {getStepStatusLabel(tone)}
-                      </S.StepStatus>
-                    )}
-                  </>
-                );
 
                 return (
-                  <S.StepItem key={step.key} $tone={tone}>
-                    <S.StepPanel $tone={tone} data-testid={`journey-step-${step.key}`}>
-                      {content}
-                    </S.StepPanel>
-                  </S.StepItem>
+                  <S.OverviewItem key={step.key} $tone={tone} data-testid={`journey-step-${step.key}`}>
+                    <S.OverviewMarker $tone={tone}>
+                      {tone === 'complete' ? <Check size={12} aria-hidden /> : <StepIcon size={13} aria-hidden />}
+                    </S.OverviewMarker>
+                    <S.OverviewStepName>{step.title}</S.OverviewStepName>
+                    <S.StatusPill $tone={tone}>
+                      {tone === 'complete' ? <Check size={12} aria-hidden /> : null}
+                      {getStepStatusLabel(tone)}
+                    </S.StatusPill>
+                  </S.OverviewItem>
                 );
               })}
-            </S.StepList>
-          </S.StepScroll>
+              </S.OverviewList>
+            </S.OverviewCard>
+          </S.JourneyDashboardGrid>
+
+          <S.InfoCallout>
+            <S.InfoCalloutIcon aria-hidden>
+              <Info size={20} />
+            </S.InfoCalloutIcon>
+            <S.InfoCalloutCopy>
+              <S.InfoCalloutTitle>{journeySummary?.whyTitle}</S.InfoCalloutTitle>
+              <S.Description>{journeySummary?.whyText}</S.Description>
+            </S.InfoCalloutCopy>
+            <S.InfoCalloutLink to={currentStepActionPath}>
+              <span>Saiba mais</span>
+              <ChevronRight size={18} aria-hidden />
+            </S.InfoCalloutLink>
+          </S.InfoCallout>
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
           {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
           {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
@@ -638,6 +868,20 @@ export function Jornada() {
                 </S.PaymentDetailItem>
               </S.PaymentDetailsGrid>
             </S.PaymentConfirmationCard>
+          ) : null}
+          {!orderProblem && paymentDetails ? (
+            <S.NextStepCard data-testid="journey-payment-next-step">
+              <S.NextStepIcon aria-hidden>
+                <ShieldCheck size={34} />
+              </S.NextStepIcon>
+              <S.NextStepCopy>
+                <S.NextStepTitle>O que acontece agora?</S.NextStepTitle>
+                <S.Description>
+                  Aguarde o dentista confirmar os dados operacionais. Assim que confirmado, seu caso seguirá para
+                  produção no laboratório licenciado.
+                </S.Description>
+              </S.NextStepCopy>
+            </S.NextStepCard>
           ) : null}
           {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
             <S.PendingActionCard data-testid="journey-pending-user-action">

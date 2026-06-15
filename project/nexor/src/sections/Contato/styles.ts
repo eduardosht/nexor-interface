@@ -25,12 +25,16 @@ export const Section = styled.section`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.1;
   margin: 0 0 16px;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Subtitle = styled.p`

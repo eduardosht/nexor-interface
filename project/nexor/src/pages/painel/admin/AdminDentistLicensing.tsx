@@ -36,6 +36,7 @@ import styled from 'styled-components';
 import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { useAdminPortal } from '../../../features/admin/portal';
+import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
 import {
   approveDentistLicenseRequest,
   fetchDentistLicenseRequests,
@@ -580,23 +581,10 @@ const HeroCopy = styled.div`
   max-width: 780px;
 `;
 
-const AdminTitle = styled.h1`
-  margin: 0;
-  font-size: 32px;
-  line-height: 1.12;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
+const AdminTitle = PortalPageTitle;
 
-  @media (max-width: 680px) {
-    font-size: 26px;
-  }
-`;
-
-const AdminSubtitle = styled.p`
+const AdminSubtitle = styled(PortalPageDescription)`
   margin: 12px 0 0;
-  font-size: 16px;
-  line-height: 1.58;
-  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 const MetricsGrid = styled.div`

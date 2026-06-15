@@ -519,10 +519,11 @@ describe('BiteplanerHub', () => {
     expect(screen.getByRole('heading', { name: /workspace do atleta/i })).toBeInTheDocument();
     expect(screen.getByTestId('athlete-hero-visual')).toBeInTheDocument();
     expect(screen.getAllByText(/jornada biteplaner/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/jornada do atleta/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/sua jornada biteplaner/i);
+    expect(screen.queryByText(/^BP$/)).not.toBeInTheDocument();
     expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/próximo passo visível/i);
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/cadastro iniciado/i);
-    expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/biteplaner/onboarding');
+    expect(screen.getByRole('link', { name: /ver jornada/i })).toHaveAttribute('href', '/painel/biteplaner/onboarding');
   });
 
   it('shows an onboarding CTA when the athlete has no Biteplaner order yet', async () => {
@@ -589,8 +590,8 @@ describe('BiteplanerHub', () => {
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/aguardando consulta inicial/i));
     expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/escolher a cl.*nica da consulta inicial/i);
-    expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/consulta-inicial');
-    expect(screen.getByRole('link', { name: /abrir jornada/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
+    expect(screen.getByRole('link', { name: /ver jornada/i })).toHaveAttribute('href', '/painel/consulta-inicial');
+    expect(screen.queryByRole('link', { name: /abrir jornada/i })).not.toBeInTheDocument();
   });
 
   it('renders the dentist queue as a páginated table with status filters', async () => {

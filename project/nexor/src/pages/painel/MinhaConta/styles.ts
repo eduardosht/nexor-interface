@@ -1,21 +1,16 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
 
 export const Page = styled.div`
   max-width: 1040px;
 `;
 
-export const PageTitle = styled.h1`
-  font-size: clamp(1.25rem, 2vw, 1.75rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const PageTitle = styled(PortalPageTitle)`
   margin: 0 0 6px;
 `;
 
-export const PageSubtitle = styled.p`
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const PageSubtitle = styled(PortalPageDescription)`
   margin: 0 0 32px;
 `;
 

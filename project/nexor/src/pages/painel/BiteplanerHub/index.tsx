@@ -11,7 +11,6 @@ import {
   Clock3,
   Copy,
   Download,
-  ExternalLink,
   Eye,
   FileText,
   Flag,
@@ -34,7 +33,6 @@ import {
   Snackbar,
   SnackbarStack,
   StatusIndicator,
-  Chip,
   type DataTableColumn,
 } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
@@ -2764,65 +2762,44 @@ export function BiteplanerHub() {
             ))}
           </S.AthleteStatsGrid>
 
-          <S.AthleteCasePanel data-testid="athlete-primary-case">
-            <S.PanelHeader>
-              <S.PanelTitle>Jornada do atleta</S.PanelTitle>
-              <S.PanelText>
-                O cliente acompanha uma única jornada Biteplaner neste primeiro momento. O backend continua preparado para múltiplas ordens, mas a interface foca na jornada ativa do atleta.
-              </S.PanelText>
-            </S.PanelHeader>
-
+          <S.AthleteCasePanel data-testid="athlete-primary-case" aria-label="Sua jornada Biteplaner">
             {athleteOrder ? (
               <S.AthleteOrderHighlight data-testid="athlete-primary-order">
-                <S.AthleteOrderAvatar aria-hidden="true">BP</S.AthleteOrderAvatar>
                 <S.AthleteOrderMain>
+                  <S.AthleteCardHeader>
+                    <S.AthleteCaseTitle>Sua jornada Biteplaner</S.AthleteCaseTitle>
+                    <S.AthleteOrderStatusBadge
+                      $tone={getStatusTone(athleteOrder.status)}
+                      data-testid="athlete-order-status"
+                    >
+                      <span aria-hidden="true" />
+                      {getOrderStatusPresentation(athleteOrder).label}
+                    </S.AthleteOrderStatusBadge>
+                  </S.AthleteCardHeader>
                   <S.AthleteOrderHeader>
                     <div>
-                    <S.OrderTitle>{getOrderLabel(athleteOrder)}</S.OrderTitle>
-                    <S.OrderText>
-                      {athleteOrder.customer?.full_name ?? 'Atleta demo'} - etapa {getStageLabel(athleteOrder)}.
-                    </S.OrderText>
+                      <S.AthleteOrderMeta>Pedido {getOrderLabel(athleteOrder)}</S.AthleteOrderMeta>
+                      <S.AthleteOrderTitle>Em andamento</S.AthleteOrderTitle>
+                      <S.AthleteOrderStage>
+                        Etapa atual: <strong>{getStageLabel(athleteOrder)}</strong>
+                      </S.AthleteOrderStage>
                     </div>
-                    <Chip tone={getStatusTone(athleteOrder.status)} data-testid="athlete-order-status">
-                      <StatusIndicator
-                        color={getOrderStatusPresentation(athleteOrder).color}
-                        label={getOrderStatusPresentation(athleteOrder).label}
-                      />
-                    </Chip>
                   </S.AthleteOrderHeader>
-                  <S.OrderText>Próximo passo visível: {athleteNextStepLabel}.</S.OrderText>
+                  <S.AthleteOrderDescription>
+                    Sua jornada foi iniciada com sucesso.
+                    <br />
+                    Continue preenchendo as informações para avançar.
+                  </S.AthleteOrderDescription>
                   <S.ActionRow>
-                    <S.PrimaryLink to={athleteNextPath}>
-                      Continuar fluxo
-                      <ChevronRight size={16} aria-hidden />
-                    </S.PrimaryLink>
-                    <S.SecondaryLink to="/painel/biteplaner/jornada">
-                      Abrir jornada
-                      <ExternalLink size={15} aria-hidden />
-                    </S.SecondaryLink>
+                    <S.AthleteJourneyAction to={athleteNextPath}>
+                      Ver jornada
+                      <ChevronRight size={22} aria-hidden />
+                    </S.AthleteJourneyAction>
                   </S.ActionRow>
+                  <S.AthleteOrderAssistiveText>
+                    Próximo passo visível: {athleteNextStepLabel}.
+                  </S.AthleteOrderAssistiveText>
                 </S.AthleteOrderMain>
-                {/*
-                  <S.ActionRow>
-                    {!athleteAppointment.user_confirmed_at ? (
-                      <S.PrimaryButton
-                        type="button"
-                        disabled={activeAction === `${athleteOrder.id}:user-confirmation`}
-                        onClick={() => {
-                          void runOrderAction(
-                            `${athleteOrder.id}:user-confirmation`,
-                            () => confirmAppointmentByUser(athleteOrder.id, athleteAppointment.id, token),
-                            'Sua confirmação de consulta realizada foi registrada.'
-                          );
-                        }}
-                      >
-                        Confirmar consulta realizada
-                      </S.PrimaryButton>
-                    ) : (
-                      null
-                    )}
-                  </S.ActionRow>
-                */}
               </S.AthleteOrderHighlight>
             ) : (
               <S.EmptyState data-testid="athlete-onboarding-empty-state">
@@ -2834,7 +2811,6 @@ export function BiteplanerHub() {
               </S.EmptyState>
             )}
           </S.AthleteCasePanel>
-
           {athleteOrder && athleteAppointment && hasAthletePendingAppointmentConfirmation ? (
             <S.AthletePendingActionsPanel data-testid="athlete-pending-actions">
               <S.AthletePendingActionsCopy>
