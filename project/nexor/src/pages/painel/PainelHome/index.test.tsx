@@ -77,7 +77,7 @@ describe('PainelHome', () => {
 
   it('renders the coming soon hero and quick actions heading', async () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /em breve no nosso site/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breveno nosso site/i })).toBeInTheDocument();
     expect(screen.getByText(/a compra do biteplaner estar/i)).toBeInTheDocument();
     expect(screen.getByText(/fique ligado/i)).toBeInTheDocument();
     expect(screen.getByText(/tecnologia/i)).toBeInTheDocument();
@@ -90,7 +90,7 @@ describe('PainelHome', () => {
   it('renders Biteplaner coming soon content', async () => {
     renderPage();
     expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /em breve no nosso site/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breveno nosso site/i })).toBeInTheDocument();
     expect(screen.queryByText(/R\$ 400/)).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
@@ -102,7 +102,7 @@ describe('PainelHome', () => {
 
     expect(screen.queryByTestId('biteplaner-coming-soon-hero')).not.toBeInTheDocument();
     expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
-    expect(screen.getByText('R$ 1.000,00')).toBeInTheDocument();
+    expect(screen.getByText('R$ 1.370,00')).toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 

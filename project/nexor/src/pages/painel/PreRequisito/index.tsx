@@ -27,6 +27,10 @@ const BITEPLANER_CONSENT_PAYLOAD = {
     sensitiveHealthConsent: ['accepted'],
   },
 };
+const ACTIVE_ORTHODONTIC_TREATMENT_MESSAGE =
+  'Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.';
+const ACTIVE_DENTAL_TREATMENT_MESSAGE =
+  'Para os casos em tratamento odontológico, é necessário a finalização do mesmo para continuar com a ordem.';
 
 function customerIntakeIsComplete(form: DemoWorkflowForm) {
   if (form.roleState) {
@@ -54,13 +58,35 @@ function getFormBlocker(form: DemoWorkflowForm) {
   }
 
   const customerPayload = getCustomerPayload(form);
-  return isActiveOrthodonticTreatment(customerPayload.orthodonticTreatmentStatus)
-    ? 'active_orthodontic_treatment'
-    : null;
+  if (isActiveOrthodonticTreatment(customerPayload.orthodonticTreatmentStatus)) {
+    return 'active_orthodontic_treatment';
+  }
+
+  if (isActiveDentalTreatment(customerPayload.activeDentalTreatmentStatus)) {
+    return 'active_dental_treatment';
+  }
+
+  return null;
 }
 
 function isActiveOrthodonticTreatment(value: unknown) {
   return value === 'active' || value === true || value === 'yes';
+}
+
+function isActiveDentalTreatment(value: unknown) {
+  return value === true || value === 'yes';
+}
+
+function getBlockerMessage(blocker: unknown) {
+  if (blocker === 'active_orthodontic_treatment') {
+    return ACTIVE_ORTHODONTIC_TREATMENT_MESSAGE;
+  }
+
+  if (blocker === 'active_dental_treatment') {
+    return ACTIVE_DENTAL_TREATMENT_MESSAGE;
+  }
+
+  return '';
 }
 
 export function PreRequisito() {
@@ -141,8 +167,9 @@ export function PreRequisito() {
       return;
     }
 
-    if (getFormBlocker(form) === 'active_orthodontic_treatment') {
-      setError('Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.');
+    const blockerMessage = getBlockerMessage(getFormBlocker(form));
+    if (blockerMessage) {
+      setError(blockerMessage);
       return;
     }
 
@@ -187,8 +214,9 @@ export function PreRequisito() {
     );
 
     if (submittedIntake) {
-      if (getFormBlocker(submittedIntake) === 'active_orthodontic_treatment') {
-        setError('Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.');
+      const blockerMessage = getBlockerMessage(getFormBlocker(submittedIntake));
+      if (blockerMessage) {
+        setError(blockerMessage);
         return;
       }
 

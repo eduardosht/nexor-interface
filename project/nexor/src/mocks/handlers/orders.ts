@@ -188,6 +188,18 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/practice-location-selection/cancel', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        { type: 'cancel-practice-location-selection' },
+        { requestHeaders: request.requestHeaders }
+      )
+    )
+  ));
+
   server.post('/v1/orders/:orderId/initial-consultation-accepted', withDemoErrors((_schema, request) =>
     new Response(
       200,

@@ -164,6 +164,7 @@ function findField(label: RegExp) {
 function completeClinicalSectionPayload(overrides: Record<string, unknown> = {}) {
   return {
     orthodonticTreatmentStatus: 'none',
+    activeDentalTreatmentStatus: 'no',
     fullName: 'Joao Demo',
     phone: '11999999999',
     needsAdaptedClinic: 'no',

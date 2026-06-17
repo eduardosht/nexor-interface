@@ -217,7 +217,7 @@ describe('ConsultaInicial', () => {
     expect(screen.getByText(/combinar a data da consulta e confirmar os valores/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /sim, ja combinei/i }));
+    fireEvent.click(screen.getByRole('button', { name: /sim, já combinei/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
@@ -262,7 +262,7 @@ describe('ConsultaInicial', () => {
     renderPage();
 
     expect(await screen.findByText(/indique seu dentista de preferência/i)).toBeInTheDocument();
-    expect(screen.getByText(/precisa selecionar uma clínica ja licenciada/i)).toBeInTheDocument();
+    expect(screen.getByText(/precisa selecionar uma clínica já licenciada/i)).toBeInTheDocument();
     expect(screen.getByText(/o processo de licenciamento pode demorar/i)).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: /enviar por whatsapp/i })).toHaveAttribute(

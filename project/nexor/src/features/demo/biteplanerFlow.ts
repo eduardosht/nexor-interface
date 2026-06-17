@@ -307,6 +307,8 @@ export type DentistLicenseRequest = {
   workflowStatus: string;
   dentistName: string;
   croNumber: string;
+  cnpj?: string;
+  cpf?: string;
   professionalSummary: string;
   submittedAt: string;
   practiceLocations: Array<{
@@ -330,6 +332,7 @@ export type LabLicenseRequest = {
   workflowStatus: string;
   labName: string;
   cnpj: string;
+  cpf?: string;
   professionalSummary: string;
   submittedAt: string;
   locations: Array<{
@@ -897,6 +900,15 @@ export async function selectPracticeLocation(
   const order = await api.post<DemoOrderSummary>(
     `/v1/orders/${orderId}/practice-location-selection`,
     { practiceLocationId },
+    token
+  );
+  return { order };
+}
+
+export async function cancelPracticeLocationSelection(orderId: string, token?: string) {
+  const order = await api.post<DemoOrderSummary>(
+    `/v1/orders/${orderId}/practice-location-selection/cancel`,
+    {},
     token
   );
   return { order };

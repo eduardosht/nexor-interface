@@ -372,6 +372,17 @@ export const SummaryRow = styled.div`
   }
 `;
 
+export const PriceNotice = styled.p`
+  margin: -12px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: rgba(239, 247, 255, 0.82);
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  line-height: 1.5;
+`;
+
 export const Total = styled.strong`
   font-size: 28px;
   font-weight: 800;

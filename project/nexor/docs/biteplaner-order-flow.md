@@ -1,10 +1,10 @@
 # Fluxo da ordem Biteplaner
 
-Este documento descreve a jornada operacional da ordem Biteplaner do ponto de vista do produto, incluindo a etapa exibida para o cliente e os impactos de remoção de conta.
+Este documento descreve a jornada operacional da ordem Biteplaner do ponto de vista do produto, incluindo a etapa exibida para o cliente, a seleção de clínica e os impactos de remoção de conta.
 
 ## Etapas exibidas ao cliente
 
-1. **Pre-requisito**
+1. **Pré-requisito**
    - `registration_started`
    - `pre_requisite_pending`
    - `new_user_onboarding`
@@ -38,6 +38,28 @@ Este documento descreve a jornada operacional da ordem Biteplaner do ponto de vi
 Assim que o pagamento é confirmado, a compra foi concluída do ponto de vista do cliente. Por isso, `payment_confirmed` deve aparecer na etapa **Laboratório**, mesmo que ainda exista uma ação operacional do dentista para revisar ou enviar os dados de produção.
 
 O status `awaiting_dentist_forms` representa essa pendência operacional do dentista, mas continua pertencendo à etapa **Laboratório** na jornada visual do cliente.
+
+## Seleção e cancelamento de clínica
+
+Após a conclusão do pré-requisito, a ordem entra em `awaiting_scheduling` e o cliente escolhe uma clínica ou consultório licenciado para a consulta inicial. Quando a seleção é registrada, a ordem passa para `awaiting_dentist_acceptance` e a jornada do cliente deve exibir explicitamente a clínica selecionada.
+
+Enquanto a ordem estiver em `awaiting_dentist_acceptance`, o cliente pode cancelar apenas o vínculo com a clínica escolhida. Esse cancelamento não cancela a compra, a conta nem a jornada Biteplaner; ele desfaz a escolha de clínica para permitir uma nova seleção.
+
+Comportamento esperado do sistema:
+
+- Exibir a clínica selecionada na jornada do cliente, com nome e aviso de que a ordem aguarda aceite do dentista.
+- Disponibilizar a ação de cancelamento somente em `awaiting_dentist_acceptance`.
+- Executar `POST /v1/orders/:orderId/practice-location-selection/cancel`.
+- Limpar `practice_location_id`, `practice_location` e `dentistId`.
+- Retornar a ordem para `awaiting_scheduling`, etapa `awaiting_initial_consultation`.
+- Restaurar `nextActions` para `schedule-initial-consultation`.
+- Registrar evento de timeline com a informação de que o cliente cancelou a clínica selecionada.
+
+Regra de negócio:
+
+- O cliente pode trocar a clínica antes do aceite do dentista.
+- Depois do aceite do dentista, a troca não deve ocorrer por esse botão; mudanças devem seguir fluxo operacional de suporte, reagendamento ou intervenção administrativa.
+- O cancelamento da clínica não gera ressarcimento automático e não altera elegibilidade clínica.
 
 ## Máquina de estados principal
 

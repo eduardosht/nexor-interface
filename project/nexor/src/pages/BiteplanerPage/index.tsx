@@ -340,7 +340,6 @@ export function BiteplanerPage() {
       <S.TrustOuter>
         <S.TrustHero>
           <S.TrustIntro>
-            <S.MarketingEyebrow>Comparação</S.MarketingEyebrow>
             <S.MarketingSectionTitle>Educação para decidir <S.MarketingTitleAccent>melhor</S.MarketingTitleAccent></S.MarketingSectionTitle>
             <S.MarketingSectionLead>
               Informações e tecnologia para transformar performance em decisões mais inteligentes.
@@ -382,7 +381,6 @@ export function BiteplanerPage() {
       <S.ProcessOuter id="como-funciona">
         <S.SplitSection>
           <S.SectionIntro>
-            <S.MarketingEyebrow>Como funciona</S.MarketingEyebrow>
             <S.MarketingSectionTitle>Da elegibilidade ao acompanhamento</S.MarketingSectionTitle>
             <S.MarketingSectionLead>
               A jornada foi desenhada para que o atleta entenda o passo a passo e possa adquirir o dispositivo
@@ -451,7 +449,6 @@ export function BiteplanerPage() {
       <S.ComparisonSection>
         <S.ComparisonHeader>
           <S.SectionIntro>
-            <S.MarketingEyebrow>Comparação</S.MarketingEyebrow>
             <S.MarketingSectionTitle>Protetores Bucais vs <S.MarketingTitleAccent>Biteplaner</S.MarketingTitleAccent></S.MarketingSectionTitle>
             <S.MarketingSectionLead>
               Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
@@ -558,7 +555,6 @@ export function BiteplanerPage() {
 
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
-          <S.MarketingEyebrow>Comentários</S.MarketingEyebrow>
           <S.MarketingSectionTitle id="biteplaner-comments-title">Clientes satisfeitos com o Biteplaner</S.MarketingSectionTitle>
           <S.MarketingSectionLead>
             Relatos sobre conforto, adaptação e confiança no uso real do produto.
@@ -591,7 +587,6 @@ export function BiteplanerPage() {
 
       <S.FaqSection>
         <S.FaqMedia>
-          <S.MarketingEyebrow>Dúvidas</S.MarketingEyebrow>
           <S.MarketingSectionTitle>Perguntas frequentes</S.MarketingSectionTitle>
         </S.FaqMedia>
         <S.FaqContent>

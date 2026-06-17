@@ -470,7 +470,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.change(birthDateInput, { target: { value: '01019990' } });
     fireEvent.blur(birthDateInput);
 
-    expect(await screen.findByText(/insira uma data valida/i)).toBeInTheDocument();
+    expect(await screen.findByText(/insira uma data v.lida/i)).toBeInTheDocument();
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
@@ -676,6 +676,54 @@ describe('CadastroUsuarioBiteplaner', () => {
 
     expect(locationSpendInput).toHaveValue('R$ 200,00');
     expect(accessorySpendInput).toHaveValue('R$ 1.050,00');
+  }, 10000);
+
+  it('accepts zero values in financial currency fields and submits them as numbers', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+    mockApiPost.mockResolvedValueOnce({
+      ...onboardingForm('submitted', { blocked: false, responseCount: 1 }),
+      payload: {
+        monthlyTrainingLocationSpend: 0,
+        annualAccessorySpend: 0,
+      },
+    });
+
+    renderPage();
+
+    await advanceFromClinicalToFinancialSection();
+
+    const locationSpendInput = getTextField(/locais de treinamento/i);
+    const accessorySpendInput = getTextField(/gasto anual com acess.*rios/i);
+
+    fireEvent.change(locationSpendInput, { target: { value: '0' } });
+    fireEvent.change(accessorySpendInput, { target: { value: '0' } });
+
+    expect(locationSpendInput).toHaveValue('R$ 0,00');
+    expect(accessorySpendInput).toHaveValue('R$ 0,00');
+
+    selectDropdown(/renda mensal/i, /R\$ 5\.001 a R\$ 10\.000/);
+    fireEvent.change(getTextField(/maior objetivo/i), { target: { value: 'Melhorar performance' } });
+    fireEvent.change(getTextField(/maior preocupa.*o/i), { target: { value: 'Evitar lesões' } });
+    selectDropdown(/trabalho afeta/i, /n.o afeta/i);
+    await clickEnabledNextStep();
+
+    fireEvent.change(getTextField(/mais importante.*nexor/i), { target: { value: 'A treinar com segurança' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar formul.*rio/i }));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-ONBOARDING/workflow-forms/BP-WF-ONBOARDING/submit',
+        {
+          payload: expect.objectContaining({
+            monthlyTrainingLocationSpend: 0,
+            annualAccessorySpend: 0,
+          }),
+        },
+        'tok'
+      )
+    );
   }, 10000);
 
   it('shows a blocker when the new user is underage without guardian confirmation', async () => {

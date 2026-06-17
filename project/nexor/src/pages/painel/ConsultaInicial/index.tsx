@@ -870,7 +870,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
       const response = await scheduleInitialConsultation(order.id, activeDisplayedLocation.id, token);
       setOrder(response.order);
       onOrderChange?.(response.order);
-      setScheduleNotice('Consulta informada com sucesso. Agora estámos aguardando o dentista aceitar a ordem via sistema.');
+      setScheduleNotice('Consulta informada com sucesso. Agora estamos aguardando o dentista aceitar a ordem via sistema.');
     } catch {
       setError('Não foi possível vincular a consulta agendada agora.');
     } finally {
@@ -946,7 +946,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
 
           <S.Layout>
             <S.MapCard>
-              <S.SectionTitle>Clínicas proximas ao CEP</S.SectionTitle>
+              <S.SectionTitle>Clínicas próximas ao CEP</S.SectionTitle>
               <S.Description>
                 O pin de casa representa o CEP informado, e os demais pins mostram as clínicas disponíveis com distância estimada.
               </S.Description>
@@ -1088,7 +1088,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.DetailTerm>Telefone</S.DetailTerm>
                     <S.DetailValue>{activeDisplayedLocation.phone}</S.DetailValue>
 
-                    <S.DetailTerm>Distancia</S.DetailTerm>
+                    <S.DetailTerm>Distância</S.DetailTerm>
                     <S.DetailValue>{formatDistanceKm(activeDisplayedLocation.distanceKm)} km</S.DetailValue>
                   </S.DetailList>
                   {clinicSchedulingWhatsappHref ? (
@@ -1098,7 +1098,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     </S.WhatsappActionHref>
                   ) : null}
                   <S.GuidanceCard>
-                    Confirme quando a consulta estiver agendada. A consulta so será considerada realizada depois do
+                    Confirme quando a consulta estiver agendada. A consulta só será considerada realizada depois do
                     match de confirmação entre paciente e dentista.
                   </S.GuidanceCard>
                   {canConfirmScheduledConsultation ? (
@@ -1155,7 +1155,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               </S.ReferralActions>
               <S.ReferralNotice>
                 Essa indicação pode iniciar o contato com o dentista, mas para prosseguir com a ordem atual você
-                precisa selecionar uma clínica ja licenciada. O processo de licenciamento pode demorar.
+                precisa selecionar uma clínica já licenciada. O processo de licenciamento pode demorar.
               </S.ReferralNotice>
             </S.ReferralContent>
           </S.ReferralCard>
@@ -1172,7 +1172,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
           >
             <S.SectionTitle id="schedule-confirmation-title">Confirmar consulta agendada</S.SectionTitle>
             <S.Description id="schedule-confirmation-description">
-              Você ja entrou em contato com o dentista para combinar a data da consulta e confirmar os valores do
+              Você já entrou em contato com o dentista para combinar a data da consulta e confirmar os valores do
               atendimento?
             </S.Description>
             <S.GuidanceCard>
@@ -1189,7 +1189,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                 onClick={() => void handleScheduleConsultation()}
                 disabled={schedulingConsultation}
               >
-                {schedulingConsultation ? 'Confirmando...' : 'Sim, ja combinei'}
+                {schedulingConsultation ? 'Confirmando...' : 'Sim, já combinei'}
               </AdminModalAction>
             </AdminModalActions>
           </S.ConfirmationDialog>

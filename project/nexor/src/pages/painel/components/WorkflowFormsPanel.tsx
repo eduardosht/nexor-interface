@@ -543,6 +543,8 @@ const CURRENT_PAIN_DETAIL_KEYS = new Set([
 
 const ACTIVE_ORTHODONTIC_BLOCKER_MESSAGE =
   'Não é possível continuar o processo antes de encerramento da fase ativa do tratamento ortodôntico';
+const ACTIVE_DENTAL_TREATMENT_BLOCKER_MESSAGE =
+  'Para os casos em tratamento odontológico, é necessário a finalização do mesmo para continuar com a ordem.';
 
 const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
   expectedUseBenefitOther: 'expectedUseBenefit',
@@ -667,11 +669,25 @@ function isFieldVisibleInSection(
     return field.key === 'orthodonticTreatmentStatus';
   }
 
+  const activeDentalTreatmentAnswer = String(payload.activeDentalTreatmentStatus ?? '');
+
+  if (!activeDentalTreatmentAnswer || activeDentalTreatmentAnswer === 'yes') {
+    return field.key === 'orthodonticTreatmentStatus' || field.key === 'activeDentalTreatmentStatus';
+  }
+
   return true;
 }
 
 function getPayloadBlockerMessage(payload: Record<string, string>) {
-  return payload.orthodonticTreatmentStatus === 'active' ? ACTIVE_ORTHODONTIC_BLOCKER_MESSAGE : '';
+  if (payload.orthodonticTreatmentStatus === 'active') {
+    return ACTIVE_ORTHODONTIC_BLOCKER_MESSAGE;
+  }
+
+  if (payload.activeDentalTreatmentStatus === 'yes') {
+    return ACTIVE_DENTAL_TREATMENT_BLOCKER_MESSAGE;
+  }
+
+  return '';
 }
 
 function getHealthAnswerKey(fieldKey: string) {
@@ -834,6 +850,10 @@ function getWorkflowFormBlockerMessage(form: DemoWorkflowForm) {
 
   if (blocker === 'active_orthodontic_treatment') {
     return 'Não é possível continuar com tratamento ortodôntico ativo. Procure orientação clínica antes de seguir com o Biteplaner.';
+  }
+
+  if (blocker === 'active_dental_treatment') {
+    return ACTIVE_DENTAL_TREATMENT_BLOCKER_MESSAGE;
   }
 
   return null;
@@ -1136,7 +1156,7 @@ function getFieldValidationMessage(
   }
 
   if (field.key === 'birthDate' && value.trim() && !isValidBirthDateValue(value)) {
-    return 'Insira uma data valida';
+    return 'Insira uma data válida';
   }
 
   if (field.key === 'residenceCep' && value.trim() && onlyDigits(value).length !== 8) {
@@ -1212,9 +1232,13 @@ function formatBirthDateValue(value: string) {
 }
 
 function formatCurrencyValue(value: string | number) {
+  if (typeof value === 'string' && value.trim() === '') {
+    return '';
+  }
+
   const numericValue = typeof value === 'number' ? value : parseCurrencyValue(String(value));
 
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+  if (!Number.isFinite(numericValue) || numericValue < 0) {
     return '';
   }
 

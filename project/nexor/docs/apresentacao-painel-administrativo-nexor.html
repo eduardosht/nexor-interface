@@ -1530,8 +1530,8 @@
         owner: "Cliente e Dentista",
         duration: "Variável por agenda",
         next: "Decisão clínica",
-        summary: "O cliente escolhe clínica ou dentista disponível. O profissional recebe o caso com contexto suficiente para conduzir a avaliação clínica.",
-        practice: "A seleção conecta preferência do cliente, disponibilidade operacional e responsabilidade clínica do dentista.",
+        summary: "O cliente escolhe clínica ou dentista disponível, visualiza explicitamente a clínica selecionada na jornada e aguarda o aceite do profissional. O profissional recebe o caso com contexto suficiente para conduzir a avaliação clínica.",
+        practice: "A seleção conecta preferência do cliente, disponibilidade operacional e responsabilidade clínica do dentista. Enquanto o dentista ainda não aceitou a ordem, o cliente pode cancelar o vínculo com a clínica para voltar à seleção e escolher outro local.",
         screens: [
           ["10b-cliente-selecao-clinica-full.png", "Seleção de clínica", "Cliente escolhe atendimento disponível com a tela completa."],
           ["20-dentista-listagem-ordens.png", "Dentista recebe ordens", "Profissional visualiza casos atribuídos e próximos passos."]
@@ -1544,14 +1544,16 @@
         ],
         happens: [
           ["Match realizado", "Cliente fica vinculado a uma clínica ou dentista."],
+          ["Clínica visível", "Jornada mostra a clínica selecionada e a pendência de aceite."],
+          ["Cancelamento permitido", "Antes do aceite, cliente pode desfazer a seleção e voltar ao status de escolha."],
           ["Caso aparece ao dentista", "Profissional passa a consumir dados da jornada."],
           ["Atendimento preparado", "Triagem orienta a conversa clínica."],
           ["Responsabilidade transferida", "Próxima ação principal é do dentista."]
         ],
         flow: {
           inputs: ["Perfil do cliente", "Localização ou escolha de clínica", "Dentistas habilitados", "Pré-consulta concluída"],
-          processing: ["Vinculação do caso", "Exibição na fila do dentista", "Registro do responsável clínico"],
-          results: ["Dentista definido", "Consulta inicial pronta", "Jornada aguardando decisão clínica"]
+          processing: ["Vinculação do caso", "Exibição na fila do dentista", "Registro do responsável clínico", "Cancelamento da seleção antes do aceite"],
+          results: ["Dentista definido", "Clínica selecionada visível ao cliente", "Consulta inicial pronta", "Jornada aguardando decisão clínica"]
         },
         fields: [
           ["Clínica escolhida", "Relacionamento", "Sim", "Cliente", "Jornada", "Clínica ativa", "Cliente"],
@@ -1559,7 +1561,7 @@
           ["Status da consulta", "Status", "Sim", "Dentista", "Jornada", "Valores permitidos", "Dentista"],
           ["Observações iniciais", "Texto longo", "Não", "Dentista", "Avaliação", "Até limite configurado", "Dentista"]
         ],
-        technical: "A regra central é vínculo entre jornada, clínica e dentista aprovado. O cliente não deve avançar para compra sem decisão clínica apta."
+        technical: "A regra central é vínculo entre jornada, clínica e dentista aprovado. Em awaiting_dentist_acceptance, o cliente pode cancelar somente a seleção da clínica; o sistema limpa clínica e dentista vinculados, retorna para awaiting_scheduling e permite uma nova escolha. O cliente não deve avançar para compra sem decisão clínica apta."
       },
       {
         number: "05",

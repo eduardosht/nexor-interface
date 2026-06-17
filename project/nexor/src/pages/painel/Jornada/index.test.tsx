@@ -394,7 +394,66 @@ describe('Jornada', () => {
     await waitFor(() => expect(screen.getByTestId('journey-step-consultation')).toHaveTextContent(/atual/i));
     expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/concluído/i);
     expect(screen.getByTestId('journey-step-clinical_decision')).toHaveTextContent(/pendente/i);
+    const selectedClinic = screen.getByTestId('journey-selected-clinic');
+    expect(selectedClinic).toHaveTextContent(/cl.nica selecionada/i);
+    expect(selectedClinic).toHaveTextContent(/cl.nica esportiva nexor/i);
+    expect(screen.getByRole('button', { name: /cancelar cl.nica/i })).toBeInTheDocument();
     expectNoEmbeddedStepContent();
+  });
+
+  it('lets the customer cancel the selected clinic while waiting for dentist acceptance', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-021',
+              status: 'awaiting_dentist_acceptance',
+              statusLabel: 'Aguardando aceite do dentista',
+              stage: 'dentist_acceptance_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+              practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-021/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-021/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+    mockApiPost.mockResolvedValueOnce({
+      order: {
+        id: 'BP-DEMO-021',
+        status: 'awaiting_scheduling',
+        statusLabel: 'Aguardando consulta inicial',
+        stage: 'awaiting_initial_consultation',
+        created_at: '2026-05-01T10:00:00.000Z',
+        customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+        practice_location: null,
+      },
+    });
+
+    renderPage();
+
+    const cancelButton = await screen.findByRole('button', { name: /cancelar cl.nica/i });
+    fireEvent.click(cancelButton);
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-021/practice-location-selection/cancel',
+        {},
+        'tok'
+      );
+      expect(screen.getByRole('status')).toHaveTextContent(/cl.nica cancelada/i);
+    });
   });
 
   it('shows only a waiting notice when the current step depends on the dentist', async () => {
@@ -436,7 +495,7 @@ describe('Jornada', () => {
             payment: {
               status: 'paid',
               provider: 'stripe',
-              amountCents: 100000,
+              amountCents: 137000,
               method: 'card',
               couponCode: 'NEXOR10',
               discountCents: 10000,
@@ -461,7 +520,7 @@ describe('Jornada', () => {
     expect(paymentBox).toHaveTextContent(/próximo passo/i);
     expect(paymentBox).toHaveTextContent(/dentista dar o ok/i);
     expect(paymentBox).toHaveTextContent(/enviar a produção para o laboratório/i);
-    expect(paymentBox).toHaveTextContent(/r\$ 1.000,00/i);
+    expect(paymentBox).toHaveTextContent(/r\$ 1.370,00/i);
     expect(paymentBox).toHaveTextContent(/cartão/i);
     expect(paymentBox).toHaveTextContent(/nexor10/i);
     expect(paymentBox).toHaveTextContent(/r\$ 100,00/i);

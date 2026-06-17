@@ -17,7 +17,6 @@ import * as S from './styles';
 
 type RouteRole = 'parceiro' | 'dentista' | 'laboratório';
 type ApiRole = 'partner' | 'dentist' | 'lab';
-type PartnerDocumentType = 'cpf' | 'cnpj';
 type PartnerType = 'coach_personal' | 'academy';
 type Values = Record<string, string>;
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
@@ -110,11 +109,6 @@ const BRAZILIAN_STATE_OPTIONS = BRAZILIAN_STATES.map((state) => ({
   value: state,
   label: state,
 }));
-
-const PARTNER_DOCUMENT_OPTIONS = [
-  { value: 'cnpj', label: 'CNPJ' },
-  { value: 'cpf', label: 'CPF' },
-];
 
 const PARTNER_TYPE_OPTIONS = [
   { value: 'coach_personal', label: 'Coach/Personal' },
@@ -261,21 +255,17 @@ const isValidCpf = (value: string) => {
   const digits = onlyDigits(value);
   if (digits.length !== 11 || /^(\d)\1+$/.test(digits)) return false;
 
-  const calculateDigit = (base: string, factor: number) => {
-    const sum = base
-      .split('')
-      .reduce((total, digit, index) => total + Number(digit) * (factor - index), 0);
+  const numbers = digits.split('').map(Number);
+  const calculateDigit = (length: number) => {
+    const sum = numbers
+      .slice(0, length)
+      .reduce((total, digit, index) => total + digit * (length + 1 - index), 0);
     const remainder = (sum * 10) % 11;
     return remainder === 10 ? 0 : remainder;
   };
 
-  const firstDigit = calculateDigit(digits.slice(0, 9), 10);
-  const secondDigit = calculateDigit(`${digits.slice(0, 9)}${firstDigit}`, 11);
-  return digits === `${digits.slice(0, 9)}${firstDigit}${secondDigit}`;
+  return calculateDigit(9) === numbers[9] && calculateDigit(10) === numbers[10];
 };
-
-const isValidPartnerDocument = (type: PartnerDocumentType, value: string) =>
-  type === 'cpf' ? isValidCpf(value) : isValidCnpj(value);
 
 function formatClinicAddress(data: {
   street?: string;
@@ -318,7 +308,6 @@ export function CadastroPerfilBiteplaner() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
   const [cepLookupErrors, setCepLookupErrors] = useState<Record<string, string>>({});
-  const partnerDocumentType: PartnerDocumentType = values.documentType === 'cpf' ? 'cpf' : 'cnpj';
   const partnerType = values.partnerType as PartnerType | undefined;
   const partnerServiceLocations = useMemo(
     () => (values.serviceLocations ?? '').split('|').map((item) => item.trim()).filter(Boolean),
@@ -409,7 +398,7 @@ export function CadastroPerfilBiteplaner() {
 
       return Boolean(
         values.name?.trim() &&
-        isValidPartnerDocument(partnerDocumentType, values.documentNumber ?? '') &&
+        isValidCnpj(values.documentNumber ?? '') &&
         partnerType &&
         (partnerType === 'academy' ? hasAcademyLocation : partnerServiceLocations.length > 0)
       );
@@ -430,6 +419,8 @@ export function CadastroPerfilBiteplaner() {
 
       return Boolean(
         values.fullName?.trim() &&
+        isValidCnpj(values.cnpj ?? '') &&
+        isValidCpf(values.cpf ?? '') &&
         isValidCro(values.croNumber ?? '') &&
         isValidProfessionalSummary(values.professionalSummary) &&
         clinics.length > 0 &&
@@ -452,6 +443,7 @@ export function CadastroPerfilBiteplaner() {
       return Boolean(
         values.labName?.trim() &&
         isValidCnpj(values.cnpj ?? '') &&
+        isValidCpf(values.cpf ?? '') &&
         isValidProfessionalSummary(values.professionalSummary) &&
         clinics.length > 0 &&
         hasValidLocations
@@ -459,7 +451,7 @@ export function CadastroPerfilBiteplaner() {
     }
 
     return false;
-  }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerDocumentType, partnerServiceLocations.length, partnerType, values]);
+  }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerServiceLocations.length, partnerType, values]);
 
   if (!config) {
     return <Navigate to="/painel/home" replace />;
@@ -510,7 +502,7 @@ export function CadastroPerfilBiteplaner() {
 
       return {
         name: values.name.trim(),
-        documentType: partnerDocumentType,
+        documentType: 'cnpj',
         documentNumber: values.documentNumber.trim(),
         partnerType,
         ...(partnerType === 'academy' && academyLocation
@@ -563,6 +555,8 @@ export function CadastroPerfilBiteplaner() {
 
       return {
         fullName: values.fullName.trim(),
+        cnpj: values.cnpj.trim(),
+        cpf: values.cpf.trim(),
         croNumber: values.croNumber.trim(),
         professionalSummary: values.professionalSummary.trim(),
         city: primaryLocation.city,
@@ -601,6 +595,7 @@ export function CadastroPerfilBiteplaner() {
     return {
       labName: values.labName.trim(),
       cnpj: values.cnpj.trim(),
+      cpf: values.cpf.trim(),
       professionalSummary: values.professionalSummary.trim(),
       location: locations[0],
       locations,
@@ -723,14 +718,14 @@ export function CadastroPerfilBiteplaner() {
             ) : null}
             {config.apiRole === 'lab' ? (
               <S.Banner>
-                A Nexor ira verificar o cadastro do laboratório após o envio da solicitação para prosseguir
+                A Nexor irá verificar o cadastro do laboratório após o envio da solicitação para prosseguir
                 com pagamento, contratos, curso e licenciamento.
               </S.Banner>
             ) : null}
             {config.apiRole === 'partner' ? (
               <S.Banner>
-                A Nexor ira verificar o cadastro do parceiro apos o envio da solicitacao. Depois da aprovacao,
-                o acesso sera liberado para gerar links individuais de indicacao e acompanhar conversoes.
+                A Nexor irá verificar o cadastro do parceiro após o envio da solicitação. Depois da aprovação,
+                o acesso será liberado para gerar links individuais de indicação e acompanhar conversões.
               </S.Banner>
             ) : null}
             <S.FieldsGrid>
@@ -742,35 +737,19 @@ export function CadastroPerfilBiteplaner() {
                     required
                     onChange={updateField('name')}
                   />
-                  <Select
-                    label="Tipo de documento"
-                    value={partnerDocumentType}
-                    options={PARTNER_DOCUMENT_OPTIONS}
-                    onChange={(value) => {
-                      const nextType: PartnerDocumentType = value === 'cpf' ? 'cpf' : 'cnpj';
-                      setValues((current) => ({
-                        ...current,
-                        documentType: nextType,
-                        documentNumber: '',
-                      }));
-                    }}
-                  />
                   <Field
-                    label={`${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'}`}
+                    label="CNPJ"
                     value={values.documentNumber ?? ''}
                     required
                     inputMode="numeric"
-                    maxLength={partnerDocumentType === 'cpf' ? 14 : 18}
+                    maxLength={18}
                     hint={
                       values.documentNumber &&
-                        !isValidPartnerDocument(partnerDocumentType, values.documentNumber)
-                        ? `Informe um ${partnerDocumentType === 'cpf' ? 'CPF' : 'CNPJ'} valido.`
+                        !isValidCnpj(values.documentNumber)
+                        ? 'Informe um CNPJ válido.'
                         : undefined
                     }
-                    onChange={updateMaskedField(
-                      'documentNumber',
-                      partnerDocumentType === 'cpf' ? formatCpf : formatCnpj
-                    )}
+                    onChange={updateMaskedField('documentNumber', formatCnpj)}
                   />
                   <S.FullField>
                     <RadioQuestionGroup
@@ -892,6 +871,34 @@ export function CadastroPerfilBiteplaner() {
                     }
                     onChange={updateMaskedField('croNumber', formatCro)}
                   />
+                  <Field
+                    label="CNPJ"
+                    value={values.cnpj ?? ''}
+                    required
+                    inputMode="numeric"
+                    maxLength={18}
+                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : undefined}
+                    onChange={updateMaskedField('cnpj', formatCnpj)}
+                  />
+                  <Field
+                    label="CPF"
+                    value={values.cpf ?? ''}
+                    required
+                    inputMode="numeric"
+                    maxLength={14}
+                    hint={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : undefined}
+                    onChange={updateMaskedField('cpf', formatCpf)}
+                  />
+                  <S.DocumentPurposeCard>
+                    <Info size={22} strokeWidth={2.3} aria-hidden="true" />
+                    <div>
+                      <S.DocumentPurposeTitle>Por que pedimos CNPJ e CPF?</S.DocumentPurposeTitle>
+                      <S.DocumentPurposeList>
+                        <li><strong>CNPJ:</strong> Base financeira.</li>
+                        <li><strong>CPF:</strong> Informação para os contratos de licenciamento futuros que serão emitidos para pessoa física.</li>
+                      </S.DocumentPurposeList>
+                    </div>
+                  </S.DocumentPurposeCard>
                   <S.FullField>
                     <Field
                       as="textarea"
@@ -1034,9 +1041,28 @@ export function CadastroPerfilBiteplaner() {
                     required
                     inputMode="numeric"
                     maxLength={18}
-                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ valido.' : undefined}
+                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : undefined}
                     onChange={updateMaskedField('cnpj', formatCnpj)}
                   />
+                  <Field
+                    label="CPF"
+                    value={values.cpf ?? ''}
+                    required
+                    inputMode="numeric"
+                    maxLength={14}
+                    hint={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : undefined}
+                    onChange={updateMaskedField('cpf', formatCpf)}
+                  />
+                  <S.DocumentPurposeCard>
+                    <Info size={22} strokeWidth={2.3} aria-hidden="true" />
+                    <div>
+                      <S.DocumentPurposeTitle>Por que pedimos CNPJ e CPF?</S.DocumentPurposeTitle>
+                      <S.DocumentPurposeList>
+                        <li><strong>CNPJ:</strong> Base financeira.</li>
+                        <li><strong>CPF:</strong> Informação para os contratos de licenciamento futuros que serão emitidos para pessoa física.</li>
+                      </S.DocumentPurposeList>
+                    </div>
+                  </S.DocumentPurposeCard>
                   <S.FullField>
                     <Field
                       as="textarea"

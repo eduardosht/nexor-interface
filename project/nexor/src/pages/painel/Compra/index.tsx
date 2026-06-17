@@ -286,12 +286,16 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
               <S.Divider />
               <S.SummaryRow>
                 <span>Biteplaner</span>
-                <strong>R$ 1.000,00</strong>
+                <strong>R$ 1.370,00</strong>
               </S.SummaryRow>
+              <S.PriceNotice>
+                Este valor representa especificamente a compra do produto Biteplaner. Valores de consulta com o
+                dentista devem ser acertados diretamente com o profissional no momento da consulta.
+              </S.PriceNotice>
               <S.Divider />
               <S.SummaryRow>
                 <span>Total</span>
-                <S.Total>R$ 1.000,00</S.Total>
+                <S.Total>R$ 1.370,00</S.Total>
               </S.SummaryRow>
 
               {paymentCompleted ? (

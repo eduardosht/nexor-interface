@@ -268,7 +268,7 @@ export function PainelHome() {
               </S.ProductStat>
               <S.ProductStat>
                 <S.BpRowLabel>Valor</S.BpRowLabel>
-                <S.BpPrice>R$ 1.000,00</S.BpPrice>
+                <S.BpPrice>R$ 1.370,00</S.BpPrice>
               </S.ProductStat>
             </S.ProductStats>
             <S.HeroButton

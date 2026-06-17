@@ -38,7 +38,7 @@ import {
 
 
 const STATUS_OPTIONS = [
-  { value: 'registration_started', label: 'Pre-requisito pendente' },
+  { value: 'registration_started', label: 'Pré-requisito pendente' },
   { value: 'awaiting_scheduling', label: 'Aguardando consulta inicial' },
   { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
   { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },
@@ -199,7 +199,7 @@ export function AdminOrders() {
         return (
           <S.ReadinessCell>
             <StatusIndicator color="#D18A00" label="Aguardando envio ao laboratório" />
-            <S.ReadinessText>{readiness?.summary ?? 'Pendencias operacionais antes do laboratório.'}</S.ReadinessText>
+            <S.ReadinessText>{readiness?.summary ?? 'Pendências operacionais antes do laboratório.'}</S.ReadinessText>
           </S.ReadinessCell>
         );
       }
@@ -235,7 +235,7 @@ export function AdminOrders() {
       <PageHeader>
         <PageTitle>Ordens compartilhadas do Biteplaner</PageTitle>
         <PageSubtitle>
-          O admin visualiza o mesmo fluxo compartilhado da demo, com filtros por status e etapa para validar propagacao entre perfis e enxergar quando uma ordem ainda depende do preenchimento clínico e documental do dentista antes do laboratório.
+          O admin visualiza o mesmo fluxo compartilhado da demo, com filtros por status e etapa para validar propagação entre perfis e enxergar quando uma ordem ainda depende do preenchimento clínico e documental do dentista antes do laboratório.
         </PageSubtitle>
       </PageHeader>
 

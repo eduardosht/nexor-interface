@@ -130,6 +130,28 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.getByRole('heading', { name: /solicitar cadastro de laborat.rio/i })).toBeInTheDocument();
   });
 
+  it('collects CPF with a document purpose card for dentist and laboratory onboarding', () => {
+    let view = renderPage('/painel/biteplaner/cadastro/dentista');
+
+    expect(screen.getByLabelText(/^cpf/i)).toBeInTheDocument();
+    expect(screen.getByText(/por que pedimos cnpj e cpf/i)).toBeInTheDocument();
+    expect(screen.getByText(/base financeira/i)).toBeInTheDocument();
+    expect(screen.getByText(/contratos de licenciamento futuros/i)).toBeInTheDocument();
+
+    view.unmount();
+    view = renderPage('/painel/biteplaner/cadastro/laboratório');
+
+    expect(screen.getByLabelText(/^cpf/i)).toBeInTheDocument();
+    expect(screen.getByText(/por que pedimos cnpj e cpf/i)).toBeInTheDocument();
+    expect(screen.getByText(/base financeira/i)).toBeInTheDocument();
+    expect(screen.getByText(/contratos de licenciamento futuros/i)).toBeInTheDocument();
+
+    view.unmount();
+    renderPage('/painel/biteplaner/cadastro/parceiro');
+
+    expect(screen.queryByLabelText(/^cpf/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/por que pedimos cnpj e cpf/i)).not.toBeInTheDocument();
+  });
   it('keeps submit disabled until required dentist and clinic fields and required terms are filled', async () => {
     mockCepLookup();
     renderPage();
@@ -148,6 +170,12 @@ describe('CadastroPerfilBiteplaner', () => {
     });
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'CRO-SP 12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
     });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Dentista com foco em performance esportiva.' },
@@ -250,6 +278,12 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'sp12345' },
     });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
+    });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Dentista com foco em performance esportiva.' },
     });
@@ -292,6 +326,12 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'CRO-SP 12345' },
     });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
+    });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Teste' },
     });
@@ -326,6 +366,12 @@ describe('CadastroPerfilBiteplaner', () => {
     });
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'CRO-SP 12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
     });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Dentista com foco em performance esportiva.' },
@@ -362,6 +408,12 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'CRO-SP 12345' },
     });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
+    });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Dentista com foco em performance esportiva.' },
     });
@@ -389,6 +441,8 @@ describe('CadastroPerfilBiteplaner', () => {
         expect.objectContaining({
           fullName: 'Dra Maria',
           croNumber: 'CRO-SP 12345',
+          cnpj: '19.131.243/0001-97',
+          cpf: '529.982.247-25',
           city: 'São Paulo',
           state: 'SP',
           practiceLocation: expect.objectContaining({
@@ -429,6 +483,12 @@ describe('CadastroPerfilBiteplaner', () => {
     });
     fireEvent.change(screen.getByLabelText(/cro/i), {
       target: { value: 'CRO-SP 12345' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
     });
     fireEvent.change(screen.getByLabelText(/resumo profissional/i), {
       target: { value: 'Dentista com foco em performance esportiva.' },
@@ -511,7 +571,7 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/nome da empresa/i), {
       target: { value: 'Performance Partners' },
     });
-    expect(screen.getByRole('button', { name: /tipo de documento/i })).toHaveTextContent('CNPJ');
+    expect(screen.queryByRole('button', { name: /tipo de documento/i })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
@@ -548,6 +608,9 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/cnpj/i), {
       target: { value: '19131243000197' },
     });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
+    });
     fireEvent.change(screen.getByLabelText(/resumo operacional/i), {
       target: { value: 'Laboratório especializado em dispositivos esportivos personalizados.' },
     });
@@ -581,6 +644,7 @@ describe('CadastroPerfilBiteplaner', () => {
         expect.objectContaining({
           labName: 'Lab Performance',
           cnpj: '19.131.243/0001-97',
+          cpf: '529.982.247-25',
           professionalSummary: 'Laboratório especializado em dispositivos esportivos personalizados.',
           locations: [expect.objectContaining({ name: 'Unidade Central', cep: '04567-000' })],
         }),
@@ -589,19 +653,19 @@ describe('CadastroPerfilBiteplaner', () => {
     });
   });
 
-  it('submits a partner request with CPF when the partner is an individual', async () => {
+  it('keeps partner registration restricted to CNPJ', async () => {
     mockApiPost.mockResolvedValue({
       productRole: { productKey: 'biteplaner', role: 'partner', status: 'pending' },
     });
     renderPage('/painel/biteplaner/cadastro/parceiro');
 
-    fireEvent.click(screen.getByRole('button', { name: /tipo de documento/i }));
-    fireEvent.click(screen.getByRole('option', { name: 'CPF' }));
+    expect(screen.queryByRole('button', { name: /tipo de documento/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^cpf/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/nome da empresa ou parceiro/i), {
       target: { value: 'Coach Performance' },
     });
-    fireEvent.change(screen.getByLabelText(/^cpf/i), {
-      target: { value: '52998224725' },
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), {
+      target: { value: '19131243000197' },
     });
     fireEvent.click(screen.getByLabelText(/coach\/personal/i));
     fireEvent.change(screen.getByPlaceholderText(/digite ou selecione um local/i), {
@@ -617,8 +681,8 @@ describe('CadastroPerfilBiteplaner', () => {
         '/v1/account/products/biteplaner/roles/partner',
         expect.objectContaining({
           name: 'Coach Performance',
-          documentType: 'cpf',
-          documentNumber: '529.982.247-25',
+          documentType: 'cnpj',
+          documentNumber: '19.131.243/0001-97',
           partnerType: 'coach_personal',
           serviceLocations: ['Parque de treino'],
         }),
@@ -627,7 +691,7 @@ describe('CadastroPerfilBiteplaner', () => {
     });
   });
 
-  it('keeps partner submit disabled while CPF or CNPJ is invalid', () => {
+  it('keeps partner submit disabled while CNPJ is invalid', () => {
     renderPage('/painel/biteplaner/cadastro/parceiro');
 
     const submit = screen.getByRole('button', { name: /enviar solicitação/i });
@@ -646,15 +710,6 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
 
     expect(screen.getByLabelText(/^cnpj/i)).toHaveValue('11.111.111/1111-11');
-    expect(submit).toBeDisabled();
-
-    fireEvent.click(screen.getByRole('button', { name: /tipo de documento/i }));
-    fireEvent.click(screen.getByRole('option', { name: 'CPF' }));
-    fireEvent.change(screen.getByLabelText(/^cpf/i), {
-      target: { value: '11111111111' },
-    });
-
-    expect(screen.getByLabelText(/^cpf/i)).toHaveValue('111.111.111-11');
     expect(submit).toBeDisabled();
   });
 
@@ -720,13 +775,16 @@ describe('CadastroPerfilBiteplaner', () => {
     const submit = screen.getByRole('button', { name: /enviar solicita/i });
     expect(submit).toBeDisabled();
     expect(screen.getByText(/dados do local/i)).toBeInTheDocument();
-    expect(screen.getByText(/nexor ira verificar o cadastro do laboratório/i)).toBeInTheDocument();
+    expect(screen.getByText(/nexor irá verificar o cadastro do laboratório/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/nome do laboratório/i), {
       target: { value: 'Lab Performance' },
     });
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '11111111111111' },
+    });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), {
+      target: { value: '52998224725' },
     });
     fireEvent.change(screen.getByLabelText(/resumo operacional/i), {
       target: { value: 'Laboratório especializado em dispositivos esportivos personalizados.' },
@@ -770,6 +828,7 @@ describe('CadastroPerfilBiteplaner', () => {
         expect.objectContaining({
           labName: 'Lab Performance',
           cnpj: '19.131.243/0001-97',
+          cpf: '529.982.247-25',
           professionalSummary: 'Laboratório especializado em dispositivos esportivos personalizados.',
           locations: [
             expect.objectContaining({

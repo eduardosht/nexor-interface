@@ -23,6 +23,7 @@ import {
   fetchOrders,
   fetchAppointments,
   fetchWorkflowForms,
+  cancelPracticeLocationSelection,
   confirmAppointmentByUser,
   getAthletePrimaryOrder,
   getAuthToken,
@@ -377,7 +378,7 @@ function getOrderPaymentDetails(order: DemoOrderSummary) {
     : isRecord(record.paymentDetails)
       ? record.paymentDetails
       : {};
-  const amountCents = getNumberPaymentField(payment, ['amountCents', 'amount_cents']) ?? 100000;
+  const amountCents = getNumberPaymentField(payment, ['amountCents', 'amount_cents']) ?? 137000;
   const discountCents = getNumberPaymentField(payment, ['discountCents', 'discount_cents']) ?? 0;
   const method = getStringPaymentField(payment, ['method', 'paymentMethod', 'payment_method']);
   const couponCode = getStringPaymentField(payment, ['couponCode', 'coupon_code', 'coupon']);
@@ -566,6 +567,9 @@ export function Jornada() {
   const [appointmentAction, setAppointmentAction] = useState('');
   const [appointmentNotice, setAppointmentNotice] = useState('');
   const [appointmentError, setAppointmentError] = useState('');
+  const [clinicAction, setClinicAction] = useState('');
+  const [clinicNotice, setClinicNotice] = useState('');
+  const [clinicError, setClinicError] = useState('');
   const ordersQuery = useQuery({
     queryKey: biteplanerQueryKeys.orders('user', queryOwnerId),
     queryFn: () => fetchOrders('user', token),
@@ -597,6 +601,7 @@ export function Jornada() {
   const workflowFormsError = workflowFormsQuery.isError ? 'Não foi possível carregar os formulários desta ordem.' : '';
   const visibleAppointmentError = appointmentError ||
     (appointmentsQuery.isError ? 'Não foi possível carregar a consulta agendada desta ordem.' : '');
+  const visibleClinicError = clinicError;
   const selectedFormsOrder = useMemo(
     () => getEffectiveAthleteOrder(primaryOrder, workflowForms),
     [primaryOrder, workflowForms]
@@ -637,6 +642,36 @@ export function Jornada() {
     initialAppointment &&
     !initialAppointment.user_confirmed_at
   );
+  const selectedPracticeLocation = selectedFormsOrder?.practice_location ?? null;
+  const canCancelPracticeLocationSelection = selectedFormsOrder?.status === 'awaiting_dentist_acceptance';
+
+  async function handleCancelPracticeLocationSelection() {
+    if (!selectedFormsOrder || !canCancelPracticeLocationSelection) {
+      return;
+    }
+
+    const actionKey = `${selectedFormsOrder.id}:cancel-practice-location`;
+    setClinicAction(actionKey);
+    setClinicError('');
+    setClinicNotice('');
+
+    try {
+      const response = await cancelPracticeLocationSelection(selectedFormsOrder.id, token);
+      queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
+        biteplanerQueryKeys.orders('user', queryOwnerId),
+        (current) => ({
+          orders: (current?.orders ?? orders).map((order) =>
+            order.id === selectedFormsOrder.id ? response.order : order
+          ),
+        })
+      );
+      setClinicNotice('Clínica cancelada. A ordem voltou para seleção de clínica.');
+    } catch {
+      setClinicError('Não foi possível cancelar a clínica selecionada agora.');
+    } finally {
+      setClinicAction('');
+    }
+  }
 
   async function handleUserAppointmentConfirmation() {
     if (!selectedFormsOrder || !initialAppointment) {
@@ -784,8 +819,36 @@ export function Jornada() {
 
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
           {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
+          {visibleClinicError ? <S.Banner role="alert">{visibleClinicError}</S.Banner> : null}
           {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
+          {clinicNotice ? <S.Banner role="status">{clinicNotice}</S.Banner> : null}
           <PendingFeedbackPrompt mode="user" orders={[selectedFormsOrder]} forms={workflowForms} />
+          {!orderProblem && selectedPracticeLocation ? (
+            <S.SelectedClinicCard data-testid="journey-selected-clinic">
+              <S.SelectedClinicIcon aria-hidden>
+                <UserRound size={22} />
+              </S.SelectedClinicIcon>
+              <S.SelectedClinicCopy>
+                <S.SelectedClinicKicker>Clínica selecionada</S.SelectedClinicKicker>
+                <S.SelectedClinicTitle>{selectedPracticeLocation.name}</S.SelectedClinicTitle>
+                <S.Description>
+                  Este pedido está vinculado a esta clínica para a consulta inicial. Enquanto o dentista ainda não
+                  aceitou a ordem, você pode cancelar esta seleção e escolher outra clínica.
+                </S.Description>
+              </S.SelectedClinicCopy>
+              {canCancelPracticeLocationSelection ? (
+                <S.SecondaryActionButton
+                  type="button"
+                  disabled={clinicAction === `${selectedFormsOrder.id}:cancel-practice-location`}
+                  onClick={() => {
+                    void handleCancelPracticeLocationSelection();
+                  }}
+                >
+                  {clinicAction ? 'Cancelando...' : 'Cancelar clínica'}
+                </S.SecondaryActionButton>
+              ) : null}
+            </S.SelectedClinicCard>
+          ) : null}
           {orderProblem ? (
             <S.Banner role="alert" data-testid="journey-order-problem">
               <strong>{orderProblem.title}</strong>

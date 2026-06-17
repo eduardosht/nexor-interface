@@ -233,6 +233,19 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
           ],
         },
         {
+          key: 'activeDentalTreatmentStatus',
+          label: 'Está em tratamento odontológico?',
+          required: true,
+          type: 'select',
+          displayAs: 'radio',
+          ownerRole: 'user',
+          visibleTo: userVisible,
+          editableWhen: 'customer_intake',
+          helpText:
+            'Tratamentos odontológicos em andamento precisam ser finalizados antes da continuidade da ordem Biteplaner.',
+          options: yesNoOptions,
+        },
+        {
           key: 'ageYears',
           label: 'Idade (anos)',
           required: false,

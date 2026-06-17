@@ -80,6 +80,25 @@ const comparisonLogoRipple = keyframes`
 export const Page = styled.main`
   background: #ffffff;
   color: #172033;
+
+  ${MarketingSectionTitle} {
+    font-size: clamp(46px, 4.45vw, 64px);
+    line-height: 1.06;
+  }
+
+  @media (max-width: 900px) {
+    ${MarketingSectionTitle} {
+      font-size: clamp(40px, 7.2vw, 56px);
+      line-height: 1.08;
+    }
+  }
+
+  @media (max-width: 560px) {
+    ${MarketingSectionTitle} {
+      font-size: clamp(28px, 7.4vw, 34px);
+      line-height: 1.12;
+    }
+  }
 `;
 
 export const HeroSection = styled.section`
@@ -721,14 +740,33 @@ export const ProcessAssurance = styled.div`
   }
 
   @media (max-width: 560px) {
-    grid-template-columns: 1fr;
-    gap: 18px;
-    padding: 26px 22px;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 30px;
+    padding: 18px 16px;
+
+    strong {
+      margin-bottom: 4px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    p {
+      font-size: 13px;
+      line-height: 1.42;
+    }
   }
 `;
 
 export const ProcessAssuranceIcon = styled.div`
   color: rgba(255, 255, 255, 0.7);
+
+  @media (max-width: 560px) {
+    svg {
+      width: 34px;
+      height: 34px;
+    }
+  }
 `;
 
 export const WarningSection = styled.section`
@@ -896,13 +934,7 @@ export const ComparisonProductVisual = styled.div`
   }
 
   @media (max-width: 900px) {
-    min-height: 170px;
-    justify-items: start;
-
-    picture,
-    img {
-      width: min(76vw, 360px);
-    }
+    display: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1467,7 +1499,11 @@ export const EducationItem = styled(motion.article)`
 
   @media (max-width: 900px) {
     min-height: auto;
-    padding: 26px 0 30px;
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    align-content: start;
+    padding: 18px 0;
     border-right: 0;
     border-bottom: 1px solid #d9e2dd;
 
@@ -1478,6 +1514,12 @@ export const EducationItem = styled(motion.article)`
     &:last-child {
       border-bottom: 0;
     }
+  }
+
+  @media (max-width: 520px) {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px 0;
   }
 `;
 
@@ -1499,7 +1541,24 @@ export const EducationIcon = styled.div`
   }
 
   @media (max-width: 900px) {
-    margin-bottom: 24px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    width: 40px;
+    height: 40px;
+
+    svg {
+      width: 21px;
+      height: 21px;
+    }
   }
 `;
 
@@ -1522,6 +1581,19 @@ export const EducationTitle = styled.h3`
     margin: 0 0 26px;
     background: ${bp.accentStrong};
   }
+
+  @media (max-width: 900px) {
+    font-size: 16px;
+    line-height: 1.22;
+
+    &::before {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    font-size: 15px;
+  }
 `;
 
 export const EducationBody = styled.p`
@@ -1532,6 +1604,15 @@ export const EducationBody = styled.p`
 
   ${EducationTitle} + & {
     margin-top: 18px;
+  }
+
+  @media (max-width: 900px) {
+    font-size: 13px;
+    line-height: 1.52;
+
+    ${EducationTitle} + & {
+      margin-top: 6px;
+    }
   }
 `;
 
@@ -1552,12 +1633,15 @@ export const TrustRail = styled.div`
 
   @media (max-width: 900px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding: 20px;
-    gap: 10px 0;
+    min-height: auto;
+    margin-top: 34px;
+    padding: 14px 16px;
+    gap: 4px 0;
   }
 
   @media (max-width: 520px) {
     grid-template-columns: 1fr;
+    padding: 10px 12px;
   }
 `;
 
@@ -1588,10 +1672,23 @@ export const TrustPoint = styled.div`
   }
 
   @media (max-width: 900px) {
-    padding: 14px 18px;
+    grid-template-columns: 36px 1fr;
+    gap: 10px;
+    min-height: 0;
+    padding: 10px 8px;
 
     &:nth-child(2n) {
       border-right: 0;
+    }
+
+    span {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    svg {
+      width: 28px;
+      height: 28px;
     }
   }
 
@@ -1601,6 +1698,11 @@ export const TrustPoint = styled.div`
 
     &:last-child {
       border-bottom: 0;
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
     }
   }
 `;
@@ -1776,6 +1878,7 @@ export const FinalCtaOuter = styled.section`
     background:
       linear-gradient(90deg, rgba(2, 12, 16, 0.3) 0%, rgba(3, 29, 26, 0.78) 42%, rgba(0, 0, 0, 0.92) 100%),
       url(${finalCtaBackground}) 24% center / cover no-repeat;
+    align-items: start;
   }
 `;
 
@@ -1789,7 +1892,12 @@ export const FinalCtaInner = styled.div`
   gap: 34px;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+    padding-top: 32px;
+    padding-bottom: 32px;
   }
 `;
 
@@ -1803,7 +1911,8 @@ export const FinalCtaContent = styled.div`
   padding: 34px 28px;
 
   @media (max-width: 900px) {
-    padding: 32px 24px 10px;
+    padding: 0;
+    max-width: 620px;
   }
 `;
 
@@ -1816,7 +1925,8 @@ export const FinalCtaAction = styled.div`
 
   @media (max-width: 900px) {
     justify-content: flex-start;
-    padding: 12px 24px 34px;
+    width: 100%;
+    padding: 0;
   }
 `;
 
@@ -1837,4 +1947,18 @@ export const FinalButton = styled(MotionLink)`
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
+
+  @media (max-width: 900px) {
+    min-height: 52px;
+    min-width: 0;
+    width: min(100%, 320px);
+    padding: 0 22px;
+  }
+
+  @media (max-width: 520px) {
+    min-height: 48px;
+    width: 100%;
+    gap: 12px;
+    padding: 0 18px;
+  }
 `;

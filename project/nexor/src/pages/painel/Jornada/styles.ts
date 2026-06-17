@@ -151,6 +151,59 @@ export const StepDisclaimerText = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const SelectedClinicCard = styled.section`
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(21, 128, 61, 0.22);
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.92), ${({ theme }) => theme.colors.bgElevated});
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+
+  @media (max-width: 720px) {
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+  }
+`;
+
+export const SelectedClinicIcon = styled.span`
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: rgba(21, 128, 61, 0.12);
+  color: ${({ theme }) => theme.colors.green};
+
+  @media (max-width: 720px) {
+    width: 44px;
+    height: 44px;
+  }
+`;
+
+export const SelectedClinicCopy = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+`;
+
+export const SelectedClinicKicker = styled.span`
+  color: ${({ theme }) => theme.colors.green};
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+export const SelectedClinicTitle = styled.strong`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 850;
+`;
+
 export const PaymentConfirmationCard = styled.details`
   display: grid;
   gap: 0;

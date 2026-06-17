@@ -299,6 +299,45 @@ export const FullField = styled.div`
   grid-column: 1 / -1;
 `;
 
+export const DocumentPurposeCard = styled.div`
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 156, 74, 0.2);
+  border-radius: 8px;
+  background: #f6fdf8;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  svg {
+    color: #009c4a;
+  }
+`;
+
+export const DocumentPurposeTitle = styled.p`
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+`;
+
+export const DocumentPurposeList = styled.ul`
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  line-height: 1.5;
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-weight: 800;
+  }
+`;
+
 export const SectionIntro = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};

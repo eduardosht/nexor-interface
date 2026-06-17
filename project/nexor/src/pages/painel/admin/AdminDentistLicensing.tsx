@@ -479,6 +479,15 @@ export function AdminDentistLicensing() {
                   <FileText size={24} />
                 </AdminModalDetailIcon>
                 <AdminModalDetailContent>
+                  <AdminModalDetailLabel>CNPJ</AdminModalDetailLabel>
+                  <AdminModalDetailValue>{selectedRequest.cnpj || 'Não informado'}</AdminModalDetailValue>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
+                  <FileText size={24} />
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
                   <AdminModalDetailLabel>Resumo profissional</AdminModalDetailLabel>
                   <AdminModalDetailValue>{selectedRequest.professionalSummary || 'Não informado'}</AdminModalDetailValue>
                 </AdminModalDetailContent>

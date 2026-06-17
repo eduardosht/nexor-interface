@@ -172,9 +172,9 @@ type DemoOrder = {
   created_at: string;
   customer_profile_id: string;
   user_profile_id: string;
-  practice_location_id: string;
+  practice_location_id: string | null;
   customer: DemoCustomerSummary;
-  practice_location: DemoPracticeLocation;
+  practice_location: DemoPracticeLocation | null;
   partnerId: string | null;
   dentistId: string | null;
   labId: string | null;
@@ -366,6 +366,7 @@ type OrderStatusAction =
   | { type: 'confirm-payment' }
   | { type: 'select-practice-location'; practiceLocationId: string }
   | { type: 'schedule-initial-consultation'; practiceLocationId: string }
+  | { type: 'cancel-practice-location-selection' }
   | { type: 'accept-initial-consultation' }
   | { type: 'product-received' }
   | { type: 'adaptation-completed' }
@@ -519,6 +520,24 @@ function summarizeCustomerTrainingReport(payload: Record<string, unknown>, submi
     deviceUsage: typeof payload.deviceUsage === 'string' ? payload.deviceUsage : undefined,
     fieldCount: Object.keys(payload).length
   };
+}
+
+function summarizeCustomerPreConsultationIntake(
+  payload: Record<string, unknown>,
+  submittedAt: string,
+  responseCount: number
+) {
+  const summary = createWorkflowSummary(payload, submittedAt, responseCount);
+
+  if (payload.orthodonticTreatmentStatus === 'active') {
+    return { ...summary, blocked: true, blocker: 'active_orthodontic_treatment' };
+  }
+
+  if (payload.activeDentalTreatmentStatus === 'yes' || payload.activeDentalTreatmentStatus === true) {
+    return { ...summary, blocked: true, blocker: 'active_dental_treatment' };
+  }
+
+  return { ...summary, blocked: false, fieldCount: Object.keys(payload).length };
 }
 
 const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
@@ -3528,6 +3547,7 @@ function mapDentistLicenseRequest(role: ProductRolePayload, user: DemoUser) {
     workflowStatus: workflow?.status ?? (role.status === 'rejected' ? 'admin_rejected' : 'admin_review_pending'),
     dentistName: typeof metadata.fullName === 'string' ? metadata.fullName : user.fullName,
     croNumber: typeof metadata.croNumber === 'string' ? metadata.croNumber : '',
+    cnpj: typeof metadata.cnpj === 'string' ? metadata.cnpj : '',
     professionalSummary: typeof metadata.professionalSummary === 'string' ? metadata.professionalSummary : '',
     submittedAt: role.createdAt,
     practiceLocations,
@@ -4330,7 +4350,11 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
           customer: sanitizedCustomerPayload,
           ...(Object.keys(existingDentistPayload).length > 0 ? { dentist: existingDentistPayload } : {})
         };
-        const summary = createWorkflowSummary(sanitizedCustomerPayload, nextSubmittedAt, nextRevision);
+        const summary = summarizeCustomerPreConsultationIntake(
+          sanitizedCustomerPayload,
+          nextSubmittedAt,
+          nextRevision
+        );
 
         workflowForm.status = 'submitted';
         workflowForm.roleState = { customer: 'submitted', dentist: 'locked' };
@@ -4355,7 +4379,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         });
 
         const order = getOrderOrThrow(orderId);
-        if (order.status === 'registration_started') {
+        if (order.status === 'registration_started' && !summary.blocked) {
           order.flags.preRequisiteComplete = true;
           order.nextActions = ['schedule-initial-consultation'];
           updateOrderStatus(
@@ -4588,7 +4612,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         409,
         'initial_consultation_not_schedulable',
-        'Está ordem não está aguardando agendamento de consulta inicial.'
+        'Esta ordem não está aguardando agendamento de consulta inicial.'
       );
     }
 
@@ -4626,6 +4650,34 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
+  if (action.type === 'cancel-practice-location-selection') {
+    const order = getOrderOrThrow(orderId);
+    const selectedPracticeLocationName = order.practice_location?.name ?? 'clínica selecionada';
+
+    if (order.status !== 'awaiting_dentist_acceptance') {
+      throw new DemoStateError(
+        409,
+        'practice_location_selection_not_cancellable',
+        'A seleção de clínica só pode ser cancelada enquanto aguarda aceite do dentista.'
+      );
+    }
+
+    order.practice_location_id = null;
+    order.practice_location = null;
+    order.dentistId = null;
+    order.nextActions = ['schedule-initial-consultation'];
+
+    updateOrderStatus(
+      orderId,
+      'awaiting_scheduling',
+      'Aguardando consulta inicial',
+      'awaiting_initial_consultation',
+      `Cliente cancelou o pedido com ${selectedPracticeLocationName}; ordem liberada para selecionar outra clínica.`
+    );
+
+    return sanitizeOrder(order, resolveActiveDemoPersona(context));
+  }
+
   if (action.type === 'accept-initial-consultation') {
     const order = getOrderOrThrow(orderId);
 
@@ -4633,7 +4685,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         409,
         'initial_consultation_not_pending_acceptance',
-        'Está ordem não está aguardando aceite do dentista.'
+        'Esta ordem não está aguardando aceite do dentista.'
       );
     }
 
@@ -4644,7 +4696,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       'in_progress',
       'Aguardando confirmação de consulta',
       'consultation_linked',
-      'Dentista aceitou a consulta agendada e vínculou a ordem para continuidade.'
+      'Dentista aceitou a consulta agendada e vinculou a ordem para continuidade.'
     );
 
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
