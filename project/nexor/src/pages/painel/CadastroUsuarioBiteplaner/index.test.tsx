@@ -88,6 +88,21 @@ function onboardingForm(status: 'pending' | 'submitted' = 'pending', summary: Re
   };
 }
 
+function preConsultationIntakeForm() {
+  return {
+    id: 'BP-WF-PRE',
+    orderId: 'BP-DEMO-ONBOARDING',
+    templateKey: 'customer_pre_consultation_intake',
+    stepKey: 'pre_consultation_intake',
+    status: 'pending',
+    canViewPayload: true,
+    summary: null,
+    releasedAt: '2026-05-01T10:16:00.000Z',
+    submittedAt: null,
+    payload: {},
+  };
+}
+
 function renderPage() {
   mockUseAuth.mockReturnValue({
     loading: false,
@@ -269,13 +284,29 @@ describe('CadastroUsuarioBiteplaner', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it('prefills account data and sends a valid onboarding to the clinical prerequisite', async () => {
-    mockApiGet
-      .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+    let workflowFormsRequests = 0;
+    mockApiGet.mockImplementation(async (url: string) => {
+      if (url === '/v1/orders?as=user') {
+        return { orders: [demoOrder()] };
+      }
+
+      if (url === '/v1/orders/BP-DEMO-ONBOARDING/workflow-forms') {
+        workflowFormsRequests += 1;
+        return {
+          forms:
+            workflowFormsRequests === 1
+              ? [onboardingForm()]
+              : [onboardingForm('submitted', { blocked: false, responseCount: 1 }), preConsultationIntakeForm()],
+        };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
     mockApiPost.mockResolvedValueOnce({
       ...onboardingForm('submitted', { blocked: false, responseCount: 1 }),
       payload: {
@@ -363,14 +394,22 @@ describe('CadastroUsuarioBiteplaner', () => {
       )
     );
     expect(await screen.findByText(/agradecemos sua disponibilidade e confian.*a/i)).toBeInTheDocument();
-    expect(screen.getByText(/redirecionando para a pr.*xima etapa/i)).toBeInTheDocument();
+    expect(screen.getByText(/preparando sua pr.*xima etapa/i)).toBeInTheDocument();
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
   }, 20000);
 
   it('redirects without rendering the onboarding form when it was already submitted', async () => {
-    mockApiGet
-      .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [onboardingForm('submitted', { blocked: false, responseCount: 1 })] });
+    mockApiGet.mockImplementation(async (url: string) => {
+      if (url === '/v1/orders?as=user') {
+        return { orders: [demoOrder()] };
+      }
+
+      if (url === '/v1/orders/BP-DEMO-ONBOARDING/workflow-forms') {
+        return { forms: [onboardingForm('submitted', { blocked: false, responseCount: 1 }), preConsultationIntakeForm()] };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
 
     renderPage();
 
@@ -379,6 +418,27 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(screen.queryByRole('button', { name: /enviar formul.*rio/i })).not.toBeInTheDocument();
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
   });
+
+  it('sends submitted onboarding users to the prerequisite page while the intake is being prepared', async () => {
+    mockApiGet.mockImplementation(async (url: string) => {
+      if (url === '/v1/orders?as=user') {
+        return { orders: [demoOrder()] };
+      }
+
+      if (url === '/v1/orders/BP-DEMO-ONBOARDING/workflow-forms') {
+        return {
+          forms: [onboardingForm('submitted', { blocked: false, responseCount: 1 })],
+        };
+      }
+
+      throw new Error(`Unhandled GET ${url}`);
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/cadastro j.* enviado/i)).toBeInTheDocument();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
+  }, 10000);
 
   it('shows a clear unavailable-registration message when onboarding form is absent after privacy consent', async () => {
     mockApiGet
@@ -681,7 +741,11 @@ describe('CadastroUsuarioBiteplaner', () => {
   it('accepts zero values in financial currency fields and submits them as numbers', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+      .mockResolvedValueOnce({ forms: [onboardingForm()] })
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({
+        forms: [onboardingForm('submitted', { blocked: false, responseCount: 1 }), preConsultationIntakeForm()],
+      });
     mockApiPost.mockResolvedValueOnce({
       ...onboardingForm('submitted', { blocked: false, responseCount: 1 }),
       payload: {

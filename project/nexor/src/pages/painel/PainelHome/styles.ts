@@ -280,10 +280,17 @@ export const ProductHero = styled.section<{ $backgroundImage: string }>`
   }
 
   @media (max-width: 640px) {
+    min-height: auto;
+    align-items: start;
     background:
       linear-gradient(135deg, rgba(4, 45, 34, 0.98) 0%, rgba(6, 70, 47, 0.94) 100%),
       radial-gradient(circle at 84% 84%, rgba(34, 197, 94, 0.18), transparent 34%),
       linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
+
+    &::after {
+      opacity: 0.28;
+      mask-image: linear-gradient(180deg, transparent 4%, #000 54%, transparent 94%);
+    }
   }
 `;
 
@@ -295,6 +302,11 @@ export const ProductHeroContent = styled.div`
   display: grid;
   gap: 22px;
   align-content: center;
+
+  @media (max-width: 640px) {
+    padding: 18px;
+    gap: 14px;
+  }
 `;
 
 export const ProductTitle = styled.h1`
@@ -304,6 +316,11 @@ export const ProductTitle = styled.h1`
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0;
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+    line-height: 1.12;
+  }
 `;
 
 export const ProductDescription = styled.p`
@@ -313,6 +330,11 @@ export const ProductDescription = styled.p`
   font-size: clamp(1rem, 1.45vw, 1.22rem);
   line-height: 1.55;
   font-weight: 520;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.4;
+  }
 `;
 
 export const ProductStats = styled.div`
@@ -322,7 +344,8 @@ export const ProductStats = styled.div`
   max-width: 520px;
 
   @media (max-width: 640px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 `;
 
@@ -334,6 +357,12 @@ export const ProductStat = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.08);
   display: grid;
   gap: 7px;
+
+  @media (max-width: 640px) {
+    min-height: 0;
+    padding: 9px 10px;
+    gap: 4px;
+  }
 `;
 
 export const BpRowLabel = styled.span`
@@ -342,6 +371,95 @@ export const BpRowLabel = styled.span`
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+
+  @media (max-width: 640px) {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+`;
+
+export const BpLabelWithTooltip = styled.span`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+`;
+
+export const BpTooltipTrigger = styled.button`
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.86);
+  cursor: help;
+
+  &:hover,
+  &:focus-visible {
+    border-color: rgba(255, 255, 255, 0.42);
+    background: rgba(255, 255, 255, 0.18);
+    outline: 0;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.26);
+  }
+
+  @media (max-width: 640px) {
+    width: 18px;
+    height: 18px;
+
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+  }
+`;
+
+export const BpTooltipBubble = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 12;
+  width: min(260px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.2);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+
+  ${BpTooltipTrigger}:hover &,
+  ${BpTooltipTrigger}:focus-visible & {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 640px) {
+    right: -8px;
+    width: min(250px, calc(100vw - 32px));
+    padding: 9px 10px;
+    font-size: 11px;
+  }
 `;
 
 export const BpStatusBadge = styled.span`
@@ -359,12 +477,28 @@ export const BpStatusBadge = styled.span`
     border-radius: 999px;
     background: #22c55e;
   }
+
+  @media (max-width: 640px) {
+    gap: 5px;
+    font-size: 12px;
+    line-height: 1.2;
+
+    &::before {
+      width: 7px;
+      height: 7px;
+    }
+  }
 `;
 
 export const BpPrice = styled.span`
   font-size: 22px;
   font-weight: 800;
   color: #ffffff;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.2;
+  }
 `;
 
 export const HeroButton = styled.button`
@@ -393,6 +527,19 @@ export const HeroButton = styled.button`
     opacity: 0.55;
     filter: saturate(0.5);
   }
+
+  @media (max-width: 640px) {
+    min-height: 40px;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 12px;
+    box-shadow: 0 10px 22px rgba(22, 163, 74, 0.22);
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
 `;
 
 export const BpSecondaryLinks = styled.div`
@@ -414,6 +561,16 @@ export const BpLink = styled(Link)`
   &:hover {
     color: #ffffff;
     text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    gap: 6px;
+    font-size: 12px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 `;
 
@@ -454,6 +611,7 @@ export const RoleActionsGrid = styled.div`
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 `;
 
@@ -471,6 +629,17 @@ export const RoleActionCard = styled.article<{ $disabled?: boolean }>`
   gap: 14px;
   opacity: ${({ $disabled }) => ($disabled ? 0.58 : 1)};
   filter: ${({ $disabled }) => ($disabled ? 'saturate(0.55)' : 'none')};
+
+  @media (max-width: 640px) {
+    min-height: 0;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: ${({ $disabled }) => ($disabled ? 'none' : '0 10px 24px rgba(15, 23, 42, 0.07)')};
+  }
 `;
 
 export const RoleCardIcon = styled.span`
@@ -482,6 +651,18 @@ export const RoleCardIcon = styled.span`
   border-radius: 999px;
   color: #116b37;
   background: radial-gradient(circle, rgba(17, 107, 55, 0.14), rgba(17, 107, 55, 0.07));
+
+  @media (max-width: 640px) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: 32px;
+    height: 32px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
 `;
 
 export const RoleActionTitle = styled.strong`
@@ -491,6 +672,15 @@ export const RoleActionTitle = styled.strong`
   line-height: 1.26;
   font-weight: 900;
   letter-spacing: 0;
+
+  @media (max-width: 640px) {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: none;
+    padding-right: 4px;
+    font-size: 14px;
+    line-height: 1.18;
+  }
 `;
 
 export const RoleCardRule = styled.span`
@@ -498,6 +688,10 @@ export const RoleCardRule = styled.span`
   height: 3px;
   border-radius: 999px;
   background: #08733a;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 `;
 
 export const RoleActionMeta = styled.span`
@@ -505,6 +699,14 @@ export const RoleActionMeta = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 0.9rem;
   line-height: 1.42;
+
+  @media (max-width: 640px) {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    max-width: none;
+    font-size: 12px;
+    line-height: 1.35;
+  }
 `;
 
 export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neutral' }>`
@@ -528,6 +730,18 @@ export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neu
         ? 'rgba(245, 158, 11, 0.12)'
         : 'linear-gradient(180deg, #f0f1f3, #e3e5e8)'};
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+
+  @media (max-width: 640px) {
+    position: static;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    min-height: 22px;
+    padding: 3px 8px;
+    font-size: 10px;
+    line-height: 1.1;
+    box-shadow: none;
+  }
 `;
 
 export const RoleActionButton = styled.button`
@@ -571,13 +785,24 @@ export const RoleActionButton = styled.button`
   }
 
   @media (max-width: 640px) {
-    justify-content: center;
-    padding-top: 12px;
-    text-align: center;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: space-between;
+    min-height: 34px;
+    margin-top: 4px;
+    padding-top: 8px;
+    gap: 8px;
+    font-size: 12px;
+    text-align: left;
 
     span {
       overflow: visible;
       text-overflow: clip;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
     }
   }
 `;

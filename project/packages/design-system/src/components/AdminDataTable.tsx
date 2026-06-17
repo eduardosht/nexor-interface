@@ -166,12 +166,21 @@ const Panel = styled.section<{ $tokens: BrandTokens }>`
   border-radius: 14px;
   background: ${({ $tokens }) => $tokens.colors.surface};
   box-shadow: 0 18px 42px rgba(23, 23, 23, 0.05);
+
+  @media (max-width: 768px) {
+    padding: 14px;
+    border-radius: 10px;
+  }
 `;
 
 const Toolbar = styled.div`
   display: grid;
   gap: 14px;
   margin-bottom: 16px;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+  }
 `;
 
 const SearchGroup = styled.div`

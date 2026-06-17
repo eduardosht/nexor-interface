@@ -596,9 +596,11 @@ export const MobileDrawerOverlay = styled.div`
 `;
 
 export const MobileDrawer = styled.aside`
+  position: relative;
+  z-index: 1;
   width: min(320px, 86vw);
   height: 100%;
-  background: ${({ theme }) => theme.colors.bgElevated};
+  background: #ffffff;
   border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
   box-shadow: 18px 0 48px rgba(23, 23, 23, 0.18);
   display: flex;
@@ -632,26 +634,60 @@ export const MobileDrawerTitle = styled.strong`
 `;
 
 export const MobileDrawerNav = styled.nav`
-  display: grid;
-  gap: 2px;
-  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
   overflow-y: auto;
+  flex: 1;
 `;
 
 export const MobileDrawerLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 8px;
+  padding: 10px 16px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
 
   &:hover,
   &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+`;
+
+export const MobileDrawerFooter = styled.div`
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+`;
+
+export const MobileDrawerLogoutButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+
+  &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.bgInset};
   }
@@ -938,10 +974,44 @@ export const ContentInner = styled(motion.main)`
   }
 
   @media (max-width: 768px) {
-    --portal-panel-card-padding: 14px;
-    --portal-panel-gap: 10px;
-    padding: 24px 18px calc(76px + env(safe-area-inset-bottom));
+    --portal-panel-card-padding: 12px;
+    --portal-panel-gap: 8px;
+    --portal-panel-icon-size: 32px;
+    padding: 16px 12px calc(76px + env(safe-area-inset-bottom));
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
+
+    && :where(h1, h2, h3, h4, h5, h6) {
+      font-size: min(16px, 1em);
+      line-height: 1.2;
+    }
+
+    && :where(p, li, small, figcaption, dt, dd) {
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child),
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      max-width: 32px;
+      flex-basis: 32px;
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child) svg,
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) svg,
+    :where(article, section, aside, a, button) svg {
+      width: 16px;
+      height: 16px;
+      max-width: 16px;
+      max-height: 16px;
+    }
+
+    :where(p, li, dd) {
+      font-size: 12px;
+      line-height: 1.45;
+    }
   }
 
   @media (max-width: 640px) {

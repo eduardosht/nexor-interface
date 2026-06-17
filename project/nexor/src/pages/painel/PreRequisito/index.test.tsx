@@ -234,6 +234,20 @@ describe('PreRequisito', () => {
     expect(screen.queryByText(/avaliação inicial compartilhada ainda não foi liberada/i)).not.toBeInTheDocument();
   });
 
+  it('keeps the user on the prerequisite page while the released intake is being prepared after onboarding', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [customerOnboarding('submitted')] });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
+    expect(await screen.findByText(/estamos liberando o pre-requisito biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByText(/seu cadastro foi recebido/i)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.queryByText(/agradecemos sua disponibilidade/i)).not.toBeInTheDocument();
+  });
+
   it('renders the clinical form from the DOCX with the same stepped intake experience without duplicate privacy consent', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })

@@ -536,6 +536,14 @@ describe('ProducaoDentista', () => {
 
     expect(buttonStyleSource).toContain('background: #15803d;');
     expect(buttonStyleSource).toContain('min-height: 52px;');
+    expect(buttonStyleSource).toContain('min-width: 130px;');
+    expect(buttonStyleSource).toContain('max-width: 100%;');
+    expect(buttonStyleSource).toContain('white-space: normal;');
+    expect(buttonStyleSource).not.toContain('width: max-content;');
+    expect(workflowFormsStyles).toContain('flex: 1 1 calc(50% - 7px);');
+    expect(workflowFormsStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(workflowFormsStyles).toContain('position: fixed;');
+    expect(workflowFormsStyles).toContain('bottom: max(8px, env(safe-area-inset-bottom));');
     [workflowFormsStyles, productionStyles, profileStyles, hubStyles].forEach((source) => {
       expect(source).toContain('biteplanerFormButtonStyles');
     });
@@ -1613,6 +1621,7 @@ describe('ProducaoDentista', () => {
           payload: {
             customer: {
               orthodonticTreatmentStatus: 'no',
+              activeDentalTreatmentStatus: 'no',
               needsAdaptedClinic: 'no',
             },
           },

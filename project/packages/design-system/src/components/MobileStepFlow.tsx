@@ -45,7 +45,7 @@ const Progress = styled.span<{ $tokens: BrandTokens }>`
 const Title = styled.h2<{ $tokens: BrandTokens }>`
   margin: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 650;
   line-height: 1.22;
 `;

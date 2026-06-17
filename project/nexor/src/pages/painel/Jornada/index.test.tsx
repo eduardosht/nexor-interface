@@ -268,6 +268,43 @@ describe('Jornada', () => {
     expect(screen.queryByTestId('athlete-journey-steps')).not.toBeInTheDocument();
   });
 
+  it('does not redirect registration orders to onboarding while workflow forms are still loading', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-001',
+              status: 'registration_started',
+              statusLabel: 'Pre-requisito pendente',
+              stage: 'pre_requisite_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-001/workflow-forms') {
+        return new Promise(() => undefined);
+      }
+
+      if (path === '/v1/orders/BP-DEMO-001/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockApiGet).toHaveBeenCalledWith('/v1/orders/BP-DEMO-001/workflow-forms', 'tok')
+    );
+    expect(screen.getByTestId('current-path')).not.toHaveTextContent('/painel/biteplaner/onboarding');
+    expect(screen.getByLabelText(/carregando jornada/i)).toBeInTheDocument();
+  });
+
   it('keeps prerequisite forms out of the journey and links the current step to the prerequisite page', async () => {
     mockApiGet
       .mockResolvedValueOnce({

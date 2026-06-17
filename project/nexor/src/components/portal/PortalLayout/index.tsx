@@ -291,6 +291,15 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const isAdmin = hasAdministrativeRole(backendUser?.roles);
   const showBiteplanerProductMenu = canSeeBiteplanerProductMenu(backendUser);
   const showCustomerOrderSubmenu = hasStartedBiteplanerCustomerOrder(backendUser);
+  const mobileDrawerItems = isAdmin
+    ? ADMIN_NAV_ITEMS
+    : [
+        ...NAV_ITEMS,
+        ...(showBiteplanerProductMenu
+          ? [{ to: biteplanerHomePath, label: 'Biteplaner', Icon: ShieldCheck }]
+          : []),
+      ];
+  const mobileDrawerLabel = isAdmin ? 'Menu administrativo' : 'Menu do portal';
   const notificationsOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
   const notificationsQueryKey = accountQueryKeys.notifications(notificationsOwnerId);
   const notificationsQuery = useQuery<AccountNotificationsResponse>({
@@ -477,7 +486,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         </S.Overlay>
       ) : null}
 
-      {isAdmin && mobileAdminMenuOpen ? (
+      {mobileAdminMenuOpen ? (
         <S.MobileDrawerOverlay
           role="presentation"
           onClick={(event) => {
@@ -490,12 +499,12 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             ref={mobileDrawerRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Menu administrativo"
+            aria-label={mobileDrawerLabel}
             tabIndex={-1}
             onKeyDown={handleMobileDrawerKeyDown}
           >
             <S.MobileDrawerHeader>
-              <S.MobileDrawerTitle>Menu administrativo</S.MobileDrawerTitle>
+              <S.MobileDrawerTitle>{mobileDrawerLabel}</S.MobileDrawerTitle>
               <S.MobileMenuBtn
                 type="button"
                 onClick={() => setMobileAdminMenuOpen(false)}
@@ -505,13 +514,26 @@ export function PortalLayout({ children }: { children: ReactNode }) {
               </S.MobileMenuBtn>
             </S.MobileDrawerHeader>
             <S.MobileDrawerNav>
-              {ADMIN_NAV_ITEMS.map(({ to, label, Icon }) => (
+              {mobileDrawerItems.map(({ to, label, Icon }) => (
                 <S.MobileDrawerLink key={to} to={to} onClick={() => setMobileAdminMenuOpen(false)}>
                   <Icon size={17} aria-hidden />
                   {label}
                 </S.MobileDrawerLink>
               ))}
             </S.MobileDrawerNav>
+            <S.MobileDrawerFooter>
+              <S.MobileDrawerLogoutButton
+                type="button"
+                onClick={() => {
+                  setMobileAdminMenuOpen(false);
+                  void signOut();
+                  void navigate('/entrar');
+                }}
+              >
+                <LogOut size={17} aria-hidden />
+                Sair
+              </S.MobileDrawerLogoutButton>
+            </S.MobileDrawerFooter>
           </S.MobileDrawer>
         </S.MobileDrawerOverlay>
       ) : null}
@@ -681,16 +703,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
       <S.ContentArea>
         <S.Topbar>
-          {isAdmin ? (
-            <S.MobileMenuBtn
-              ref={mobileMenuTriggerRef}
-              type="button"
-              onClick={() => setMobileAdminMenuOpen(true)}
-              aria-label="Abrir menu mobile"
-            >
-              <Menu size={18} aria-hidden />
-            </S.MobileMenuBtn>
-          ) : null}
+          <S.MobileMenuBtn
+            ref={mobileMenuTriggerRef}
+            type="button"
+            onClick={() => setMobileAdminMenuOpen(true)}
+            aria-label="Abrir menu mobile"
+          >
+            <Menu size={18} aria-hidden />
+          </S.MobileMenuBtn>
           <S.TopbarGreeting>{getGreeting()}, {displayName}.</S.TopbarGreeting>
           <S.TopbarRight>
             <S.NotificationArea>

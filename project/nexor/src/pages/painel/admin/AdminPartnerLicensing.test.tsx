@@ -75,8 +75,10 @@ describe('AdminPartnerLicensing', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/performance partners/i)).toBeInTheDocument());
-    expect(screen.getByText('contato@performancepartners.dev')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/performance partners/i).length).toBeGreaterThan(0));
+    expect(screen.getByTestId('admin-partner-requests-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('admin-partner-requests-mobile-list')).getByText(/performance partners/i)).toBeInTheDocument();
+    expect(screen.getAllByText('contato@performancepartners.dev').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de performance partners/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /dados enviados pelo parceiro/i });

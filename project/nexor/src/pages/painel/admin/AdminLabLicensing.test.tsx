@@ -83,7 +83,9 @@ describe('AdminLabLicensing', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/lab centro/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/lab centro/i).length).toBeGreaterThan(0));
+    expect(screen.getByTestId('admin-lab-requests-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('admin-lab-requests-mobile-list')).getByText(/lab centro/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de lab centro/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /dados enviados pelo laboratório/i });

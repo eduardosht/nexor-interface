@@ -126,24 +126,45 @@ export const Hero = styled.section<{ $showcase?: boolean; $mode?: WorkspaceHeroM
     grid-template-columns: 1fr;
     padding: ${({ $showcase }) => ($showcase ? '28px' : '24px')};
   }
+
+  @media (max-width: 720px) {
+    gap: ${({ $showcase }) => ($showcase ? '8px' : '6px')};
+    min-height: auto;
+    padding: ${({ $showcase }) => ($showcase ? '14px' : '12px')};
+    border-radius: 12px;
+    box-shadow: ${({ $showcase }) => ($showcase ? '0 10px 24px rgba(15, 23, 42, 0.06)' : 'none')};
+  }
 `;
 
 export const HeroCopy = styled.div`
   display: grid;
   gap: 12px;
   min-width: 0;
+
+  @media (max-width: 720px) {
+    gap: 6px;
+  }
 `;
 
 export const Eyebrow = PortalMetaLabel;
 
 export const Title = styled(PortalPageTitle).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
   $size: $showcase ? 'showcase' : 'default',
-})) <{ $showcase?: boolean }>``;
+})) <{ $showcase?: boolean }>`
+  @media (max-width: 720px) {
+    line-height: 1.16;
+  }
+`;
 
 export const Description = styled(PortalPageDescription).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
   $size: $showcase ? 'showcase' : 'default',
 })) <{ $showcase?: boolean }>`
   ${({ $showcase }) => (!$showcase ? 'font-size: 14px; line-height: 1.6;' : '')}
+
+  @media (max-width: 720px) {
+    max-width: 64ch;
+    line-height: 1.35;
+  }
 `;
 
 export const HeroVisual = styled.div`
@@ -691,6 +712,12 @@ const compactStatCard = css`
     padding: 16px;
     border-radius: 12px;
   }
+
+  @media (max-width: 640px) {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 10px;
+  }
 `;
 
 const compactStatIcon = css`
@@ -720,6 +747,15 @@ export const AthleteStatsGrid = styled.section`
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+
+    > :last-child {
+      grid-column: 1 / -1;
+    }
   }
 `;
 
@@ -757,6 +793,10 @@ export const AthleteStatContent = styled.div`
   display: grid;
   gap: 6px;
   min-width: 0;
+
+  @media (max-width: 640px) {
+    gap: 2px;
+  }
 `;
 
 export const PartnerStatsGrid = styled.section`
@@ -1219,6 +1259,11 @@ export const StatCard = styled.article`
 
 export const StatLabel = styled(PortalMetaLabel)`
   display: block;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.15;
+  }
 `;
 
 export const StatValue = styled.strong`
@@ -1229,12 +1274,22 @@ export const StatValue = styled.strong`
   line-height: 1.2;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow-wrap: anywhere;
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+    line-height: 1.15;
+  }
 `;
 
 export const StatHint = styled.span`
   font-size: 13px;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.25;
+  }
 `;
 
 export const Panel = styled.section`

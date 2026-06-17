@@ -228,6 +228,14 @@ const StyledButton = styled.button<{
 
   ${({ $size }) => sizeStyles[$size]}
   ${({ $tokens, $variant, $tone }) => variantStyles($tokens, $variant, $tone)}
+
+  @media (max-width: 768px) {
+    min-height: ${({ $size }) => ($size === 'lg' ? '40px' : $size === 'md' ? '38px' : '34px')};
+    padding: ${({ $size }) => ($size === 'lg' ? '9px 14px' : $size === 'md' ? '8px 12px' : '7px 10px')};
+    gap: 6px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
 `;
 
 const Content = styled.span`
@@ -244,6 +252,15 @@ const Content = styled.span`
 
   svg {
     flex: 0 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    gap: 6px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 `;
 

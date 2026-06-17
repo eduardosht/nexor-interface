@@ -2,11 +2,14 @@ import {
   Button,
   AdminDataTable,
   AdminMetricGrid,
+  AdminMobileActionButton,
+  AdminMobilePagination,
+  AdminMobileRecordCard,
+  AdminResponsiveCollection,
   AdminStatusPill,
   Field,
   FilterSheet,
   MultiSelect,
-  ResponsiveDataList,
   StatusIndicator,
   type AdminDataTableColumn,
   type AdminMetric,
@@ -53,6 +56,8 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelado' },
 ];
 
+const MOBILE_PAGE_SIZE = 6;
+
 export function AdminOrders() {
   const { selectedProduct } = useAdminPortal();
   const { session } = useAuth();
@@ -63,6 +68,7 @@ export function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [stageFilter, setStageFilter] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobilePage, setMobilePage] = useState(1);
   const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
   const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
 
@@ -134,6 +140,17 @@ export function AdminOrders() {
 
     return [...statusLabels, ...stageLabels];
   }, [stageFilter, stageOptions, statusFilter]);
+
+  useEffect(() => {
+    setMobilePage(1);
+  }, [search, stageFilter, statusFilter]);
+
+  const mobileTotalPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_PAGE_SIZE));
+  const safeMobilePage = Math.min(mobilePage, mobileTotalPages);
+  const visibleMobileOrders = useMemo(() => {
+    const start = (safeMobilePage - 1) * MOBILE_PAGE_SIZE;
+    return filteredOrders.slice(start, start + MOBILE_PAGE_SIZE);
+  }, [filteredOrders, safeMobilePage]);
 
   const stats = useMemo<AdminMetric[]>(
     () => [
@@ -306,41 +323,56 @@ export function AdminOrders() {
             {loading ? (
               <SkeletonTable rows={6} columns={5} />
             ) : (
-              <ResponsiveDataList
-              desktop={
-                <AdminDataTable
-                  data={filteredOrders}
-                  columns={columns}
-                  keyExtractor={(row) => row.id}
-                  pageSize={6}
-                  emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
-                  testId="admin-orders-table"
-                />
-              }
-              data={filteredOrders}
-              keyExtractor={(row) => row.id}
-              emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
-              renderCard={(row) => {
-                const presentation = getOrderStatusPresentation(row);
+              <AdminResponsiveCollection
+                renderTable={() => (
+                  <AdminDataTable
+                    data={filteredOrders}
+                    columns={columns}
+                    keyExtractor={(row) => row.id}
+                    pageSize={6}
+                    emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
+                    testId="admin-orders-table"
+                  />
+                )}
+                items={visibleMobileOrders}
+                getItemKey={(row) => row.id}
+                emptyState="Nenhuma ordem encontrada para os filtros aplicados."
+                renderCard={(row) => {
+                  const presentation = getOrderStatusPresentation(row);
 
                 return (
-                  <S.OrderCard data-testid={`admin-order-card-${row.id}`}>
-                    <S.OrderCardHeader>
-                      <div>
-                        <S.OrderCardTitle>{getOrderDisplayId(row)}</S.OrderCardTitle>
-                        <S.OrderCardMeta>{row.customer?.full_name ?? 'Não identificado'}</S.OrderCardMeta>
-                      </div>
-                      <StatusIndicator color={presentation.color} label={presentation.label} />
-                    </S.OrderCardHeader>
-                    <S.OrderCardMeta>Etapa: {getStageLabel(row)}</S.OrderCardMeta>
+                  <AdminMobileRecordCard
+                    testId={`admin-order-card-${row.id}`}
+                    title={getOrderDisplayId(row)}
+                    subtitle={row.customer?.full_name ?? 'Não identificado'}
+                    status={<StatusIndicator color={presentation.color} label={presentation.label} />}
+                    metadata={[
+                      { label: 'Etapa', value: getStageLabel(row) },
+                      { label: 'Atualizado', value: formatDate(row.created_at) },
+                    ]}
+                    primaryAction={
+                      <AdminMobileActionButton type="button" aria-label={`Ver pedido ${getOrderDisplayId(row)}`}>
+                        Ver pedido
+                      </AdminMobileActionButton>
+                    }
+                  >
                     <S.ReadinessText>
                       {row.operationalReadiness?.summary ?? 'Sem pendência operacional registrada.'}
                     </S.ReadinessText>
-                    <S.OrderCardMeta>Atualizado em {formatDate(row.created_at)}</S.OrderCardMeta>
-                  </S.OrderCard>
+                  </AdminMobileRecordCard>
                 );
-              }}
-              mobileTestId="admin-orders-mobile-list"
+                }}
+                mobileTestId="admin-orders-mobile-list"
+                desktopTestId="admin-orders-desktop-list"
+                pagination={
+                  <AdminMobilePagination
+                    page={safeMobilePage}
+                    pageSize={MOBILE_PAGE_SIZE}
+                    totalItems={filteredOrders.length}
+                    onPrevious={() => setMobilePage((current) => Math.max(1, current - 1))}
+                    onNext={() => setMobilePage((current) => Math.min(mobileTotalPages, current + 1))}
+                  />
+                }
               />
             )}
 

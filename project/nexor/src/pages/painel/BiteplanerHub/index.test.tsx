@@ -117,9 +117,14 @@ describe('BiteplanerHub', () => {
     );
 
     expect(source).toContain('@media (max-width: 1280px)');
+    expect(source).toContain('@media (max-width: 640px)');
+    expect(source).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+    expect(source).toContain('grid-column: 1 / -1');
     expect(source).toContain('width: 32px');
     expect(source).toContain('height: 32px');
     expect(source).toContain('padding: 16px');
+    expect(source).toContain('padding: 10px');
+    expect(source).toContain('font-size: 16px');
     expect(compactCardSource).toContain('align-items: flex-start');
     expect(compactIconSource).toContain('align-self: flex-start');
   });

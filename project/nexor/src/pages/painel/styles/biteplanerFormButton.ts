@@ -4,15 +4,15 @@ export const biteplanerButtonSurfaceStyles = css`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 max-content;
+  flex: 0 1 auto;
   box-sizing: border-box;
-  inline-size: max-content;
-  width: max-content;
-  max-width: none;
-  min-inline-size: max-content;
-  min-width: max-content;
+  inline-size: fit-content;
+  width: fit-content;
+  max-width: 100%;
+  min-inline-size: 130px;
+  min-width: 130px;
   min-height: 52px;
-  padding: 0 22px 0 30px;
+  padding: 10px 22px;
   border: 1px solid #15803d;
   border-radius: 8px;
   background: #15803d;
@@ -22,11 +22,11 @@ export const biteplanerButtonSurfaceStyles = css`
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
   text-align: center;
   text-transform: none;
-  white-space: nowrap;
-  text-wrap: nowrap;
+  white-space: normal;
+  text-wrap: wrap;
   cursor: pointer;
   gap: 0;
   transition:
@@ -41,14 +41,14 @@ export const biteplanerButtonSurfaceStyles = css`
     align-items: center;
     justify-content: center;
     gap: 22px;
-    flex: 0 0 max-content;
-    inline-size: max-content;
-    width: max-content;
-    max-width: none;
-    min-inline-size: max-content;
-    min-width: max-content;
+    flex: 0 1 auto;
+    inline-size: auto;
+    width: auto;
+    max-width: 100%;
+    min-inline-size: 0;
+    min-width: 0;
     line-height: inherit;
-    overflow-wrap: normal;
+    overflow-wrap: anywhere;
     white-space: inherit;
     text-wrap: inherit;
   }
@@ -119,22 +119,29 @@ export const biteplanerFormButtonStyles = css`
 
   @media (max-width: 760px) {
     && button {
-      inline-size: max-content;
-      width: max-content;
-      max-width: none;
-      min-inline-size: max-content;
-      min-width: max-content;
+      inline-size: auto;
+      width: auto;
+      max-width: 100%;
+      min-inline-size: 130px;
+      min-width: 130px;
+      min-height: 38px;
       gap: 12px;
-      padding: 12px 14px;
-      white-space: nowrap;
+      padding: 8px 12px;
+      font-size: 12px;
+      white-space: normal;
 
       > span {
-        gap: 12px;
-        inline-size: max-content;
-        width: max-content;
-        max-width: none;
-        min-inline-size: max-content;
-        min-width: max-content;
+        gap: 8px;
+        inline-size: auto;
+        width: auto;
+        max-width: 100%;
+        min-inline-size: 0;
+        min-width: 0;
+      }
+
+      svg {
+        width: 16px;
+        height: 16px;
       }
     }
   }

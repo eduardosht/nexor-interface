@@ -596,7 +596,7 @@ export function Jornada() {
   });
   const workflowForms = workflowFormsQuery.data?.forms ?? [];
   const appointments = appointmentsQuery.data?.appointments ?? [];
-  const loading = ordersQuery.isLoading;
+  const loading = ordersQuery.isLoading || Boolean(primaryOrder?.id && workflowFormsQuery.isLoading);
   const error = ordersQuery.isError ? 'Não foi possível carregar a jornada compartilhada agora.' : '';
   const workflowFormsError = workflowFormsQuery.isError ? 'Não foi possível carregar os formulários desta ordem.' : '';
   const visibleAppointmentError = appointmentError ||
@@ -740,7 +740,6 @@ export function Jornada() {
           </S.SectionHeader>
           <S.JourneyHeroCard>
             <S.OrderSummaryGrid>
-              <S.OrderBrandMark aria-hidden>BP</S.OrderBrandMark>
               <S.OrderSummaryContent>
                 <S.OrderEyebrow>Pedido</S.OrderEyebrow>
                 <S.OrderTitle>{getOrderDisplayId(selectedFormsOrder)}</S.OrderTitle>

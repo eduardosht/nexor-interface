@@ -73,7 +73,6 @@ const scoreZeroToTenOptions = Array.from({ length: 11 }, (_, index) => ({
 }));
 
 const sportOptions = [
-  { value: 'gym', label: 'Academia' },
   { value: 'basketball', label: 'Basquete' },
   { value: 'boxing', label: 'Boxe' },
   { value: 'capoeira', label: 'Capoeira' },

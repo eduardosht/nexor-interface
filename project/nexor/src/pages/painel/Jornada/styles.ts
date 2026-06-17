@@ -13,6 +13,10 @@ export const Page = styled.div`
   display: grid;
   gap: 28px;
   justify-items: center;
+
+  @media (max-width: 560px) {
+    gap: 16px;
+  }
 `;
 
 export const Description = styled.p`
@@ -20,6 +24,11 @@ export const Description = styled.p`
   font-size: 14px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 560px) {
+    font-size: 12px;
+    line-height: 1.45;
+  }
 `;
 
 export const Banner = styled.div`
@@ -165,6 +174,17 @@ export const SelectedClinicCard = styled.section`
   @media (max-width: 720px) {
     grid-template-columns: 44px minmax(0, 1fr);
     align-items: start;
+
+    > button {
+      grid-column: 2;
+      justify-self: start;
+    }
+  }
+
+  @media (max-width: 420px) {
+    > button {
+      grid-column: 1 / -1;
+    }
   }
 `;
 
@@ -435,8 +455,8 @@ export const StepFlow = styled.section`
   }
 
   @media (max-width: 560px) {
-    gap: 18px;
-    padding: 16px;
+    gap: 14px;
+    padding: 12px;
   }
 `;
 
@@ -468,35 +488,22 @@ export const JourneyHeroCard = styled.section`
   }
 
   @media (max-width: 560px) {
-    padding: 18px;
+    padding: 12px;
+    gap: 12px;
   }
 `;
 
 export const OrderSummaryGrid = styled.div`
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 28px;
+  gap: 0;
   min-width: 0;
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 0;
   }
-`;
-
-export const OrderBrandMark = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 66px;
-  height: 66px;
-  border-radius: 999px;
-  background: #fee89a;
-  color: #07101d;
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1;
 `;
 
 export const OrderSummaryContent = styled.div`
@@ -507,7 +514,8 @@ export const OrderSummaryContent = styled.div`
   min-width: 0;
 
   @media (max-width: 560px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
   }
 `;
 
@@ -517,6 +525,10 @@ export const OrderEyebrow = styled.span`
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
+
+  @media (max-width: 560px) {
+    font-size: 11px;
+  }
 `;
 
 export const OrderSummaryText = styled.p`
@@ -526,6 +538,12 @@ export const OrderSummaryText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.48;
+
+  @media (max-width: 560px) {
+    margin: 4px 0 8px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
 `;
 
 export const StatusPill = styled.span<{ $tone: StepTone }>`
@@ -557,6 +575,18 @@ export const StatusPill = styled.span<{ $tone: StepTone }>`
     border-radius: 999px;
     background: currentColor;
   }
+
+  @media (max-width: 560px) {
+    min-height: 22px;
+    padding: 0 8px;
+    gap: 5px;
+    font-size: 10px;
+
+    > span {
+      width: 5px;
+      height: 5px;
+    }
+  }
 `;
 
 export const NextStepPreview = styled.div`
@@ -567,6 +597,12 @@ export const NextStepPreview = styled.div`
   max-width: 430px;
   padding-top: 24px;
   border-top: 1px solid rgba(148, 163, 184, 0.28);
+
+  @media (max-width: 560px) {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    padding-top: 10px;
+  }
 `;
 
 export const NextStepPreviewIcon = styled.span`
@@ -578,6 +614,17 @@ export const NextStepPreviewIcon = styled.span`
   border-radius: 12px;
   background: rgba(21, 128, 61, 0.1);
   color: #15803d;
+
+  @media (max-width: 560px) {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
 `;
 
 export const NextStepPreviewCopy = styled.div`
@@ -603,6 +650,21 @@ export const NextStepPreviewCopy = styled.div`
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 14px;
     line-height: 1.45;
+  }
+
+  @media (max-width: 560px) {
+    gap: 2px;
+
+    span,
+    p {
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    strong {
+      font-size: 14px;
+      line-height: 1.18;
+    }
   }
 `;
 
@@ -645,6 +707,16 @@ export const PrimaryActionLink = styled(Link)`
 
   @media (max-width: 560px) {
     width: 100%;
+    min-height: 38px;
+    min-width: 0;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 12px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 `;
 
@@ -813,6 +885,12 @@ export const CardTitle = styled.h2`
   font-size: 16px;
   font-weight: 850;
   line-height: 1.25;
+
+  @media (max-width: 560px) {
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1.18;
+  }
 `;
 
 export const ProgressPercent = styled.span`
@@ -827,6 +905,12 @@ export const ProgressPercent = styled.span`
   font-size: 12px;
   font-weight: 850;
   white-space: nowrap;
+
+  @media (max-width: 560px) {
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
 `;
 
 export const ProgressTrackList = styled.ol`
@@ -907,7 +991,8 @@ export const ActionCard = styled.section`
   }
 
   @media (max-width: 560px) {
-    padding: 18px;
+    gap: 12px;
+    padding: 12px;
   }
 `;
 
@@ -916,6 +1001,11 @@ export const ActionHeader = styled.div`
   grid-template-columns: 58px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+  }
 `;
 
 export const ActionIcon = styled.span`
@@ -927,12 +1017,26 @@ export const ActionIcon = styled.span`
   border-radius: 999px;
   background: rgba(21, 128, 61, 0.1);
   color: #15803d;
+
+  @media (max-width: 560px) {
+    width: 30px;
+    height: 30px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
 `;
 
 export const ActionCopy = styled.div`
   display: grid;
   gap: 10px;
   min-width: 0;
+
+  @media (max-width: 560px) {
+    gap: 4px;
+  }
 `;
 
 export const EstimateBox = styled.div`
@@ -963,6 +1067,27 @@ export const EstimateBox = styled.div`
     font-weight: 850;
     line-height: 1.2;
   }
+
+  @media (max-width: 560px) {
+    gap: 2px 8px;
+    padding: 9px 10px;
+    border-radius: 8px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    span {
+      font-size: 11px;
+      line-height: 1.15;
+    }
+
+    strong {
+      font-size: 12px;
+      line-height: 1.15;
+    }
+  }
 `;
 
 export const OverviewCard = styled.section`
@@ -976,7 +1101,8 @@ export const OverviewCard = styled.section`
   scroll-margin-top: 90px;
 
   @media (max-width: 560px) {
-    padding: 18px;
+    gap: 10px;
+    padding: 12px;
   }
 `;
 
@@ -1011,12 +1137,16 @@ export const OverviewItem = styled.li<{ $tone: StepTone }>`
   }
 
   @media (max-width: 560px) {
-    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 8px;
+    min-height: 34px;
+    padding: 4px 6px;
 
     ${StatusPill} {
-      grid-column: 2;
-      justify-self: start;
-      margin-bottom: 8px;
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: end;
+      margin-bottom: 0;
     }
   }
 `;
@@ -1034,6 +1164,17 @@ export const OverviewMarker = styled.span<{ $tone: StepTone }>`
   border: 2px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
   background: ${({ $tone }) => ($tone === 'complete' ? '#15803d' : '#ffffff')};
   color: ${({ $tone }) => ($tone === 'complete' ? '#ffffff' : $tone === 'current' ? '#15803d' : '#98a2b3')};
+
+  @media (max-width: 560px) {
+    width: 20px;
+    height: 20px;
+    border-width: 1px;
+
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+  }
 `;
 
 export const OverviewStepName = styled.span`
@@ -1042,6 +1183,11 @@ export const OverviewStepName = styled.span`
   font-size: 14px;
   font-weight: 800;
   line-height: 1.35;
+
+  @media (max-width: 560px) {
+    font-size: 12px;
+    line-height: 1.2;
+  }
 `;
 
 export const InfoCallout = styled.aside`
@@ -1413,6 +1559,7 @@ export const SecondaryActionButton = styled.button`
   justify-content: center;
   width: fit-content;
   max-width: 100%;
+  min-width: 130px;
   min-height: 44px;
   padding: 0 18px;
   border-radius: 8px;
@@ -1423,7 +1570,9 @@ export const SecondaryActionButton = styled.button`
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
 
   &:hover {
@@ -1431,7 +1580,8 @@ export const SecondaryActionButton = styled.button`
   }
 
   @media (max-width: 640px) {
-    width: 100%;
+    width: auto;
+    padding: 10px 12px;
   }
 `;
 

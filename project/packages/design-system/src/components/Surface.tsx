@@ -63,6 +63,15 @@ const StyledSurface = styled.div<{
   ${({ $tokens, $tone }) => toneStyles($tokens, $tone)}
   ${({ $padding }) => paddingStyles[$padding]}
 
+  @media (max-width: 768px) {
+    ${({ $padding }) =>
+      $padding === 'lg'
+        ? css`
+            padding: 16px;
+          `
+        : ''}
+  }
+
   ${({ $interactive, $tokens }) =>
     $interactive
       ? css`

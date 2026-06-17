@@ -16,6 +16,8 @@ import {
   AdminModalTextAreaLabel,
   AdminStatusPill,
   Button,
+  Field,
+  ResponsiveDataList,
   type AdminDataTableColumn,
   type AdminMetric,
 } from '@nexor/design-system';
@@ -34,6 +36,19 @@ import {
 } from '../../../features/demo/biteplanerFlow';
 import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
 import { AdminProductGate } from './AdminProductGate';
+import {
+  AdminMobileActionButton,
+  AdminMobileActions,
+  AdminMobileCard,
+  AdminMobileCardHeader,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+  AdminMobileOnly,
+} from './mobileCards';
 
 const statusLabel: Record<string, string> = {
   pending: 'Aguardando análise',
@@ -192,16 +207,74 @@ export function AdminLabLicensing() {
       {selectedProduct ? (
         <>
           {loading ? <SkeletonGrid cards={4} minCardWidth="180px" /> : <AdminMetricGrid metrics={metrics} columns={4} />}
-          <AdminDataTable
+          <AdminMobileOnly>
+            <Field
+              as="input"
+              label="Buscar"
+              placeholder="Laboratório, CNPJ ou resumo"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </AdminMobileOnly>
+          <ResponsiveDataList
+            desktop={
+              <AdminDataTable
+                data={filteredRequests}
+                columns={columns}
+                keyExtractor={(row) => row.id}
+                searchLabel="Buscar"
+                searchPlaceholder="Buscar por laboratório, CNPJ ou resumo..."
+                searchValue={search}
+                onSearchChange={setSearch}
+                emptyMessage="Nenhuma solicitação encontrada."
+                testId="admin-lab-requests-table"
+              />
+            }
             data={filteredRequests}
-            columns={columns}
             keyExtractor={(row) => row.id}
-            searchLabel="Buscar"
-            searchPlaceholder="Buscar por laboratório, CNPJ ou resumo..."
-            searchValue={search}
-            onSearchChange={setSearch}
             emptyMessage="Nenhuma solicitação encontrada."
-            testId="admin-lab-requests-table"
+            mobileTestId="admin-lab-requests-mobile-list"
+            renderCard={(row) => (
+              <AdminMobileCard>
+                <AdminMobileCardHeader>
+                  <div>
+                    <AdminMobileCardTitle>{row.labName || 'Não informado'}</AdminMobileCardTitle>
+                    <AdminMobileCardSubtitle>{row.cnpj || 'CNPJ não informado'}</AdminMobileCardSubtitle>
+                  </div>
+                  <AdminStatusPill color={getStatusColor(row.status)} label={statusLabel[row.status] ?? row.status} />
+                </AdminMobileCardHeader>
+                <AdminMobileMetaGrid>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Locais</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{row.locations.length}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Fluxo</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{workflowLabel[row.workflowStatus] ?? row.workflowStatus}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Enviado em</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{formatDate(row.submittedAt)}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Resumo</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{row.professionalSummary || 'Não informado'}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                </AdminMobileMetaGrid>
+                <AdminMobileActions>
+                  <AdminMobileActionButton
+                    type="button"
+                    aria-label={`Abrir dados do laboratório ${row.labName}`}
+                    onClick={() => {
+                      setSelectedRequest(row);
+                      setRejectReason('');
+                    }}
+                  >
+                    Revisar solicitação
+                  </AdminMobileActionButton>
+                </AdminMobileActions>
+              </AdminMobileCard>
+            )}
           />
         </>
       ) : null}

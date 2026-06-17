@@ -96,6 +96,12 @@ export const AdminModalDetailCard = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+
+  @media (max-width: 680px) {
+    align-items: flex-start;
+    padding: 14px;
+    gap: 12px;
+  }
 `;
 
 export const AdminModalDetailIcon = styled.div`
@@ -167,6 +173,11 @@ const Overlay = styled.div<{ $tokens: BrandTokens }>`
   place-items: center;
   background: rgba(23, 23, 23, 0.58);
   backdrop-filter: blur(3px);
+
+  @media (max-width: 680px) {
+    padding: 10px;
+    place-items: end center;
+  }
 `;
 
 const Box = styled.div<{ $tokens: BrandTokens }>`
@@ -181,6 +192,14 @@ const Box = styled.div<{ $tokens: BrandTokens }>`
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 680px) {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    padding: 14px;
+    border-radius: 14px 14px 0 0;
+    gap: 12px;
+  }
 `;
 
 const Header = styled.div<{ $tokens: BrandTokens }>`
@@ -190,6 +209,11 @@ const Header = styled.div<{ $tokens: BrandTokens }>`
   gap: 16px;
   padding-bottom: 18px;
   border-bottom: 1px solid ${({ $tokens }) => $tokens.colors.border};
+
+  @media (max-width: 680px) {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
 `;
 
 const TitleGroup = styled.div`
@@ -197,6 +221,11 @@ const TitleGroup = styled.div`
   display: flex;
   align-items: center;
   gap: 18px;
+
+  @media (max-width: 680px) {
+    align-items: flex-start;
+    gap: 10px;
+  }
 `;
 
 const HeroIcon = styled.div<{ $tokens: BrandTokens }>`
@@ -208,6 +237,16 @@ const HeroIcon = styled.div<{ $tokens: BrandTokens }>`
   border-radius: 999px;
   color: #15803d;
   background: rgba(21, 128, 61, 0.1);
+
+  @media (max-width: 680px) {
+    width: 42px;
+    height: 42px;
+
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
 `;
 
 const Title = styled.h2<{ $tokens: BrandTokens }>`
@@ -216,6 +255,11 @@ const Title = styled.h2<{ $tokens: BrandTokens }>`
   line-height: 1.12;
   font-weight: 800;
   color: ${({ $tokens }) => $tokens.colors.text};
+
+  @media (max-width: 680px) {
+    font-size: 16px;
+    line-height: 1.18;
+  }
 `;
 
 const Subtitle = styled.p<{ $tokens: BrandTokens }>`
@@ -227,6 +271,11 @@ const Subtitle = styled.p<{ $tokens: BrandTokens }>`
   font-size: 16px;
   line-height: 1.35;
   color: ${({ $tokens }) => $tokens.colors.textMuted};
+
+  @media (max-width: 680px) {
+    font-size: 12px;
+    line-height: 1.4;
+  }
 `;
 
 const Close = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as const })`
@@ -241,11 +290,21 @@ const Close = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as co
 const Body = styled.div`
   display: grid;
   gap: 16px;
+  min-width: 0;
 `;
 
 const Footer = styled.div`
   display: grid;
   gap: 12px;
+
+  @media (max-width: 680px) {
+    position: sticky;
+    bottom: -16px;
+    margin: 0 -16px -16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #e0e0e0;
+    background: inherit;
+  }
 `;
 
 const ActionButton = styled(Button)<{ $actionTone: AdminModalActionTone }>`
@@ -270,6 +329,13 @@ const ActionButton = styled(Button)<{ $actionTone: AdminModalActionTone }>`
         color: #ffffff;
         box-shadow: 0 12px 24px rgba(21, 128, 61, 0.22);
       `}
+
+  @media (max-width: 680px) {
+    min-width: 0;
+    width: 100%;
+    white-space: normal;
+    text-transform: none;
+  }
 `;
 
 function CloseIcon(props: { 'aria-hidden'?: boolean }) {

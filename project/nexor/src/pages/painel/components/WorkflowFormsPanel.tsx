@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ComponentPropsWithoutRef, type FormEvent, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Frown, Info, PencilLine, Send, ShieldCheck, Star, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Info, PencilLine, Send, ShieldCheck, Star, UserRound, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
@@ -277,11 +277,11 @@ function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): D
     sectionByKey['satisfaction-improvements']?.fields.filter((field) => field.type === 'checkbox-group') ?? [];
   const satisfactionSection: VisibleSharedSection | null = deviceExperienceSection
     ? {
-        key: 'clinical-satisfaction-fields',
-        title: 'Pesquisa de satisfação',
-        description: 'Expectativas, percepções e autorizações opcionais relacionadas à NEXOR e ao BITEPLANER.',
-        fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields],
-      }
+      key: 'clinical-satisfaction-fields',
+      title: 'Pesquisa de satisfação',
+      description: 'Expectativas, percepções e autorizações opcionais relacionadas à NEXOR e ao BITEPLANER.',
+      fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields],
+    }
     : null;
   const makeGroup = (
     key: string,
@@ -1069,7 +1069,7 @@ function isFieldRequiredForPayload(
   const parentKey = getConditionalDetailParentKey(field.key);
   return Boolean(
     (parentKey && payload[parentKey] === 'yes') ||
-      (field.key === 'ineligibilityDescriptionForCustomer' && payload.biteplannerEligible === 'no')
+    (field.key === 'ineligibilityDescriptionForCustomer' && payload.biteplannerEligible === 'no')
   );
 }
 
@@ -2287,9 +2287,6 @@ function FormItem({
                     })}
                     {payloadBlockerMessage ? (
                       <S.OrthodonticBlockerFeedback role="alert">
-                        <S.OrthodonticBlockerIcon aria-label="Icone de tristeza">
-                          <Frown size={24} />
-                        </S.OrthodonticBlockerIcon>
                         <span>{payloadBlockerMessage}</span>
                       </S.OrthodonticBlockerFeedback>
                     ) : null}
@@ -2979,11 +2976,11 @@ function renderFieldControl(
                 ? formatCepValue(event.target.value)
                 : isCurrencyInputField
                   ? formatCurrencyInputValue(event.target.value)
-                    : isSharedDateField(field)
-                      ? event.target.value
-                      : isSharedNumberField(field)
-                        ? normalizeNumericInputValue(field, event.target.value)
-                        : event.target.value;
+                  : isSharedDateField(field)
+                    ? event.target.value
+                    : isSharedNumberField(field)
+                      ? normalizeNumericInputValue(field, event.target.value)
+                      : event.target.value;
         setPayload((current) => ({ ...current, [field.key]: value }));
       }}
     />

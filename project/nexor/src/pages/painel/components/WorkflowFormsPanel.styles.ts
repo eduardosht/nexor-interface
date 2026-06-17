@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import {
   biteplanerButtonHoverStyles,
@@ -10,16 +10,6 @@ import {
   PortalSectionDescription,
   PortalSectionTitle,
 } from '../styles/portalTypography';
-
-const sadPulse = keyframes`
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-
-  50% {
-    transform: translateY(-3px) scale(1.04);
-  }
-`;
 
 export const Panel = styled.section<{ $variant: 'panel' | 'embedded' }>`
   display: grid;
@@ -66,6 +56,11 @@ export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
   @media (max-width: 1280px) {
     gap: 12px;
     padding: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '14px')};
+  }
+
+  @media (max-width: 720px) {
+    padding-bottom: ${({ $presentation }) =>
+    $presentation === 'flat' ? '108px' : 'calc(108px + 14px)'};
   }
 `;
 
@@ -273,6 +268,7 @@ export const Feedback = styled.span<{ $tone: 'success' | 'error' }>`
 export const FormActionButton = styled.button`
   ${biteplanerButtonSurfaceStyles}
   ${biteplanerButtonHoverStyles}
+  min-width: 130px;
 
   &[data-variant='secondary'] {
     border-color: #15803d;
@@ -296,10 +292,12 @@ export const FormActionButton = styled.button`
 
   @media (max-width: 760px) {
     gap: 12px;
-    padding: 12px 14px;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
 
     > span {
-      gap: 12px;
+      gap: 8px;
     }
   }
 `;
@@ -309,30 +307,33 @@ export const FormActionButtonContent = styled.span`
   align-items: center;
   justify-content: center;
   gap: 22px;
-  flex: 0 0 max-content;
-  inline-size: max-content;
-  width: max-content;
-  max-width: none;
-  min-inline-size: max-content;
-  min-width: max-content;
+  flex: 0 1 auto;
+  inline-size: auto;
+  width: auto;
+  max-width: 100%;
+  min-inline-size: 0;
+  min-width: 0;
   line-height: inherit;
-  white-space: nowrap;
-  text-wrap: nowrap;
+  white-space: normal;
+  text-wrap: wrap;
 
   svg {
     flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
   }
 `;
 
 export const FormActionButtonLabel = styled.span`
   display: inline-block;
-  flex: 0 0 auto;
-  inline-size: max-content;
-  width: max-content;
-  max-width: none;
-  min-inline-size: max-content;
-  min-width: max-content;
-  white-space: nowrap;
+  flex: 0 1 auto;
+  inline-size: auto;
+  width: auto;
+  max-width: 100%;
+  min-inline-size: 0;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 `;
 
 export const Actions = styled.div`
@@ -352,7 +353,9 @@ export const Actions = styled.div`
     gap: 14px;
 
     > button {
-      flex: 0 0 max-content;
+      flex: 1 1 calc(50% - 7px);
+      min-width: 130px;
+      max-width: 100%;
     }
 
     > ${Feedback} {
@@ -363,84 +366,304 @@ export const Actions = styled.div`
 
 export const PendingRequiredLegend = styled.aside`
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(203, 213, 225, 0.58);
-  border-radius: 6px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  gap: 20px;
+  margin-top: 24px;
+  padding: 24px 26px 0;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #07152f;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.04);
+
+  @media (max-width: 720px) {
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 12px 0;
+    border-radius: 8px;
+  }
+`;
+
+export const PendingRequiredHeader = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+
+  @media (max-width: 520px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+`;
+
+export const PendingRequiredIcon = styled.span`
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+
+  @media (max-width: 720px) {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+export const PendingRequiredHeaderCopy = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 `;
 
 export const PendingRequiredTitle = styled.strong`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 700;
+  color: #07152f;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.2;
+
+  @media (max-width: 720px) {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+`;
+
+export const PendingRequiredDescription = styled.span`
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.35;
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+`;
+
+export const PendingRequiredCountBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+
+  @media (max-width: 720px) {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 520px) {
+    justify-self: start;
+    margin-top: 2px;
+  }
+`;
+
+export const PendingRequiredHeaderAction = styled.span`
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #374151;
+
+  @media (max-width: 720px) {
+    width: 28px;
+    height: 28px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    grid-column: 3;
+    grid-row: 1;
+  }
 `;
 
 export const PendingRequiredList = styled.ul`
   display: grid;
-  gap: 0;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
+
+  @media (max-width: 720px) {
+    gap: 8px;
+  }
 `;
 
 export const PendingRequiredItem = styled.li`
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 24px;
-  padding: 6px 0;
-  border-top: 1px solid rgba(203, 213, 225, 0.42);
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.35;
-
-  span {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
-
-  &:first-child {
-    padding-top: 0;
-    border-top: 0;
-  }
-
-  &:last-child {
-    padding-bottom: 0;
-  }
+  min-width: 0;
 `;
 
 export const PendingRequiredButton = styled.button`
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 1px solid rgba(203, 213, 225, 0.86);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #07152f;
   cursor: pointer;
   transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
     color 160ms ease,
     background 160ms ease;
 
   &:hover {
-    background: rgba(148, 163, 184, 0.14);
-    color: ${({ theme }) => theme.colors.textPrimary};
+    border-color: rgba(220, 38, 38, 0.24);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(79, 147, 99, 0.28);
+    outline: 2px solid rgba(220, 38, 38, 0.28);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 720px) {
+    grid-template-columns: 28px minmax(0, 1fr) 24px;
+    gap: 10px;
+    min-height: 50px;
+    padding: 10px 12px;
+  }
+`;
+
+export const PendingRequiredItemNumber = styled.span`
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.09);
+  color: #dc2626;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+
+  @media (max-width: 720px) {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+`;
+
+export const PendingRequiredItemLabel = styled.span`
+  min-width: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: left;
+  overflow-wrap: anywhere;
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    line-height: 1.22;
+  }
+`;
+
+export const PendingRequiredItemBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+
+  @media (max-width: 720px) {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+`;
+
+export const PendingRequiredItemArrow = styled.span`
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #111827;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+
+  ${PendingRequiredButton}:hover & {
+    background: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+  }
+
+  @media (max-width: 720px) {
+    width: 24px;
+    height: 24px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+export const PendingRequiredFooter = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0 -26px;
+  padding: 16px 26px;
+  border-top: 1px solid rgba(203, 213, 225, 0.7);
+  color: #4b5563;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+
+  @media (max-width: 720px) {
+    gap: 8px;
+    margin: 0 -12px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+`;
+
+export const PendingRequiredFooterMark = styled.span`
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+
+  @media (max-width: 720px) {
+    font-size: 12px;
   }
 `;
 
@@ -487,18 +710,6 @@ export const OrthodonticBlockerFeedback = styled.div`
   line-height: 1.45;
 `;
 
-export const OrthodonticBlockerIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background: #FEE2E2;
-  color: #B91C1C;
-  animation: ${sadPulse} 1.8s ease-in-out infinite;
-`;
-
 export const LockNotice = styled.p`
   margin: 8px 0 0;
   padding: 10px 12px;
@@ -535,9 +746,18 @@ export const OnboardingProgressCard = styled.section`
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 
   @media (max-width: 720px) {
-    gap: 18px;
-    padding: 20px 16px;
-    border-radius: 14px;
+    position: fixed;
+    left: 50%;
+    right: auto;
+    bottom: 0;
+    width: min(100vw, 430px);
+    z-index: 86;
+    transform: translateX(-50%);
+    justify-items: center;
+    gap: 6px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
   }
 `;
 
@@ -547,6 +767,11 @@ export const ProgressCardTitle = styled.h3`
   font-size: 18px;
   font-weight: 900;
   line-height: 1.25;
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    line-height: 1.2;
+  }
 `;
 
 export const OnboardingProgressRail = styled.div`
@@ -564,7 +789,15 @@ export const OnboardingProgressRail = styled.div`
   scrollbar-width: thin;
 
   @media (max-width: 720px) {
-    grid-auto-columns: minmax(92px, 1fr);
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    gap: 6px;
+    overflow: visible;
+    padding-bottom: 0;
   }
 `;
 
@@ -601,9 +834,11 @@ export const OnboardingProgressStep = styled.div<{ $active: boolean; $complete: 
   @media (max-width: 720px) {
     justify-items: center;
     text-align: center;
+    align-content: start;
+    gap: 3px;
 
     &::before {
-      display: block;
+      display: none;
     }
   }
 `;
@@ -624,9 +859,10 @@ export const OnboardingStepNumber = styled.span<{ $active: boolean; $complete: b
   font-weight: 900;
 
   @media (max-width: 720px) {
-    width: 34px;
-    height: 34px;
-    font-size: 14px;
+    width: 22px;
+    height: 22px;
+    border-width: 1px;
+    font-size: 11px;
   }
 `;
 
@@ -645,11 +881,15 @@ export const OnboardingStepText = styled.span`
   }
 
   @media (max-width: 720px) {
-    font-size: 12px;
-    line-height: 1.25;
+    display: grid;
+    gap: 0;
+    max-width: 74px;
+    font-size: 10px;
+    line-height: 1.08;
 
     small {
-      font-size: 12px;
+      font-size: 9px;
+      line-height: 1.05;
     }
   }
 `;

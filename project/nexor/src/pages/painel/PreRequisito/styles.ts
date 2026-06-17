@@ -248,6 +248,8 @@ export const PrerequisiteHero = styled.header`
   max-width: 980px;
 
   ${OnboardingMainTitle} {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
     max-width: 760px;
   }
 

@@ -250,9 +250,53 @@ describe('PortalLayout navigation', () => {
     const drawer = screen.getByRole('dialog', { name: /menu administrativo/i });
 
     expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/admin/home');
+    expect(within(drawer).getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
+    expect(within(drawer).getByRole('link', { name: /remoções/i })).toHaveAttribute('href', '/painel/admin/remocoes-conta');
+    expect(within(drawer).getByRole('link', { name: /relatórios/i })).toHaveAttribute('href', '/painel/admin/relatorios');
     expect(within(drawer).getByRole('link', { name: /parceiros/i })).toHaveAttribute('href', '/painel/admin/parceiros');
     expect(within(drawer).getByRole('link', { name: /dentistas/i })).toHaveAttribute('href', '/painel/admin/dentistas');
     expect(within(drawer).getByRole('link', { name: /laboratórios/i })).toHaveAttribute('href', '/painel/admin/laboratorios');
+    expect(within(drawer).getByRole('link', { name: /usuários/i })).toHaveAttribute('href', '/painel/admin/usuarios');
+    expect(within(drawer).getByRole('link', { name: /config. negócio/i })).toHaveAttribute('href', '/painel/admin/configuracoes/negocio');
+    expect(within(drawer).getByRole('link', { name: /config. sistema/i })).toHaveAttribute('href', '/painel/admin/configuracoes/sistema');
+    expect(within(drawer).getByRole('button', { name: /^sair$/i })).toBeInTheDocument();
+  });
+
+  it('keeps the portal menu accessible on mobile for non-admin users', () => {
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+      },
+      demoPersona: 'athlete',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu mobile/i }));
+
+    const drawer = screen.getByRole('dialog', { name: /menu do portal/i });
+
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/home');
+    expect(within(drawer).getByRole('link', { name: /minha conta/i })).toHaveAttribute('href', '/painel/conta');
+    expect(within(drawer).getByRole('link', { name: /biteplaner/i })).toHaveAttribute('href', '/painel/biteplaner');
+    expect(within(drawer).getByRole('button', { name: /^sair$/i })).toBeInTheDocument();
+  });
+
+  it('signs out from the mobile drawer logout action', () => {
+    const signOut = vi.fn();
+    renderLayout('/painel/home', {
+      signOut,
+      backendUser: { email: 'cliente@nexor.dev', roles: ['customer'] },
+      demoPersona: 'athlete',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir menu mobile/i }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: /menu do portal/i })).getByRole('button', { name: /^sair$/i }));
+
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/entrar');
   });
 
   it('closes the mobile drawer when the current route link is selected', () => {
@@ -650,6 +694,27 @@ describe('PortalLayout navigation', () => {
     expect(source).toContain('--portal-panel-icon-size: 32px');
     expect(source).toContain('--portal-panel-card-padding: 16px');
     expect(source).toContain('max-width: var(--portal-panel-icon-size)');
+    expect(source).toContain('width: 16px');
+    expect(source).toContain('height: 16px');
+    expect(source).toContain('font-size: 12px');
+  });
+
+  it('keeps the mobile drawer links aligned with the desktop sidebar density', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+    const drawerSource = source.slice(
+      source.indexOf('export const MobileDrawerNav'),
+      source.indexOf('export const Topbar')
+    );
+
+    expect(drawerSource).toContain('export const MobileDrawerLink');
+    expect(drawerSource).toContain('display: flex;');
+    expect(drawerSource).toContain('flex-direction: column;');
+    expect(drawerSource).toContain('padding: 10px 16px;');
+    expect(drawerSource).toContain('font-size: 13px;');
+    expect(drawerSource).toContain('export const MobileDrawerFooter');
+    expect(drawerSource).toContain('export const MobileDrawerLogoutButton');
+    expect(drawerSource).not.toContain('min-height: 40px;');
+    expect(drawerSource).not.toContain('min-height: 44px;');
   });
 
   it('does not render the removed access mode modal from the sidebar', () => {

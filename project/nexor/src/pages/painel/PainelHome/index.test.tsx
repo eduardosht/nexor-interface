@@ -103,6 +103,11 @@ describe('PainelHome', () => {
     expect(screen.queryByTestId('biteplaner-coming-soon-hero')).not.toBeInTheDocument();
     expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
     expect(screen.getByText('R$ 1.370,00')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /valor é referente a uma unidade do biteplaner/i,
+      })
+    ).toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 

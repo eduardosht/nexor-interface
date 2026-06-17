@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Snackbar, SnackbarStack } from '@nexor/design-system';
 import { SkeletonCard } from '../../../components/Skeleton';
@@ -142,12 +141,24 @@ export function PreRequisito() {
     () => workflowForms.filter((form) => form.templateKey === 'customer_new_user_onboarding'),
     [workflowForms]
   );
+  const completedOnboarding = useMemo(
+    () => onboardingForms.some(isCustomerOnboardingComplete),
+    [onboardingForms]
+  );
   const shouldRedirectToOnboarding = Boolean(
     order?.id &&
     !formsLoading &&
     !formsError &&
     intakeForms.length === 0 &&
     onboardingForms.some((form) => !isCustomerOnboardingComplete(form))
+  );
+  const isAwaitingPreRequisiteRelease = Boolean(
+    order?.id &&
+    !formsLoading &&
+    !formsError &&
+    intakeForms.length === 0 &&
+    !shouldRedirectToOnboarding &&
+    completedOnboarding
   );
   const completedIntake = useMemo(
     () => intakeForms.find(customerIntakeIsComplete) ?? null,
@@ -249,9 +260,6 @@ export function PreRequisito() {
             <>
               <S.PrerequisiteHero>
                 <S.OnboardingMainTitle>
-                  <S.OnboardingHeroIcon aria-hidden="true">
-                    <Info size={48} strokeWidth={1.9} />
-                  </S.OnboardingHeroIcon>
                   <span>Pre-requisito Biteplaner</span>
                 </S.OnboardingMainTitle>
                 <S.OnboardingHeroLead>
@@ -329,7 +337,18 @@ export function PreRequisito() {
                     />
                   )}
 
-                  {intakeForms.length === 0 && !completedIntake && !formsLoading && !formsError && !shouldRedirectToOnboarding ? (
+                  {isAwaitingPreRequisiteRelease ? (
+                    <S.ProcessingBanner role="status" aria-live="polite">
+                      <S.ProcessingSpinner aria-hidden="true" />
+                      <S.ProcessingContent>
+                        <strong>Estamos liberando o Pre-requisito Biteplaner</strong>
+                        <span>
+                          Seu cadastro foi recebido e a próxima etapa está sendo preparada. Aguarde alguns instantes
+                          nesta tela; assim que o formulário for liberado, você poderá continuar.
+                        </span>
+                      </S.ProcessingContent>
+                    </S.ProcessingBanner>
+                  ) : intakeForms.length === 0 && !completedIntake && !formsLoading && !formsError && !shouldRedirectToOnboarding ? (
                     <S.Banner role="status">A avaliação inicial compartilhada ainda não foi liberada para este pedido.</S.Banner>
                   ) : null}
 

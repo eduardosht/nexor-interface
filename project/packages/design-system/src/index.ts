@@ -86,6 +86,7 @@ export {
   type AdminDataTableProps,
 } from './components/AdminDataTable';
 export { AdminStatusPill, type AdminStatusPillProps } from './components/AdminStatusPill';
+export * from './components/admin';
 export {
   AdminModal,
   AdminModalAction,

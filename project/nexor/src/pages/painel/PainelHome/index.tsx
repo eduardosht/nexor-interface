@@ -267,7 +267,19 @@ export function PainelHome() {
                 <S.BpStatusBadge>Disponível</S.BpStatusBadge>
               </S.ProductStat>
               <S.ProductStat>
-                <S.BpRowLabel>Valor</S.BpRowLabel>
+                <S.BpLabelWithTooltip>
+                  <S.BpRowLabel>Valor</S.BpRowLabel>
+                  <S.BpTooltipTrigger
+                    type="button"
+                    aria-label="O valor é referente a uma unidade do Biteplaner. Valores de consultas são acertados à parte com o dentista licenciado."
+                  >
+                    <Info size={13} strokeWidth={2.4} aria-hidden="true" />
+                    <S.BpTooltipBubble role="tooltip">
+                      O valor é referente a uma unidade do Biteplaner. Valores de consultas são acertados à parte
+                      com o dentista licenciado.
+                    </S.BpTooltipBubble>
+                  </S.BpTooltipTrigger>
+                </S.BpLabelWithTooltip>
                 <S.BpPrice>R$ 1.370,00</S.BpPrice>
               </S.ProductStat>
             </S.ProductStats>

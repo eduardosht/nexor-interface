@@ -16,7 +16,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e:onboarding-tab": "node scripts/pw-onboarding-tab-persistence.mjs",
-    "e2e:full-flow:record": "node scripts/e2e-full-flow-recording.mjs"
+    "e2e:full-flow:record": "node scripts/e2e-full-flow-recording.mjs",
+    "qa:visual:admin-mobile": "node scripts/visual-qa-admin-mobile.mjs"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",

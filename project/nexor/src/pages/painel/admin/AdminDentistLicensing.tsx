@@ -14,6 +14,7 @@ import {
   AdminModalTextAreaLabel,
   AdminPagination,
   Button,
+  ResponsiveDataList,
   Select,
 } from '@nexor/design-system';
 import {
@@ -47,6 +48,18 @@ import {
 } from '../../../features/demo/biteplanerFlow';
 import { PageStack } from './styles';
 import { AdminProductGate } from './AdminProductGate';
+import {
+  AdminMobileActionButton,
+  AdminMobileActions,
+  AdminMobileCard,
+  AdminMobileCardHeader,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+} from './mobileCards';
 
 const statusLabel: Record<string, string> = {
   pending: 'Aguardando análise',
@@ -331,89 +344,141 @@ export function AdminDentistLicensing() {
             {loading ? (
               <SkeletonTable rows={6} columns={6} />
             ) : (
-              <TableWrap data-testid="admin-dentist-requests-table">
-                <RequestsTable>
-                  <thead>
-                    <tr>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('dentist')}>
-                          Dentista <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('cro')}>
-                          CRO <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('clinics')}>
-                          Clínicas <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('status')}>
-                          Status <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('workflow')}>
-                          Fluxo <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <SortableTh>
-                        <SortButton type="button" onClick={() => toggleSort('submittedAt')}>
-                          Enviado em <ArrowUpDown size={13} aria-hidden />
-                        </SortButton>
-                      </SortableTh>
-                      <th>Visualizar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedRequests.length === 0 ? (
-                      <tr>
-                        <EmptyCell colSpan={7}>Nenhuma solicitação encontrada.</EmptyCell>
-                      </tr>
-                    ) : (
-                      paginatedRequests.map((request) => (
-                        <tr key={request.id}>
-                          <td>
-                            <DentistCell>
-                              <Avatar aria-hidden>{getInitials(request.dentistName)}</Avatar>
-                              <DentistInfo>
-                                <DentistName>{request.dentistName || 'Não informado'}</DentistName>
-                                <DentistMeta>{request.professionalSummary || 'Resumo não informado'}</DentistMeta>
-                              </DentistInfo>
-                            </DentistCell>
-                          </td>
-                          <td>{request.croNumber || 'Não informado'}</td>
-                          <ClinicCount>{request.practiceLocations.length}</ClinicCount>
-                          <td>
-                            <StatusPill $color={getStatusColor(request.status)}>
-                              <StatusDot $color={getStatusColor(request.status)} />
-                              {statusLabel[request.status] ?? request.status}
-                            </StatusPill>
-                          </td>
-                          <td>{workflowLabel[request.workflowStatus] ?? request.workflowStatus}</td>
-                          <td>{formatDate(request.submittedAt)}</td>
-                          <ActionCell>
-                            <ViewButton
-                              type="button"
-                              aria-label={`Visualizar solicitação de ${request.dentistName}`}
-                              title="Visualizar"
-                              onClick={() => {
-                                setSelectedRequest(request);
-                                setRejectReason('');
-                              }}
-                            >
-                              <Eye size={16} aria-hidden />
-                            </ViewButton>
-                          </ActionCell>
+              <ResponsiveDataList
+                desktop={
+                  <TableWrap data-testid="admin-dentist-requests-table">
+                    <RequestsTable>
+                      <thead>
+                        <tr>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('dentist')}>
+                              Dentista <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('cro')}>
+                              CRO <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('clinics')}>
+                              Clínicas <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('status')}>
+                              Status <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('workflow')}>
+                              Fluxo <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <SortableTh>
+                            <SortButton type="button" onClick={() => toggleSort('submittedAt')}>
+                              Enviado em <ArrowUpDown size={13} aria-hidden />
+                            </SortButton>
+                          </SortableTh>
+                          <th>Visualizar</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </RequestsTable>
-              </TableWrap>
+                      </thead>
+                      <tbody>
+                        {paginatedRequests.length === 0 ? (
+                          <tr>
+                            <EmptyCell colSpan={7}>Nenhuma solicitação encontrada.</EmptyCell>
+                          </tr>
+                        ) : (
+                          paginatedRequests.map((request) => (
+                            <tr key={request.id}>
+                              <td>
+                                <DentistCell>
+                                  <Avatar aria-hidden>{getInitials(request.dentistName)}</Avatar>
+                                  <DentistInfo>
+                                    <DentistName>{request.dentistName || 'Não informado'}</DentistName>
+                                    <DentistMeta>{request.professionalSummary || 'Resumo não informado'}</DentistMeta>
+                                  </DentistInfo>
+                                </DentistCell>
+                              </td>
+                              <td>{request.croNumber || 'Não informado'}</td>
+                              <ClinicCount>{request.practiceLocations.length}</ClinicCount>
+                              <td>
+                                <StatusPill $color={getStatusColor(request.status)}>
+                                  <StatusDot $color={getStatusColor(request.status)} />
+                                  {statusLabel[request.status] ?? request.status}
+                                </StatusPill>
+                              </td>
+                              <td>{workflowLabel[request.workflowStatus] ?? request.workflowStatus}</td>
+                              <td>{formatDate(request.submittedAt)}</td>
+                              <ActionCell>
+                                <ViewButton
+                                  type="button"
+                                  aria-label={`Visualizar solicitação de ${request.dentistName}`}
+                                  title="Visualizar"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setRejectReason('');
+                                  }}
+                                >
+                                  <Eye size={16} aria-hidden />
+                                </ViewButton>
+                              </ActionCell>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </RequestsTable>
+                  </TableWrap>
+                }
+                data={paginatedRequests}
+                keyExtractor={(request) => request.id}
+                emptyMessage="Nenhuma solicitação encontrada."
+                mobileTestId="admin-dentist-requests-mobile-list"
+                renderCard={(request) => (
+                  <AdminMobileCard>
+                    <AdminMobileCardHeader>
+                      <div>
+                        <AdminMobileCardTitle>{request.dentistName || 'Não informado'}</AdminMobileCardTitle>
+                        <AdminMobileCardSubtitle>{request.professionalSummary || 'Resumo não informado'}</AdminMobileCardSubtitle>
+                      </div>
+                      <StatusPill $color={getStatusColor(request.status)}>
+                        <StatusDot $color={getStatusColor(request.status)} />
+                        {statusLabel[request.status] ?? request.status}
+                      </StatusPill>
+                    </AdminMobileCardHeader>
+                    <AdminMobileMetaGrid>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>CRO</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{request.croNumber || 'Não informado'}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>Clínicas</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{request.practiceLocations.length}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>Fluxo</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{workflowLabel[request.workflowStatus] ?? request.workflowStatus}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>Enviado em</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{formatDate(request.submittedAt)}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                    </AdminMobileMetaGrid>
+                    <AdminMobileActions>
+                      <AdminMobileActionButton
+                        type="button"
+                        aria-label={`Abrir dados do dentista ${request.dentistName}`}
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setRejectReason('');
+                        }}
+                      >
+                        Revisar solicitação
+                      </AdminMobileActionButton>
+                    </AdminMobileActions>
+                  </AdminMobileCard>
+                )}
+              />
             )}
 
             {!loading ? (

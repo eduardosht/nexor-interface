@@ -84,9 +84,11 @@ describe('AdminDentistLicensing', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('admin-dentist-requests-table')).toBeInTheDocument());
+    expect(screen.getByTestId('admin-dentist-requests-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('admin-dentist-requests-mobile-list')).getByText(/dra maria/i)).toBeInTheDocument();
     expect(screen.getByText(/dentistas querendo se licenciar/i)).toBeInTheDocument();
-    expect(screen.getByText(/dra maria/i)).toBeInTheDocument();
-    expect(screen.getByText(/cro-sp 12345/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/dra maria/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/cro-sp 12345/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de dra maria/i }));
 
@@ -126,7 +128,7 @@ describe('AdminDentistLicensing', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/dr carlos/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/dr carlos/i).length).toBeGreaterThan(0));
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de dr carlos/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /dados enviados pelo dentista/i });
@@ -179,14 +181,14 @@ describe('AdminDentistLicensing', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/dra maria/i)).toBeInTheDocument());
-    expect(screen.getByText(/dr carlos/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText(/dra maria/i).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/dr carlos/i).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText(/buscar dentistas/i), {
       target: { value: 'maria' },
     });
 
-    expect(screen.getByText(/dra maria/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/dra maria/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/dr carlos/i)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText(/buscar dentistas/i), {
@@ -196,6 +198,6 @@ describe('AdminDentistLicensing', () => {
     fireEvent.click(screen.getByRole('option', { name: /aprovados/i }));
 
     expect(screen.queryByText(/dra maria/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/dr carlos/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/dr carlos/i).length).toBeGreaterThan(0);
   });
 });

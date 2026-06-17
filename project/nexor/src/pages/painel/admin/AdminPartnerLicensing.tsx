@@ -16,6 +16,8 @@ import {
   AdminModalTextAreaLabel,
   AdminStatusPill,
   Button,
+  Field,
+  ResponsiveDataList,
   type AdminDataTableColumn,
   type AdminMetric,
 } from '@nexor/design-system';
@@ -34,6 +36,19 @@ import {
 } from '../../../features/demo/biteplanerFlow';
 import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
 import { AdminProductGate } from './AdminProductGate';
+import {
+  AdminMobileActionButton,
+  AdminMobileActions,
+  AdminMobileCard,
+  AdminMobileCardHeader,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+  AdminMobileOnly,
+} from './mobileCards';
 
 const statusLabel: Record<string, string> = {
   pending: 'Aguardando análise',
@@ -236,16 +251,74 @@ export function AdminPartnerLicensing() {
       {selectedProduct ? (
         <>
           {loading ? <SkeletonGrid cards={3} minCardWidth="180px" /> : <AdminMetricGrid metrics={metrics} />}
-          <AdminDataTable
+          <AdminMobileOnly>
+            <Field
+              as="input"
+              label="Buscar"
+              placeholder="Nome, e-mail, documento ou local"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </AdminMobileOnly>
+          <ResponsiveDataList
+            desktop={
+              <AdminDataTable
+                data={filteredRequests}
+                columns={columns}
+                keyExtractor={(row) => row.id}
+                searchLabel="Buscar"
+                searchPlaceholder="Buscar por nome, e-mail, documento, tipo ou localização..."
+                searchValue={search}
+                onSearchChange={setSearch}
+                emptyMessage="Nenhuma solicitação encontrada."
+                testId="admin-partner-requests-table"
+              />
+            }
             data={filteredRequests}
-            columns={columns}
             keyExtractor={(row) => row.id}
-            searchLabel="Buscar"
-            searchPlaceholder="Buscar por nome, e-mail, documento, tipo ou localização..."
-            searchValue={search}
-            onSearchChange={setSearch}
             emptyMessage="Nenhuma solicitação encontrada."
-            testId="admin-partner-requests-table"
+            mobileTestId="admin-partner-requests-mobile-list"
+            renderCard={(row) => (
+              <AdminMobileCard>
+                <AdminMobileCardHeader>
+                  <div>
+                    <AdminMobileCardTitle>{row.partnerName || 'Não informado'}</AdminMobileCardTitle>
+                    <AdminMobileCardSubtitle>{getPartnerEmail(row) || 'E-mail não informado'}</AdminMobileCardSubtitle>
+                  </div>
+                  <AdminStatusPill color={getStatusColor(row.status)} label={statusLabel[row.status] ?? row.status} />
+                </AdminMobileCardHeader>
+                <AdminMobileMetaGrid>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Documento</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{formatDocumentType(row.documentType)} {row.documentNumber}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Tipo</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{formatPartnerType(row.partnerType)}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>Enviado em</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{formatDate(row.submittedAt)}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                  <AdminMobileMetaItem>
+                    <AdminMobileMetaLabel>{getPartnerContextLabel(row)}</AdminMobileMetaLabel>
+                    <AdminMobileMetaValue>{getPartnerContextValue(row)}</AdminMobileMetaValue>
+                  </AdminMobileMetaItem>
+                </AdminMobileMetaGrid>
+                <AdminMobileActions>
+                  <AdminMobileActionButton
+                    type="button"
+                    aria-label={`Abrir dados do parceiro ${row.partnerName}`}
+                    onClick={() => {
+                      setSelectedRequest(row);
+                      setRejectReason('');
+                    }}
+                  >
+                    Revisar solicitação
+                  </AdminMobileActionButton>
+                </AdminMobileActions>
+              </AdminMobileCard>
+            )}
           />
         </>
       ) : null}

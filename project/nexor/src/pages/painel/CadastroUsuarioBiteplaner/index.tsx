@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CirclePlus, Database, Info, ShieldCheck, UserRound, UserRoundCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SkeletonCard } from '../../../components/Skeleton';
@@ -17,6 +17,8 @@ import { WorkflowFormsPanel } from '../components/WorkflowFormsPanel';
 import * as S from '../PreRequisito/styles';
 
 const ONBOARDING_TEMPLATE_KEY = 'customer_new_user_onboarding';
+const NEXT_STEP_POLL_INTERVAL_MS = 900;
+const NEXT_STEP_MAX_ATTEMPTS = 12;
 
 function onboardingIsSubmitted(form: DemoWorkflowForm) {
   return isCustomerOnboardingComplete(form);
@@ -24,6 +26,12 @@ function onboardingIsSubmitted(form: DemoWorkflowForm) {
 
 function getNextPathAfterOnboarding(order: DemoOrderSummary | null, forms: DemoWorkflowForm[]) {
   return getAthleteNextPath(getEffectiveAthleteOrder(order, forms));
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function getBlockerMessage(form: DemoWorkflowForm | undefined) {
@@ -53,6 +61,7 @@ export function CadastroUsuarioBiteplaner() {
   const [privacyGateChecked, setPrivacyGateChecked] = useState(false);
   const [privacyGateUnlocked, setPrivacyGateUnlocked] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const nextStepPollingRef = useRef(false);
 
   useEffect(() => {
     if (!token) {
@@ -143,8 +152,51 @@ export function CadastroUsuarioBiteplaner() {
       return;
     }
 
-    navigate(getNextPathAfterOnboarding(order, workflowForms), { replace: true });
-  }, [formsLoading, loading, navigate, onboardingCompleted, order, workflowForms]);
+    void prepareNextStepAfterOnboarding(workflowForms);
+  }, [formsLoading, loading, onboardingCompleted, order, workflowForms]);
+
+  async function prepareNextStepAfterOnboarding(initialForms: DemoWorkflowForm[]) {
+    if (!order?.id || !token || nextStepPollingRef.current) {
+      return;
+    }
+
+    nextStepPollingRef.current = true;
+    setOnboardingCompleted(true);
+
+    let nextOrder = order;
+    let nextForms = initialForms;
+
+    for (let attempt = 0; attempt < NEXT_STEP_MAX_ATTEMPTS; attempt += 1) {
+      setWorkflowForms(nextForms);
+
+      const nextPath = getNextPathAfterOnboarding(nextOrder, nextForms);
+      const nextStepReady = nextPath !== '/painel/biteplaner/onboarding';
+
+      if (nextStepReady) {
+        navigate(nextPath, { replace: true });
+        return;
+      }
+
+      await delay(NEXT_STEP_POLL_INTERVAL_MS);
+
+      try {
+        const [ordersResponse, formsResponse] = await Promise.all([
+          fetchOrders('user', token),
+          fetchWorkflowForms(order.id, token),
+        ]);
+        nextOrder = ordersResponse.orders.find((item) => item.id === order.id) ?? ordersResponse.orders[0] ?? nextOrder;
+        nextForms = formsResponse.forms;
+        setOrder(nextOrder);
+      } catch {
+        setError('Estamos preparando a próxima etapa. Aguarde alguns instantes e tente atualizar a página.');
+        nextStepPollingRef.current = false;
+        return;
+      }
+    }
+
+    setError('Estamos preparando o pré-requisito Biteplaner. Aguarde alguns instantes antes de continuar.');
+    nextStepPollingRef.current = false;
+  }
 
   function handleWorkflowFormsChange(nextForms: DemoWorkflowForm[]) {
     setWorkflowForms(nextForms);
@@ -165,8 +217,7 @@ export function CadastroUsuarioBiteplaner() {
     }
 
     setError('');
-    setOnboardingCompleted(true);
-    navigate(getNextPathAfterOnboarding(order, nextForms), { replace: true });
+    void prepareNextStepAfterOnboarding(nextForms);
   }
 
   const submittedOnboarding = workflowForms.find(
@@ -210,7 +261,7 @@ export function CadastroUsuarioBiteplaner() {
                 <br />
                 Equipe NEXOR
               </S.OnboardingCompletionText>
-              <S.OnboardingCountdown>Redirecionando para a próxima etapa.</S.OnboardingCountdown>
+              <S.OnboardingCountdown>Preparando sua próxima etapa.</S.OnboardingCountdown>
             </S.OnboardingCompletion>
           ) : submittedOnboarding ? (
             <S.OnboardingCompletion role="status" aria-live="polite">

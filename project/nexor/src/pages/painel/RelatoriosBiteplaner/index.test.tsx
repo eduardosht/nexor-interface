@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { initDesignSystem } from '@nexor/design-system';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -57,7 +57,9 @@ describe('RelatoriosBiteplaner', () => {
     });
 
     expect(mockApiGet).toHaveBeenCalledWith('/v1/reports/biteplaner/orders?purpose=finance', 'tok');
-    expect(screen.getByText(/status financeiro/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/status financeiro/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('report-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('report-mobile-list')).getByText(/status financeiro/i)).toBeInTheDocument();
     expect(screen.queryByText(/limitação atual de treino ou saúde/i)).not.toBeInTheDocument();
   });
 

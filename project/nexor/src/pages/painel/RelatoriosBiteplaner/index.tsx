@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { AdminDataTable, AdminMetricGrid, type AdminDataTableColumn, type AdminMetric } from '@nexor/design-system';
+import { AdminDataTable, AdminMetricGrid, ResponsiveDataList, type AdminDataTableColumn, type AdminMetric } from '@nexor/design-system';
 import { api } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import * as S from './styles';
+import {
+  AdminMobileCard,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+} from '../admin/mobileCards';
 
 type ReportPurpose = 'support' | 'finance' | 'clinical_care' | 'operations' | 'management' | 'compliance';
 
@@ -290,12 +299,36 @@ export function RelatoriosBiteplaner() {
             ))}
           </S.TableWrap>
         ) : (
-          <AdminDataTable
+          <ResponsiveDataList
+            desktop={
+              <AdminDataTable
+                data={report.rows}
+                columns={reportColumns}
+                keyExtractor={(row, index) => `${row.orderId ?? 'row'}-${index}`}
+                emptyMessage="Nenhum registro encontrado para os filtros atuais."
+                testId="report-table"
+              />
+            }
             data={report.rows}
-            columns={reportColumns}
-            keyExtractor={(row, index) => `${row.orderId ?? 'row'}-${index}`}
+            keyExtractor={(row) => `${row.orderId ?? JSON.stringify(row)}`}
             emptyMessage="Nenhum registro encontrado para os filtros atuais."
-            testId="report-table"
+            mobileTestId="report-mobile-list"
+            renderCard={(row) => (
+              <AdminMobileCard>
+                <div>
+                  <AdminMobileCardTitle>{formatReportValue('orderId', row.orderId) || 'Registro'}</AdminMobileCardTitle>
+                  <AdminMobileCardSubtitle>{formatReportValue('createdAt', row.createdAt)}</AdminMobileCardSubtitle>
+                </div>
+                <AdminMobileMetaGrid>
+                  {report.fields.map((field) => (
+                    <AdminMobileMetaItem key={field.key}>
+                      <AdminMobileMetaLabel>{reportFieldLabels[field.key] ?? field.label}</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{formatReportValue(field.key, row[field.key])}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                  ))}
+                </AdminMobileMetaGrid>
+              </AdminMobileCard>
+            )}
           />
         )}
 

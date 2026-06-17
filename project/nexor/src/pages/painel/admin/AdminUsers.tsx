@@ -16,6 +16,9 @@ import {
   AdminModalTextAreaLabel,
   AdminStatusPill,
   Button,
+  Field,
+  FilterSheet,
+  ResponsiveDataList,
   Select,
   type AdminDataTableColumn,
   type AdminMetric,
@@ -28,6 +31,19 @@ import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { AdminProductGate } from './AdminProductGate';
 import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
+import {
+  AdminMobileActionButton,
+  AdminMobileActions,
+  AdminMobileCard,
+  AdminMobileCardHeader,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+  AdminMobileOnly,
+} from './mobileCards';
 
 type AdminProfileStatus = 'pending' | 'active' | 'inactive' | 'suspended' | 'blocked';
 
@@ -133,6 +149,8 @@ export function AdminUsers() {
   const [statusReason, setStatusReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [draftProfile, setDraftProfile] = useState('');
 
   async function loadProfiles() {
     if (!selectedProduct || !token) return;
@@ -233,6 +251,25 @@ export function AdminUsers() {
     }
   }
 
+  function openMobileFilters() {
+    setDraftProfile(profile);
+    setMobileFiltersOpen(true);
+  }
+
+  function closeMobileFilters() {
+    setDraftProfile(profile);
+    setMobileFiltersOpen(false);
+  }
+
+  function clearMobileFilters() {
+    setDraftProfile('');
+  }
+
+  function applyMobileFilters() {
+    setProfile(draftProfile);
+    setMobileFiltersOpen(false);
+  }
+
   return (
     <PageStack>
       <PageHeader>
@@ -252,29 +289,112 @@ export function AdminUsers() {
 
           {error ? <Feedback role="alert">{error}</Feedback> : null}
 
-          <AdminDataTable
-            data={profiles}
-            columns={columns}
-            keyExtractor={(row) => row.id}
-            searchLabel="Buscar"
-            searchPlaceholder="Buscar por nome, e-mail ou ID..."
-            searchValue={search}
-            onSearchChange={setSearch}
-            pageSize={6}
-            emptyMessage="Nenhum usuário encontrado para os filtros aplicados."
-            actions={
-              <FilterWrap>
-                <Select
-                  label="Perfil"
-                  value={profile}
-                  placeholder="Todos os perfis"
-                  onChange={setProfile}
-                  options={profileOptions}
-                />
-              </FilterWrap>
+          <AdminMobileOnly>
+            <Field
+              as="input"
+              label="Buscar"
+              placeholder="Nome, e-mail ou ID"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Button type="button" variant="secondary" onClick={openMobileFilters}>
+              Abrir filtros de usuários
+            </Button>
+          </AdminMobileOnly>
+          <ResponsiveDataList
+            desktop={
+              <AdminDataTable
+                data={profiles}
+                columns={columns}
+                keyExtractor={(row) => row.id}
+                searchLabel="Buscar"
+                searchPlaceholder="Buscar por nome, e-mail ou ID..."
+                searchValue={search}
+                onSearchChange={setSearch}
+                pageSize={6}
+                emptyMessage="Nenhum usuário encontrado para os filtros aplicados."
+                actions={
+                  <FilterWrap>
+                    <Select
+                      label="Perfil"
+                      value={profile}
+                      placeholder="Todos os perfis"
+                      onChange={setProfile}
+                      options={profileOptions}
+                    />
+                  </FilterWrap>
+                }
+                testId="admin-users-table"
+              />
             }
-            testId="admin-users-table"
+            data={profiles}
+            keyExtractor={(row) => row.id}
+            emptyMessage="Nenhum usuário encontrado para os filtros aplicados."
+            mobileTestId="admin-users-mobile-list"
+            renderCard={(row) => {
+              const role = getPrimaryRole(row);
+              return (
+                <AdminMobileCard>
+                  <AdminMobileCardHeader>
+                    <div>
+                      <AdminMobileCardTitle>{getProfileName(row)}</AdminMobileCardTitle>
+                      <AdminMobileCardSubtitle>{row.email || 'E-mail não informado'}</AdminMobileCardSubtitle>
+                    </div>
+                    <AdminStatusPill color={statusColor[row.status]} label={statusLabel[row.status]} />
+                  </AdminMobileCardHeader>
+                  <AdminMobileMetaGrid>
+                    <AdminMobileMetaItem>
+                      <AdminMobileMetaLabel>Perfil</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{roleLabel[role] ?? role}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                    <AdminMobileMetaItem>
+                      <AdminMobileMetaLabel>Cadastro</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{formatDateTime(row.createdAt)}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                    <AdminMobileMetaItem>
+                      <AdminMobileMetaLabel>Telefone</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{row.phone || 'Não informado'}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                    <AdminMobileMetaItem>
+                      <AdminMobileMetaLabel>Atualizado</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{formatDateTime(row.updatedAt)}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                  </AdminMobileMetaGrid>
+                  <AdminMobileActions>
+                    <AdminMobileActionButton
+                      type="button"
+                      aria-label={`Editar usuário ${getProfileName(row)}`}
+                      onClick={() => {
+                        setSelectedProfile(row);
+                        setNextStatus(row.status);
+                        setStatusReason('');
+                      }}
+                    >
+                      Editar usuário
+                    </AdminMobileActionButton>
+                  </AdminMobileActions>
+                </AdminMobileCard>
+              );
+            }}
           />
+
+          <FilterSheet
+            open={mobileFiltersOpen}
+            title="Filtros de usuários"
+            onClose={closeMobileFilters}
+            onClear={clearMobileFilters}
+            onApply={applyMobileFilters}
+          >
+            <FilterWrap>
+              <Select
+                label="Perfil"
+                value={draftProfile}
+                placeholder="Todos os perfis"
+                onChange={setDraftProfile}
+                options={profileOptions}
+              />
+            </FilterWrap>
+          </FilterSheet>
         </>
       ) : null}
 

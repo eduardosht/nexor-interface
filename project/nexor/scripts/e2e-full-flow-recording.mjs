@@ -18,6 +18,20 @@ const DEFAULT_PASSWORD = process.env.E2E_USER_PASSWORD ?? 'NexorLocal123!';
 const ACTION_DELAY_MS = Number(process.env.E2E_ACTION_DELAY_MS ?? 120);
 const STEP_PAUSE_MS = Number(process.env.E2E_STEP_PAUSE_MS ?? 4000);
 const MODAL_PAUSE_MS = Number(process.env.E2E_MODAL_PAUSE_MS ?? 3000);
+const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
+const ADMIN_MOBILE_VIEWPORT = { width: 390, height: 844 };
+const ADMIN_MOBILE_ROUTES = [
+  '/painel/home',
+  '/painel/admin/ordens',
+  '/painel/admin/relatorios',
+  '/painel/admin/parceiros',
+  '/painel/admin/remocoes-conta',
+  '/painel/admin/dentistas',
+  '/painel/admin/laboratorios',
+  '/painel/admin/usuarios',
+  '/painel/admin/configuracoes/negocio',
+  '/painel/admin/configuracoes/sistema'
+];
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
   throw new Error('Define E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD before running the full-flow recording.');
@@ -1971,10 +1985,11 @@ async function installVideoOverlay(context) {
   });
 }
 
-async function recordChapter(browser, name, email, routes, password = DEFAULT_PASSWORD) {
+async function recordChapter(browser, name, email, routes, password = DEFAULT_PASSWORD, options = {}) {
+  const viewport = options.viewport ?? DESKTOP_VIEWPORT;
   const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
-    recordVideo: { dir: videosDir, size: { width: 1440, height: 900 } }
+    viewport,
+    recordVideo: { dir: videosDir, size: viewport }
   });
   await installVideoOverlay(context);
   const page = await context.newPage();
@@ -1989,6 +2004,21 @@ async function recordChapter(browser, name, email, routes, password = DEFAULT_PA
       const fullPath = path.join(screenshotsDir, fileName);
       await page.screenshot({ path: fullPath, fullPage: true });
       report.screenshots.push(fullPath);
+      if (options.validateViewport) {
+        const viewportCheck = await page.evaluate(() => ({
+          innerWidth: window.innerWidth,
+          bodyScrollWidth: document.body.scrollWidth,
+          documentScrollWidth: document.documentElement.scrollWidth,
+          hasHorizontalOverflow:
+            document.body.scrollWidth > window.innerWidth + 1 ||
+            document.documentElement.scrollWidth > window.innerWidth + 1
+        }));
+        report.validations.push({
+          name: `${name}:${route}:horizontal-overflow`,
+          passed: !viewportCheck.hasHorizontalOverflow,
+          detail: viewportCheck
+        });
+      }
       logStep(`Recorded ${name} route`, { route, screenshot: fullPath });
     }
   } finally {
@@ -2002,6 +2032,22 @@ async function recordChapter(browser, name, email, routes, password = DEFAULT_PA
   }
 }
 
+async function recordAdminMobileEvidence() {
+  const browser = await chromium.launch({ headless: false, slowMo: 200 });
+  try {
+    await recordChapter(
+      browser,
+      'admin-mobile',
+      ADMIN_EMAIL,
+      ADMIN_MOBILE_ROUTES,
+      ADMIN_PASSWORD,
+      { viewport: ADMIN_MOBILE_VIEWPORT, validateViewport: true }
+    );
+  } finally {
+    await browser.close();
+  }
+}
+
 async function recordUiEvidence(actors) {
   const browser = await chromium.launch({ headless: false, slowMo: 200 });
   try {
@@ -2010,6 +2056,14 @@ async function recordUiEvidence(actors) {
       '/painel/admin/ordens',
       '/painel/admin/usuarios'
     ], ADMIN_PASSWORD);
+    await recordChapter(
+      browser,
+      'admin-mobile',
+      ADMIN_EMAIL,
+      ADMIN_MOBILE_ROUTES,
+      ADMIN_PASSWORD,
+      { viewport: ADMIN_MOBILE_VIEWPORT, validateViewport: true }
+    );
     await recordChapter(browser, 'customer', actors.customer.email, [
       '/painel/biteplaner',
       `/painel/biteplaner/jornada?orderId=${report.order.id}`,
@@ -2120,6 +2174,7 @@ async function main() {
     }
   }
 
+  await recordAdminMobileEvidence();
   await publishDemoAdmArtifacts();
   await writeReport();
   console.log(`[e2e] Artifacts: ${artifactsDir}`);

@@ -18,6 +18,11 @@ export const PortalPageTitle = styled.h1<{ $size?: 'default' | 'showcase' }>`
         }
       `
       : ''}
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    line-height: 1.18;
+  }
 `;
 
 export const PortalPageDescription = styled.p<{ $size?: 'default' | 'showcase' }>`
@@ -40,6 +45,11 @@ export const PortalPageDescription = styled.p<{ $size?: 'default' | 'showcase' }
         }
       `
       : ''}
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.45;
+  }
 `;
 
 export const PortalSectionTitle = styled.h2<{ $size?: 'sm' | 'md' | 'lg' }>`
@@ -50,7 +60,7 @@ export const PortalSectionTitle = styled.h2<{ $size?: 'sm' | 'md' | 'lg' }>`
   line-height: 1.25;
 
   @media (max-width: 768px) {
-    font-size: ${({ $size = 'md' }) => ($size === 'lg' ? '1.0625rem' : $size === 'sm' ? '15px' : '16px')};
+    font-size: ${({ $size = 'md' }) => ($size === 'sm' ? '14px' : '16px')};
     font-weight: ${({ $size = 'md' }) => ($size === 'lg' ? 650 : 800)};
   }
 `;
@@ -80,6 +90,11 @@ export const PortalCardText = styled.p<{ $size?: 'sm' | 'md' }>`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ $size = 'md' }) => ($size === 'sm' ? '12px' : '13px')};
   line-height: ${({ $size = 'md' }) => ($size === 'sm' ? '1.5' : '1.6')};
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.45;
+  }
 `;
 
 export const PortalMetaLabel = styled.span`
@@ -95,6 +110,11 @@ export const PortalModalTitle = styled.h2`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 18px;
   font-weight: 800;
+
+  @media (max-width: 768px) {
+    font-size: 16px;
+    line-height: 1.2;
+  }
 `;
 
 export const PortalModalDescription = styled.p`
@@ -102,4 +122,9 @@ export const PortalModalDescription = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+
+  @media (max-width: 768px) {
+    font-size: 12px;
+    line-height: 1.45;
+  }
 `;

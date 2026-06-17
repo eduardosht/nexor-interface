@@ -93,6 +93,7 @@ const Footer = styled.div`
   @media (max-width: 760px) {
     grid-template-columns: 1fr;
     gap: 14px;
+    padding-top: 16px;
   }
 `;
 
@@ -118,6 +119,11 @@ const PaginationGroup = styled.nav`
   display: inline-flex;
   align-items: center;
   gap: 10px;
+
+  @media (max-width: 420px) {
+    width: 100%;
+    gap: 6px;
+  }
 `;
 
 const PagerButton = styled.button<{ $tokens: BrandTokens }>`
@@ -139,6 +145,13 @@ const PagerButton = styled.button<{ $tokens: BrandTokens }>`
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 420px) {
+    min-width: 0;
+    flex: 1 1 0;
+    padding: 0 10px;
+    font-size: 12px;
   }
 `;
 

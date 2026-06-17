@@ -15,6 +15,7 @@ import {
   AdminModalTextAreaLabel,
   AdminStatusPill,
   Button,
+  ResponsiveDataList,
   type AdminDataTableColumn,
   type AdminMetric,
 } from '@nexor/design-system';
@@ -26,6 +27,18 @@ import { api } from '../../../lib/api';
 import { useAdminPortal } from '../../../features/admin/portal';
 import { AdminProductGate } from './AdminProductGate';
 import { PageHeader, PageStack, PageSubtitle, PageTitle, TableSection } from './styles';
+import {
+  AdminMobileActionButton,
+  AdminMobileActions,
+  AdminMobileCard,
+  AdminMobileCardHeader,
+  AdminMobileCardSubtitle,
+  AdminMobileCardTitle,
+  AdminMobileMetaGrid,
+  AdminMobileMetaItem,
+  AdminMobileMetaLabel,
+  AdminMobileMetaValue,
+} from './mobileCards';
 
 type AccountDeletionStatus =
   | 'pending_confirmation'
@@ -204,12 +217,53 @@ export function AdminAccountDeletions() {
             {loading ? (
               <SkeletonGrid cards={4} />
             ) : (
-              <AdminDataTable
+              <ResponsiveDataList
+                desktop={
+                  <AdminDataTable
+                    data={requests}
+                    columns={columns}
+                    keyExtractor={(row) => row.id}
+                    emptyMessage="Nenhuma solicitação de remoção encontrada."
+                    testId="admin-account-deletions-table"
+                  />
+                }
                 data={requests}
-                columns={columns}
                 keyExtractor={(row) => row.id}
                 emptyMessage="Nenhuma solicitação de remoção encontrada."
-                testId="admin-account-deletions-table"
+                mobileTestId="admin-account-deletions-mobile-list"
+                renderCard={(row) => (
+                  <AdminMobileCard>
+                    <AdminMobileCardHeader>
+                      <div>
+                        <AdminMobileCardTitle>{row.profile?.full_name ?? 'Conta sem nome'}</AdminMobileCardTitle>
+                        <AdminMobileCardSubtitle>{row.profile?.email ?? 'E-mail não informado'}</AdminMobileCardSubtitle>
+                      </div>
+                      <AdminStatusPill color={getStatusColor(row.status)} label={statusLabels[row.status]} />
+                    </AdminMobileCardHeader>
+                    <AdminMobileMetaGrid>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>Ordens afetadas</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{row.active_order_ids.length}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                      <AdminMobileMetaItem>
+                        <AdminMobileMetaLabel>Solicitado em</AdminMobileMetaLabel>
+                        <AdminMobileMetaValue>{formatDate(row.requested_at)}</AdminMobileMetaValue>
+                      </AdminMobileMetaItem>
+                    </AdminMobileMetaGrid>
+                    <AdminMobileActions>
+                      <AdminMobileActionButton
+                        type="button"
+                        aria-label={`Abrir análise de remoção de ${row.profile?.full_name ?? row.id}`}
+                        onClick={() => {
+                          setSelectedRequest(row);
+                          setDecisionNote('');
+                        }}
+                      >
+                        Analisar remoção
+                      </AdminMobileActionButton>
+                    </AdminMobileActions>
+                  </AdminMobileCard>
+                )}
               />
             )}
           </TableSection>

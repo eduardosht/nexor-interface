@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
@@ -72,7 +72,9 @@ describe('AdminAccountDeletions', () => {
 
     renderPage();
 
-    expect(await screen.findByText('Joao Silva')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByText('Joao Silva').length).toBeGreaterThan(0));
+    expect(screen.getByTestId('admin-account-deletions-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('admin-account-deletions-mobile-list')).getByText('Joao Silva')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /visualizar remoção de joao silva/i }));
     expect(await screen.findByRole('button', { name: /aprovar remoção/i })).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText(/registre a justificativa/i), {

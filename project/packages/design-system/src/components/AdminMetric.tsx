@@ -41,8 +41,8 @@ const Grid = styled.div<{ $tokens: BrandTokens; $columns: 3 | 4 }>`
   }
 
   @media (max-width: 680px) {
-    grid-template-columns: 1fr;
-    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 `;
 
@@ -68,8 +68,9 @@ const Card = styled.div<{ $tokens: BrandTokens; $tone: AdminMetricTone; $highlig
   }
 
   @media (max-width: 680px) {
-    min-height: 84px;
-    padding: 18px;
+    min-height: 0;
+    padding: 12px;
+    border-radius: 10px;
   }
 `;
 
@@ -83,6 +84,11 @@ const Value = styled.strong<{ $tokens: BrandTokens; $tone: AdminMetricTone }>`
     if ($tone === 'neutral') return $tokens.colors.text;
     return '#15803d';
   }};
+
+  @media (max-width: 680px) {
+    font-size: 16px;
+    line-height: 1.15;
+  }
 `;
 
 const Label = styled.span<{ $tokens: BrandTokens }>`
@@ -91,4 +97,10 @@ const Label = styled.span<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.textMuted};
   font-size: 14px;
   line-height: 1.35;
+
+  @media (max-width: 680px) {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.3;
+  }
 `;

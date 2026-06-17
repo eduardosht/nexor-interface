@@ -1,0 +1,83 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { initDesignSystem } from '@nexor/design-system';
+import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { lightTheme } from '../../../styles/theme';
+
+const { mockUseAuth, mockApiGet, mockUseAdminPortal } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(),
+  mockApiGet: vi.fn(),
+  mockUseAdminPortal: vi.fn(),
+}));
+
+vi.mock('../../../hooks/useAuth', () => ({ useAuth: mockUseAuth }));
+vi.mock('../../../lib/api', () => ({
+  api: {
+    get: mockApiGet,
+    patch: vi.fn(),
+  },
+}));
+vi.mock('../../../features/admin/portal', () => ({ useAdminPortal: mockUseAdminPortal }));
+
+import { AdminUsers } from './AdminUsers';
+
+const { DesignSystemRoot } = initDesignSystem({ brand: 'nexor' });
+
+function renderPage() {
+  mockUseAuth.mockReturnValue({
+    session: { access_token: 'tok', user: { id: '1', email: 'admin@nexor.dev' } },
+  });
+  mockUseAdminPortal.mockReturnValue({
+    selectedProduct: { id: 'biteplaner', name: 'Biteplaner', label: 'Biteplaner', description: '', status: 'available' },
+  });
+
+  return render(
+    <ThemeProvider theme={lightTheme}>
+      <DesignSystemRoot>
+        <MemoryRouter>
+          <AdminUsers />
+        </MemoryRouter>
+      </DesignSystemRoot>
+    </ThemeProvider>
+  );
+}
+
+describe('AdminUsers', () => {
+  beforeEach(() => {
+    mockUseAuth.mockReset();
+    mockApiGet.mockReset();
+    mockUseAdminPortal.mockReset();
+  });
+
+  it('renders users in the mobile list and opens profile filters in a mobile sheet', async () => {
+    mockApiGet.mockResolvedValue({
+      profiles: [
+        {
+          id: 'profile-1',
+          email: 'maria@nexor.dev',
+          fullName: 'Maria Cliente',
+          phone: '(11) 99999-9999',
+          status: 'active',
+          roles: ['customer'],
+          createdAt: '2026-06-10T10:00:00.000Z',
+          updatedAt: '2026-06-11T10:00:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText(/maria cliente/i).length).toBeGreaterThan(0));
+
+    const mobileList = screen.getByTestId('admin-users-mobile-list');
+    expect(mobileList).toBeInTheDocument();
+    expect(within(mobileList).getByText(/maria cliente/i)).toBeInTheDocument();
+    expect(within(mobileList).getByRole('button', { name: /editar usuário maria cliente/i, hidden: true })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir filtros de usuários/i, hidden: true }));
+
+    const filterDialog = screen.getByRole('dialog', { name: /filtros de usuários/i });
+    expect(within(filterDialog).getByLabelText(/perfil/i)).toBeInTheDocument();
+  });
+});

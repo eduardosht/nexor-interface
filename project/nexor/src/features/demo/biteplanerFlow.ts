@@ -497,6 +497,7 @@ export function getEffectiveAthleteOrder(
 ): DemoOrderSummary | null {
   if (
     order?.status === 'registration_started' &&
+    order.stage !== 'pre_requisite_pending' &&
     !forms.some(isCustomerOnboardingComplete) &&
     !hasCustomerPreConsultationIntakeReleased(forms)
   ) {
