@@ -47,7 +47,21 @@ export function orderHandlers(server: Server) {
   server.get('/v1/orders', withDemoErrors((_schema, request) => {
     const rawMode = request.queryParams['as'];
     const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode ?? null;
-    return listOrders({ requestHeaders: request.requestHeaders }, mode);
+    const rawStatus = request.queryParams.status;
+    const rawLimit = request.queryParams.limit;
+    const rawCreatedBefore = request.queryParams.createdBefore;
+    const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
+    const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
+    const createdBefore = Array.isArray(rawCreatedBefore) ? rawCreatedBefore[0] : rawCreatedBefore;
+    return listOrders(
+      { requestHeaders: request.requestHeaders },
+      mode,
+      {
+        status: typeof status === 'string' ? status : undefined,
+        limit: typeof limitValue === 'string' ? Number(limitValue) : undefined,
+        createdBefore: typeof createdBefore === 'string' ? createdBefore : undefined
+      }
+    );
   }));
 
   server.get('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) =>

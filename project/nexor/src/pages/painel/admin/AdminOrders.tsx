@@ -57,6 +57,7 @@ const STATUS_OPTIONS = [
 ];
 
 const MOBILE_PAGE_SIZE = 6;
+const ADMIN_ORDER_PAGE_SIZE = 30;
 
 export function AdminOrders() {
   const { selectedProduct } = useAdminPortal();
@@ -71,6 +72,9 @@ export function AdminOrders() {
   const [mobilePage, setMobilePage] = useState(1);
   const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
   const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
+  const [hasMoreOrders, setHasMoreOrders] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const serverStatusFilter = statusFilter.length === 1 ? statusFilter[0] : undefined;
 
   useEffect(() => {
     if (!selectedProduct || !token) {
@@ -83,10 +87,14 @@ export function AdminOrders() {
       setLoading(true);
 
       try {
-        const response = await fetchOrders('admin', token);
+        const response = await fetchOrders('admin', token, {
+          status: serverStatusFilter,
+          limit: ADMIN_ORDER_PAGE_SIZE,
+        });
 
-        if (active) {
+        if (active && response !== undefined) {
           setOrders(response.orders);
+          setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
         }
       } finally {
         if (active) {
@@ -100,7 +108,38 @@ export function AdminOrders() {
     return () => {
       active = false;
     };
-  }, [selectedProduct, token]);
+  }, [selectedProduct, serverStatusFilter, token]);
+
+  async function loadMoreOrders() {
+    if (!selectedProduct || !token || orders.length === 0 || loadingMore) {
+      return;
+    }
+
+    const cursor = orders[orders.length - 1]?.created_at;
+
+    if (!cursor) {
+      return;
+    }
+
+    setLoadingMore(true);
+
+    try {
+      const response = await fetchOrders('admin', token, {
+        status: serverStatusFilter,
+        limit: ADMIN_ORDER_PAGE_SIZE,
+        createdBefore: cursor,
+      });
+
+      setOrders((current) => {
+        const existingIds = new Set(current.map((order) => order.id));
+        const nextOrders = response.orders.filter((order) => !existingIds.has(order.id));
+        return [...current, ...nextOrders];
+      });
+      setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const stageOptions = useMemo(
     () =>
@@ -320,7 +359,7 @@ export function AdminOrders() {
               </S.FilterChipRow>
             ) : null}
 
-            {loading ? (
+            {loading && orders.length === 0 ? (
               <SkeletonTable rows={6} columns={5} />
             ) : (
               <AdminResponsiveCollection
@@ -375,6 +414,14 @@ export function AdminOrders() {
                 }
               />
             )}
+
+            {hasMoreOrders ? (
+              <S.LoadMoreRow>
+                <Button type="button" variant="secondary" onClick={loadMoreOrders} disabled={loadingMore}>
+                  {loadingMore ? 'Carregando ordens...' : 'Carregar mais ordens'}
+                </Button>
+              </S.LoadMoreRow>
+            ) : null}
 
             <FilterSheet
               open={mobileFiltersOpen}

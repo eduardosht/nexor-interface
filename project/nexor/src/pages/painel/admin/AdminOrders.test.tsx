@@ -103,6 +103,14 @@ describe('AdminOrders', () => {
     expect(within(pendingLabStat as HTMLElement).getByText('1')).toBeInTheDocument();
   });
 
+  it('requests the first admin order page with a backend limit', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?limit=30', 'tok'));
+  });
+
   it('uses the design-system multi-select removable chips for admin filters', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [

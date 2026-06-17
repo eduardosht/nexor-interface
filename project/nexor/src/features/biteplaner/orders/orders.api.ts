@@ -10,10 +10,37 @@ import type {
   ProductionRequestDraft,
 } from './orders.types';
 
-const buildOrdersPath = (mode: AccessMode) => (mode === 'admin' ? '/v1/orders' : `/v1/orders?as=${mode}`);
+export interface OrderListParams {
+  status?: string | undefined;
+  limit?: number | undefined;
+  createdBefore?: string | undefined;
+}
 
-export const fetchOrders = (mode: AccessMode, token?: string) =>
-  api.get<{ orders: DemoOrderSummary[] }>(buildOrdersPath(mode), token);
+const buildOrdersPath = (mode: AccessMode, params: OrderListParams = {}) => {
+  const query = new URLSearchParams();
+
+  if (mode !== 'admin') {
+    query.set('as', mode);
+  }
+
+  if (params.status !== undefined) {
+    query.set('status', params.status);
+  }
+
+  if (params.limit !== undefined) {
+    query.set('limit', String(params.limit));
+  }
+
+  if (params.createdBefore !== undefined) {
+    query.set('createdBefore', params.createdBefore);
+  }
+
+  const queryString = query.toString();
+  return queryString ? `/v1/orders?${queryString}` : '/v1/orders';
+};
+
+export const fetchOrders = (mode: AccessMode, token?: string, params?: OrderListParams) =>
+  api.get<{ orders: DemoOrderSummary[] }>(buildOrdersPath(mode, params), token);
 
 export const fetchAppointments = (orderId: string, token?: string) =>
   api.get<{ appointments: DemoAppointment[] }>(`/v1/orders/${orderId}/appointments`, token);

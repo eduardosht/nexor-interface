@@ -3955,13 +3955,28 @@ export function getAccessOptions(context?: RequestContext): AccessPayload {
   };
 }
 
-export function listOrders(context?: RequestContext, requestedMode?: string | null) {
+export interface OrderListFilters {
+  status?: string | undefined;
+  limit?: number | undefined;
+  createdBefore?: string | undefined;
+}
+
+export function listOrders(
+  context?: RequestContext,
+  requestedMode?: string | null,
+  filters: OrderListFilters = {}
+) {
   assertPersonaModeAccess(context, requestedMode);
   const activePersona = resolveActiveDemoPersona(context);
+  const limit = Math.min(Math.max(filters.limit ?? 30, 1), 100);
 
   return {
     orders: state.orders
       .filter((order) => canPersonaReadOrder(order, activePersona))
+      .filter((order) => filters.status === undefined || order.status === filters.status)
+      .filter((order) => filters.createdBefore === undefined || order.created_at < filters.createdBefore)
+      .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+      .slice(0, limit)
       .map((order) => sanitizeOrder(order, activePersona))
   };
 }

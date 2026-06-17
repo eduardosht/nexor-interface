@@ -555,8 +555,33 @@ export async function fetchAccessOptions(token?: string) {
   return api.get<AccessOptionsResponse>('/v1/products/biteplaner/access-options', token);
 }
 
-export async function fetchOrders(mode: AccessMode, token?: string) {
-  const path = mode === 'admin' ? '/v1/orders' : `/v1/orders?as=${mode}`;
+export interface OrderListParams {
+  status?: string | undefined;
+  limit?: number | undefined;
+  createdBefore?: string | undefined;
+}
+
+export async function fetchOrders(mode: AccessMode, token?: string, params: OrderListParams = {}) {
+  const query = new URLSearchParams();
+
+  if (mode !== 'admin') {
+    query.set('as', mode);
+  }
+
+  if (params.status !== undefined) {
+    query.set('status', params.status);
+  }
+
+  if (params.limit !== undefined) {
+    query.set('limit', String(params.limit));
+  }
+
+  if (params.createdBefore !== undefined) {
+    query.set('createdBefore', params.createdBefore);
+  }
+
+  const queryString = query.toString();
+  const path = queryString ? `/v1/orders?${queryString}` : '/v1/orders';
   return api.get<{ orders: DemoOrderSummary[] }>(path, token);
 }
 

@@ -54,6 +54,17 @@ describe('shared Biteplaner demo state', () => {
     expect(result.orders.length).toBeGreaterThan(0);
   });
 
+  it('applies bounded order list filters in the demo API state', () => {
+    const result = listOrders(
+      { requestHeaders: { 'x-demo-persona': 'admin' } },
+      'admin',
+      { status: 'awaiting_payment', limit: 1 }
+    );
+
+    expect(result.orders).toHaveLength(1);
+    expect(result.orders[0].status).toBe('awaiting_payment');
+  });
+
   it('licenses the laboratory immediately after admin approval without awaiting payment', () => {
     const context = { requestHeaders: { authorization: 'Bearer demo-athleteRegistered-token' } };
     const productRole = createProductRole(context, 'lab', {
@@ -209,7 +220,7 @@ describe('shared Biteplaner demo state', () => {
     ]));
     expect(
       labOrders.orders.filter((order) => order.productionRequestDraft !== null).map((order) => order.id)
-    ).toEqual(['BP-DEMO-007', 'BP-DEMO-016']);
+    ).toEqual(['BP-DEMO-016', 'BP-DEMO-007']);
     expect(labOrders.orders.find((order) => order.id === 'BP-DEMO-007')?.dentist?.full_name).toBe('Dr. Rafael Demo');
     expect(labOrders.orders.every((order) => order.preLabChecklistDraft === null)).toBe(true);
     expect(adminOrders.orders.length).toBe(getDemoStateSnapshot().orders.length);
