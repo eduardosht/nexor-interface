@@ -105,6 +105,11 @@ export const ProductImageHero = styled.section`
   padding-top: 60px;
 `;
 
+export const ProductHeroPicture = styled.picture`
+  display: block;
+  width: 100%;
+`;
+
 export const ProductHeroImage = styled.img`
   width: 100%;
   display: block;

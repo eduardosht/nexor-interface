@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
+import heroSectionProductMobile from '../../assets/backgrounds/hero-section-product-mobile.png';
 import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png';
 import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
@@ -316,7 +317,10 @@ export function BiteplanerPage() {
   return (
     <S.Page id="main-content" tabIndex={-1}>
       <S.ProductImageHero aria-label="Biteplaner em destaque">
-        <S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />
+        <S.ProductHeroPicture>
+          <source media="(max-width: 720px)" srcSet={heroSectionProductMobile} />
+          <S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />
+        </S.ProductHeroPicture>
       </S.ProductImageHero>
 
       <S.HeroSection>

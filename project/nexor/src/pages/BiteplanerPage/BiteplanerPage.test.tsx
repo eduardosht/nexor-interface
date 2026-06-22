@@ -47,12 +47,15 @@ describe('BiteplanerPage', () => {
     const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
     const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
 
+    expect(pageSource).toContain("import heroSectionProductMobile from '../../assets/backgrounds/hero-section-product-mobile.png'");
     expect(pageSource).toContain("import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png'");
     expect(pageSource.indexOf('<S.ProductImageHero')).toBeLessThan(pageSource.indexOf('<S.HeroSection>'));
+    expect(pageSource).toContain('<S.ProductHeroPicture>');
+    expect(pageSource).toContain('<source media="(max-width: 720px)" srcSet={heroSectionProductMobile} />');
     expect(pageSource).toContain('<S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />');
     expect(stylesSource).toContain('export const ProductImageHero = styled.section');
+    expect(stylesSource).toContain('export const ProductHeroPicture = styled.picture');
     expect(stylesSource).toContain('export const ProductHeroImage = styled.img');
-    expect(stylesSource).toContain('object-fit: cover;');
   });
 
   it('layers the decorative hero item above the background and below the hero copy', () => {
