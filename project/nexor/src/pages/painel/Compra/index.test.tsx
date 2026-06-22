@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -48,6 +50,11 @@ function renderPage(initialEntry = '/painel/compra') {
   );
 }
 
+function selectDropdownOption(label: RegExp, option: RegExp) {
+  fireEvent.click(screen.getByRole('button', { name: label }));
+  fireEvent.click(screen.getByRole('option', { name: option }));
+}
+
 describe('Compra', () => {
   let locationAssign: ReturnType<typeof vi.fn>;
 
@@ -79,14 +86,15 @@ describe('Compra', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('athlete-order-card')).toBeInTheDocument());
     expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/pedido/i);
+    const orderCard = screen.getByTestId('athlete-order-card');
+    expect(orderCard).toHaveTextContent(/pedido/i);
     expect(screen.getByText(/bp-demo-003/i)).toBeInTheDocument();
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
+    expect(orderCard).not.toHaveTextContent(/status atual/i);
+    expect(orderCard).not.toHaveTextContent(/última atualização/i);
+    expect(orderCard).not.toHaveTextContent(/etapa atual/i);
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
     expect(screen.getByText(/próximos passos/i)).toBeInTheDocument();
     expect(screen.getByText(/aguardando pagamento pelo cliente/i)).toBeInTheDocument();
@@ -95,7 +103,19 @@ describe('Compra', () => {
     expect(screen.queryByText(/próximos passos observáveis/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/pagamento via stripe checkout/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/biteplaner personalizado/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/importante/i)).toBeInTheDocument();
+    const securePaymentCard = screen.getByTestId('stripe-secure-payment-card');
+    expect(securePaymentCard).toHaveTextContent(/pagamento 100% seguro/i);
+    expect(securePaymentCard).toHaveTextContent(/criptografia de ponta a ponta/i);
+    expect(
+      screen.getByText(/próximos passos/i).compareDocumentPosition(securePaymentCard) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/styles.ts'), 'utf8');
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/index.tsx'), 'utf8');
+    expect(stylesSource).toContain('export const MainColumn');
+    expect(stylesSource).toContain('export const AsideColumn');
+    expect(pageSource.indexOf('<S.MainColumn>')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
+    expect(pageSource.indexOf('stripe-secure-payment-card')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
+    expect(screen.queryByText(/o pagamento será processado de forma segura via stripe/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /concluir pagamento/i })).toHaveAttribute('data-tone', 'success');
   });
 
@@ -117,23 +137,38 @@ describe('Compra', () => {
     renderPage('/painel/compra?checkout=success');
 
     await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
+    expect(
+      screen.getByText(/próximos passos/i).compareDocumentPosition(screen.getByText(/pagamento realizado com sucesso/i)) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/index.tsx'), 'utf8');
+    expect(pageSource.indexOf('Pagamento realizado com sucesso!')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/styles.ts'), 'utf8');
+    const detailsLinkStyles = stylesSource.slice(
+      stylesSource.indexOf('export const DetailsLink'),
+      stylesSource.indexOf('export const InfoPanel')
+    );
+    expect(detailsLinkStyles).toContain('biteplanerButtonSurfaceStyles');
+    expect(detailsLinkStyles).toContain('biteplanerButtonHoverStyles');
     const orderCard = screen.getByTestId('payment-success-order-card');
     expect(orderCard).toHaveTextContent(/pedido/i);
-    expect(orderCard).toHaveTextContent(/status atual/i);
+    expect(orderCard).not.toHaveTextContent(/status atual/i);
     expect(orderCard).not.toHaveTextContent(/última atualização/i);
     expect(orderCard).not.toHaveTextContent(/data do pagamento/i);
-    expect(orderCard).toHaveTextContent(/etapa atual/i);
-    expect(orderCard).toHaveTextContent(/pagamento confirmado/i);
+    expect(orderCard).not.toHaveTextContent(/etapa atual/i);
+    expect(orderCard).not.toHaveTextContent(/pagamento confirmado/i);
     expect(screen.queryByText(/aguardando pagamento pelo cliente/i)).not.toBeInTheDocument();
     expect(screen.getByText(/pedido será feito para a produção/i)).toBeInTheDocument();
     expect(screen.getByText(/aguardando/i)).toBeInTheDocument();
     expect(screen.getByText(/pagamento aprovado/i)).toBeInTheDocument();
     expect(screen.getByText(/transação processada com sucesso via stripe/i)).toBeInTheDocument();
     expect(screen.getByText(/comprovante e os informativos do pagamento serão enviados para o e-mail cadastrado/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ver detalhes do pedido/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /acompanhar jornada/i })).toHaveAttribute(
       'href',
       '/painel/biteplaner/jornada'
     );
+    expect(screen.queryByRole('link', { name: /ver detalhes do pedido/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /solicitar suporte/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /baixar comprovante/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
   });
@@ -157,9 +192,15 @@ describe('Compra', () => {
 
     await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
     expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('payment-success-order-card')).toHaveTextContent(/pagamento confirmado/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/pagamento confirmado/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/status atual/i);
     expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
     expect(screen.getByText(/pagamento aprovado/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /acompanhar jornada/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/jornada'
+    );
+    expect(screen.queryByRole('button', { name: /solicitar suporte/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
   });
 
@@ -182,7 +223,8 @@ describe('Compra', () => {
 
     await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
     expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('payment-success-order-card')).toHaveTextContent(/em produção/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/em produção/i);
+    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/status atual/i);
     expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
     expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
   });
@@ -239,16 +281,53 @@ describe('Compra', () => {
 
     await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('button', { name: /concluir pagamento/i })).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '2' } });
     fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
         '/v1/orders/11111111-1111-4111-8111-111111111003/checkout-session',
-        {},
+        { model: 'impacto', color: 'preto', quantity: 2 },
         'tok'
       )
     );
     expect(locationAssign).toHaveBeenCalledWith('https://checkout.stripe.test/session');
+  });
+
+  it('prefills Biteplaner configuration from dentist recommendation and recalculates total by quantity', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      orders: [
+        {
+          id: '11111111-1111-4111-8111-111111111003',
+          displayId: 'BP-DEMO-003',
+          status: 'awaiting_payment',
+          statusLabel: 'Aguardando pagamento',
+          stage: 'awaiting_payment',
+          created_at: '2026-05-01T10:00:00.000Z',
+          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          dentistRecommendedPurchaseConfiguration: {
+            productKey: 'biteplaner',
+            model: 'esportes',
+            color: 'branco',
+            quantity: 3,
+          },
+        },
+      ],
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /modelo do biteplaner/i })).toHaveTextContent(/linha esportes/i)
+    );
+    expect(screen.getByRole('button', { name: /cor do biteplaner/i })).toHaveTextContent(/branco/i);
+    expect(screen.getByLabelText(/quantidade/i)).toHaveValue(3);
+    expect(screen.getByText('R$ 4.110,00')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '4' } });
+
+    expect(screen.getByText('R$ 5.480,00')).toBeInTheDocument();
   });
 
   it('uses the real checkout order id when the loaded order comes from the demo mock', async () => {
@@ -270,12 +349,14 @@ describe('Compra', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText('BP-DEMO-005')).toBeInTheDocument());
+    selectDropdownOption(/cor do biteplaner/i, /branco/i);
+    fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '3' } });
     fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
         '/v1/orders/22222222-2222-4222-8222-222222222005/checkout-session',
-        {},
+        { model: 'impacto', color: 'branco', quantity: 3 },
         'tok'
       )
     );

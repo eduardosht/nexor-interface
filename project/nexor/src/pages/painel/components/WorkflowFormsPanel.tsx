@@ -1,4 +1,16 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ComponentPropsWithoutRef, type FormEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ComponentPropsWithoutRef,
+  type FormEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  type TouchEvent,
+  type ReactNode
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Info, PencilLine, Send, ShieldCheck, Star, UserRound, X } from 'lucide-react';
 import { SkeletonCard } from '../../../components/Skeleton';
@@ -78,6 +90,7 @@ type WorkflowFormsPanelProps = {
   variant?: 'panel' | 'embedded';
   actorRole?: WorkflowFormActorRole;
   formPresentation?: 'card' | 'flat';
+  hideProceedActionIcons?: boolean;
   showFormHeader?: boolean;
   showFormHeaderStatus?: boolean;
   beforeFormsContent?: ReactNode;
@@ -153,6 +166,11 @@ const TEMPLATE_DEFINITIONS: Record<string, FormDefinition> = {
 };
 
 const REQUIRED_FIELDS_TOOLTIP = 'Preencha todos os campos obrigatórios para continuar.';
+const BITEPLANER_ORDER_FIELD_KEYS = new Set([
+  'biteplanerModel',
+  'biteplanerColor',
+  'biteplanerQuantity',
+]);
 
 type WorkflowActionButtonProps = ComponentPropsWithoutRef<'button'> & {
   variant?: 'primary' | 'secondary';
@@ -368,7 +386,7 @@ function getClinicalDentistDisplaySections(sections: VisibleSharedSection[]): Di
       'clinical-dentist-complement',
       'SE\u00c7\u00c3O 3 - COMPLEMENTO DENTISTA',
       DENTIST_COMPLEMENT_DESCRIPTION,
-      ['dentist-clinical-complement']
+      ['dentist-clinical-complement', 'dentist-biteplaner-order']
     ),
   ].filter(Boolean) as DisplaySharedSection[];
 }
@@ -631,6 +649,10 @@ function isFieldVisibleForPayload(
 
   if (CURRENT_PAIN_DETAIL_KEYS.has(field.key)) {
     return isAffirmativeWorkflowValue(payload.hasCurrentPain) || hasWorkflowPayloadValue(payload[field.key]);
+  }
+
+  if (BITEPLANER_ORDER_FIELD_KEYS.has(field.key)) {
+    return payload.biteplannerEligible === 'yes';
   }
 
   if (field.key === 'ineligibilityDescriptionForCustomer') {
@@ -1058,6 +1080,13 @@ function isFieldRequiredForPayload(
   field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition,
   payload: Record<string, string>
 ) {
+  if (
+    isSharedField(field) &&
+    ['biteplanerModel', 'biteplanerColor', 'biteplanerQuantity'].includes(field.key)
+  ) {
+    return payload.biteplannerEligible === 'yes';
+  }
+
   if (field.required) {
     return true;
   }
@@ -1360,6 +1389,10 @@ function normalizeNumericInputValue(field: SharedIntakeFieldDefinition, rawValue
 }
 
 function getFieldSpan(field: IntakeFieldDefinition | BiteplanerReviewFieldDefinition | SharedIntakeFieldDefinition) {
+  if (BITEPLANER_ORDER_FIELD_KEYS.has(field.key)) {
+    return 12;
+  }
+
   if (isSharedField(field)) {
     if (field.key === 'consultationDate') {
       return 12;
@@ -1490,6 +1523,7 @@ function FormItem({
   onSubmitted,
   actorRole,
   formPresentation,
+  hideProceedActionIcons,
   showFormHeader,
   showFormHeaderStatus,
   payloadExtras,
@@ -1501,6 +1535,7 @@ function FormItem({
   onSubmitted: (form: DemoWorkflowForm) => void;
   actorRole: WorkflowFormActorRole;
   formPresentation: 'card' | 'flat';
+  hideProceedActionIcons: boolean;
   showFormHeader: boolean;
   showFormHeaderStatus: boolean;
   payloadExtras?: Record<string, unknown>;
@@ -1521,7 +1556,10 @@ function FormItem({
   );
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [isEditingSubmitted, setIsEditingSubmitted] = useState(false);
+  const [onboardingProgressExpanded, setOnboardingProgressExpanded] = useState(false);
   const formCardRef = useRef<HTMLElement | null>(null);
+  const progressSheetStartYRef = useRef<number | null>(null);
+  const progressSheetDraggedRef = useRef(false);
   const presentation = STATUS_PRESENTATION[form.status];
   const defaultValuesSignature = getDefaultValuesSignature(defaultValues);
   const formPayloadSignature = stableStringify(form.payload);
@@ -1609,6 +1647,8 @@ function FormItem({
     ? getFirstMissingSectionIndex() >= 0
     : fields.some((field) => hasMissingRequiredValue(field, payload));
   const pendingRequiredFields = getPendingRequiredFields();
+  const nextActionIcon = hideProceedActionIcons ? undefined : <ChevronRight size={16} aria-hidden="true" />;
+  const submitActionIcon = hideProceedActionIcons ? undefined : <Send size={16} aria-hidden="true" />;
 
   useEffect(() => {
     setActiveSectionIndex(0);
@@ -1978,10 +2018,133 @@ function FormItem({
   }
 
   function renderOnboardingProgress() {
+    function startProgressGesture(clientY: number) {
+      progressSheetStartYRef.current = clientY;
+      progressSheetDraggedRef.current = false;
+    }
+
+    function updateProgressGesture(clientY: number) {
+      const startY = progressSheetStartYRef.current;
+
+      if (startY === null) {
+        return false;
+      }
+
+      const hasDragged = Math.abs(startY - clientY) > 8;
+
+      if (hasDragged) {
+        progressSheetDraggedRef.current = true;
+      }
+
+      return hasDragged;
+    }
+
+    function finishProgressGesture(clientY: number) {
+      const startY = progressSheetStartYRef.current;
+      progressSheetStartYRef.current = null;
+
+      if (startY === null) {
+        return;
+      }
+
+      const deltaY = clientY - startY;
+
+      if (deltaY < -24) {
+        setOnboardingProgressExpanded(true);
+        return;
+      }
+
+      if (deltaY > 24) {
+        setOnboardingProgressExpanded(false);
+      }
+    }
+
+    function resetProgressGesture() {
+      progressSheetStartYRef.current = null;
+      progressSheetDraggedRef.current = false;
+    }
+
+    function handleProgressPointerDown(event: PointerEvent<HTMLElement>) {
+      startProgressGesture(event.clientY);
+    }
+
+    function handleProgressPointerMove(event: PointerEvent<HTMLElement>) {
+      updateProgressGesture(event.clientY);
+    }
+
+    function handleProgressPointerUp(event: PointerEvent<HTMLElement>) {
+      finishProgressGesture(event.clientY);
+    }
+
+    function handleProgressTouchStart(event: TouchEvent<HTMLElement>) {
+      const touch = event.touches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      startProgressGesture(touch.clientY);
+    }
+
+    function handleProgressTouchMove(event: TouchEvent<HTMLElement>) {
+      const touch = event.touches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      updateProgressGesture(touch.clientY);
+    }
+
+    function handleProgressTouchEnd(event: TouchEvent<HTMLElement>) {
+      const touch = event.changedTouches[0];
+
+      if (!touch) {
+        resetProgressGesture();
+        return;
+      }
+
+      finishProgressGesture(touch.clientY);
+    }
+
+    function handleProgressClick() {
+      if (progressSheetDraggedRef.current) {
+        progressSheetDraggedRef.current = false;
+        return;
+      }
+
+      setOnboardingProgressExpanded((current) => !current);
+    }
+
+    function handleProgressKeyDown(event: KeyboardEvent<HTMLElement>) {
+      if (event.key !== 'Enter' && event.key !== ' ') {
+        return;
+      }
+
+      event.preventDefault();
+      setOnboardingProgressExpanded((current) => !current);
+    }
+
     return (
-      <S.OnboardingProgressCard aria-label="Seu progresso">
-        <S.ProgressCardTitle>Seu progresso</S.ProgressCardTitle>
-        <S.OnboardingProgressRail>
+      <S.OnboardingProgressCard
+        aria-label="Seu progresso"
+        aria-expanded={onboardingProgressExpanded}
+        $expanded={onboardingProgressExpanded}
+        tabIndex={0}
+        onClick={handleProgressClick}
+        onKeyDown={handleProgressKeyDown}
+        onPointerDown={handleProgressPointerDown}
+        onPointerMove={handleProgressPointerMove}
+        onPointerUp={handleProgressPointerUp}
+        onPointerCancel={resetProgressGesture}
+        onTouchStart={handleProgressTouchStart}
+        onTouchMove={handleProgressTouchMove}
+        onTouchEnd={handleProgressTouchEnd}
+        onTouchCancel={resetProgressGesture}
+      >
+        <S.OnboardingProgressHandle aria-hidden="true" />
+        <S.ProgressCardTitle $expanded={onboardingProgressExpanded}>Seu progresso</S.ProgressCardTitle>
+        <S.OnboardingProgressRail $expanded={onboardingProgressExpanded}>
           {navigationSharedSections.map((section, index) => {
             const displayIndex = displaySharedSections.findIndex((item) => item.key === section.key);
             const compactTitle = getCompactSectionTitle(section.title);
@@ -1992,6 +2155,7 @@ function FormItem({
                 key={section.key}
                 $active={section.key === activeSharedSection?.key}
                 $complete={displayIndex < activeSharedSectionIndex}
+                $lineComplete={displayIndex <= activeSharedSectionIndex + 1}
                 $blocked={Boolean(payloadBlockerMessage && displayIndex > activeSharedSectionIndex)}
                 aria-current={section.key === activeSharedSection?.key ? 'step' : undefined}
               >
@@ -2190,7 +2354,7 @@ function FormItem({
                           disabled={activeSectionHasMissingRequiredFields || Boolean(payloadBlockerMessage)}
                           title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                           onClick={handleNextSection}
-                          trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+                          trailingIcon={nextActionIcon}
                         >
                           Continuar
                         </WorkflowActionButton>
@@ -2308,7 +2472,7 @@ function FormItem({
                               type="submit"
                               disabled={submitting || submitIsMissingRequiredFields || Boolean(payloadBlockerMessage)}
                               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
-                              trailingIcon={<Send size={16} aria-hidden="true" />}
+                              trailingIcon={submitActionIcon}
                             >
                               {submitting
                                 ? 'Enviando...'
@@ -2322,7 +2486,6 @@ function FormItem({
                               disabled={activeSectionHasMissingRequiredFields}
                               title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                               onClick={handleNextSection}
-                              trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                             >
                               Próxima etapa
                             </WorkflowActionButton>
@@ -2361,7 +2524,6 @@ function FormItem({
                             disabled={activeSectionHasMissingRequiredFields}
                             title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                             onClick={handleNextSection}
-                            trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
                           >
                             Próxima etapa
                           </WorkflowActionButton>
@@ -2399,7 +2561,7 @@ function FormItem({
             </div>
             <WorkflowActionButton
               type="button"
-              trailingIcon={<ChevronRight size={16} aria-hidden="true" />}
+              trailingIcon={nextActionIcon}
               onClick={() => {
                 setError('');
                 setFeedback('');
@@ -2520,7 +2682,7 @@ function FormItem({
                       type="submit"
                       disabled={submitting || submitIsMissingRequiredFields}
                       title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
-                      trailingIcon={<Send size={16} aria-hidden="true" />}
+                      trailingIcon={submitActionIcon}
                     >
                       {submitting ? 'Enviando...' : 'Enviar survey'}
                     </WorkflowActionButton>
@@ -2563,7 +2725,7 @@ function FormItem({
               type="submit"
               disabled={submitting || submitIsMissingRequiredFields}
               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
-              trailingIcon={<Send size={16} aria-hidden="true" />}
+              trailingIcon={submitActionIcon}
             >
               {submitting ? 'Enviando...' : 'Enviar formulário'}
             </WorkflowActionButton>
@@ -2670,6 +2832,12 @@ function renderFieldControl(
 
                 if (field.key === 'hasCurrentPain') {
                   CURRENT_PAIN_DETAIL_KEYS.forEach((detailKey) => {
+                    nextPayload[detailKey] = '';
+                  });
+                }
+
+                if (field.key === 'biteplannerEligible') {
+                  BITEPLANER_ORDER_FIELD_KEYS.forEach((detailKey) => {
                     nextPayload[detailKey] = '';
                   });
                 }
@@ -3032,6 +3200,7 @@ export function WorkflowFormsPanel({
   variant = 'panel',
   actorRole = 'user',
   formPresentation = 'card',
+  hideProceedActionIcons = false,
   showFormHeader = true,
   showFormHeaderStatus = true,
   beforeFormsContent,
@@ -3206,6 +3375,7 @@ export function WorkflowFormsPanel({
               defaultValues={defaultValues}
               actorRole={actorRole}
               formPresentation={formPresentation}
+              hideProceedActionIcons={hideProceedActionIcons}
               showFormHeader={showFormHeader}
               showFormHeaderStatus={showFormHeaderStatus}
               payloadExtras={payloadExtras}

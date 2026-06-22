@@ -28,6 +28,7 @@ import styled from 'styled-components';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAdminPortal } from '../../../features/admin/portal';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { api } from '../../../lib/api';
 import { AdminProductGate } from './AdminProductGate';
 import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
@@ -151,6 +152,7 @@ export function AdminUsers() {
   const [error, setError] = useState('');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [draftProfile, setDraftProfile] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadProfiles() {
     if (!selectedProduct || !token) return;
@@ -161,7 +163,7 @@ export function AdminUsers() {
     try {
       const params = new URLSearchParams({ limit: '200' });
       if (profile) params.set('role', profile);
-      if (search.trim()) params.set('search', search.trim());
+      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
       const response = await api.get<ProfilesResponse>(`/v1/admin/profiles?${params.toString()}`, token);
       setProfiles(response.profiles);
     } catch {
@@ -173,7 +175,7 @@ export function AdminUsers() {
 
   useEffect(() => {
     void loadProfiles();
-  }, [selectedProduct, token, profile, search]);
+  }, [selectedProduct, token, profile, debouncedSearch]);
 
   const metrics = useMemo<AdminMetric[]>(
     () => [

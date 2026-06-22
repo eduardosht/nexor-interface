@@ -297,6 +297,86 @@ export const ProductLink = styled.a`
   }
 `;
 
+
+export const PreferenceRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, auto);
+  gap: 18px;
+  align-items: center;
+  padding: 18px 20px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+`;
+
+export const PreferenceContent = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+export const PreferenceSwitchLabel = styled.label`
+  display: inline-grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+`;
+
+export const PreferenceSwitchInput = styled.input`
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.borderSubtle};
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: ${({ theme }) => theme.colors.bgElevated};
+    box-shadow: 0 1px 3px rgba(23, 23, 23, 0.2);
+    transition: transform 150ms ease;
+  }
+
+  &:checked {
+    border-color: ${({ theme }) => theme.colors.green};
+    background: ${({ theme }) => theme.colors.green};
+  }
+
+  &:checked::after {
+    transform: translateX(20px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(23, 23, 23, 0.2);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+`;
+
+export const PreferenceSwitchText = styled.span`
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+`;
+
 export const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;

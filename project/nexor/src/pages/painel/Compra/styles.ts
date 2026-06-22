@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Button } from '@nexor/design-system';
 import { Link } from 'react-router-dom';
+import { biteplanerButtonHoverStyles, biteplanerButtonSurfaceStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   width: 100%;
@@ -70,6 +71,7 @@ export const Banner = styled.div`
 export const Layout = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(280px, 360px);
+  align-items: start;
   gap: 28px;
 
   @media (max-width: 768px) {
@@ -77,8 +79,21 @@ export const Layout = styled.div`
   }
 `;
 
+export const MainColumn = styled.div`
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+`;
+
+export const AsideColumn = styled.div`
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+`;
+
 export const Card = styled.section`
   display: grid;
+  align-content: start;
   gap: 18px;
   padding: 28px;
   border-radius: 8px;
@@ -383,6 +398,32 @@ export const PriceNotice = styled.p`
   line-height: 1.5;
 `;
 
+export const ConfigurationGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+`;
+
+export const ConfigurationField = styled.label`
+  display: grid;
+  gap: 8px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 700;
+
+  input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    border-radius: 8px;
+    background: ${({ theme }) => theme.colors.bgElevated};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font: inherit;
+    font-weight: 600;
+  }
+`;
+
 export const Total = styled.strong`
   font-size: 28px;
   font-weight: 800;
@@ -471,29 +512,10 @@ export const PaymentApprovedBox = styled.div`
 `;
 
 export const DetailsLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 64px;
-  padding: 0 24px;
-  border: 1px solid ${({ theme }) => theme.colors.textPrimary};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.textPrimary};
-  color: ${({ theme }) => theme.colors.bgElevated};
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.2;
-  text-align: center;
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  width: 100%;
   text-decoration: none;
-  text-transform: uppercase;
-  transition:
-    transform 180ms ease,
-    background 180ms ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    background: #111827;
-  }
 `;
 
 export const InfoPanel = styled.aside`

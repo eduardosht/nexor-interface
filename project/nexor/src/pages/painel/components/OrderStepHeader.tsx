@@ -1,32 +1,11 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, ClipboardList, Clock3, Flag } from 'lucide-react';
+import { ClipboardList, Clock3 } from 'lucide-react';
 import * as S from './OrderStepHeader.styles';
 import {
-  getOrderStatusPresentation,
   getOrderDisplayId,
-  getStageLabel,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import { getOrderStatusPresentation } from '../../../features/biteplaner/orders/orderPresenter';
 
 export type OrderStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
 
@@ -37,6 +16,7 @@ export interface OrderStepHeaderProps {
   order: DemoOrderSummary | null;
   orderHelpText: ReactNode;
   showOrderSummary?: boolean;
+  showOrderMetadata?: boolean;
   children?: ReactNode;
 }
 
@@ -45,16 +25,7 @@ export interface OrderInfoCardProps {
   orderHelpText: ReactNode;
   testId?: string;
   showLastUpdate?: boolean;
-}
-
-function formatOrderUpdate(value?: string) {
-  const date = value ? new Date(value) : new Date();
-  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
-
-  return {
-    date: new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' }).format(safeDate),
-    time: new Intl.DateTimeFormat('pt-BR', { timeStyle: 'short' }).format(safeDate),
-  };
+  showMetadata?: boolean;
 }
 
 export function OrderInfoCard({
@@ -62,18 +33,32 @@ export function OrderInfoCard({
   orderHelpText,
   testId = 'athlete-order-card',
   showLastUpdate = true,
+  showMetadata = true,
 }: OrderInfoCardProps) {
-  const orderUpdate = formatOrderUpdate(order.created_at);
-  const status = getOrderStatusPresentation(order);
   const orderLabel = getOrderDisplayId(order);
+  const status = getOrderStatusPresentation(order);
+  const updatedAt = order.created_at;
+  const updatedAtDate = updatedAt
+    ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(new Date(updatedAt))
+    : null;
+  const updatedAtTime = updatedAt
+    ? new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo'
+    }).format(new Date(updatedAt))
+    : null;
+  const stageLabel = order.stage === 'awaiting_initial_consultation'
+    ? 'Consulta inicial'
+    : status.label;
 
   return (
-    <S.OrderBanner data-testid={testId} $hideLastUpdate={!showLastUpdate}>
+    <S.OrderBanner data-testid={testId} $hideLastUpdate={!showLastUpdate} $summaryOnly={!showMetadata}>
       <S.OrderSummary aria-label="Informações do pedido">
         <S.OrderIcon aria-hidden="true">
-          <ClipboardList size={38} strokeWidth={1.8} />
+          <ClipboardList size={30} strokeWidth={1.8} />
           <S.OrderIconBadge>
-            <Clock3 size={15} strokeWidth={2.2} />
+            <Clock3 size={10} strokeWidth={2.2} />
           </S.OrderIconBadge>
         </S.OrderIcon>
         <S.OrderSummaryText>
@@ -82,35 +67,25 @@ export function OrderInfoCard({
           <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
         </S.OrderSummaryText>
       </S.OrderSummary>
-
-      <S.OrderMeta aria-label="Status atual do pedido">
-        <S.OrderMetaLabel>STATUS ATUAL</S.OrderMetaLabel>
-        <S.StatusPill $color={status.color} data-testid="athlete-order-status">
-          {status.label}
-        </S.StatusPill>
-      </S.OrderMeta>
-
-      {showLastUpdate ? (
-        <S.OrderMeta aria-label="Última atualização do pedido">
-          <S.OrderMetaLabel>ÚLTIMA ATUALIZAÇÃO</S.OrderMetaLabel>
-          <S.OrderMetaValue>
-            <CalendarDays size={25} strokeWidth={1.9} aria-hidden="true" />
-            <span>
-              {orderUpdate.date}
-              <br />
-              às {orderUpdate.time}
-            </span>
-          </S.OrderMetaValue>
-        </S.OrderMeta>
+      {showMetadata ? (
+        <S.OrderMetadata>
+          <S.OrderMetadataItem aria-label="Status atual do pedido" data-testid="athlete-order-status">
+            <span>STATUS ATUAL</span>
+            <strong>{status.label}</strong>
+          </S.OrderMetadataItem>
+          {showLastUpdate && updatedAtDate && updatedAtTime ? (
+            <S.OrderMetadataItem aria-label="Última atualização do pedido">
+              <span>ÚLTIMA ATUALIZAÇÃO</span>
+              <strong>{updatedAtDate}</strong>
+              <small>às {updatedAtTime}</small>
+            </S.OrderMetadataItem>
+          ) : null}
+          <S.OrderMetadataItem aria-label="Etapa atual do pedido">
+            <span>ETAPA ATUAL</span>
+            <strong>{stageLabel}</strong>
+          </S.OrderMetadataItem>
+        </S.OrderMetadata>
       ) : null}
-
-      <S.OrderMeta aria-label="Etapa atual do pedido">
-        <S.OrderMetaLabel>ETAPA ATUAL</S.OrderMetaLabel>
-        <S.OrderMetaValue>
-          <Flag size={25} strokeWidth={1.9} aria-hidden="true" />
-          <span>{getStageLabel(order)}</span>
-        </S.OrderMetaValue>
-      </S.OrderMeta>
     </S.OrderBanner>
   );
 }
@@ -122,6 +97,7 @@ export function OrderStepHeader({
   order,
   orderHelpText,
   showOrderSummary = true,
+  showOrderMetadata = true,
   children
 }: OrderStepHeaderProps) {
   return (
@@ -133,7 +109,9 @@ export function OrderStepHeader({
 
       {children}
 
-      {showOrderSummary && order ? <OrderInfoCard order={order} orderHelpText={orderHelpText} /> : null}
+      {showOrderSummary && order ? (
+        <OrderInfoCard order={order} orderHelpText={orderHelpText} showMetadata={showOrderMetadata} />
+      ) : null}
     </S.Header>
   );
 }

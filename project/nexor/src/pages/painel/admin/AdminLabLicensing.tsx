@@ -25,6 +25,7 @@ import { ClipboardList, Eye, FlaskConical, MapPin, RefreshCw } from 'lucide-reac
 import styled from 'styled-components';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { useAdminPortal } from '../../../features/admin/portal';
 import {
   approveLabLicenseRequest,
@@ -85,6 +86,7 @@ export function AdminLabLicensing() {
   const [selectedRequest, setSelectedRequest] = useState<LabLicenseRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [activeAction, setActiveAction] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadRequests() {
     if (!selectedProduct || !token) return;
@@ -102,12 +104,12 @@ export function AdminLabLicensing() {
   }, [selectedProduct, token]);
 
   const filteredRequests = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     if (!query) return requests;
     return requests.filter((request) =>
       `${request.labName} ${request.cnpj} ${request.professionalSummary}`.toLowerCase().includes(query)
     );
-  }, [requests, search]);
+  }, [debouncedSearch, requests]);
 
   const metrics = useMemo<AdminMetric[]>(
     () => [

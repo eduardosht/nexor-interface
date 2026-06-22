@@ -36,6 +36,7 @@ import {
 import styled from 'styled-components';
 import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { useAdminPortal } from '../../../features/admin/portal';
 import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
 import {
@@ -105,6 +106,22 @@ function getInitials(name: string) {
   return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
+function onlyDigits(value: string | undefined) {
+  return (value ?? '').replace(/\D/g, '');
+}
+
+function formatCpf(value: string | undefined) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11) return value?.trim() || 'Não informado';
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function formatCnpj(value: string | undefined) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 14) return value?.trim() || 'Não informado';
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 function getSortValue(request: DentistLicenseRequest, key: SortKey) {
   switch (key) {
     case 'dentist':
@@ -139,6 +156,7 @@ export function AdminDentistLicensing() {
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('submittedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadRequests() {
     if (!selectedProduct || !token) return;
@@ -156,7 +174,7 @@ export function AdminDentistLicensing() {
   }, [selectedProduct, token]);
 
   const filteredRequests = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     const visibleByStatus = requests.filter((request) => {
       if (statusFilter === 'all') return true;
       if (statusFilter === 'licensed') {
@@ -170,7 +188,7 @@ export function AdminDentistLicensing() {
     return visibleByStatus.filter((request) =>
       `${request.dentistName} ${request.croNumber} ${request.professionalSummary}`.toLowerCase().includes(query)
     );
-  }, [requests, search, statusFilter]);
+  }, [debouncedSearch, requests, statusFilter]);
 
   const sortedRequests = useMemo(() => {
     return [...filteredRequests].sort((a, b) => {
@@ -544,8 +562,17 @@ export function AdminDentistLicensing() {
                   <FileText size={24} />
                 </AdminModalDetailIcon>
                 <AdminModalDetailContent>
+                  <AdminModalDetailLabel>CPF</AdminModalDetailLabel>
+                  <AdminModalDetailValue>{formatCpf(selectedRequest.cpf)}</AdminModalDetailValue>
+                </AdminModalDetailContent>
+              </AdminModalDetailCard>
+              <AdminModalDetailCard>
+                <AdminModalDetailIcon aria-hidden>
+                  <FileText size={24} />
+                </AdminModalDetailIcon>
+                <AdminModalDetailContent>
                   <AdminModalDetailLabel>CNPJ</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{selectedRequest.cnpj || 'Não informado'}</AdminModalDetailValue>
+                  <AdminModalDetailValue>{formatCnpj(selectedRequest.cnpj)}</AdminModalDetailValue>
                 </AdminModalDetailContent>
               </AdminModalDetailCard>
               <AdminModalDetailCard>

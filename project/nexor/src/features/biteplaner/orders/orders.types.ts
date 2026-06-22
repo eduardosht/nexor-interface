@@ -1,5 +1,8 @@
 export type {
   AccessMode,
+  ClinicalFollowUpCard,
+  ClinicalFollowUpKind,
+  ClinicalFollowUpStatus,
   DemoAppointment,
   DemoLicensedLabSelection,
   DemoOrderSummary,

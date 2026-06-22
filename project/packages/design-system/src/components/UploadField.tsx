@@ -1,4 +1,4 @@
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useDesignSystem } from '../provider';
 import type { BrandTokens } from '../tokens';
@@ -84,16 +84,16 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   font-weight: 600;
 `;
 
-const Dropzone = styled.button<{ $tokens: BrandTokens }>`
+const Dropzone = styled.button<{ $tokens: BrandTokens; $dragActive: boolean }>`
   display: grid;
   justify-items: center;
   gap: 12px;
   width: 100%;
   padding: 28px 20px;
   border-radius: ${({ $tokens }) => $tokens.radius.xl};
-  border: 1.5px dashed ${({ $tokens }) => $tokens.colors.borderStrong};
-  background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
-  color: ${({ $tokens }) => $tokens.colors.textMuted};
+  border: 1.5px dashed ${({ $dragActive, $tokens }) => ($dragActive ? '#15803d' : $tokens.colors.borderStrong)};
+  background: ${({ $dragActive, $tokens }) => ($dragActive ? 'rgba(21, 128, 61, 0.08)' : $tokens.colors.surfaceSubtle)};
+  color: ${({ $dragActive, $tokens }) => ($dragActive ? $tokens.colors.text : $tokens.colors.textMuted)};
   cursor: pointer;
   transition:
     border-color ${({ $tokens }) => $tokens.motion.base} ease,
@@ -207,6 +207,7 @@ export function UploadField({
   const { tokens } = useDesignSystem();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   function openPicker() {
     inputRef.current?.click();
@@ -215,7 +216,34 @@ export function UploadField({
   return (
     <Wrapper $tokens={tokens}>
       {label ? <Label $tokens={tokens} htmlFor={inputId}>{label}</Label> : null}
-      <Dropzone $tokens={tokens} type="button" onClick={openPicker}>
+      <Dropzone
+        $tokens={tokens}
+        $dragActive={dragActive}
+        data-drag-active={dragActive ? 'true' : 'false'}
+        type="button"
+        onClick={openPicker}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          setDragActive(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragActive(false);
+          const nextFiles = Array.from(event.dataTransfer.files ?? []);
+
+          if (nextFiles.length > 0) {
+            onFilesChange(multiple ? nextFiles : nextFiles.slice(0, 1));
+          }
+        }}
+      >
         <UploadIcon />
         <DropzoneText $tokens={tokens}>
           <DropzoneHeadline>Arraste e solte o(s) arquivo(s) para enviar</DropzoneHeadline>

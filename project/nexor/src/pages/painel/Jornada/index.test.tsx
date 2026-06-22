@@ -7,6 +7,7 @@ import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -62,6 +63,21 @@ function renderPage() {
 }
 
 function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQueryClient>) {
+  mockUseAuth.mockReturnValue({
+    loading: false,
+    session: { access_token: 'tok', user: { id: '1', email: 'demo@nexor.dev' } },
+    backendUser: { email: 'demo@nexor.dev', roles: ['customer'] },
+    backendUserResolved: true,
+    hasConfiguredAuth: true,
+    isMockMode: true,
+    demoPersona: 'athlete',
+    signIn: vi.fn(),
+    signInDemo: vi.fn(),
+    signOut: vi.fn(),
+    sendPasswordReset: vi.fn(),
+    refreshBackendUser: vi.fn(),
+  });
+
   return render(
     <MemoryRouter>
       <ThemeProvider theme={lightTheme}>
@@ -87,10 +103,183 @@ describe('Jornada', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
-    mockApiGet.mockResolvedValue({ appointments: [] });
+    mockApiGet.mockImplementation((path: string) => {
+      if (path.includes('/clinical-follow-ups')) {
+        return Promise.resolve({ followUps: [] });
+      }
+
+      if (path.includes('/workflow-forms')) {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({ appointments: [] });
+    });
     mockApiPost.mockReset();
   });
 
+  it('shows post-completed clinical follow-up cards and schedules the available return', async () => {
+    const completedOrder = {
+      id: 'BP-DEMO-009',
+      status: 'completed',
+      statusLabel: 'Finalizado',
+      stage: 'completed',
+      created_at: '2026-05-03T14:00:00.000Z',
+      practice_location_id: 'practice-demo-001',
+      customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: null },
+      practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+    };
+
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({ orders: [completedOrder] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-009/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-009/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-009/clinical-follow-ups') {
+        return Promise.resolve({
+          followUps: [
+            {
+              kind: 'return_15_days',
+              sequence: 1,
+              title: 'Check-up de 15 dias',
+              description: 'Avaliação da adaptação, conforto e primeiros resultados do dispositivo.',
+              status: 'available',
+              availableAt: '2026-05-18T14:00:00.000Z',
+              scheduledAt: null,
+              appointmentId: null,
+              lockedReason: null,
+            },
+            {
+              kind: 'return_30_days',
+              sequence: 2,
+              title: 'Check-up de 30 dias',
+              description: 'Avaliação final do período inicial de adaptação e ajustes necessários.',
+              status: 'locked',
+              availableAt: '2026-06-02T14:00:00.000Z',
+              scheduledAt: null,
+              appointmentId: null,
+              lockedReason: 'Este retorno será liberado após a conclusão do Retorno 01.',
+            },
+          ],
+        });
+      }
+
+      return Promise.resolve({});
+    });
+    mockApiPost.mockResolvedValue({ order: completedOrder });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockApiGet).toHaveBeenCalledWith('/v1/orders/BP-DEMO-009/clinical-follow-ups', 'tok')
+    );
+    const section = await screen.findByTestId('clinical-follow-up-cards', undefined, { timeout: 3000 });
+    const actionCardTitle = screen.getByRole('heading', { level: 2, name: /o que fazer agora\?/i });
+    const overviewTitle = screen.getByRole('heading', { level: 2, name: /vis.o geral da jornada/i });
+    expect(section).toHaveTextContent('Acompanhamento Clínico');
+    expect(section).toHaveTextContent('Check-up de 15 dias');
+    expect(section).toHaveTextContent('Check-up de 30 dias');
+    expect(section).toHaveTextContent('Bloqueado');
+    expect(section.compareDocumentPosition(actionCardTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(section.compareDocumentPosition(overviewTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const adaptationStep = screen.getByTestId('journey-step-follow_up');
+    const checkupsStep = screen.getByTestId('journey-step-checkups');
+    const checkup15 = screen.getByTestId('journey-checkup-return_15_days');
+    const checkup30 = screen.getByTestId('journey-checkup-return_30_days');
+    expect(adaptationStep.compareDocumentPosition(checkupsStep) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(checkupsStep.compareDocumentPosition(checkup15) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(checkup15.compareDocumentPosition(checkup30) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByTestId('journey-step-checkups')).toHaveTextContent(/atual/i);
+    expect(checkup15).toHaveTextContent(/atual/i);
+    expect(checkup30).toHaveTextContent(/pendente/i);
+
+    fireEvent.click(within(section).getByRole('button', { name: /agendar retorno/i }));
+
+    await waitFor(() => expect(mockApiPost).toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-009/clinical-follow-ups/return_15_days/schedule',
+      { practiceLocationId: 'practice-demo-001' },
+      'tok'
+    ));
+  });
+
+  it('renders completed return as inactive and pending return with warning badge', async () => {
+    const completedOrder = {
+      id: 'BP-DEMO-010',
+      status: 'completed',
+      statusLabel: 'Finalizado',
+      stage: 'completed',
+      created_at: '2026-05-03T14:00:00.000Z',
+      practice_location_id: 'practice-demo-001',
+      customer: { full_name: 'Cliente 3', email: 'cliente3@gmail.com', phone: null },
+      practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+    };
+
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({ orders: [completedOrder] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-010/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-010/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-010/clinical-follow-ups') {
+        return Promise.resolve({
+          followUps: [
+            {
+              kind: 'return_15_days',
+              sequence: 1,
+              title: 'Check-up de 15 dias',
+              description: 'Avaliação da adaptação, conforto e primeiros resultados do dispositivo.',
+              status: 'completed',
+              availableAt: '2026-05-18T14:00:00.000Z',
+              scheduledAt: '2026-05-21T10:00:00.000Z',
+              appointmentId: 'appointment-return-01',
+              lockedReason: null,
+            },
+            {
+              kind: 'return_30_days',
+              sequence: 2,
+              title: 'Check-up de 30 dias',
+              description: 'Avaliação final do período inicial de adaptação e ajustes necessários.',
+              status: 'overdue',
+              availableAt: '2026-06-20T14:00:00.000Z',
+              scheduledAt: null,
+              appointmentId: null,
+              lockedReason: null,
+            },
+          ],
+        });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    const section = await screen.findByTestId('clinical-follow-up-cards', undefined, { timeout: 3000 });
+    const return01 = within(section).getByTestId('clinical-follow-up-return_15_days');
+    const return02Badge = within(section).getByTestId('clinical-follow-up-status-return_30_days');
+    const scheduleButton = within(section).getByRole('button', { name: /agendar retorno/i });
+
+    expect(return01).toHaveAttribute('aria-disabled', 'true');
+    expect(return01).toHaveTextContent('Concluído');
+    expect(return02Badge).toHaveTextContent('Pendente');
+    expect(getComputedStyle(return02Badge).color).toBe('rgb(146, 64, 14)');
+    expect(getComputedStyle(return02Badge).color).not.toBe('rgb(4, 120, 87)');
+    expect(scheduleButton.querySelector('svg')).not.toBeInTheDocument();
+  });
   it('does not refetch journey data when only the auth token changes', async () => {
     const queryClient = createTestQueryClient();
     let accessToken = 'tok';
@@ -154,6 +343,107 @@ describe('Jornada', () => {
 
     await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(3));
+  });
+
+  it('keeps auxiliary query errors hidden when the loaded order can render the journey', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-022',
+              status: 'awaiting_dentist_acceptance',
+              statusLabel: 'Aguardando aceite do dentista',
+              stage: 'dentist_acceptance_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+              practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-022/workflow-forms') {
+        return Promise.reject(new Error('workflow forms unavailable'));
+      }
+
+      if (path === '/v1/orders/BP-DEMO-022/appointments') {
+        return Promise.reject(new Error('appointments unavailable'));
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('athlete-journey-steps')).toBeInTheDocument();
+    expect(screen.queryByText(/não foi possível carregar a jornada compartilhada agora/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/não foi possível carregar os formulários desta ordem/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/não foi possível carregar a consulta agendada desta ordem/i)).not.toBeInTheDocument();
+  });
+
+  it('refetches the customer order on mount when cached order data does not include the selected clinic yet', async () => {
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(biteplanerQueryKeys.orders('user', '1'), {
+      orders: [
+        {
+          id: 'BP-DEMO-024',
+          status: 'awaiting_scheduling',
+          statusLabel: 'Aguardando consulta inicial',
+          stage: 'awaiting_initial_consultation',
+          created_at: '2026-05-01T10:00:00.000Z',
+          customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+          practice_location: null,
+        },
+      ],
+    });
+
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-024',
+              status: 'awaiting_dentist_acceptance',
+              statusLabel: 'Aguardando aceite do dentista',
+              stage: 'dentist_acceptance_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+              dentist: { id: 'dentist-demo-001', full_name: 'Dra. Ana Silva', email: null },
+              practice_location: {
+                id: 'practice-demo-001',
+                name: 'Clínica Esportiva Nexor',
+                address: {
+                  street: 'Rua das Palmeiras',
+                  number: '120',
+                  district: 'Jardins',
+                  city: 'São Paulo',
+                  state: 'SP',
+                  zip_code: '01415-000',
+                },
+              },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-024/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-024/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPageWithQueryClient(queryClient);
+
+    const selectedClinic = await screen.findByTestId('journey-selected-clinic');
+    expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?as=user', 'tok');
+    expect(selectedClinic).toHaveTextContent(/clínica esportiva nexor/i);
+    expect(selectedClinic).toHaveTextContent(/dra\. ana silva/i);
   });
 
   it('starts directly with the flat visual journey for the current athlete order', async () => {
@@ -420,7 +710,19 @@ describe('Jornada', () => {
             stage: 'dentist_acceptance_pending',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
-            practice_location: { id: 'practice-demo-001', name: 'Clínica Esportiva Nexor' },
+            dentist: { id: 'dentist-demo-001', full_name: 'Dra. Ana Silva', email: null },
+            practice_location: {
+              id: 'practice-demo-001',
+              name: 'Clínica Esportiva Nexor',
+              address: {
+                street: 'Rua das Palmeiras',
+                number: '120',
+                district: 'Jardins',
+                city: 'São Paulo',
+                state: 'SP',
+                zip_code: '01415-000',
+              },
+            },
           },
         ],
       })
@@ -434,7 +736,9 @@ describe('Jornada', () => {
     const selectedClinic = screen.getByTestId('journey-selected-clinic');
     expect(selectedClinic).toHaveTextContent(/cl.nica selecionada/i);
     expect(selectedClinic).toHaveTextContent(/cl.nica esportiva nexor/i);
-    expect(screen.getByRole('button', { name: /cancelar cl.nica/i })).toBeInTheDocument();
+    expect(selectedClinic).toHaveTextContent(/dra\. ana silva/i);
+    expect(selectedClinic).toHaveTextContent(/rua das palmeiras, 120 - jardins, s.o paulo - sp, 01415-000/i);
+    expect(screen.getByRole('button', { name: /cancelar consulta/i })).toBeInTheDocument();
     expectNoEmbeddedStepContent();
   });
 
@@ -480,7 +784,7 @@ describe('Jornada', () => {
 
     renderPage();
 
-    const cancelButton = await screen.findByRole('button', { name: /cancelar cl.nica/i });
+    const cancelButton = await screen.findByRole('button', { name: /cancelar consulta/i });
     fireEvent.click(cancelButton);
 
     await waitFor(() => {
@@ -490,6 +794,63 @@ describe('Jornada', () => {
         'tok'
       );
       expect(screen.getByRole('status')).toHaveTextContent(/cl.nica cancelada/i);
+    });
+  });
+
+  it('lets the customer recover an interrupted clinic cancellation without a selected clinic card', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-023',
+              status: 'awaiting_dentist_acceptance',
+              statusLabel: 'Aguardando aceite do dentista',
+              stage: 'dentist_acceptance_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+              practice_location: null,
+              dentist_id: null,
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-023/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-023/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+    mockApiPost.mockResolvedValueOnce({
+      order: {
+        id: 'BP-DEMO-023',
+        status: 'awaiting_scheduling',
+        statusLabel: 'Aguardando consulta inicial',
+        stage: 'awaiting_initial_consultation',
+        created_at: '2026-05-01T10:00:00.000Z',
+        customer: { full_name: 'Cliente indicado', email: 'cliente@nexor.dev', phone: null },
+        practice_location: null,
+        dentist_id: null,
+      },
+    });
+
+    renderPage();
+
+    expect(await screen.findByTestId('journey-interrupted-clinic-selection')).toHaveTextContent(/consulta sem cl.nica vinculada/i);
+    fireEvent.click(screen.getByRole('button', { name: /liberar escolha de cl.nica/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-023/practice-location-selection/cancel',
+        {},
+        'tok'
+      );
+      expect(screen.getByRole('status')).toHaveTextContent(/ordem voltou para sele..o de cl.nica/i);
     });
   });
 
@@ -532,12 +893,16 @@ describe('Jornada', () => {
             payment: {
               status: 'paid',
               provider: 'stripe',
-              amountCents: 137000,
+              amountCents: 548000,
               method: 'card',
-              couponCode: 'NEXOR10',
-              discountCents: 10000,
               paidAt: '2026-05-02T15:56:00.000Z',
               receiptEmail: 'joao@nexor.dev',
+            },
+            purchaseConfiguration: {
+              productKey: 'biteplaner',
+              quantity: 4,
+              model: 'esportes',
+              color: 'preto',
             },
           },
         ],
@@ -557,11 +922,15 @@ describe('Jornada', () => {
     expect(paymentBox).toHaveTextContent(/próximo passo/i);
     expect(paymentBox).toHaveTextContent(/dentista dar o ok/i);
     expect(paymentBox).toHaveTextContent(/enviar a produção para o laboratório/i);
-    expect(paymentBox).toHaveTextContent(/r\$ 1.370,00/i);
+    expect(paymentBox).toHaveTextContent(/quantidade/i);
+    expect(paymentBox).toHaveTextContent(/4/i);
+    expect(paymentBox).toHaveTextContent(/linha esportes/i);
+    expect(paymentBox).toHaveTextContent(/preto/i);
+    expect(paymentBox).toHaveTextContent(/r\$ 5.480,00/i);
     expect(paymentBox).toHaveTextContent(/cartão/i);
-    expect(paymentBox).toHaveTextContent(/nexor10/i);
-    expect(paymentBox).toHaveTextContent(/r\$ 100,00/i);
-    expect(paymentBox).toHaveTextContent(/joao@nexor.dev/i);
+    expect(paymentBox).not.toHaveTextContent(/cupom/i);
+    expect(paymentBox).not.toHaveTextContent(/desconto/i);
+    expect(paymentBox).not.toHaveTextContent(/recibo/i);
     expect(nextStepBox).toHaveTextContent(/o que acontece agora/i);
     expect(nextStepBox).toHaveTextContent(/aguarde o dentista confirmar os dados operacionais/i);
     expectNoEmbeddedStepContent();
@@ -610,11 +979,15 @@ describe('Jornada', () => {
 
     renderPage();
 
-    const notice = await screen.findByTestId('journey-step-notice');
-    expect(notice).toHaveTextContent(/ação pendente para o usuário/i);
-    expect(notice).not.toHaveTextContent(/aguarde as confirma/i);
-
-    const pendingAction = await screen.findByTestId('journey-pending-user-action');
+    const actionCard = await screen.findByTestId('journey-action-card');
+    await within(actionCard).findByRole('button', { name: /confirmar consulta realizada/i });
+    expect(actionCard).toHaveTextContent(/confirme que a consulta agendada foi realizada/i);
+    expect(within(actionCard).getByRole('button', { name: /confirmar consulta realizada/i })).toBeInTheDocument();
+    const pendingAlert = await screen.findByTestId('journey-pending-user-action');
+    expect(pendingAlert).toHaveTextContent(/ação pendente do usuário/i);
+    expect(pendingAlert).toHaveTextContent(/o que fazer agora/i);
+    expect(within(pendingAlert).queryByRole('button', { name: /confirmar consulta realizada/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('journey-step-notice')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar consulta realizada/i }));
 
     await waitFor(() =>
@@ -624,7 +997,6 @@ describe('Jornada', () => {
         'tok'
       )
     );
-    expect(pendingAction).toHaveTextContent(/confirme que a consulta agendada foi realizada/i);
     expectNoEmbeddedStepContent();
   });
 
@@ -669,10 +1041,16 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await screen.findByTestId('journey-pending-user-action');
-    fireEvent.click(screen.getByRole('button', { name: /confirmar consulta realizada/i }));
+    await screen.findByTestId('journey-action-card');
+    expect(await screen.findByTestId('journey-pending-user-action')).toHaveTextContent(/ação pendente do usuário/i);
+    fireEvent.click(await screen.findByRole('button', { name: /confirmar consulta realizada/i }));
 
-    expect(await screen.findByText(/consulta realizada foi registrada/i)).toBeInTheDocument();
+    await screen.findByText(/consulta realizada foi registrada/i);
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((status) => /consulta confirmada/i.test(status.textContent ?? '') && /consulta realizada foi registrada/i.test(status.textContent ?? ''))
+    ).toBe(true);
     expect(screen.getByTestId('journey-step-notice')).toHaveTextContent(/ação está com o dentista/i);
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });

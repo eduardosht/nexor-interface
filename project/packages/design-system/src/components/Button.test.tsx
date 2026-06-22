@@ -15,7 +15,11 @@ describe('Button', () => {
   it('keeps button labels on one line without shrinking below readable size', () => {
     render(<Button>Salvar complemento do dentista com um texto muito longo</Button>);
 
-    expect(screen.getByRole('button')).toHaveStyle({
+    const button = screen.getByRole('button');
+    const content = button.querySelector('[data-button-content]');
+    const label = button.querySelector('[data-button-label]');
+
+    expect(button).toHaveStyle({
       width: 'auto',
       maxWidth: 'none',
       minWidth: 'max-content',
@@ -24,6 +28,32 @@ describe('Button', () => {
       whiteSpace: 'nowrap',
       overflowWrap: 'normal',
     });
+    expect(content).toHaveStyle({
+      maxWidth: '100%',
+      minWidth: '0',
+      whiteSpace: 'inherit',
+      overflowWrap: 'inherit',
+    });
+    expect(label).toHaveStyle({
+      maxWidth: '100%',
+      minWidth: '0',
+      whiteSpace: 'inherit',
+      overflowWrap: 'inherit',
+    });
+  });
+
+  it('separates icon and label slots so icon sizing does not shrink text', () => {
+    render(
+      <Button leadingIcon={<svg aria-hidden="true" viewBox="0 0 16 16"><path d="M1 1h14v14H1z" /></svg>}>
+        Baixar ficha de anamnese
+      </Button>
+    );
+
+    const button = screen.getByRole('button', { name: /baixar ficha de anamnese/i });
+
+    expect(button.querySelector('[data-button-content]')).toBeTruthy();
+    expect(button.querySelector('[data-button-icon]')).toBeTruthy();
+    expect(button.querySelector('[data-button-label]')).toHaveTextContent('Baixar ficha de anamnese');
   });
 
   it('only stretches to the container when fullWidth is enabled', () => {

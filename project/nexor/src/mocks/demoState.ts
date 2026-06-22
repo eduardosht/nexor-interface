@@ -178,6 +178,7 @@ type DemoOrder = {
   partnerId: string | null;
   dentistId: string | null;
   labId: string | null;
+  labAssignments?: DemoLabAssignment[];
   visibleTo: DemoPersona[];
   nextActions: string[];
   prerequisiteSubmission?: {
@@ -209,6 +210,24 @@ type DemoOrder = {
     prescriptionFileRef?: Record<string, unknown> | null;
     lgpdConfirmed: boolean;
     selectedLabId: string | null;
+    purchaseConfiguration?: {
+      productKey: 'biteplaner';
+      quantity: number;
+      model: string;
+      color: string;
+    } | null;
+  } | null;
+  dentistRecommendedPurchaseConfiguration?: {
+    productKey: 'biteplaner';
+    quantity: number;
+    model: string;
+    color: string;
+  } | null;
+  purchaseConfiguration?: {
+    productKey: 'biteplaner';
+    quantity: number;
+    model: string;
+    color: string;
   } | null;
   preLabChecklistDraft: {
     anamnesisSummary: string;
@@ -237,6 +256,46 @@ type DemoAppointment = {
   scheduled_at: string;
   user_confirmed_at: string | null;
   dentist_confirmed_at: string | null;
+  purpose?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+type DemoLabAssignmentStatus =
+  | 'awaiting_acceptance'
+  | 'in_production'
+  | 'returned_for_adjustment'
+  | 'replaced_by_other_lab'
+  | 'completed'
+  | 'cancelled';
+
+type DemoLabAssignment = {
+  id: string;
+  orderId: string;
+  labProfileId: string;
+  sequence: number;
+  status: DemoLabAssignmentStatus;
+  productionRequestVersionId: string | null;
+  returnReason: string | null;
+  assignedAt: string;
+  returnedAt: string | null;
+  replacedAt: string | null;
+  completedAt: string | null;
+};
+
+export type ClinicalFollowUpKind = 'return_15_days' | 'return_30_days' | 'on_demand';
+
+type ClinicalFollowUpStatus = 'available' | 'locked' | 'scheduled' | 'completed' | 'overdue';
+
+type ClinicalFollowUpCard = {
+  kind: ClinicalFollowUpKind;
+  sequence: number;
+  title: string;
+  description: string;
+  status: ClinicalFollowUpStatus;
+  availableAt: string | null;
+  scheduledAt: string | null;
+  appointmentId: string | null;
+  lockedReason: string | null;
 };
 
 type DemoOrderForm = {
@@ -325,7 +384,13 @@ type DemoState = {
 };
 
 type AppointmentAction =
-  | { type: 'create-appointment'; appointmentType: DemoAppointment['type']; scheduledAt: string }
+  | {
+      type: 'create-appointment';
+      appointmentType: DemoAppointment['type'];
+      scheduledAt: string;
+      purpose?: string | null;
+      metadata?: Record<string, unknown> | null;
+    }
   | { type: 'update-appointment'; appointmentId: string; status: DemoAppointment['status']; scheduledAt?: string; reason?: string }
   | { type: 'user-confirmation'; appointmentId: string }
   | { type: 'dentist-confirmation'; appointmentId: string }
@@ -363,6 +428,7 @@ type OrderStatusAction =
         marketing: boolean;
       };
     }
+  | { type: 'create-checkout-session'; model: string; color: string; quantity: number }
   | { type: 'confirm-payment' }
   | { type: 'select-practice-location'; practiceLocationId: string }
   | { type: 'schedule-initial-consultation'; practiceLocationId: string }
@@ -382,6 +448,12 @@ type OrderStatusAction =
       prescriptionFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
       selectedLabId: string | null;
+      purchaseConfiguration?: {
+        productKey: 'biteplaner';
+        quantity: number;
+        model: string;
+        color: string;
+      } | null;
     }
   | {
       type: 'complete-production-request';
@@ -395,6 +467,12 @@ type OrderStatusAction =
       prescriptionFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
       selectedLabId: string | null;
+      purchaseConfiguration?: {
+        productKey: 'biteplaner';
+        quantity: number;
+        model: string;
+        color: string;
+      } | null;
     }
   | {
       type: 'save-pre-lab-checklist-draft';
@@ -424,6 +502,7 @@ type OrderSummary = Omit<
 > & {
   stage: string;
   lab_profile_id?: string | null;
+  labAssignmentView?: (DemoLabAssignment & { isCurrent: boolean }) | null;
   dentist: {
     id: string;
     full_name: string;
@@ -1609,9 +1688,9 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-009',
-      status: 'follow_up',
-      statusLabel: 'Em acompanhamento',
-      stage: 'follow_up',
+      status: 'completed',
+      statusLabel: 'Finalizado',
+      stage: 'completed',
       created_at: '2026-05-03T14:00:00.000Z',
       customer_profile_id: 'demo-profile-athlete',
       user_profile_id: 'demo-user-athlete',
@@ -1630,7 +1709,7 @@ const seedState = (): DemoState => ({
       dentistId: 'dentist-demo-001',
       labId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
-      nextActions: ['adaptation-completed'],
+      nextActions: [],
       productionRequestDraft: {
         anamnesisSummary: 'Anamnese inicial concluída antes do envio ao laboratório.',
         anamnesisDownloaded: true,
@@ -2676,6 +2755,122 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+const FOLLOW_UP_DEFINITIONS = [
+  {
+    kind: 'return_15_days',
+    sequence: 1,
+    title: 'Check-up de 15 dias',
+    description: 'Avaliação da adaptação, conforto e primeiros resultados do dispositivo.',
+    availableAfterDays: 15,
+  },
+  {
+    kind: 'return_30_days',
+    sequence: 2,
+    title: 'Check-up de 30 dias',
+    description: 'Avaliação final do período inicial de adaptação e ajustes necessários.',
+    availableAfterDays: 30,
+    requiresCompletedKind: 'return_15_days',
+    lockedReason: 'Este retorno será liberado após a conclusão do Retorno 01.',
+  },
+] as const;
+
+function addDaysToIsoDate(baseIso: string, days: number) {
+  const date = new Date(baseIso);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}
+
+function getClinicalFollowUpKindFromAppointment(appointment: DemoAppointment): ClinicalFollowUpKind | null {
+  const metadataKind = appointment.metadata?.followUpKind;
+
+  if (metadataKind === 'return_15_days' || metadataKind === 'return_30_days' || metadataKind === 'on_demand') {
+    return metadataKind;
+  }
+
+  if (
+    appointment.purpose === 'return_15_days' ||
+    appointment.purpose === 'return_30_days' ||
+    appointment.purpose === 'on_demand'
+  ) {
+    return appointment.purpose;
+  }
+
+  return null;
+}
+
+function isClinicalFollowUpCompleted(appointment: DemoAppointment) {
+  return appointment.status === 'completed' ||
+    Boolean(appointment.user_confirmed_at && appointment.dentist_confirmed_at);
+}
+
+function buildClinicalFollowUps(order: DemoOrder, appointments: DemoAppointment[], now = new Date()): ClinicalFollowUpCard[] {
+  if (order.status !== 'completed') {
+    return [];
+  }
+
+  const completedAt = order.created_at;
+  const appointmentsByKind = new Map<ClinicalFollowUpKind, DemoAppointment>();
+
+  appointments
+    .filter((appointment) => appointment.type === 'follow_up')
+    .forEach((appointment) => {
+      const kind = getClinicalFollowUpKindFromAppointment(appointment);
+
+      if (kind) {
+        appointmentsByKind.set(kind, appointment);
+      }
+    });
+
+  return FOLLOW_UP_DEFINITIONS.map((definition) => {
+    const appointment = appointmentsByKind.get(definition.kind);
+    const availableAt = addDaysToIsoDate(completedAt, definition.availableAfterDays);
+
+    if ('requiresCompletedKind' in definition) {
+      const requiredAppointment = appointmentsByKind.get(definition.requiresCompletedKind);
+
+      if (!requiredAppointment || !isClinicalFollowUpCompleted(requiredAppointment)) {
+        return {
+          kind: definition.kind,
+          sequence: definition.sequence,
+          title: definition.title,
+          description: definition.description,
+          status: 'locked',
+          availableAt,
+          scheduledAt: appointment?.scheduled_at ?? null,
+          appointmentId: appointment?.id ?? null,
+          lockedReason: definition.lockedReason,
+        };
+      }
+    }
+
+    if (appointment) {
+      return {
+        kind: definition.kind,
+        sequence: definition.sequence,
+        title: definition.title,
+        description: definition.description,
+        status: isClinicalFollowUpCompleted(appointment) ? 'completed' : 'scheduled',
+        availableAt,
+        scheduledAt: appointment.scheduled_at,
+        appointmentId: appointment.id,
+        lockedReason: null,
+      };
+    }
+
+    return {
+      kind: definition.kind,
+      sequence: definition.sequence,
+      title: definition.title,
+      description: definition.description,
+      status: new Date(availableAt).getTime() < now.getTime() ? 'overdue' : 'available',
+      availableAt,
+      scheduledAt: null,
+      appointmentId: null,
+      lockedReason: null,
+    };
+  });
+}
+
 function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
     value === 'athleteRegistered' ||
@@ -2799,6 +2994,104 @@ function canPersonaReadOrder(order: DemoOrder, persona: DemoPersona) {
   );
 }
 
+function getNowIso() {
+  return new Date().toISOString();
+}
+
+function getLatestLabAssignment(order: DemoOrder) {
+  ensureLabAssignmentHistory(order);
+  const assignments = order.labAssignments ?? [];
+
+  return assignments.length > 0 ? assignments[assignments.length - 1] : null;
+}
+
+function getInitialLabAssignmentStatus(order: DemoOrder): DemoLabAssignmentStatus {
+  if (order.status === 'lab_processing') {
+    return 'in_production';
+  }
+
+  if (
+    order.status === 'product_received_by_clinic' ||
+    order.status === 'awaiting_adaptation' ||
+    order.status === 'follow_up' ||
+    order.status === 'completed'
+  ) {
+    return 'completed';
+  }
+
+  return 'awaiting_acceptance';
+}
+
+function ensureLabAssignmentHistory(order: DemoOrder) {
+  if ((order.labAssignments ?? []).length > 0 || !order.labId) {
+    return;
+  }
+
+  order.labAssignments = [
+    {
+      id: `${order.id}-lab-assignment-1`,
+      orderId: order.id,
+      labProfileId: order.labId,
+      sequence: 1,
+      status: getInitialLabAssignmentStatus(order),
+      productionRequestVersionId: null,
+      returnReason: null,
+      assignedAt: order.created_at,
+      returnedAt: null,
+      replacedAt: null,
+      completedAt: null,
+    },
+  ];
+}
+
+function createLabAssignment(order: DemoOrder, labProfileId: string) {
+  ensureLabAssignmentHistory(order);
+  const assignments = order.labAssignments ?? [];
+  const sequence = assignments.length + 1;
+  const now = getNowIso();
+  const assignment: DemoLabAssignment = {
+    id: `${order.id}-lab-assignment-${sequence}`,
+    orderId: order.id,
+    labProfileId,
+    sequence,
+    status: 'awaiting_acceptance',
+    productionRequestVersionId: null,
+    returnReason: null,
+    assignedAt: now,
+    returnedAt: null,
+    replacedAt: null,
+    completedAt: null,
+  };
+
+  order.labAssignments = [...assignments, assignment];
+
+  return assignment;
+}
+
+function replaceOpenLabAssignments(order: DemoOrder, nextLabProfileId: string) {
+  ensureLabAssignmentHistory(order);
+  const now = getNowIso();
+  const openStatuses: DemoLabAssignmentStatus[] = ['awaiting_acceptance', 'in_production'];
+
+  order.labAssignments = (order.labAssignments ?? []).map((assignment) =>
+    assignment.labProfileId !== nextLabProfileId && openStatuses.includes(assignment.status)
+      ? { ...assignment, status: 'replaced_by_other_lab', replacedAt: now }
+      : assignment
+  );
+}
+
+function updateLatestLabAssignment(order: DemoOrder, update: Partial<DemoLabAssignment>) {
+  const latest = getLatestLabAssignment(order);
+
+  if (!latest) {
+    return;
+  }
+
+  order.labAssignments = (order.labAssignments ?? []).map((assignment) =>
+    assignment.id === latest.id ? { ...assignment, ...update } : assignment
+  );
+}
+
 function getWorkflowFormOrThrow(orderId: string, workflowFormId: string) {
   const workflowForm = state.workflowForms.find(
     (item) => item.orderId === orderId && item.id === workflowFormId
@@ -2864,6 +3157,19 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
 
   const canReadProductionRequestDraft = isOperationalDentistPersona(activePersona) || isOperationalLabPersona(activePersona);
   const canReadClinicalDraft = isOperationalDentistPersona(activePersona);
+  ensureLabAssignmentHistory(order);
+  const labAssignments = order.labAssignments ?? [];
+  const activeLabId = isOperationalLabPersona(activePersona) ? getPersonaUser(activePersona).labId : null;
+  const latestLabAssignment = labAssignments.length > 0 ? labAssignments[labAssignments.length - 1] : null;
+  const labAssignmentForActor = activeLabId
+    ? [...labAssignments].reverse().find((assignment) => assignment.labProfileId === activeLabId) ?? null
+    : null;
+  const labAssignmentView = labAssignmentForActor
+    ? {
+        ...clone(labAssignmentForActor),
+        isCurrent: latestLabAssignment?.id === labAssignmentForActor.id,
+      }
+    : null;
 
   return {
     id: order.id,
@@ -2878,6 +3184,8 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
     user_profile_id: order.user_profile_id,
     practice_location_id: order.practice_location_id,
     lab_profile_id: order.labId,
+    labAssignments: clone(labAssignments),
+    labAssignmentView,
     customer: clone(order.customer),
     dentist: dentistUser
       ? {
@@ -2893,6 +3201,8 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
         : null,
     productionRequestDraft: canReadProductionRequestDraft ? clone(order.productionRequestDraft) : null,
     preLabChecklistDraft: canReadClinicalDraft ? clone(order.preLabChecklistDraft) : null,
+    dentistRecommendedPurchaseConfiguration: clone(order.dentistRecommendedPurchaseConfiguration ?? null),
+    purchaseConfiguration: clone(order.purchaseConfiguration ?? null),
     operationalReadiness: {
       preLabReady: pendingItems.length === 0,
       pendingItems,
@@ -3345,6 +3655,44 @@ export function markAccountNotificationRead(notificationId: string, context?: Re
   }
 
   return { notification: mapNotificationForProfile(notification, user.profileId) };
+}
+
+export function markAllAccountNotificationsRead(context?: RequestContext) {
+  const user = getPersonaUser(resolveActiveDemoPersona(context));
+  const readAt = new Date().toISOString();
+  let markedCount = 0;
+
+  state.notifications.forEach((notification) => {
+    const scope = notification.scope ?? 'profile';
+    const isVisible = scope === 'global' || notification.profileId === user.profileId;
+
+    if (!isVisible) {
+      return;
+    }
+
+    if (scope === 'global') {
+      const alreadyRead = Boolean(notification.readAtByProfileId?.[user.profileId]);
+
+      if (!alreadyRead) {
+        markedCount += 1;
+      }
+
+      notification.readAtByProfileId = {
+        ...(notification.readAtByProfileId ?? {}),
+        [user.profileId]: readAt
+      };
+      return;
+    }
+
+    if (!notification.read) {
+      markedCount += 1;
+    }
+
+    notification.read = true;
+    notification.readAt = readAt;
+  });
+
+  return { markedCount, unreadCount: 0 };
 }
 
 export function markAccountNotificationUnread(notificationId: string, context?: RequestContext) {
@@ -3991,6 +4339,95 @@ export function getAppointments(orderId: string, context?: RequestContext) {
   };
 }
 
+export function getClinicalFollowUps(orderId: string, context?: RequestContext) {
+  assertOrderReadAccess(orderId, context);
+  const order = getOrderOrThrow(orderId);
+  const appointments = state.appointments.filter((appointment) => appointment.order_id === orderId);
+
+  return {
+    followUps: buildClinicalFollowUps(order, appointments)
+  };
+}
+
+export function scheduleClinicalFollowUp(
+  orderId: string,
+  kind: ClinicalFollowUpKind,
+  payload: { practiceLocationId?: string; scheduledAt?: string } = {},
+  context?: RequestContext
+) {
+  const { order, activePersona } = assertOrderReadAccess(orderId, context);
+
+  if (!isCustomerPersona(activePersona)) {
+    throw new DemoStateError(403, 'forbidden_follow_up_schedule', 'Somente o cliente pode agendar o retorno clínico.');
+  }
+
+  if (kind === 'on_demand') {
+    throw new DemoStateError(
+      409,
+      'on_demand_follow_up_not_available',
+      'Retornos sob demanda ainda dependem de solicitação pelo formulário de treino.'
+    );
+  }
+
+  if (order.status !== 'completed') {
+    throw new DemoStateError(
+      409,
+      'follow_up_not_available',
+      'O acompanhamento clínico só fica disponível após a conclusão da adaptação.'
+    );
+  }
+
+  const card = buildClinicalFollowUps(
+    order,
+    state.appointments.filter((appointment) => appointment.order_id === orderId)
+  ).find((followUp) => followUp.kind === kind);
+
+  if (!card || (card.status !== 'available' && card.status !== 'overdue')) {
+    throw new DemoStateError(
+      409,
+      'follow_up_schedule_blocked',
+      card?.lockedReason ?? 'Este retorno clínico ainda não está disponível para agendamento.'
+    );
+  }
+
+  const scheduledAt = payload.scheduledAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString();
+  const appointment: DemoAppointment = {
+    id: `appointment-${orderId}-${Date.now()}`,
+    order_id: orderId,
+    type: 'follow_up',
+    status: 'scheduled',
+    scheduled_at: scheduledAt,
+    user_confirmed_at: null,
+    dentist_confirmed_at: null,
+    purpose: kind,
+    metadata: {
+      followUpKind: kind,
+      sequence: card.sequence,
+      practiceLocationId: payload.practiceLocationId ?? order.practice_location_id ?? null
+    }
+  };
+  state.appointments.push(appointment);
+
+  state.notifications.unshift({
+    id: `notification-follow-up-${orderId}-${kind}-${Date.now()}`,
+    profileId: order.customer_profile_id,
+    title: 'Retorno clínico agendado',
+    message: `${card.title} agendado para acompanhamento da adaptação Biteplaner.`,
+    type: 'follow_up.scheduled',
+    read: false,
+    metadata: {
+      orderId,
+      appointmentId: appointment.id,
+      followUpKind: kind
+    },
+    createdAt: new Date().toISOString()
+  });
+
+  return {
+    order: sanitizeOrder(order, activePersona)
+  };
+}
+
 export function getTimelineEvents(orderId: string, context?: RequestContext) {
   assertOrderReadAccess(orderId, context);
 
@@ -4220,6 +4657,8 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         scheduled_at: action.scheduledAt,
         user_confirmed_at: null,
         dentist_confirmed_at: null,
+        purpose: action.purpose ?? null,
+        metadata: action.metadata ?? null,
       };
       state.appointments.push(appointment);
       return clone(appointment);
@@ -4237,10 +4676,21 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     }
 
     const appointment = getAppointmentOrThrow(orderId, action.appointmentId);
+    const isPostCompletedClinicalFollowUp = () => {
+      const order = getOrderOrThrow(orderId);
+      return order.status === 'completed' &&
+        appointment.type === 'follow_up' &&
+        getClinicalFollowUpKindFromAppointment(appointment) !== null;
+    };
 
     if (action.type === 'user-confirmation') {
       appointment.user_confirmed_at = new Date().toISOString();
       if (appointment.dentist_confirmed_at) {
+        if (isPostCompletedClinicalFollowUp()) {
+          appointment.status = 'completed';
+          return clone(appointment);
+        }
+
         updateOrderStatus(
           orderId,
           'appointment_confirmed',
@@ -4255,6 +4705,11 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     if (action.type === 'dentist-confirmation') {
       appointment.dentist_confirmed_at = new Date().toISOString();
       if (appointment.user_confirmed_at) {
+        if (isPostCompletedClinicalFollowUp()) {
+          appointment.status = 'completed';
+          return clone(appointment);
+        }
+
         updateOrderStatus(
           orderId,
           'appointment_confirmed',
@@ -4274,6 +4729,10 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       if (!appointment.dentist_confirmed_at) {
         appointment.dentist_confirmed_at = new Date().toISOString();
       }
+      if (isPostCompletedClinicalFollowUp()) {
+        return clone(appointment);
+      }
+
       updateOrderStatus(
         orderId,
         'appointment_confirmed',
@@ -4480,14 +4939,30 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         if (canApplyDentistEligibilityDecision) {
           order.flags.eligible = sanitizedDentistPayload.biteplannerEligible === 'yes';
 
-          if (sanitizedDentistPayload.biteplannerEligible === 'yes' && order.status === 'appointment_confirmed') {
-            updateOrderStatus(
-              orderId,
-              'awaiting_payment',
-              'Aguardando pagamento',
-              'awaiting_payment',
+          if (sanitizedDentistPayload.biteplannerEligible === 'yes') {
+            const quantity = Number(sanitizedDentistPayload.biteplanerQuantity);
+            if (
+              typeof sanitizedDentistPayload.biteplanerModel === 'string' &&
+              typeof sanitizedDentistPayload.biteplanerColor === 'string' &&
+              Number.isInteger(quantity)
+            ) {
+              order.dentistRecommendedPurchaseConfiguration = {
+                productKey: 'biteplaner',
+                model: sanitizedDentistPayload.biteplanerModel,
+                color: sanitizedDentistPayload.biteplanerColor,
+                quantity,
+              };
+            }
+
+            if (order.status === 'appointment_confirmed') {
+              updateOrderStatus(
+                orderId,
+                'awaiting_payment',
+                'Aguardando pagamento',
+                'awaiting_payment',
               'Dentista confirmou aptidão no complemento de pré-consulta.'
-            );
+              );
+            }
           } else if (sanitizedDentistPayload.biteplannerEligible === 'no') {
             order.nextActions = ['schedule-initial-consultation'];
             updateOrderStatus(
@@ -4717,6 +5192,28 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
+  if (action.type === 'create-checkout-session') {
+    const order = getOrderOrThrow(orderId);
+    const quantity = Number.isFinite(action.quantity) ? Math.max(1, Math.min(10, Math.trunc(action.quantity))) : 1;
+    const model = action.model.trim();
+    const color = action.color.trim();
+
+    order.purchaseConfiguration = {
+      productKey: 'biteplaner',
+      quantity,
+      model: model || 'impacto',
+      color: color || 'preto',
+    };
+
+    pushTimeline(
+      orderId,
+      order.status,
+      `Cliente configurou a compra do Biteplaner modelo ${order.purchaseConfiguration.model}, cor ${order.purchaseConfiguration.color} e quantidade ${quantity}.`
+    );
+
+    return sanitizeOrder(order, resolveActiveDemoPersona(context));
+  }
+
   if (action.type === 'confirm-payment') {
     const order = getOrderOrThrow(orderId);
     order.flags.paymentConfirmed = true;
@@ -4744,7 +5241,8 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       prescriptionFileName: action.prescriptionFileName.trim(),
       prescriptionFileRef: action.prescriptionFileRef ?? null,
       lgpdConfirmed: action.lgpdConfirmed,
-      selectedLabId: action.selectedLabId?.trim() ? action.selectedLabId : null
+      selectedLabId: action.selectedLabId?.trim() ? action.selectedLabId : null,
+      purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
     };
 
     pushTimeline(
@@ -4818,13 +5316,16 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       prescriptionFileName,
       prescriptionFileRef: action.prescriptionFileRef ?? null,
       lgpdConfirmed: true,
-      selectedLabId
+      selectedLabId,
+      purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
     };
     order.flags.initialEvaluationCompleted = true;
     order.flags.productionFormCompleted = true;
     order.flags.dentalArchFileAttached = true;
     order.flags.retentionAcknowledged = true;
     order.flags.sentToLab = true;
+    replaceOpenLabAssignments(order, selectedLabId);
+    createLabAssignment(order, selectedLabId);
     order.labId = selectedLabId;
     ensureVisibility(order, 'lab');
 
@@ -4999,6 +5500,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
 
   if (action.type === 'lab-production-started') {
     const order = getOrderOrThrow(orderId);
+    updateLatestLabAssignment(order, { status: 'in_production' });
     updateOrderStatus(
       orderId,
       'lab_processing',
@@ -5012,6 +5514,11 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
   if (action.type === 'lab-return-for-adjustment') {
     const order = getOrderOrThrow(orderId);
     order.flags.sentToLab = false;
+    updateLatestLabAssignment(order, {
+      status: 'returned_for_adjustment',
+      returnReason: action.reason ?? 'Laboratório devolveu o pedido para ajuste na demo.',
+      returnedAt: getNowIso(),
+    });
     updateOrderStatus(
       orderId,
       'dentist_adjustment_required',
@@ -5025,6 +5532,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
   if (action.type === 'lab-production-completed') {
     const order = getOrderOrThrow(orderId);
     order.flags.productReceived = false;
+    updateLatestLabAssignment(order, { status: 'completed', completedAt: getNowIso() });
     ensureVisibility(order, 'athlete');
     updateOrderStatus(
       orderId,

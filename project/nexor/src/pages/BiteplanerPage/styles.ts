@@ -101,6 +101,15 @@ export const Page = styled.main`
   }
 `;
 
+export const ProductImageHero = styled.section`
+  padding-top: 60px;
+`;
+
+export const ProductHeroImage = styled.img`
+  width: 100%;
+  display: block;
+`;
+
 export const HeroSection = styled.section`
   min-height: 100vh;
   min-height: 100svh;
@@ -143,15 +152,11 @@ export const HeroForegroundItem = styled.img`
   user-select: none;
 
   @media (max-width: 980px) {
-    width: min(56vw, 430px);
-    opacity: 0.82;
+    bottom: -100px;
   }
 
   @media (max-width: 720px) {
-    right: -28px;
-    bottom: -14px;
-    width: min(72vw, 360px);
-    opacity: 0.5;
+    display: none
   }
 `;
 
@@ -582,7 +587,7 @@ export const StepHeader = styled.div`
   grid-column: 1;
   position: relative;
   display: grid;
-  place-items: start center;
+  place-items: center;
   padding-right: 8px;
 
   &::before {

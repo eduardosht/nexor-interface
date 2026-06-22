@@ -25,6 +25,7 @@ import { Eye, FileText, HeartPulse, MapPin, UserRoundCheck } from 'lucide-react'
 import styled from 'styled-components';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { useAdminPortal } from '../../../features/admin/portal';
 import {
   approvePartnerRequest,
@@ -112,6 +113,7 @@ export function AdminPartnerLicensing() {
   const [selectedRequest, setSelectedRequest] = useState<PartnerRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [activeAction, setActiveAction] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadRequests() {
     if (!selectedProduct || !token) return;
@@ -129,14 +131,14 @@ export function AdminPartnerLicensing() {
   }, [selectedProduct, token]);
 
   const filteredRequests = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = debouncedSearch.trim().toLowerCase();
     if (!query) return requests;
     return requests.filter((request) =>
       `${request.partnerName} ${getPartnerEmail(request)} ${request.documentNumber} ${formatPartnerType(request.partnerType)} ${formatPartnerLocation(request)} ${(request.serviceLocations ?? []).join(' ')}`
         .toLowerCase()
         .includes(query)
     );
-  }, [requests, search]);
+  }, [debouncedSearch, requests]);
 
   const metrics = useMemo<AdminMetric[]>(
     () => [

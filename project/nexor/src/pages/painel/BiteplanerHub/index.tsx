@@ -90,6 +90,7 @@ import {
   getAuthToken,
   getEffectiveAthleteOrder,
   getOrderDisplayId,
+  getOrderClinicalDentistName,
   getOrderStatusPresentation,
   getStageLabel,
   markAccountNotificationRead,
@@ -97,6 +98,7 @@ import {
   registerClinicalDecision,
   updateAppointment,
   type AccessMode,
+  type BiteplanerPurchaseConfiguration,
   type DemoAppointment,
   type DemoOrderSummary,
   type DemoTimelineEvent,
@@ -284,6 +286,8 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   scheduling_released: 'Pagamento confirmado e etapa de escolha do local de atendimento liberada.',
   practice_location_selected_by_customer:
     'Cliente informou que combinou a consulta fora da plataforma; a ordem agora aguarda aceite do dentista.',
+  practice_location_selection_cancelled_by_customer:
+    'Cliente cancelou a consulta selecionada e a ordem voltou para escolha do local de atendimento.',
   practice_location_selected_by_customer_backfill:
     'Consulta informada pelo cliente foi sincronizada para aguardar aceite do dentista.',
   initial_consultation_accepted_by_dentist:
@@ -362,7 +366,22 @@ function getTimelineStatusLabel(status: string) {
     .join(' ');
 }
 
+function getTimelineMetadataText(metadata: Record<string, unknown> | null | undefined, key: string) {
+  const value = metadata?.[key];
+
+  return typeof value === 'string' && value.trim() ? value.trim() : '';
+}
+
 function getTimelineEventDescription(event: DemoTimelineEvent) {
+  if (event.reason === 'practice_location_selection_cancelled_by_customer') {
+    const previousPracticeLocationName = getTimelineMetadataText(event.metadata, 'previousPracticeLocationName');
+    const previousDentistName = getTimelineMetadataText(event.metadata, 'previousDentistName');
+    const locationPart = previousPracticeLocationName ? ` na ${previousPracticeLocationName}` : '';
+    const dentistPart = previousDentistName ? ` com ${previousDentistName}` : '';
+
+    return `Cliente cancelou a consulta${locationPart}${dentistPart}; a ordem voltou para escolha do local de atendimento.`;
+  }
+
   if (event.reason && TIMELINE_REASON_DESCRIPTIONS[event.reason]) {
     return TIMELINE_REASON_DESCRIPTIONS[event.reason];
   }
@@ -854,6 +873,78 @@ type QueueActionConfig = {
   execute: () => Promise<unknown>;
 };
 
+type PendingOrderActionModalProps = {
+  action: QueueActionConfig;
+  activeAction: string;
+  onCancel: () => void;
+  onConfirm: (action: QueueActionConfig, reason: string) => void;
+};
+
+function PendingOrderActionModal({ action, activeAction, onCancel, onConfirm }: PendingOrderActionModalProps) {
+  const [reason, setReason] = useState('');
+  const requiresReturnReason = action.id.endsWith(':return');
+
+  useEffect(() => {
+    setReason('');
+  }, [action.id]);
+
+  return (
+    <S.ModalOverlay
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirmar ação da ordem"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onCancel();
+        }
+      }}
+    >
+      <S.ModalBox>
+        <S.ModalHeader>
+          <div>
+            <S.ModalTitle>{action.confirmTitle}</S.ModalTitle>
+            <S.ModalSubtitle>{action.confirmDescription}</S.ModalSubtitle>
+          </div>
+          <S.ModalCloseButton
+            type="button"
+            aria-label="Fechar modal de confirmação da ordem"
+            onClick={onCancel}
+          >
+            <X size={16} aria-hidden />
+          </S.ModalCloseButton>
+        </S.ModalHeader>
+
+        {requiresReturnReason ? (
+          <Field
+            as="textarea"
+            label="Descrição do motivo"
+            placeholder="Explique o ajuste que o dentista precisa realizar."
+            value={reason}
+            onChange={(event) => {
+              setReason(event.target.value);
+            }}
+          />
+        ) : null}
+
+        <S.ModalActions>
+          <S.ModalSecondaryButton type="button" onClick={onCancel}>
+            Cancelar
+          </S.ModalSecondaryButton>
+          <S.ModalPrimaryButton
+            type="button"
+            disabled={activeAction === action.actionKey || (requiresReturnReason && !reason.trim())}
+            onClick={() => {
+              onConfirm(action, requiresReturnReason ? reason.trim() : '');
+            }}
+          >
+            {activeAction === action.actionKey ? 'Confirmando...' : 'Confirmar'}
+          </S.ModalPrimaryButton>
+        </S.ModalActions>
+      </S.ModalBox>
+    </S.ModalOverlay>
+  );
+}
+
 function buildPartnerInviteLink(token: string) {
   if (typeof window === 'undefined') {
     return `https://nexor.local/cadastro?invite=${encodeURIComponent(token)}`;
@@ -884,6 +975,46 @@ function formatAttachmentSize(sizeBytes?: number | null) {
   }
 
   return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(sizeBytes / (1024 * 1024))} MB`;
+}
+
+function formatBiteplanerModel(model: string) {
+  const normalized = model.trim().toLowerCase();
+
+  if (normalized === 'impacto') {
+    return 'Linha Impacto';
+  }
+
+  if (normalized === 'esportes') {
+    return 'Linha Esportes';
+  }
+
+  return model.trim() || 'Não informado';
+}
+
+function formatBiteplanerColor(color: string) {
+  const normalized = color.trim().toLowerCase();
+
+  if (normalized === 'preto') {
+    return 'Preto';
+  }
+
+  if (normalized === 'branco') {
+    return 'Branco';
+  }
+
+  return color.trim() || 'Não informado';
+}
+
+function formatBiteplanerPurchaseConfiguration(configuration: BiteplanerPurchaseConfiguration | null | undefined) {
+  if (!configuration) {
+    return 'Não informado';
+  }
+
+  return [
+    `Modelo: ${formatBiteplanerModel(configuration.model)}`,
+    `Cor: ${formatBiteplanerColor(configuration.color)}`,
+    `Quantidade: ${configuration.quantity}`,
+  ].join(' | ');
 }
 
 function getLatestLabAdjustmentEvent(events: DemoTimelineEvent[]) {
@@ -917,7 +1048,7 @@ function findLicensedLabByProductionRequest(
 }
 
 function formatOrderDentist(order: DemoOrderSummary) {
-  return order.dentist?.full_name || order.dentist?.email || 'Não informado';
+  return getOrderClinicalDentistName(order);
 }
 
 function normalizeBrazilianPhone(phone?: string | null) {
@@ -1147,7 +1278,6 @@ export function BiteplanerHub() {
   const [dentistStatusFilters, setDentistStatusFilters] = useState<string[]>([]);
   const [labStatusFilters, setLabStatusFilters] = useState<string[]>([]);
   const [pendingOrderAction, setPendingOrderAction] = useState<QueueActionConfig | null>(null);
-  const [pendingOrderReason, setPendingOrderReason] = useState('');
   const [selectedAdjustmentOrderId, setSelectedAdjustmentOrderId] = useState<string | null>(null);
   const [selectedAdaptationOrderId, setSelectedAdaptationOrderId] = useState<string | null>(null);
   const [adaptationCustomerPhones, setAdaptationCustomerPhones] = useState<Record<string, string>>({});
@@ -1812,7 +1942,8 @@ export function BiteplanerHub() {
         orders.filter((order) =>
           selectedMode === 'dentist'
             ? ['awaiting_dentist_acceptance', 'in_progress', 'appointment_confirmed', 'treatment_required', 'awaiting_payment', 'awaiting_dentist_forms', 'dentist_adjustment_required', 'product_received_by_clinic'].includes(order.status)
-            : ['awaiting_lab_start', 'lab_processing', 'awaiting_adaptation'].includes(order.status)
+            : ['awaiting_lab_start', 'lab_processing', 'awaiting_adaptation'].includes(order.status) &&
+              !(order.labAssignmentView && !order.labAssignmentView.isCurrent)
         ).length
       ),
       hint: 'Itens que ainda dependem de uma ação do perfil atual.',
@@ -2020,6 +2151,15 @@ export function BiteplanerHub() {
   ];
 
   function renderOrderStatus(order: DemoOrderSummary) {
+    if (selectedMode === 'lab' && order.labAssignmentView && !order.labAssignmentView.isCurrent) {
+      return (
+        <S.StatusCellStack>
+          <StatusIndicator color="#D18A00" label="Mudança de lab." />
+          <S.TableCellHint>Encaminhado para outro laboratório</S.TableCellHint>
+        </S.StatusCellStack>
+      );
+    }
+
     const presentation = getOrderStatusPresentation(order);
 
     return <StatusIndicator color={presentation.color} label={presentation.label} />;
@@ -2211,6 +2351,10 @@ export function BiteplanerHub() {
   }
 
   function getLabActionConfigs(order: DemoOrderSummary): QueueActionConfig[] {
+    if (order.labAssignmentView && !order.labAssignmentView.isCurrent) {
+      return [];
+    }
+
     const orderLabel = getOrderLabel(order);
 
     const documentationAction: QueueActionConfig = {
@@ -2379,8 +2523,8 @@ export function BiteplanerHub() {
           <S.TableIconButton
             type="button"
             $tone="neutral"
-            aria-label={`Visualizar atualizacoes da ordem ${getOrderLabel(row)}`}
-            title="Visualizar atualizacoes"
+            aria-label={`Visualizar atualizações da ordem ${getOrderLabel(row)}`}
+            title="Visualizar atualizações"
             onClick={() => {
               setSelectedTimelineOrderId(row.id);
             }}
@@ -2479,8 +2623,8 @@ export function BiteplanerHub() {
           <S.TableIconButton
             type="button"
             $tone="neutral"
-            aria-label={`Visualizar atualizacoes da ordem ${getOrderLabel(row)}`}
-            title="Visualizar atualizacoes"
+            aria-label={`Visualizar atualizações da ordem ${getOrderLabel(row)}`}
+            title="Visualizar atualizações"
             onClick={() => {
               setSelectedTimelineOrderId(row.id);
             }}
@@ -2496,7 +2640,9 @@ export function BiteplanerHub() {
       label: 'Ações',
       width: '14%',
       render: (row) => {
-        const actions = getLabActionConfigs(row);
+        const actions = getLabActionConfigs(row).filter(
+          (action) => !action.id.endsWith(':start') && !action.id.endsWith(':return')
+        );
 
         if (actions.length === 0) {
           return '-';
@@ -2570,7 +2716,13 @@ export function BiteplanerHub() {
   const productionPrescriptionFileName = productionRequestDraft
     ? getAttachmentFileName(productionRequestDraft.prescriptionFileName, productionRequestDraft.prescriptionFileRef)
     : '';
-  const requiresReturnReason = pendingOrderAction?.id.endsWith(':return') ?? false;
+  const productionPurchaseConfiguration =
+    productionRequestDraft?.purchaseConfiguration ?? selectedDocumentationOrder?.purchaseConfiguration ?? null;
+  const selectedDocumentationActions = selectedDocumentationOrder
+    ? getLabActionConfigs(selectedDocumentationOrder).filter(
+        (action) => action.id.endsWith(':start') || action.id.endsWith(':return')
+      )
+    : [];
   const inviteLinkMessage = selectedInviteLink
     ? `Olá! Segue seu link individual do Biteplaner: ${inviteLinkUrl}`
     : '';
@@ -3260,7 +3412,7 @@ export function BiteplanerHub() {
             <div>
               <S.PanelTitle>Licenciamento concluído</S.PanelTitle>
               <S.PanelText>
-                Parabens! Seu licenciamento Biteplaner foi concluído com sucesso. O contrato final foi assinado e seu certificado está disponível para download.
+                Parabéns! Seu licenciamento Biteplaner foi concluído com sucesso. O contrato final foi assinado e seu certificado está disponível para download.
               </S.PanelText>
             </div>
           </S.CelebrationHeader>
@@ -3504,10 +3656,10 @@ export function BiteplanerHub() {
             </S.ModalHeader>
 
             <S.DocumentationGrid>
-              <S.DocumentationItem>
+              <S.AdjustmentReasonItem data-testid="dentist-adjustment-reason-card">
                 <S.DocumentationLabel>Mensagem do laboratório</S.DocumentationLabel>
                 <S.DocumentationValue>{getAdjustmentReason(selectedAdjustmentEvent)}</S.DocumentationValue>
-              </S.DocumentationItem>
+              </S.AdjustmentReasonItem>
               <S.DocumentationItem>
                 <S.DocumentationLabel>Solicitação de produção atual</S.DocumentationLabel>
                 <S.DocumentationValue>
@@ -3557,78 +3709,22 @@ export function BiteplanerHub() {
       ) : null}
 
       {pendingOrderAction ? (
-        <S.ModalOverlay
-          role="dialog"
-            aria-modal="true"
-            aria-label="Confirmar ação da ordem"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setPendingOrderAction(null);
-                setPendingOrderReason('');
-              }
-            }}
-          >
-            <S.ModalBox>
-            <S.ModalHeader>
-              <div>
-                <S.ModalTitle>{pendingOrderAction.confirmTitle}</S.ModalTitle>
-                <S.ModalSubtitle>{pendingOrderAction.confirmDescription}</S.ModalSubtitle>
-              </div>
-                <S.ModalCloseButton
-                  type="button"
-                  aria-label="Fechar modal de confirmação da ordem"
-                  onClick={() => {
-                    setPendingOrderAction(null);
-                    setPendingOrderReason('');
-                  }}
-                >
-                  <X size={16} aria-hidden />
-                </S.ModalCloseButton>
-              </S.ModalHeader>
+        <PendingOrderActionModal
+          action={pendingOrderAction}
+          activeAction={activeAction}
+          onCancel={() => {
+            setPendingOrderAction(null);
+          }}
+          onConfirm={(action, reason) => {
+            const callback = action.id.endsWith(':return')
+              ? () => returnToDentist(action.id.split(':')[0], reason, token)
+              : action.execute;
 
-              {requiresReturnReason ? (
-                <Field
-                  as="textarea"
-                  label="Descrição do motivo"
-                  placeholder="Explique o ajuste que o dentista precisa realizar."
-                  value={pendingOrderReason}
-                  onChange={(event) => {
-                    setPendingOrderReason(event.target.value);
-                  }}
-                />
-              ) : null}
-
-              <S.ModalActions>
-                <S.ModalSecondaryButton
-                  type="button"
-                  onClick={() => {
-                    setPendingOrderAction(null);
-                    setPendingOrderReason('');
-                  }}
-                >
-                  Cancelar
-                </S.ModalSecondaryButton>
-                <S.ModalPrimaryButton
-                  type="button"
-                  disabled={activeAction === pendingOrderAction.actionKey || (requiresReturnReason && !pendingOrderReason.trim())}
-                  onClick={() => {
-                    const action = pendingOrderAction;
-                    const callback =
-                      requiresReturnReason
-                        ? () => returnToDentist(action.id.split(':')[0], pendingOrderReason.trim(), token)
-                        : action.execute;
-
-                    void runOrderAction(action.actionKey, callback, action.successMessage).then(() => {
-                      setPendingOrderAction(null);
-                      setPendingOrderReason('');
-                    });
-                  }}
-                >
-                  {activeAction === pendingOrderAction.actionKey ? 'Confirmando...' : 'Confirmar'}
-                </S.ModalPrimaryButton>
-              </S.ModalActions>
-            </S.ModalBox>
-        </S.ModalOverlay>
+            void runOrderAction(action.actionKey, callback, action.successMessage).then(() => {
+              setPendingOrderAction(null);
+            });
+          }}
+        />
       ) : null}
 
       {showLicensingApprovalModal ? (
@@ -3732,7 +3828,7 @@ export function BiteplanerHub() {
                 <Mail size={14} aria-hidden />
                 Enviar por e-mail
               </S.ActionHref>
-              <S.ActionHref href={whatsappHref} target="_blank" rel="noreferrer">
+              <S.ActionHref href={whatsappHref} target="_blank" rel="noreferrer" $variant="whatsapp">
                 <MessageCircle size={14} aria-hidden />
                 Enviar por WhatsApp
               </S.ActionHref>
@@ -3745,7 +3841,7 @@ export function BiteplanerHub() {
         <S.ModalOverlay
           role="dialog"
           aria-modal="true"
-          aria-label="Atualizacoes da ordem"
+          aria-label="Atualizações da ordem"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setSelectedTimelineOrderId(null);
@@ -3755,14 +3851,14 @@ export function BiteplanerHub() {
           <S.ModalBox>
             <S.ModalHeader>
               <div>
-                <S.ModalTitle>Atualizacoes da ordem {getOrderLabel(selectedTimelineOrder)}</S.ModalTitle>
+                <S.ModalTitle>Atualizações da ordem {getOrderLabel(selectedTimelineOrder)}</S.ModalTitle>
                 <S.ModalSubtitle>
-                  Historico resumido da jornada operacional deste pedido no fluxo compartilhado.
+                  Histórico resumido da jornada operacional deste pedido no fluxo compartilhado.
                 </S.ModalSubtitle>
               </div>
               <S.ModalCloseButton
                 type="button"
-                aria-label="Fechar modal das atualizacoes"
+                aria-label="Fechar modal das atualizações"
                 onClick={() => {
                   setSelectedTimelineOrderId(null);
                 }}
@@ -3771,13 +3867,13 @@ export function BiteplanerHub() {
               </S.ModalCloseButton>
             </S.ModalHeader>
 
-            <S.SimpleTableWrap>
+            <S.TimelineTableWrap>
               <S.SimpleTable>
                 <thead>
                   <tr>
                     <th>Data</th>
                     <th>Status</th>
-                    <th>Descricao</th>
+                    <th>Descrição</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3791,12 +3887,12 @@ export function BiteplanerHub() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={3}>Nenhuma atualização registrada para está ordem.</td>
+                      <td colSpan={3}>Nenhuma atualização registrada para esta ordem.</td>
                     </tr>
                   )}
                 </tbody>
               </S.SimpleTable>
-            </S.SimpleTableWrap>
+            </S.TimelineTableWrap>
           </S.ModalBox>
         </S.ModalOverlay>
       ) : null}
@@ -3834,75 +3930,105 @@ export function BiteplanerHub() {
             {productionRequestLoading ? (
               <S.EmptyState>Carregando dados enviados pelo dentista...</S.EmptyState>
             ) : productionRequestDraft ? (
-              <S.DocumentationGrid>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Dentista solicitante</S.DocumentationLabel>
+              <S.DocumentationContent>
+                <S.DocumentationPurchaseSection data-testid="lab-documentation-purchase-section">
+                  <S.DocumentationLabel>Pedido Biteplaner</S.DocumentationLabel>
                   <S.DocumentationValue>
-                    {formatOrderDentist(selectedDocumentationOrder)}
-                    {selectedDocumentationOrder.dentist?.full_name && selectedDocumentationOrder.dentist?.email
-                      ? ` - ${selectedDocumentationOrder.dentist.email}`
-                      : ''}
+                    {formatBiteplanerPurchaseConfiguration(productionPurchaseConfiguration)}
                   </S.DocumentationValue>
-                </S.DocumentationItem>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Paciente</S.DocumentationLabel>
-                  <S.DocumentationValue>
-                    {selectedDocumentationOrder.customer?.full_name || 'Não informado'}
-                    {selectedDocumentationOrder.customer?.email ? ` - ${selectedDocumentationOrder.customer.email}` : ''}
-                  </S.DocumentationValue>
-                </S.DocumentationItem>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Solicitação de produção</S.DocumentationLabel>
-                  <S.DocumentationValue>{productionRequestDraft.productionRequestSummary || 'Não informado'}</S.DocumentationValue>
-                </S.DocumentationItem>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Orientações ao laboratório</S.DocumentationLabel>
-                  <S.DocumentationValue>{productionRequestDraft.labNotes || 'Não informado'}</S.DocumentationValue>
-                </S.DocumentationItem>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Escaneamento 3D</S.DocumentationLabel>
-                  {productionScanFileName ? (
-                    <S.DocumentationDownloadLink
-                      href={buildProductionAttachmentHref(productionScanFileName)}
-                      download={productionScanFileName}
-                      aria-label={`Baixar Escaneamento 3D ${productionScanFileName}`}
-                    >
-                      Baixar arquivo
-                    </S.DocumentationDownloadLink>
-                  ) : (
-                    <S.DocumentationValue>Não anexado</S.DocumentationValue>
-                  )}
-                  {productionScanFileName ? (
+                </S.DocumentationPurchaseSection>
+                <S.DocumentationGrid>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Dentista solicitante</S.DocumentationLabel>
                     <S.DocumentationValue>
-                      Tamanho: {formatAttachmentSize(productionRequestDraft.scan3dFileRef?.sizeBytes)}
+                      {formatOrderDentist(selectedDocumentationOrder)}
+                      {selectedDocumentationOrder.dentist?.full_name && selectedDocumentationOrder.dentist?.email
+                        ? ` - ${selectedDocumentationOrder.dentist.email}`
+                        : ''}
                     </S.DocumentationValue>
-                  ) : null}
-                </S.DocumentationItem>
-                <S.DocumentationItem>
-                  <S.DocumentationLabel>Prescrição</S.DocumentationLabel>
-                  {productionPrescriptionFileName ? (
-                    <S.DocumentationDownloadLink
-                      href={buildProductionAttachmentHref(productionPrescriptionFileName)}
-                      download={productionPrescriptionFileName}
-                      aria-label={`Baixar Prescrição ${productionPrescriptionFileName}`}
-                    >
-                      Baixar arquivo
-                    </S.DocumentationDownloadLink>
-                  ) : (
-                    <S.DocumentationValue>Não anexada</S.DocumentationValue>
-                  )}
-                  {productionPrescriptionFileName ? (
+                  </S.DocumentationItem>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Paciente</S.DocumentationLabel>
                     <S.DocumentationValue>
-                      Tamanho: {formatAttachmentSize(productionRequestDraft.prescriptionFileRef?.sizeBytes)}
+                      {selectedDocumentationOrder.customer?.full_name || 'Não informado'}
+                      {selectedDocumentationOrder.customer?.email ? ` - ${selectedDocumentationOrder.customer.email}` : ''}
                     </S.DocumentationValue>
-                  ) : null}
-                </S.DocumentationItem>
-              </S.DocumentationGrid>
+                  </S.DocumentationItem>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Solicitação de produção</S.DocumentationLabel>
+                    <S.DocumentationValue>{productionRequestDraft.productionRequestSummary || 'Não informado'}</S.DocumentationValue>
+                  </S.DocumentationItem>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Orientações ao laboratório</S.DocumentationLabel>
+                    <S.DocumentationValue>{productionRequestDraft.labNotes || 'Não informado'}</S.DocumentationValue>
+                  </S.DocumentationItem>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Escaneamento 3D</S.DocumentationLabel>
+                    {productionScanFileName ? (
+                      <S.DocumentationDownloadLink
+                        href={buildProductionAttachmentHref(productionScanFileName)}
+                        download={productionScanFileName}
+                        aria-label={`Baixar Escaneamento 3D ${productionScanFileName}`}
+                      >
+                        <Download size={14} aria-hidden />
+                        Baixar arquivo
+                      </S.DocumentationDownloadLink>
+                    ) : (
+                      <S.DocumentationValue>Não anexado</S.DocumentationValue>
+                    )}
+                    {productionScanFileName ? (
+                      <S.DocumentationValue>
+                        Tamanho: {formatAttachmentSize(productionRequestDraft.scan3dFileRef?.sizeBytes)}
+                      </S.DocumentationValue>
+                    ) : null}
+                  </S.DocumentationItem>
+                  <S.DocumentationItem>
+                    <S.DocumentationLabel>Prescrição</S.DocumentationLabel>
+                    {productionPrescriptionFileName ? (
+                      <S.DocumentationDownloadLink
+                        href={buildProductionAttachmentHref(productionPrescriptionFileName)}
+                        download={productionPrescriptionFileName}
+                        aria-label={`Baixar Prescrição ${productionPrescriptionFileName}`}
+                      >
+                        <Download size={14} aria-hidden />
+                        Baixar arquivo
+                      </S.DocumentationDownloadLink>
+                    ) : (
+                      <S.DocumentationValue>Não anexada</S.DocumentationValue>
+                    )}
+                    {productionPrescriptionFileName ? (
+                      <S.DocumentationValue>
+                        Tamanho: {formatAttachmentSize(productionRequestDraft.prescriptionFileRef?.sizeBytes)}
+                      </S.DocumentationValue>
+                    ) : null}
+                  </S.DocumentationItem>
+                </S.DocumentationGrid>
+              </S.DocumentationContent>
             ) : productionRequestError ? (
               <S.EmptyState>{productionRequestError}</S.EmptyState>
             ) : (
               <S.EmptyState>Nenhum formulário de solicitação de produção foi enviado para esta ordem.</S.EmptyState>
             )}
+            {selectedDocumentationActions.length > 0 ? (
+              <S.DocumentationModalActions aria-label="Ações do formulário de solicitação de produção">
+                {selectedDocumentationActions.map((action) => (
+                  <S.DocumentationActionButton
+                    key={action.id}
+                    type="button"
+                    $tone={action.tone ?? 'neutral'}
+                    data-testid={`lab-documentation-action-${action.id.endsWith(':start') ? 'start' : 'return'}`}
+                    disabled={activeAction === action.actionKey}
+                    onClick={() => {
+                      setPendingOrderAction(action);
+                      setSelectedDocumentationOrderId(null);
+                    }}
+                  >
+                    {action.icon}
+                    {action.title}
+                  </S.DocumentationActionButton>
+                ))}
+              </S.DocumentationModalActions>
+            ) : null}
           </S.DocumentationModalBox>
         </S.ModalOverlay>
       ) : null}

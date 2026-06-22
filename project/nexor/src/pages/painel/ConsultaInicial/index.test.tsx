@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -65,7 +66,9 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <ThemeProvider theme={lightTheme}>
-        <ConsultaInicial />
+        <TestQueryClientProvider>
+          <ConsultaInicial />
+        </TestQueryClientProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -125,9 +128,15 @@ describe('ConsultaInicial', () => {
     expect(screen.queryByText(/formulário pré-consulta/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/avaliação inicial compartilhada biteplaner/i)).not.toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /buscar clínicas/i })).toHaveStyle({
-      width: 'max-content',
+      width: 'auto',
       maxWidth: '100%',
     });
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/ConsultaInicial/styles.ts'), 'utf8');
+    const scheduleButtonStyles = stylesSource.slice(
+      stylesSource.indexOf('export const ScheduleButton'),
+      stylesSource.indexOf('export const SecondaryButton')
+    );
+    expect(scheduleButtonStyles).not.toContain('white-space: nowrap');
     expect(screen.getByLabelText(/cep/i)).toHaveValue('');
     fireEvent.change(screen.getByLabelText(/cep/i), { target: { value: 'abc12345678' } });
     expect(screen.getByLabelText(/cep/i)).toHaveValue('12345-678');
@@ -213,8 +222,10 @@ describe('ConsultaInicial', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /consulta agendada/i }));
     expect(mockApiPost).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog', { name: /confirmar consulta agendada/i })).toBeInTheDocument();
+    const confirmationDialog = screen.getByRole('dialog', { name: /confirmar consulta agendada/i });
+    expect(confirmationDialog).toBeInTheDocument();
     expect(screen.getByText(/combinar a data da consulta e confirmar os valores/i)).toBeInTheDocument();
+    expect(confirmationDialog).toHaveTextContent(/Endereço: Alameda dos Atletas, 88 - Itaim Bibi/i);
     expect(screen.getByRole('button', { name: /cancelar/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /sim, já combinei/i }));

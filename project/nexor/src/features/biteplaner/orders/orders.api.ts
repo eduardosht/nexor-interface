@@ -1,6 +1,8 @@
 import { api } from '../../../lib/api';
 import type {
   AccessMode,
+  ClinicalFollowUpCard,
+  ClinicalFollowUpKind,
   DemoAppointment,
   DemoOrderSummary,
   DemoTimelineEvent,
@@ -42,8 +44,25 @@ const buildOrdersPath = (mode: AccessMode, params: OrderListParams = {}) => {
 export const fetchOrders = (mode: AccessMode, token?: string, params?: OrderListParams) =>
   api.get<{ orders: DemoOrderSummary[] }>(buildOrdersPath(mode, params), token);
 
+export const fetchOrder = (orderId: string, token?: string) =>
+  api.get<DemoOrderSummary>(`/v1/orders/${orderId}`, token);
+
 export const fetchAppointments = (orderId: string, token?: string) =>
   api.get<{ appointments: DemoAppointment[] }>(`/v1/orders/${orderId}/appointments`, token);
+
+export const fetchClinicalFollowUps = (orderId: string, token?: string) =>
+  api.get<{ followUps: ClinicalFollowUpCard[] }>(`/v1/orders/${orderId}/clinical-follow-ups`, token);
+
+export const scheduleClinicalFollowUp = (
+  orderId: string,
+  kind: ClinicalFollowUpKind,
+  token?: string,
+  payload: { practiceLocationId?: string; scheduledAt?: string } = {},
+) => api.post<{ order: DemoOrderSummary }>(
+  `/v1/orders/${orderId}/clinical-follow-ups/${kind}/schedule`,
+  payload,
+  token,
+);
 
 export const fetchTimeline = (orderId: string, token?: string) =>
   api.get<{ events: DemoTimelineEvent[] }>(`/v1/orders/${orderId}/timeline`, token);

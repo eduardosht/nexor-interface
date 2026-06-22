@@ -32,6 +32,37 @@ export type AccessOptionsResponse = {
   modes: AccessOption[];
 };
 
+export type ClinicalLinkSnapshot = {
+  stage?: 'selection' | 'accepted' | string;
+  orderId?: string;
+  capturedAt?: string;
+  selectedAt?: string;
+  acceptedAt?: string;
+  selectedByProfileId?: string | null;
+  acceptedByProfileId?: string | null;
+  acceptedDentistId?: string | null;
+  practiceLocation?: {
+    id?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    address?: {
+      street?: string | null;
+      number?: string | null;
+      complement?: string | null;
+      district?: string | null;
+      city?: string | null;
+      state?: string | null;
+      zipCode?: string | null;
+      zip_code?: string | null;
+    } | null;
+  } | null;
+  dentist?: {
+    id?: string | null;
+    fullName?: string | null;
+    croNumber?: string | null;
+  } | null;
+};
 export type DemoOrderSummary = {
   id: string;
   displayId?: string;
@@ -46,6 +77,8 @@ export type DemoOrderSummary = {
   user_profile_id?: string | null;
   practice_location_id?: string | null;
   lab_profile_id?: string | null;
+  labAssignments?: DemoLabAssignmentSummary[];
+  labAssignmentView?: (DemoLabAssignmentSummary & { isCurrent: boolean }) | null;
   customer?: {
     id?: string | null;
     full_name: string | null;
@@ -60,6 +93,15 @@ export type DemoOrderSummary = {
   practice_location?: {
     id: string;
     name: string;
+    address?: {
+      street?: string | null;
+      number?: string | null;
+      district?: string | null;
+      city?: string | null;
+      state?: string | null;
+      zip_code?: string | null;
+      zipCode?: string | null;
+    } | null;
   } | null;
   productionRequestDraft?: ProductionRequestDraft | null;
   preLabChecklistDraft?: {
@@ -73,6 +115,79 @@ export type DemoOrderSummary = {
     pendingItems: string[];
     summary: string;
   } | null;
+  payment?: BiteplanerPaymentSummary | null;
+  paymentDetails?: BiteplanerPaymentSummary | null;
+  dentistRecommendedPurchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
+  purchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
+  clinicalLinkSnapshot?: ClinicalLinkSnapshot | null;
+};
+
+export type DemoLabAssignmentSummary = {
+  id: string;
+  orderId: string;
+  labProfileId: string;
+  sequence: number;
+  status:
+    | 'awaiting_acceptance'
+    | 'in_production'
+    | 'returned_for_adjustment'
+    | 'replaced_by_other_lab'
+    | 'completed'
+    | 'cancelled';
+  productionRequestVersionId: string | null;
+  returnReason: string | null;
+  assignedAt: string;
+  returnedAt: string | null;
+  replacedAt: string | null;
+  completedAt: string | null;
+};
+
+export function getOrderClinicalPracticeLocation(order: DemoOrderSummary | null | undefined) {
+  const snapshotLocation = order?.clinicalLinkSnapshot?.practiceLocation;
+
+  if (snapshotLocation?.id || snapshotLocation?.name) {
+    return {
+      id: snapshotLocation.id ?? order?.practice_location_id ?? '',
+      name: snapshotLocation.name ?? 'Clínica não informada',
+      phone: snapshotLocation.phone ?? null,
+      email: snapshotLocation.email ?? null,
+      address: snapshotLocation.address ?? null,
+    };
+  }
+
+  return order?.practice_location ?? null;
+}
+
+export function getOrderClinicalDentistName(order: DemoOrderSummary | null | undefined) {
+  return (
+    order?.clinicalLinkSnapshot?.dentist?.fullName?.trim() ||
+    order?.dentist?.full_name?.trim() ||
+    order?.dentist?.email?.trim() ||
+    'Profissional não informado'
+  );
+}
+export type BiteplanerPaymentSummary = {
+  id?: string;
+  order_id?: string;
+  provider?: string;
+  status?: string;
+  currency?: string;
+  amountCents?: number | null;
+  amount_cents?: number | null;
+  method?: string | null;
+  paymentMethod?: string | null;
+  payment_method?: string | null;
+  payment_method_type?: string | null;
+  paidAt?: string | null;
+  paid_at?: string | null;
+  confirmed_at?: string | null;
+  created_at?: string | null;
+  receiptEmail?: string | null;
+  receipt_email?: string | null;
+  discountCents?: number | null;
+  discount_cents?: number | null;
+  couponCode?: string | null;
+  coupon_code?: string | null;
 };
 
 export type ExternalFileReference = {
@@ -95,6 +210,21 @@ export type ProductionRequestDraft = {
   prescriptionFileRef?: ExternalFileReference | null;
   lgpdConfirmed: boolean;
   selectedLabId: string | null;
+  purchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
+  purchaseDivergenceConfirmed?: boolean;
+};
+
+export type BiteplanerPurchaseConfiguration = {
+  productKey: 'biteplaner';
+  quantity: number;
+  model: string;
+  color: string;
+};
+
+export type CheckoutSessionRequest = {
+  model: string;
+  color: string;
+  quantity: number;
 };
 
 export type OrderFormSummary = {
@@ -224,6 +354,24 @@ export type DemoAppointment = {
   scheduled_at: string;
   user_confirmed_at: string | null;
   dentist_confirmed_at: string | null;
+  purpose?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+export type ClinicalFollowUpKind = 'return_15_days' | 'return_30_days' | 'on_demand';
+
+export type ClinicalFollowUpStatus = 'available' | 'locked' | 'scheduled' | 'completed' | 'overdue';
+
+export type ClinicalFollowUpCard = {
+  kind: ClinicalFollowUpKind;
+  sequence: number;
+  title: string;
+  description: string;
+  status: ClinicalFollowUpStatus;
+  availableAt: string | null;
+  scheduledAt: string | null;
+  appointmentId: string | null;
+  lockedReason: string | null;
 };
 
 export type DemoTimelineEvent = {
@@ -232,6 +380,7 @@ export type DemoTimelineEvent = {
   fromStatus: string | null;
   toStatus: string;
   reason: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 };
 
@@ -585,6 +734,10 @@ export async function fetchOrders(mode: AccessMode, token?: string, params: Orde
   return api.get<{ orders: DemoOrderSummary[] }>(path, token);
 }
 
+export async function createBiteplanerOrder(token?: string) {
+  return api.post<DemoOrderSummary>('/v1/orders', {}, token);
+}
+
 export async function fetchPracticeLocations(token?: string) {
   return api.get<{ practiceLocations: PracticeLocationApiRecord[] }>('/v1/practice-locations', token);
 }
@@ -782,6 +935,23 @@ export async function fetchAppointments(orderId: string, token?: string) {
   return api.get<{ appointments: DemoAppointment[] }>(`/v1/orders/${orderId}/appointments`, token);
 }
 
+export async function fetchClinicalFollowUps(orderId: string, token?: string) {
+  return api.get<{ followUps: ClinicalFollowUpCard[] }>(`/v1/orders/${orderId}/clinical-follow-ups`, token);
+}
+
+export async function scheduleClinicalFollowUp(
+  orderId: string,
+  kind: ClinicalFollowUpKind,
+  token?: string,
+  payload: { practiceLocationId?: string; scheduledAt?: string } = {},
+) {
+  return api.post<{ order: DemoOrderSummary }>(
+    `/v1/orders/${orderId}/clinical-follow-ups/${kind}/schedule`,
+    payload,
+    token,
+  );
+}
+
 export async function createAppointment(
   orderId: string,
   payload: { type: 'initial' | 'adaptation' | 'follow_up'; scheduledAt: string },
@@ -885,8 +1055,15 @@ export async function confirmPayment(orderId: string, token?: string) {
   return { order };
 }
 
-export async function createCheckoutSession(orderId: string, token?: string) {
-  return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, {}, token);
+export async function requestOrderSupport(
+  orderId: string,
+  payload: { reason: string; message: string },
+  token?: string
+) {
+  return api.post<{ accepted: true }>(`/v1/orders/${orderId}/support-requests`, payload, token);
+}
+export async function createCheckoutSession(orderId: string, payload: CheckoutSessionRequest, token?: string) {
+  return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, payload, token);
 }
 
 export async function reconcileCheckoutSession(orderId: string, sessionId: string, token?: string) {

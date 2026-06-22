@@ -53,6 +53,16 @@ const consentOption = [
   { value: 'accepted', label: 'Aceito' },
 ];
 
+const biteplanerModelOptions = [
+  { value: 'impacto', label: 'Linha Impacto' },
+  { value: 'esportes', label: 'Linha Esportes' },
+];
+
+const biteplanerColorOptions = [
+  { value: 'preto', label: 'Preto' },
+  { value: 'branco', label: 'Branco' },
+];
+
 const frequencyOptions = [
   { value: 'never', label: 'Nunca' },
   { value: 'occasional', label: 'Ocasionalmente' },
@@ -1335,6 +1345,46 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
           helpText:
             'Após salvar, o formulário deve ser baixado e armazenado junto ao prontuário do paciente, conforme normas éticas e legais.',
           options: consentOption,
+        },
+      ],
+    },
+    {
+      key: 'dentist-biteplaner-order',
+      title: 'Pedido biteplaner',
+      description:
+        'Campos alinhados pelo dentista com o cliente durante a consulta. A compra do cliente virá preenchida com estes dados, mas o cliente pode confirmar ou alterar antes do pagamento.',
+      fields: [
+        {
+          key: 'biteplanerModel',
+          label: 'Modelo',
+          required: true,
+          type: 'select',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          options: biteplanerModelOptions,
+        },
+        {
+          key: 'biteplanerColor',
+          label: 'Cor',
+          required: true,
+          type: 'select',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          options: biteplanerColorOptions,
+        },
+        {
+          key: 'biteplanerQuantity',
+          label: 'Quantidade',
+          required: true,
+          type: 'number',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          min: 1,
+          max: 10,
+          helpText: 'Máximo de 10 unidades por pedido.',
         },
       ],
     },

@@ -36,15 +36,18 @@ Labels internas de preenchimento operacional, confirmação transitória de paga
 3. Cliente preenche onboarding do Biteplaner.
 4. Cliente preenche pre-requisito e pré-consulta compartilhada.
 5. Cliente escolhe uma clínica de dentista licenciado e confirma que combinou a consulta com o consultório.
+   - Antes do aceite do dentista, o cliente pode cancelar essa seleção/consulta. O backend deve limpar `practice_location_id` e `dentist_id`, registrar o evento e retornar a ordem para escolha de clínica.
 6. Dentista aceita a solicitação de consulta.
 7. Após a consulta, dentista abre a produção da ordem e vê a etapa `Avaliação inicial / anamnese` somente quando ainda precisa preencher o complemento daquele vínculo de consulta.
-8. Dentista responde `Cliente está apto para uso do Biteplaner?`.
+8. Dentista responde `Cliente está apto para uso do Biteplaner?` e, se marcar `Sim`, preenche a seção `Pedido biteplaner` no complemento do dentista com modelo (`impacto` ou `esportes`), cor (`preto` ou `branco`) e quantidade de 1 a 10.
 9. Se a resposta for `Sim`, a ordem vai para `Aguardando pagamento` e o cliente acessa a etapa `Compra`.
-10. Cliente paga via Stripe Checkout.
-11. A confirmação de pagamento é recebida pelo backend por webhook Stripe, registra os dados do pagamento e libera a ordem para o dentista finalizar a solicitação de produção.
-12. Dentista preenche a solicitação de produção, anexa os arquivos obrigatórios e escolhe laboratório.
-13. Laboratório recebe a ordem e executa a produção.
-14. Cliente segue para adaptação, consulta de retorno e acompanhamento.
+10. A página de compra carrega modelo, cor e quantidade recomendados pelo dentista, mas permite que o cliente altere esses campos antes do pagamento.
+11. Backend valida e persiste a configuração final comprada antes de criar o Stripe Checkout.
+12. Cliente paga via Stripe Checkout calculado com o Price ID do modelo/cor selecionado e a quantidade escolhida.
+13. A confirmação de pagamento é recebida pelo backend por webhook Stripe, registra os dados do pagamento e libera a ordem para o dentista finalizar a solicitação de produção.
+14. Dentista preenche a solicitação de produção, anexa os arquivos obrigatórios, confere a configuração final comprada e consegue ver se o cliente manteve ou alterou o pedido recomendado na consulta.
+15. Laboratório recebe a ordem com a configuração comprada e executa a produção.
+16. Cliente segue para adaptação, consulta de retorno e acompanhamento.
 
 ## Inaptidão clínica
 
@@ -67,7 +70,7 @@ Se o cliente escolher outro dentista após uma inaptidão, a etapa `Avaliação 
 O formulário é compartilhado entre cliente e dentista:
 
 - cliente preenche histórico médico, odontológico/orofacial, sintomas, função mandibular, impacto no treino, hábitos, expectativas e consentimentos;
-- dentista complementa com decisão de aptidão, descrição de inaptidão quando aplicável, data da consulta, medidas clínicas e declaração profissional;
+- dentista complementa com decisão de aptidão, descrição de inaptidão quando aplicável, data da consulta, medidas clínicas, declaração profissional e seção `Pedido biteplaner` com modelo, cor e quantidade quando o cliente estiver apto;
 - depois que o dentista salva ou envia o complemento, as respostas do cliente ficam bloqueadas para edição na ordem atual;
 - o dentista não pode avançar para solicitação de produção antes do pagamento confirmado;
 - após concluir o complemento, a tela deve parar no `Resumo anamnese` e a ordem deve ir para pagamento se o cliente estiver apto;
@@ -80,10 +83,15 @@ O pagamento real deve acontecer via Stripe Checkout hospedado pela Stripe.
 Regras:
 
 - a tela `/painel/compra` inicia o checkout somente quando a ordem está em `Aguardando pagamento`;
+- antes de iniciar o checkout, a tela deve exigir modelo, quantidade e cor do Biteplaner;
+- a tela deve pré-preencher esses campos a partir de `dentist_recommended_purchase_configuration`, quando existir;
+- o backend deve validar modelo, quantidade e cor contra o catálogo ativo de variações, selecionar o Price ID Stripe correto de modelo/cor e enviar `quantity` em `line_items`;
+- a configuração final comprada deve ser persistida em `purchase_configuration` antes do redirecionamento e também registrada no pagamento para reconciliação;
+- a metadata da Stripe deve incluir `orderId`, `productKey`, `biteplanerModel`, `biteplanerColor` e `biteplanerQuantity`, mas a fonte operacional para produção é o dado salvo no backend;
 - o sucesso retorna para `/painel/compra?checkout=success`;
 - a URL de sucesso não é fonte de verdade do pagamento, apenas feedback visual;
 - a confirmação oficial vem por webhook Stripe;
-- o backend deve salvar sessão, payment intent, valor, moeda, status, método de pagamento, cupom/desconto quando houver, e dados de recibo quando enviados pela Stripe;
+- o backend deve salvar sessão, payment intent, Price ID, quantidade, cor, valor, moeda, status, método de pagamento, cupom/desconto quando houver, e dados de recibo quando enviados pela Stripe;
 - depois do webhook de sucesso, o status `payment_confirmed` é transitório e a ordem deve seguir para o dentista finalizar a solicitação de produção;
 - para o dentista, a ordem deve aparecer com ação operacional de envio ao laboratório, não parada em `Pagamento confirmado`.
 
@@ -93,7 +101,7 @@ Regras:
 | --- | --- | --- |
 | `prerequisite_pending` | Pre-requisito | Cliente ainda precisa completar dados iniciais. |
 | `consultation_selection` | Consulta inicial | Cliente pode escolher clínica/dentista. |
-| `awaiting_dentist_acceptance` | Consulta inicial | Aguardando aceite do dentista. |
+| `awaiting_dentist_acceptance` | Consulta inicial | Aguardando aceite do dentista. Cliente ainda pode cancelar a seleção e voltar para escolha de clínica. |
 | `awaiting_clinical_decision` | Decisão clínica | Dentista deve revisar anamnese e decidir aptidão. |
 | `ineligible_reassessment` | Inaptidão | Cliente pode marcar nova consulta; não usar refund. |
 | `awaiting_payment` | Compra | Cliente apto deve pagar o Biteplaner. |
@@ -119,10 +127,12 @@ Coleta consentimento clínico, dados iniciais, histórico médico, histórico od
 
 Coleta resumo da avaliação/anamnese, solicitação de produção, observações técnicas ao laboratório, escaneamento 3D intraoral, prescrição assinada/carimbada e aceite LGPD de envio mínimo necessário ao laboratório.
 
+Também deve exibir e enviar ao laboratório a configuração final comprada pelo cliente na etapa de compra: modelo, quantidade e cor do Biteplaner. Por padrão, essa configuração é informativa e não editável pelo dentista; qualquer correção depois do pagamento deve ser tratada como ajuste administrativo auditado. A tela do dentista deve indicar quando a configuração final divergir da recomendação registrada na consulta.
+
 ### Onboarding profissional
 
 Parceiro, dentista e laboratório têm cadastro complementar próprio, com dados profissionais/operacionais, local de atuação ou clínica/local operacional e aceite de termos/privacidade.
 
 ## Rastreabilidade
 
-Cada transição relevante deve registrar ator, papel, data/hora, status anterior, status novo, formulário/versão quando aplicável e origem da ação. Pagamentos devem registrar IDs Stripe para reconciliação.
+Cada transição relevante deve registrar ator, papel, data/hora, status anterior, status novo, formulário/versão quando aplicável e origem da ação. Pagamentos devem registrar IDs Stripe, Price ID, modelo, quantidade e cor para reconciliação.

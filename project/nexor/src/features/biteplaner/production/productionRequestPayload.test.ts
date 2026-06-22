@@ -13,6 +13,7 @@ describe('production request payload helpers', () => {
         scan3dFileRef: { id: 'file-1', fileName: 'scan.zip' },
         prescriptionFileName: 'prescricao.pdf',
         prescriptionFileRef: { id: 'file-2', fileName: 'prescricao.pdf' },
+        purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
         lgpdConfirmed: true,
         selectedLabId: ' lab-profile ',
       }),
@@ -25,6 +26,7 @@ describe('production request payload helpers', () => {
       scan3dFileRef: { id: 'file-1', fileName: 'scan.zip' },
       prescriptionFileName: 'prescricao.pdf',
       prescriptionFileRef: { id: 'file-2', fileName: 'prescricao.pdf' },
+      purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
       lgpdConfirmed: true,
       selectedLabId: ' lab-profile ',
     });

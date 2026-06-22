@@ -42,7 +42,7 @@ describe('Snackbar', () => {
 
       expect(handleClose).not.toHaveBeenCalled();
 
-      vi.advanceTimersByTime(3999);
+      vi.advanceTimersByTime(9999);
       expect(handleClose).not.toHaveBeenCalled();
 
       vi.advanceTimersByTime(1);

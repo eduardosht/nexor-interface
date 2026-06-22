@@ -76,93 +76,9 @@ export const EmptyJourneyTitle = styled.h1`
   line-height: 1.2;
 `;
 
-const disclaimerTone = {
-  info: {
-    border: 'rgba(37, 99, 235, 0.16)',
-    bg: 'linear-gradient(135deg, rgba(239, 247, 255, 0.96), rgba(255, 255, 255, 0.98))',
-    iconBg: 'rgba(59, 130, 246, 0.08)',
-    iconColor: '#2563eb',
-    title: '#091235',
-  },
-  warning: {
-    border: 'rgba(217, 119, 6, 0.26)',
-    bg: 'linear-gradient(135deg, rgba(255, 251, 235, 0.94), rgba(255, 255, 255, 0.98))',
-    iconBg: 'rgba(217, 119, 6, 0.12)',
-    iconColor: '#b45309',
-    title: '#0f172a',
-  },
-  success: {
-    border: 'rgba(21, 128, 61, 0.28)',
-    bg: 'linear-gradient(135deg, rgba(240, 253, 244, 0.94), rgba(255, 255, 255, 0.98))',
-    iconBg: 'rgba(21, 128, 61, 0.12)',
-    iconColor: '#15803d',
-    title: '#0f172a',
-  },
-  danger: {
-    border: 'rgba(220, 38, 38, 0.24)',
-    bg: 'linear-gradient(135deg, rgba(254, 242, 242, 0.94), rgba(255, 255, 255, 0.98))',
-    iconBg: 'rgba(220, 38, 38, 0.1)',
-    iconColor: '#dc2626',
-    title: '#0f172a',
-  },
-} satisfies Record<string, { border: string; bg: string; iconBg: string; iconColor: string; title: string }>;
-
-export const StepDisclaimer = styled.div<{ $tone?: keyof typeof disclaimerTone }>`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 28px;
-  padding: 34px 36px;
-  border-radius: 12px;
-  border: 1px solid ${({ $tone = 'info' }) => disclaimerTone[$tone].border};
-  background: ${({ $tone = 'info' }) => disclaimerTone[$tone].bg};
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 560px) {
-    grid-template-columns: 1fr;
-    padding: 16px;
-  }
-`;
-
-export const StepDisclaimerIcon = styled.span<{ $tone?: keyof typeof disclaimerTone }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 999px;
-  background: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconBg};
-  color: ${({ $tone = 'info' }) => disclaimerTone[$tone].iconColor};
-
-  svg {
-    width: 34px;
-    height: 34px;
-  }
-`;
-
-export const StepDisclaimerContent = styled.div`
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-`;
-
-export const StepDisclaimerTitle = styled.strong<{ $tone?: keyof typeof disclaimerTone }>`
-  color: ${({ $tone = 'info' }) => disclaimerTone[$tone].title};
-  font-size: 20px;
-  font-weight: 850;
-  line-height: 1.35;
-`;
-
-export const StepDisclaimerText = styled.span`
-  font-size: 14px;
-  line-height: 1.55;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
 export const SelectedClinicCard = styled.section`
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
+  grid-template-columns: 52px minmax(0, 1fr);
   align-items: center;
   gap: 18px;
   padding: 20px 22px;
@@ -175,16 +91,6 @@ export const SelectedClinicCard = styled.section`
     grid-template-columns: 44px minmax(0, 1fr);
     align-items: start;
 
-    > button {
-      grid-column: 2;
-      justify-self: start;
-    }
-  }
-
-  @media (max-width: 420px) {
-    > button {
-      grid-column: 1 / -1;
-    }
   }
 `;
 
@@ -222,6 +128,79 @@ export const SelectedClinicTitle = styled.strong`
   font-size: 18px;
   line-height: 1.25;
   font-weight: 850;
+`;
+
+export const SelectedClinicDetails = styled.dl`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 10px 0 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(21, 128, 61, 0.16);
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+`;
+
+export const SelectedClinicDetail = styled.div`
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding-right: 14px;
+  border-right: 1px solid rgba(21, 128, 61, 0.14);
+
+  &:last-child {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  @media (max-width: 860px) {
+    padding: 0 0 8px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(21, 128, 61, 0.12);
+
+    &:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+  }
+
+  dt {
+    margin: 0;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 0;
+    min-width: 0;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+`;
+
+export const SelectedClinicFooter = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid rgba(21, 128, 61, 0.14);
+
+  @media (max-width: 560px) {
+    justify-content: stretch;
+
+    > button {
+      width: 100%;
+    }
+  }
 `;
 
 export const PaymentConfirmationCard = styled.details`
@@ -396,67 +375,26 @@ export const NextStepTitle = styled.h2`
   line-height: 1.3;
 `;
 
-export const PendingActionCard = styled.section`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 22px 24px;
-  border-radius: 14px;
-  border: 1px solid rgba(21, 128, 61, 0.28);
-  background:
-    radial-gradient(circle at 6% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
-    linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.96));
-
-  @media (max-width: 720px) {
-    align-items: stretch;
-    flex-direction: column;
-  }
-`;
-
-export const PendingActionCopy = styled.div`
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-`;
-
-export const PendingActionTitle = styled.h2`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 18px;
-  font-weight: 850;
-`;
-
 export const PendingActionButton = styled.button`
   ${biteplanerButtonSurfaceStyles}
   ${biteplanerButtonHoverStyles}
-  flex: 0 0 auto;
+  width: 100%;
   min-height: 46px;
   padding: 0 18px;
-
-  @media (max-width: 720px) {
-    width: 100%;
-  }
 `;
 
 export const StepFlow = styled.section`
   display: grid;
   gap: 22px;
   width: min(100%, 1120px);
-  padding: 26px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.04);
+  padding: 0;
 
   @media (max-width: 920px) {
     width: 100%;
-    padding: 20px;
   }
 
   @media (max-width: 560px) {
     gap: 14px;
-    padding: 12px;
   }
 `;
 
@@ -473,13 +411,8 @@ export const JourneyHeroCard = styled.section`
   grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
   align-items: center;
   gap: 32px;
-  min-height: 360px;
-  padding: 22px 28px;
-  border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background:
-    radial-gradient(circle at 88% 18%, rgba(253, 224, 71, 0.11), transparent 26%),
-    linear-gradient(135deg, #ffffff 0%, #fffdf8 100%);
+  min-height: 320px;
+  padding: 6px 0 2px;
   overflow: hidden;
 
   @media (max-width: 900px) {
@@ -488,7 +421,7 @@ export const JourneyHeroCard = styled.section`
   }
 
   @media (max-width: 560px) {
-    padding: 12px;
+    padding: 0;
     gap: 12px;
   }
 `;
@@ -527,7 +460,7 @@ export const OrderEyebrow = styled.span`
   line-height: 1.2;
 
   @media (max-width: 560px) {
-    font-size: 11px;
+    font-size: 12px;
   }
 `;
 
@@ -580,7 +513,7 @@ export const StatusPill = styled.span<{ $tone: StepTone }>`
     min-height: 22px;
     padding: 0 8px;
     gap: 5px;
-    font-size: 10px;
+    font-size: 12px;
 
     > span {
       width: 5px;
@@ -909,7 +842,7 @@ export const ProgressPercent = styled.span`
   @media (max-width: 560px) {
     min-height: 22px;
     padding: 0 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
 `;
 
@@ -1079,7 +1012,7 @@ export const EstimateBox = styled.div`
     }
 
     span {
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.15;
     }
 
@@ -1114,7 +1047,12 @@ export const OverviewList = styled.ol`
   padding: 0;
 `;
 
-export const OverviewItem = styled.li<{ $tone: StepTone }>`
+export const OverviewItemGroup = styled.li`
+  display: grid;
+  gap: 0;
+`;
+
+export const OverviewItem = styled.div<{ $tone: StepTone }>`
   position: relative;
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto;
@@ -1125,16 +1063,6 @@ export const OverviewItem = styled.li<{ $tone: StepTone }>`
   border-radius: 8px;
   background: ${({ $tone }) =>
     $tone === 'current' ? 'linear-gradient(90deg, rgba(21, 128, 61, 0.1), rgba(21, 128, 61, 0.02))' : 'transparent'};
-
-  &:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    top: calc(50% + 12px);
-    left: 24px;
-    bottom: calc(-50% + 12px);
-    width: 1px;
-    border-left: 1px dashed ${({ $tone }) => ($tone === 'upcoming' ? '#d7dde7' : 'rgba(21, 128, 61, 0.36)')};
-  }
 
   @media (max-width: 560px) {
     grid-template-columns: 24px minmax(0, 1fr) auto;
@@ -1148,6 +1076,37 @@ export const OverviewItem = styled.li<{ $tone: StepTone }>`
       justify-self: end;
       margin-bottom: 0;
     }
+  }
+`;
+
+export const OverviewSubList = styled.ol`
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px 48px;
+  padding: 0 0 0 14px;
+
+  @media (max-width: 560px) {
+    margin-left: 34px;
+    padding-left: 10px;
+  }
+`;
+
+export const OverviewSubItem = styled.li<{ $tone: StepTone }>`
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: ${({ $tone }) =>
+    $tone === 'current' ? 'linear-gradient(90deg, rgba(21, 128, 61, 0.08), rgba(21, 128, 61, 0.02))' : 'transparent'};
+
+  @media (max-width: 560px) {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 2px 4px;
   }
 `;
 
@@ -1175,6 +1134,22 @@ export const OverviewMarker = styled.span<{ $tone: StepTone }>`
       height: 11px;
     }
   }
+`;
+
+export const OverviewSubMarker = styled.span<{ $tone: StepTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid ${({ $tone }) => ($tone === 'upcoming' ? '#cfd4dc' : '#15803d')};
+  background: ${({ $tone }) => ($tone === 'complete' ? '#15803d' : '#ffffff')};
+  color: ${({ $tone }) => ($tone === 'complete' ? '#ffffff' : $tone === 'current' ? '#15803d' : '#98a2b3')};
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1;
 `;
 
 export const OverviewStepName = styled.span`

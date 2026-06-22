@@ -801,6 +801,35 @@ export const NotificationsPanelMeta = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const NotificationsPanelHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+`;
+
+export const MarkAllNotificationsReadButton = styled.button`
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: ${({ theme }) => theme.colors.textMuted};
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+`;
+
 export const NotificationsList = styled.div`
   display: grid;
   overflow-y: auto;

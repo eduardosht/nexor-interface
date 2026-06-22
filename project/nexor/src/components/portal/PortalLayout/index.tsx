@@ -168,6 +168,7 @@ const ADMIN_OVERVIEW_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => item.to === '/
 const ADMIN_BITEPLANER_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
   item.to === '/painel/admin/ordens' ||
   item.to === '/painel/admin/remocoes-conta' ||
+  item.to === '/painel/admin/checkups/emails' ||
   item.to === '/painel/admin/relatorios' ||
   item.to === '/painel/admin/parceiros' ||
   item.to === '/painel/admin/dentistas' ||
@@ -317,6 +318,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         : MOCK_NOTIFICATIONS,
     [notificationsQuery.data?.notifications]
   );
+  const unreadNotifications = useMemo(
+    () => notifications.filter((notification) => !notification.read),
+    [notifications]
+  );
   const hasUnreadNotifications = notifications.some((notification) => !notification.read);
   const markNotificationRead = useMutation({
     mutationFn: (notification: MockNotification) =>
@@ -364,6 +369,39 @@ export function PortalLayout({ children }: { children: ReactNode }) {
       setSelectedNotification((current) =>
         current?.id === updatedNotification.id ? mapAccountNotification(updatedNotification) : current
       );
+    },
+  });
+  const markAllNotificationsRead = useMutation({
+    mutationFn: (_items: MockNotification[]) =>
+      api.patch<{ markedCount: number; unreadCount: number }>(
+        '/v1/account/notifications/read-all',
+        {},
+        session!.access_token
+      ),
+    onMutate: async (items) => {
+      const readAt = new Date().toISOString();
+      const ids = new Set(items.map((notification) => notification.id));
+
+      await queryClient.cancelQueries({ queryKey: notificationsQueryKey });
+      queryClient.setQueryData<AccountNotificationsResponse>(notificationsQueryKey, (current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          unreadCount: Math.max(0, current.unreadCount - ids.size),
+          notifications: current.notifications.map((item) =>
+            ids.has(item.id) ? { ...item, read: true, readAt } : item
+          ),
+        };
+      });
+      setSelectedNotification((current) =>
+        current && ids.has(current.id) ? { ...current, read: true } : current
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: notificationsQueryKey });
     },
   });
 
@@ -427,6 +465,14 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     }
 
     markNotificationRead.mutate(notification);
+  }
+
+  function handleMarkAllNotificationsRead() {
+    if (!session || unreadNotifications.length === 0 || markAllNotificationsRead.isPending) {
+      return;
+    }
+
+    markAllNotificationsRead.mutate(unreadNotifications);
   }
 
   function handleMobileDrawerKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -727,7 +773,16 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 <S.NotificationsPanel role="dialog" aria-label="Notificações">
                   <S.NotificationsPanelHeader>
                     <S.NotificationsPanelTitle>Notificações</S.NotificationsPanelTitle>
-                    <S.NotificationsPanelMeta>{notifications.length} itens</S.NotificationsPanelMeta>
+                    <S.NotificationsPanelHeaderActions>
+                      <S.MarkAllNotificationsReadButton
+                        type="button"
+                        disabled={!hasUnreadNotifications || markAllNotificationsRead.isPending}
+                        onClick={handleMarkAllNotificationsRead}
+                      >
+                        {markAllNotificationsRead.isPending ? 'Marcando...' : 'Marcar tudo como lido'}
+                      </S.MarkAllNotificationsReadButton>
+                      <S.NotificationsPanelMeta>{notifications.length} itens</S.NotificationsPanelMeta>
+                    </S.NotificationsPanelHeaderActions>
                   </S.NotificationsPanelHeader>
                   <S.NotificationsList>
                     {notifications.length === 0 ? (

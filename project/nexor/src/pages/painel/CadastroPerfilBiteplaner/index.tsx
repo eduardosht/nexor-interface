@@ -1142,6 +1142,7 @@ export function CadastroPerfilBiteplaner() {
                               label="Dia e horário de operação"
                               value={clinic.serviceHours}
                               required
+                              hint="Ex: Seg. a Sex - 09h as 19h00"
                               onChange={updateClinicField(clinic.id, 'serviceHours')}
                             />
                             <Field

@@ -129,7 +129,7 @@ export const AdminMobileMetaItem = styled.div`
 
 export const AdminMobileMetaLabel = styled.dt`
   color: ${({ theme }) => adminColor(theme, 'textSecondary', 'textMuted', '#525252')};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.2;
   text-transform: uppercase;
@@ -162,9 +162,14 @@ export const AdminMobileActionButton = styled(Button).attrs({ variant: 'secondar
   justify-content: center;
   white-space: normal;
 
-  span {
+  [data-button-content],
+  [data-button-label] {
     white-space: normal;
     text-wrap: balance;
+  }
+
+  [data-button-icon] {
+    flex: 0 0 auto;
   }
 `;
 

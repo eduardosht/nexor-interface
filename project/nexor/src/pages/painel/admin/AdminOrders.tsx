@@ -17,6 +17,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { AdminProductGate } from './AdminProductGate';
 import {
    fetchOrders,
@@ -75,6 +76,7 @@ export function AdminOrders() {
   const [hasMoreOrders, setHasMoreOrders] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const serverStatusFilter = statusFilter.length === 1 ? statusFilter[0] : undefined;
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
     if (!selectedProduct || !token) {
@@ -156,16 +158,16 @@ export function AdminOrders() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const matchesSearch = search.trim()
+      const matchesSearch = debouncedSearch.trim()
         ? `${getOrderDisplayId(order)} ${order.id} ${order.customer?.full_name ?? ''} ${order.customer?.email ?? ''}`
             .toLowerCase()
-            .includes(search.trim().toLowerCase())
+            .includes(debouncedSearch.trim().toLowerCase())
         : true;
       const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
       const matchesStage = stageFilter.length === 0 || stageFilter.includes(order.stage);
       return matchesSearch && matchesStatus && matchesStage;
     });
-  }, [orders, search, stageFilter, statusFilter]);
+  }, [debouncedSearch, orders, stageFilter, statusFilter]);
 
   const activeFilterLabels = useMemo(() => {
     const statusLabels = statusFilter
@@ -182,7 +184,7 @@ export function AdminOrders() {
 
   useEffect(() => {
     setMobilePage(1);
-  }, [search, stageFilter, statusFilter]);
+  }, [debouncedSearch, stageFilter, statusFilter]);
 
   const mobileTotalPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_PAGE_SIZE));
   const safeMobilePage = Math.min(mobilePage, mobileTotalPages);

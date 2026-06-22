@@ -221,7 +221,7 @@ export function Snackbar({
   message,
   action,
   onClose,
-  autoCloseMs = 4000,
+  autoCloseMs = 10000,
 }: SnackbarProps) {
   const { tokens } = useDesignSystem();
   const role = tone === 'error' ? 'alert' : 'status';

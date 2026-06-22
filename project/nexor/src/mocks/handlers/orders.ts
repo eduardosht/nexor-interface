@@ -4,13 +4,16 @@ import {
   DemoStateError,
   applyOrderAction,
   getAppointments,
+  getClinicalFollowUps,
   getOrderForms,
   getTimelineEvents,
   getWorkflowForm,
   getWorkflowForms,
   getWorkflowVersions,
   listOrders,
-  parseClinicalDecisionPayload
+  parseClinicalDecisionPayload,
+  scheduleClinicalFollowUp,
+  type ClinicalFollowUpKind
 } from '../demoState';
 
 function parseBody(request: { requestBody: string }) {
@@ -67,6 +70,34 @@ export function orderHandlers(server: Server) {
   server.get('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) =>
     getAppointments(request.params.orderId, { requestHeaders: request.requestHeaders })
   ));
+
+  server.get('/v1/orders/:orderId/clinical-follow-ups', withDemoErrors((_schema, request) =>
+    getClinicalFollowUps(request.params.orderId, { requestHeaders: request.requestHeaders })
+  ));
+
+  server.post('/v1/orders/:orderId/clinical-follow-ups/:kind/schedule', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const rawKind = request.params.kind;
+    if (rawKind !== 'return_15_days' && rawKind !== 'return_30_days' && rawKind !== 'on_demand') {
+      throw new DemoStateError(422, 'invalid_follow_up_kind', 'Tipo de retorno clínico inválido.');
+    }
+
+    const kind: ClinicalFollowUpKind = rawKind;
+
+    return new Response(
+      200,
+      {},
+      scheduleClinicalFollowUp(
+        request.params.orderId,
+        kind,
+        {
+          practiceLocationId: typeof body.practiceLocationId === 'string' ? body.practiceLocationId : undefined,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : undefined
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
 
   server.post('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
@@ -360,6 +391,32 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/checkout-session', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const model = typeof body.model === 'string' ? body.model : 'impacto';
+    const color = typeof body.color === 'string' ? body.color : 'preto';
+    const quantity = typeof body.quantity === 'number' ? body.quantity : Number(body.quantity);
+
+    applyOrderAction(
+      request.params.orderId,
+      {
+        type: 'create-checkout-session',
+        model,
+        color,
+        quantity,
+      },
+      { requestHeaders: request.requestHeaders }
+    );
+
+    return new Response(
+      200,
+      {},
+      {
+        url: 'https://checkout.stripe.test/session'
+      }
+    );
+  }));
+
   server.post('/v1/orders/:orderId/payment-confirmed', withDemoErrors((_schema, request) =>
     new Response(
       200,
@@ -414,7 +471,11 @@ export function orderHandlers(server: Server) {
                 ? body.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
+            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            purchaseConfiguration:
+              body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
+                ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
           },
           { requestHeaders: request.requestHeaders }
         )
@@ -450,7 +511,11 @@ export function orderHandlers(server: Server) {
                 ? body.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
+            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            purchaseConfiguration:
+              body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
+                ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
           },
           { requestHeaders: request.requestHeaders }
         )
@@ -489,7 +554,11 @@ export function orderHandlers(server: Server) {
                 ? payload.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: payload.lgpdConfirmed === true,
-            selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null
+            selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null,
+            purchaseConfiguration:
+              payload.purchaseConfiguration && typeof payload.purchaseConfiguration === 'object'
+                ? payload.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
           },
           { requestHeaders: request.requestHeaders }
         )

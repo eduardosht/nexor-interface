@@ -36,6 +36,18 @@ function renderCardWithoutLastUpdate() {
   );
 }
 
+function renderCardWithoutMetadata() {
+  return render(
+    <ThemeProvider theme={lightTheme}>
+      <OrderInfoCard
+        order={order}
+        orderHelpText="Já passou pela triagem e aguarda escolha do consultório."
+        showMetadata={false}
+      />
+    </ThemeProvider>
+  );
+}
+
 describe('OrderInfoCard', () => {
   it('renders the shared order information layout with canonical labels and accented update text', () => {
     renderCard();
@@ -71,5 +83,18 @@ describe('OrderInfoCard', () => {
     expect(within(card).getByLabelText('Status atual do pedido')).toBeInTheDocument();
     expect(within(card).queryByLabelText('Última atualização do pedido')).not.toBeInTheDocument();
     expect(within(card).getByLabelText('Etapa atual do pedido')).toBeInTheDocument();
+  });
+
+  it('can hide all metadata columns and keep only the order summary', () => {
+    renderCardWithoutMetadata();
+
+    const card = screen.getByTestId('athlete-order-card');
+    expect(within(card).getByLabelText('Informações do pedido')).toBeInTheDocument();
+    expect(card).toHaveTextContent('PEDIDO');
+    expect(card).toHaveTextContent('#39');
+    expect(card).toHaveTextContent('Já passou pela triagem e aguarda escolha do consultório.');
+    expect(within(card).queryByLabelText('Status atual do pedido')).not.toBeInTheDocument();
+    expect(within(card).queryByLabelText('Última atualização do pedido')).not.toBeInTheDocument();
+    expect(within(card).queryByLabelText('Etapa atual do pedido')).not.toBeInTheDocument();
   });
 });
