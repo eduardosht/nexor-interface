@@ -1,20 +1,20 @@
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const Section = styled.section`
   ${fullBleedSection}
   background: #111113;
-  padding: 100px 48px;
+  padding: 100px 0;
 
   @media (max-width: 768px) {
-    padding: 80px 24px;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 `;
 
 export const Inner = styled.div`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
+  ${pageContainer}
 `;
 
 export const Header = styled.div`
@@ -31,11 +31,15 @@ export const Header = styled.div`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: #fafafa;
   margin: 0 0 16px;
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Cards = styled.div`
@@ -76,7 +80,7 @@ export const ProductBadge = styled.div`
   padding: 4px 8px;
 
   img {
-    height: 14px;
+    height: 24px;
     width: auto;
     display: block;
   }

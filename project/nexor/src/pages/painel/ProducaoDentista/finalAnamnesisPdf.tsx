@@ -1,19 +1,16 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
-import type { DemoOrderSummary, DemoWorkflowForm, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
+import {
+  getOrderDisplayId,
+  getOrderClinicalPracticeLocation,
+  type DemoOrderSummary,
+  type DemoWorkflowForm,
+  type ProductionRequestDraft,
+} from '../../../features/demo/biteplanerFlow';
+import { getWorkflowFormPayloadSection } from '../components/workflowFormFieldDictionary';
 
 const missingValue = 'Não informado';
 const navy = '#0b3566';
 const border = '#9fb2cc';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getPayloadSection(form: DemoWorkflowForm | undefined, key: 'customer' | 'dentist') {
-  const payload = isRecord(form?.payload) ? form.payload : {};
-  const section = payload[key];
-  return isRecord(section) ? section : {};
-}
 
 function value(rawValue: unknown): string {
   if (Array.isArray(rawValue)) {
@@ -30,8 +27,59 @@ function value(rawValue: unknown): string {
   return String(rawValue);
 }
 
+function dateValue(rawValue: unknown): string {
+  if (typeof rawValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    const [year, month, day] = rawValue.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  return value(rawValue);
+}
+
 function checkText(raw: unknown) {
   return value(raw) === 'Sim' ? '(x) Sim   ( ) Não' : value(raw) === 'Não' ? '( ) Sim   (x) Não' : '( ) Sim   ( ) Não';
+}
+
+function hasFilledValue(rawValue: unknown) {
+  if (Array.isArray(rawValue)) {
+    return rawValue.length > 0;
+  }
+
+  return rawValue !== null && rawValue !== undefined && rawValue !== '';
+}
+
+function calculateAgeYears(birthDate: unknown) {
+  if (typeof birthDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+    return undefined;
+  }
+
+  const birth = new Date(`${birthDate}T00:00:00`);
+
+  if (Number.isNaN(birth.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDelta = today.getMonth() - birth.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : undefined;
+}
+
+function buildCustomerProfileFallback(onboardingPayload: Record<string, unknown>) {
+  return {
+    ...onboardingPayload,
+    ...(hasFilledValue(onboardingPayload.heightM) && !hasFilledValue(onboardingPayload.heightMeters)
+      ? { heightMeters: onboardingPayload.heightM }
+      : {}),
+    ...(hasFilledValue(onboardingPayload.birthDate) && !hasFilledValue(onboardingPayload.ageYears)
+      ? { ageYears: calculateAgeYears(onboardingPayload.birthDate) }
+      : {}),
+  };
 }
 
 const styles = StyleSheet.create({
@@ -283,7 +331,7 @@ function MedicationTable({ customer }: { customer: Record<string, unknown> }) {
       <View style={[styles.tableRow, styles.tableHeader]}>
         <Text style={styles.tableCell}>Medicamento</Text>
         <Text style={styles.tableCell}>Dosagem</Text>
-        <Text style={[styles.tableCell, styles.tableLastCell]}>Frequencia</Text>
+        <Text style={[styles.tableCell, styles.tableLastCell]}>Frequência</Text>
       </View>
       <View style={styles.tableRow}>
         <Text style={styles.tableCell}>{value(customer.currentMedicationName)}</Text>
@@ -306,7 +354,6 @@ function ClinicalTable({ dentist }: { dentist: Record<string, unknown> }) {
     ['Abertura com dor', dentist.painfulMaxOpeningMm],
     ['ATM', dentist.hasTmdDiagnosis],
     ['Observações clínicas', dentist.clinicalSectionNotes],
-    ['Pontos de atenção', dentist.clinicalDecisionAttentionPoints],
   ];
 
   return (
@@ -324,19 +371,37 @@ function ClinicalTable({ dentist }: { dentist: Record<string, unknown> }) {
 function FinalAnamnesisDocument({
   order,
   intakeForm,
+  onboardingForm,
   draft,
 }: {
   order: DemoOrderSummary;
   intakeForm: DemoWorkflowForm | undefined;
+  onboardingForm: DemoWorkflowForm | undefined;
   draft: ProductionRequestDraft;
 }) {
-  const customer = getPayloadSection(intakeForm, 'customer');
-  const dentist = getPayloadSection(intakeForm, 'dentist');
-  const generatedAt = new Date().toLocaleDateString('pt-BR');
+  const payloadCustomer = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'customer');
+  const onboardingCustomer = buildCustomerProfileFallback(
+    getWorkflowFormPayloadSection(onboardingForm?.payload, 'customer_new_user_onboarding', 'root')
+  );
+  const baseCustomer: Record<string, unknown> = {
+    ...onboardingCustomer,
+    ...payloadCustomer,
+  };
+  const customer: Record<string, unknown> = {
+    ...baseCustomer,
+    ...(!hasFilledValue(baseCustomer.fullName) && hasFilledValue(order.customer?.full_name)
+      ? { fullName: order.customer?.full_name }
+      : {}),
+    ...(!hasFilledValue(baseCustomer.phone) && hasFilledValue(order.customer?.phone) ? { phone: order.customer?.phone } : {}),
+    ...(!hasFilledValue(baseCustomer.email) && hasFilledValue(order.customer?.email) ? { email: order.customer?.email } : {}),
+  };
+  const dentist = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'dentist');
+  const consultationDate = dateValue(dentist.consultationDate);
+  const generatedAt = consultationDate !== missingValue ? consultationDate : new Date().toLocaleDateString('pt-BR');
   const patientName = value(customer.fullName ?? order.customer?.full_name);
 
   return (
-    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${order.id}`}>
+    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${getOrderDisplayId(order)}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View style={styles.brand}>
@@ -344,13 +409,13 @@ function FinalAnamnesisDocument({
               <Text style={styles.toothMarkText}>BP</Text>
             </View>
             <View>
-              <Text style={styles.clinicName}>{value(order.practice_location?.name)}</Text>
+              <Text style={styles.clinicName}>{value(getOrderClinicalPracticeLocation(order)?.name)}</Text>
               <Text style={styles.clinicSub}>BITEPLANER</Text>
             </View>
           </View>
           <View style={styles.titleBlock}>
             <Text style={styles.title}>FICHA DE ANAMNESE</Text>
-            <Text style={styles.subtitle}>ODONTOLOGICA</Text>
+            <Text style={styles.subtitle}>ODONTOLÓGICA</Text>
           </View>
           <View style={styles.dateBox}>
             <Text style={styles.dateLabel}>DATA:</Text>
@@ -360,12 +425,12 @@ function FinalAnamnesisDocument({
 
         <View style={styles.columns}>
           <View style={styles.column}>
-            <Section number={1} title="IDENTIFICACAO DO PACIENTE">
+            <Section number={1} title="IDENTIFICAÇÃO DO PACIENTE">
               <FillLine label="Nome completo:">{patientName}</FillLine>
-              <FillLine label="Telefone:">{value(order.customer?.phone ?? customer.phone)}</FillLine>
-              <FillLine label="E-mail:">{value(order.customer?.email)}</FillLine>
+              <FillLine label="Telefone:">{value(customer.phone ?? order.customer?.phone)}</FillLine>
+              <FillLine label="E-mail:">{value(customer.email ?? order.customer?.email)}</FillLine>
               <FillLine label="Modalidade principal:">{value(customer.sportRoutine)}</FillLine>
-              <FillLine label="Convenio:">{missingValue}</FillLine>
+              <FillLine label="Convênio:">{missingValue}</FillLine>
             </Section>
 
             <Section number={2} title="QUEIXA PRINCIPAL">
@@ -374,16 +439,16 @@ function FinalAnamnesisDocument({
               <Text style={styles.paragraphLine}>{value(customer.relevantMedicalDiagnosisDetails)}</Text>
             </Section>
 
-            <Section number={3} title="HISTORICO DA CONDICAO ATUAL">
+            <Section number={3} title="HISTÓRICO DA CONDIÇÃO ATUAL">
               <FillLine label="Quando começou?">{missingValue}</FillLine>
               <FillLine label="Dor média última semana:">{value(customer.averagePainLastWeek)}</FillLine>
               <BulletCheck label="O problema piora durante atividade?" raw={customer.trainingJawTensionMoment ? 'yes' : undefined} />
-              <BulletCheck label="Ja realizou tratamento anterior?" raw={customer.tratamentoAnterior} />
-              <BulletCheck label="Usa medicacao para isso?" raw={customer.currentMedicationUse} />
+              <BulletCheck label="Já realizou tratamento anterior?" raw={customer.tratamentoAnterior} />
+              <BulletCheck label="Usa medicação para isso?" raw={customer.currentMedicationUse} />
             </Section>
 
-            <Section number={4} title="HISTORICO MEDICO">
-              <Text style={styles.subHeading}>4.1 Doencas pre-existentes</Text>
+            <Section number={4} title="HISTÓRICO MÉDICO">
+              <Text style={styles.subHeading}>4.1 Doenças pré-existentes</Text>
               <View style={styles.checkboxGrid}>
                 <Text style={styles.checkboxItem}>( ) Diabetes</Text>
                 <Text style={styles.checkboxItem}>( ) Hipertensão</Text>
@@ -392,7 +457,7 @@ function FinalAnamnesisDocument({
                 <Text style={styles.checkboxItem}>( ) Epilepsia</Text>
                 <Text style={styles.checkboxItem}>( ) Outras</Text>
               </View>
-              <FillLine label="Condicoes relatadas:">{value(customer.relevantMedicalDiagnosisDetails)}</FillLine>
+              <FillLine label="Condições relatadas:">{value(customer.relevantMedicalDiagnosisDetails)}</FillLine>
               <Text style={styles.subHeading}>4.2 Medicamentos em uso</Text>
               <MedicationTable customer={customer} />
               <Text style={styles.subHeading}>4.3 Alergias</Text>
@@ -403,37 +468,36 @@ function FinalAnamnesisDocument({
           </View>
 
           <View style={styles.column}>
-            <Section number={5} title="HISTORICO ODONTOLOGICO">
+            <Section number={5} title="HISTÓRICO ODONTOLÓGICO">
               <BulletCheck label="Usa aparelho no momento?" raw={customer.usesOrthodonticAppliance} />
-              <BulletCheck label="Ja realizou tratamento de canal?" raw={customer.canal} />
+              <BulletCheck label="Já realizou tratamento de canal?" raw={customer.canal} />
               <BulletCheck label="Possui implantes?" raw={customer.implantes} />
               <BulletCheck label="Range ou aperta os dentes?" raw={customer.relevantMedicalDiagnosisDetails} />
               <BulletCheck label="Tem dores na ATM?" raw={customer.hasTmdDiagnosis} />
-              <BulletCheck label="Ja sofreu trauma facial?" raw={customer.traumaFacial} />
+              <BulletCheck label="Já sofreu trauma facial?" raw={customer.traumaFacial} />
               <BulletCheck label="Usa protetor bucal?" raw={customer.usaProtetorBucal} />
             </Section>
 
-            <Section number={6} title="HABITOS E ROTINA">
+            <Section number={6} title="HÁBITOS E ROTINA">
               <BulletCheck label="Fuma" raw={customer.nicotineUse && customer.nicotineUse !== 'none' ? 'yes' : 'no'} />
-              <BulletCheck label="Consome bebidas alcoolicas" raw={customer.alcool} />
-              <BulletCheck label="Consome cafeina em excesso" raw={customer.cafeina} />
+              <BulletCheck label="Consome bebidas alcoólicas" raw={customer.alcool} />
+              <BulletCheck label="Consome cafeína em excesso" raw={customer.cafeina} />
               <FillLine label="Sono:">{value(customer.sleepQualityScore)}</FillLine>
               <FillLine label="Modalidade esportiva:">{value(customer.sportRoutine)}</FillLine>
-              <FillLine label="Frequencia treino:">{value(customer.frequenciaTreino)}</FillLine>
+              <FillLine label="Frequência treino:">{value(customer.frequenciaTreino)}</FillLine>
               <FillLine label="Intensidade/estresse:">{value(customer.stressLevel)}</FillLine>
             </Section>
 
-            <Section number={7} title="AVALIACAO CLINICA (PROFISSIONAL)">
+            <Section number={7} title="AVALIAÇÃO CLÍNICA (PROFISSIONAL)">
               <ClinicalTable dentist={dentist} />
             </Section>
 
             <Section number={8} title="PLANO DE TRATAMENTO / CONDUTA">
-              <Text style={styles.paragraphLine}>{value(dentist.initialEvaluationSummary)}</Text>
               <Text style={styles.paragraphLine}>{value(draft.productionRequestSummary)}</Text>
               <Text style={styles.paragraphLine}>{value(draft.labNotes)}</Text>
             </Section>
 
-            <Section number={9} title="OBSERVACOES PROFISSIONAIS">
+            <Section number={9} title="OBSERVAÇÕES PROFISSIONAIS">
               <Text style={styles.paragraphLine}>{value(draft.anamnesisSummary)}</Text>
               <Text style={styles.paragraphLine}>Escaneamento 3D: {value(draft.scan3dFileName)}</Text>
               <Text style={styles.paragraphLine}>Prescrição assinada: {value(draft.prescriptionFileName)}</Text>
@@ -446,13 +510,13 @@ function FinalAnamnesisDocument({
           <View style={styles.sectionBody}>
             <Text style={styles.consentText}>
               Declaro que as informações fornecidas são verdadeiras e autorizo o uso dos dados para fins de tratamento,
-              acompanhamento odontológico e rastreabilidade operacional, conforme a Lei Geral de Protecao de Dados (LGPD).
+              acompanhamento odontológico e rastreabilidade operacional, conforme a Lei Geral de Proteção de Dados (LGPD).
               É responsabilidade do dentista manter este registro, pois a plataforma não mantém estes dados em banco de
-              dados alem do periodo operacional necessário para entrega do produto.
+              dados além do período operacional necessário para entrega do produto.
             </Text>
             <View style={styles.signatures}>
               <Text style={styles.signature}>Assinatura do paciente ou responsável</Text>
-              <Text style={styles.signature}>Assinatura do cirurgiao-dentista</Text>
+              <Text style={styles.signature}>Assinatura do cirurgião-dentista</Text>
               <Text style={styles.signature}>Data: {generatedAt}</Text>
             </View>
           </View>
@@ -460,10 +524,10 @@ function FinalAnamnesisDocument({
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Suas informações estão protegidas. Está ficha segue diretrizes de privacidade e segurança clínica da jornada Biteplaner.
+            Suas informações estão protegidas. Esta ficha segue diretrizes de privacidade e segurança clínica da jornada Biteplaner.
           </Text>
           <Text style={styles.footerText}>
-            Ordem {order.id} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
+            Ordem {getOrderDisplayId(order)} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
           </Text>
         </View>
       </Page>
@@ -474,7 +538,8 @@ function FinalAnamnesisDocument({
 export async function createFinalAnamnesisPdfBlob(
   order: DemoOrderSummary,
   intakeForm: DemoWorkflowForm | undefined,
+  onboardingForm: DemoWorkflowForm | undefined,
   draft: ProductionRequestDraft
 ) {
-  return pdf(<FinalAnamnesisDocument order={order} intakeForm={intakeForm} draft={draft} />).toBlob();
+  return pdf(<FinalAnamnesisDocument order={order} intakeForm={intakeForm} onboardingForm={onboardingForm} draft={draft} />).toBlob();
 }

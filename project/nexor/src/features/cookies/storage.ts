@@ -1,3 +1,5 @@
+import { readStorageJson, writeStorageJson } from '../../lib/browser-storage';
+
 export const COOKIE_CONSENT_STORAGE_KEY = 'nexor-cookie-consent';
 export const COOKIE_CONSENT_VERSION = 1;
 
@@ -34,45 +36,28 @@ export function createCustomCookieConsent(draft: CookieConsentDraft): CookieCons
 }
 
 export function readCookieConsent(): CookieConsentState | null {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const parsed = readStorageJson<Partial<CookieConsentState>>(COOKIE_CONSENT_STORAGE_KEY);
+
+  if (
+    !parsed ||
+    parsed.version !== COOKIE_CONSENT_VERSION ||
+    parsed.necessary !== true ||
+    typeof parsed.preferences !== 'boolean' ||
+    typeof parsed.analytics !== 'boolean' ||
+    typeof parsed.updatedAt !== 'string'
+  ) {
     return null;
   }
 
-  const raw = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<CookieConsentState>;
-
-    if (
-      parsed.version !== COOKIE_CONSENT_VERSION ||
-      parsed.necessary !== true ||
-      typeof parsed.preferences !== 'boolean' ||
-      typeof parsed.analytics !== 'boolean' ||
-      typeof parsed.updatedAt !== 'string'
-    ) {
-      return null;
-    }
-
-    return {
-      version: COOKIE_CONSENT_VERSION,
-      necessary: true,
-      preferences: parsed.preferences,
-      analytics: parsed.analytics,
-      updatedAt: parsed.updatedAt,
-    };
-  } catch {
-    return null;
-  }
+  return {
+    version: COOKIE_CONSENT_VERSION,
+    necessary: true,
+    preferences: parsed.preferences,
+    analytics: parsed.analytics,
+    updatedAt: parsed.updatedAt,
+  };
 }
 
 export function saveCookieConsent(consent: CookieConsentState) {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(consent));
+  writeStorageJson(COOKIE_CONSENT_STORAGE_KEY, consent);
 }

@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type KeyboardEvent } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import styled from 'styled-components';
 import { useDesignSystem } from '../provider';
 import type { BrandTokens } from '../tokens';
@@ -13,10 +13,12 @@ export interface TagAutocompleteFieldProps {
   value: string[];
   options: TagAutocompleteOption[];
   onChange: (value: string[]) => void;
+  onBlur?: () => void;
   placeholder?: string;
   hint?: string;
   error?: string;
   required?: boolean;
+  allowCustomValue?: boolean;
 }
 
 const Wrapper = styled.div`
@@ -28,14 +30,12 @@ const Wrapper = styled.div`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
-  color: ${({ $tokens }) => $tokens.colors.danger};
+  color: inherit;
 `;
 
 const Control = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
@@ -148,7 +148,7 @@ const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
   color: ${({ $tokens, $tone }) =>
     $tone === 'error' ? $tokens.colors.danger : $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -177,13 +177,17 @@ export function TagAutocompleteField({
   value,
   options,
   onChange,
+  onBlur,
   placeholder = 'Buscar...',
   hint,
   error,
   required,
+  allowCustomValue = false,
 }: TagAutocompleteFieldProps) {
   const { tokens } = useDesignSystem();
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const skipNextBlurRef = useRef(false);
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const invalid = Boolean(error);
@@ -205,9 +209,35 @@ export function TagAutocompleteField({
       return;
     }
 
-    onChange([...value, option.value]);
     setSearch('');
     setOpen(false);
+    inputRef.current?.blur();
+    onChange([...value, option.value]);
+  }
+
+  function addCustomValue() {
+    const customLabel = search.trim().replace(/\s+/g, ' ');
+
+    if (!allowCustomValue || !customLabel) {
+      return false;
+    }
+
+    const normalizedCustomLabel = normalize(customLabel);
+    const alreadySelected = value.some((item) => {
+      const option = options.find((candidate) => candidate.value === item);
+      return normalize(option?.label ?? item) === normalizedCustomLabel;
+    });
+
+    if (alreadySelected) {
+      setSearch('');
+      setOpen(false);
+      return true;
+    }
+
+    setSearch('');
+    setOpen(false);
+    onChange([...value, customLabel]);
+    return true;
   }
 
   function removeOption(nextValue: string) {
@@ -216,6 +246,15 @@ export function TagAutocompleteField({
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== 'Enter') {
+      return;
+    }
+
+    if (allowCustomValue && search.trim()) {
+      event.preventDefault();
+      skipNextBlurRef.current = true;
+      inputRef.current?.blur();
+      skipNextBlurRef.current = false;
+      addCustomValue();
       return;
     }
 
@@ -232,7 +271,7 @@ export function TagAutocompleteField({
     <Wrapper>
       <Label $tokens={tokens} htmlFor={id}>
         {label}
-        {required ? <> <RequiredMark $tokens={tokens}>*</RequiredMark></> : null}
+        {required ? <> <RequiredMark $tokens={tokens}>(*)</RequiredMark></> : null}
       </Label>
       <Control $tokens={tokens} $invalid={invalid}>
         {value.map((item) => {
@@ -257,9 +296,12 @@ export function TagAutocompleteField({
         })}
         <Input
           $tokens={tokens}
+          ref={inputRef}
           id={id}
+          name={`${id}-search`}
           value={search}
           placeholder={value.length === 0 ? placeholder : 'Adicionar mais...'}
+          autoComplete="off"
           aria-invalid={invalid}
           aria-autocomplete="list"
           aria-expanded={open}
@@ -270,12 +312,24 @@ export function TagAutocompleteField({
             setSearch(event.target.value);
             setOpen(true);
           }}
+          onBlur={() => {
+            if (skipNextBlurRef.current) {
+              return;
+            }
+
+            const customValueAdded = addCustomValue();
+
+            if (!customValueAdded) {
+              setOpen(false);
+              onBlur?.();
+            }
+          }}
           onKeyDown={handleKeyDown}
         />
       </Control>
       {open && matchingOptions.length > 0 ? (
         <OptionsList $tokens={tokens} role="listbox" aria-label="Sugestoes">
-          {matchingOptions.slice(0, 10).map((option) => (
+          {matchingOptions.map((option) => (
             <OptionItem
               $tokens={tokens}
               key={option.value}

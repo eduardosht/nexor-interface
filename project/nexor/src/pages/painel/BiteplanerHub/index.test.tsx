@@ -1,13 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 
-const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
+const { mockUseAuth, mockApiGet, mockApiPost, mockApiPatch } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
+  mockApiPatch: vi.fn(),
 }));
 
 vi.mock('../../../hooks/useAuth', () => ({
@@ -18,10 +21,18 @@ vi.mock('../../../lib/api', () => ({
   api: {
     get: mockApiGet,
     post: mockApiPost,
+    patch: mockApiPatch,
   },
 }));
 
-import { BiteplanerHub } from './index';
+import {
+  BiteplanerHub,
+  buildPartnerReportWorkbook,
+  getFirstAccessMode,
+  getDentistLicensingStatusLabel,
+  getDentistLicensingStatusTone,
+  isLegacyLicensedLabStatus,
+} from './index';
 
 function createAuthMock(overrides: Record<string, unknown> = {}) {
   return {
@@ -85,11 +96,118 @@ describe('BiteplanerHub', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    mockApiPatch.mockReset();
+    vi.restoreAllMocks();
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
       },
     });
+  });
+
+  it('keeps dashboard stat icons compact on notebook and mobile breakpoints', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
+    const compactCardSource = source.slice(
+      source.indexOf('const compactStatCard'),
+      source.indexOf('const compactStatIcon')
+    );
+    const compactIconSource = source.slice(
+      source.indexOf('const compactStatIcon'),
+      source.indexOf('export const AthleteStatsGrid')
+    );
+
+    expect(source).toContain('@media (max-width: 1280px)');
+    expect(source).toContain('@media (max-width: 640px)');
+    expect(source).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+    expect(source).toContain('grid-column: 1 / -1');
+    expect(source).toContain('width: 56px');
+    expect(source).toContain('height: 56px');
+    expect(source).toContain('flex: 0 0 56px');
+    expect(source).toContain('padding: 14px');
+    expect(source).toContain('padding: 12px');
+    expect(source).toContain('padding: 8px');
+    expect(source).toContain('font-size: 16px');
+    expect(compactIconSource).not.toContain('width: 40px');
+    expect(compactIconSource).not.toContain('height: 40px');
+    expect(compactIconSource).not.toContain('width: 32px');
+    expect(compactIconSource).not.toContain('height: 32px');
+    expect(compactCardSource).toContain('align-items: flex-start');
+    expect(compactIconSource).toContain('align-self: flex-start');
+  });
+
+  it('uses the form green and red palette in the lab documentation modal actions', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
+    const paletteSource = source.slice(
+      source.indexOf('const documentationActionButtonTone'),
+      source.indexOf('export const TableIconButton')
+    );
+    const buttonSource = source.slice(
+      source.indexOf('export const DocumentationActionButton'),
+      source.indexOf('export const ReferralInviteModalBox')
+    );
+
+    expect(paletteSource).toContain("bg: '#15803d'");
+    expect(paletteSource).toContain("hover: '#166534'");
+    expect(paletteSource).toContain("bg: '#b91c1c'");
+    expect(paletteSource).toContain("hover: '#991b1b'");
+    expect(buttonSource).toContain('documentationActionButtonTone[$tone].bg');
+    expect(buttonSource).toContain('documentationActionButtonTone[$tone].hover');
+  });
+
+  it('keeps the order updates modal scrollable and accented in Brazilian Portuguese', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
+
+    expect(pageSource).toContain('aria-label="Atualizações da ordem"');
+    expect(pageSource).toContain('Atualizações da ordem');
+    expect(pageSource).toContain('Histórico resumido');
+    expect(pageSource).toContain('Fechar modal das atualizações');
+    expect(pageSource).not.toContain('Atualizacoes da ordem');
+    expect(pageSource).not.toContain('Fechar modal das atualizacoes');
+    expect(stylesSource).toContain('export const TimelineTableWrap = styled(SimpleTableWrap)`');
+    expect(stylesSource).toContain('max-height: min(46vh, 420px);');
+    expect(stylesSource).toContain('overflow-y: auto;');
+    expect(stylesSource).toContain('@media (max-width: 640px)');
+    expect(stylesSource).toContain('max-height: 42vh;');
+  });
+
+  it('keeps pending order action reason state inside the modal', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/index.tsx'), 'utf8');
+    const componentStart = source.indexOf('function PendingOrderActionModal');
+    const hubStart = source.indexOf('export function BiteplanerHub');
+    const modalSource = source.slice(componentStart, hubStart);
+    const hubSource = source.slice(hubStart);
+
+    expect(componentStart).toBeGreaterThan(-1);
+    expect(modalSource).toContain("const [reason, setReason] = useState('')");
+    expect(modalSource).toContain("onConfirm(action, requiresReturnReason ? reason.trim() : '')");
+    expect(hubSource).not.toContain('pendingOrderReason');
+    expect(hubSource).not.toContain('setPendingOrderReason');
+  });
+
+  it('prioritizes operational modes on first access before the user tab', () => {
+    expect(
+      getFirstAccessMode({
+        defaultMode: 'user',
+        modes: [
+          { key: 'user', label: 'Atleta', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: false, reason: null },
+        ],
+      })
+    ).toBe('lab');
+
+    expect(
+      getFirstAccessMode({
+        defaultMode: 'user',
+        modes: [
+          { key: 'user', label: 'Atleta', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: false, reason: null },
+          { key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: false, reason: null },
+        ],
+      })
+    ).toBe('dentist');
   });
 
   it('renders the partner lead table with shared funnel data', async () => {
@@ -99,18 +217,6 @@ describe('BiteplanerHub', () => {
         defaultMode: 'partner',
         enrollment: null,
         modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
-      })
-      .mockResolvedValueOnce({
-        orders: [
-          {
-            id: 'BP-DEMO-001',
-            status: 'registration_started',
-            statusLabel: 'Pre-requisito pendente',
-            stage: 'pre_requisite_pending',
-            created_at: '2026-05-01T10:00:00.000Z',
-            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          },
-        ],
       })
       .mockResolvedValueOnce({
         inviteLinks: [
@@ -155,11 +261,13 @@ describe('BiteplanerHub', () => {
     expect(screen.getByText(/links convertidos em compra/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /semana/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /mês/i })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getAllByText(/leads captados/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/leads captados/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/pedidos finalizados/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /abrir indicar/i })).toHaveAttribute(
       'href',
       '/painel/biteplaner/indicar?mode=partner'
     );
+    expect(mockApiGet).not.toHaveBeenCalledWith('/v1/orders?as=partner', 'tok');
     expect(screen.queryByRole('button', { name: /gerar link individual/i })).not.toBeInTheDocument();
   });
 
@@ -171,7 +279,6 @@ describe('BiteplanerHub', () => {
         enrollment: null,
         modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
       })
-      .mockResolvedValueOnce({ orders: [] })
       .mockResolvedValueOnce({
         inviteLinks: [],
         leads: [],
@@ -196,7 +303,6 @@ describe('BiteplanerHub', () => {
         enrollment: null,
         modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
       })
-      .mockResolvedValueOnce({ orders: [] })
       .mockResolvedValueOnce({
         inviteLinks: [
           {
@@ -278,7 +384,6 @@ describe('BiteplanerHub', () => {
         enrollment: null,
         modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
       })
-      .mockResolvedValueOnce({ orders: [] })
       .mockResolvedValueOnce({
         inviteLinks: [
           {
@@ -308,7 +413,144 @@ describe('BiteplanerHub', () => {
     );
   });
 
-  it('shows the athlete primary status and next CTA', async () => {
+  it('downloads the partner one-year link and order report from the operation card', async () => {
+    const createdBlobs: Blob[] = [];
+    const partnerOverview = {
+      inviteLinks: [
+        {
+          id: 'link-current',
+          token: 'bp-partner-current',
+          status: 'active',
+          intendedCustomerName: 'Joao Atual',
+          intendedCustomerEmail: 'joao@nexor.dev',
+          created_at: '2026-05-10T10:00:00.000Z',
+          expires_at: null,
+          consumed_at: null,
+        },
+        {
+          id: 'link-old',
+          token: 'bp-partner-old',
+          status: 'expired',
+          intendedCustomerName: 'Marina Antiga',
+          intendedCustomerEmail: 'marina@nexor.dev',
+          created_at: '2024-12-10T10:00:00.000Z',
+          expires_at: null,
+          consumed_at: null,
+        },
+      ],
+      leads: [
+        {
+          id: 'lead-current',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-current',
+          orderId: 'BP-DEMO-010',
+          customerProfileId: 'profile-1',
+          customerName: 'Joao Atual',
+          customerEmail: 'joao@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Pedido ativo',
+          created_at: '2026-05-10T10:00:00.000Z',
+          orderStatus: 'Pedido ativo',
+        },
+        {
+          id: 'lead-finished',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-current',
+          orderId: 'BP-DEMO-011',
+          customerProfileId: 'profile-2',
+          customerName: 'Ana Finalizada',
+          customerEmail: 'ana@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Finalizado',
+          created_at: '2026-04-10T10:00:00.000Z',
+          orderStatus: 'Finalizado',
+        },
+        {
+          id: 'lead-old',
+          partnerId: 'partner-1',
+          partnerLinkId: 'link-old',
+          orderId: 'BP-DEMO-012',
+          customerProfileId: 'profile-3',
+          customerName: 'Marina Antiga',
+          customerEmail: 'marina@nexor.dev',
+          customerPhone: null,
+          funnelStage: 'order_advanced',
+          statusLabel: 'Pedido antigo',
+          created_at: '2024-12-10T10:00:00.000Z',
+          orderStatus: 'Pedido antigo',
+        },
+      ],
+      summary: { leadsCaptured: 3, convertedToAccount: 3, activeOrders: 1, finishedOrders: 1 },
+    };
+    const createObjectUrl = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockImplementation((blob) => {
+        if (blob instanceof Blob) {
+          createdBlobs.push(blob);
+        }
+        return 'blob:partner-report';
+      });
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const clickSpy = vi.fn();
+    const createdAnchors: HTMLAnchorElement[] = [];
+    const originalCreateElement = document.createElement.bind(document);
+
+    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const element = originalCreateElement(tagName, options);
+
+      if (tagName.toLowerCase() === 'a') {
+        createdAnchors.push(element as HTMLAnchorElement);
+        element.click = clickSpy;
+      }
+
+      return element;
+    });
+
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'partner',
+        enrollment: null,
+        modes: [{ key: 'partner', label: 'Parceiro', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce(partnerOverview);
+
+    renderPage('/painel/biteplaner?mode=partner', {
+      demoPersona: 'partner',
+      backendUser: { email: 'parceiro@nexor.dev', roles: ['partner'] },
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: /download do relatório/i }));
+
+    expect(createObjectUrl).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:partner-report');
+    expect(createdBlobs).toHaveLength(1);
+    const downloadedBlob = createdBlobs[0];
+    const downloadAnchor = createdAnchors.find((anchor) => anchor.download.endsWith('.xlsx'));
+
+    expect(downloadedBlob.type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    expect(downloadAnchor?.download).toMatch(/^relatorio-parceiro-biteplaner-\d{4}-\d{2}-\d{2}\.xlsx$/);
+
+    const workbook = buildPartnerReportWorkbook(partnerOverview, new Date('2026-06-12T12:00:00.000Z'));
+    const workbookText = new TextDecoder().decode(workbook);
+
+    expect(workbook[0]).toBe(0x50);
+    expect(workbook[1]).toBe(0x4b);
+    expect(workbookText).toContain('xl/worksheets/sheet1.xml');
+    expect(workbookText).toContain('Relatório do parceiro - últimos 12 meses');
+    expect(workbookText).toContain('bp-partner-current');
+    expect(workbookText).toContain('Ativo');
+    expect(workbookText).toContain('BP-DEMO-010');
+    expect(workbookText).toContain('Pedido ativo');
+    expect(workbookText).toContain('BP-DEMO-011');
+    expect(workbookText).toContain('Finalizado');
+    expect(workbookText).not.toContain('bp-partner-old');
+  });
+
+  it('sends a registration-started athlete to the prerequisite page when the intake is not released yet', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         productKey: 'biteplaner',
@@ -329,13 +571,88 @@ describe('BiteplanerHub', () => {
         ],
       })
       .mockResolvedValueOnce({ appointments: [] })
-      .mockResolvedValueOnce({ events: [] });
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ forms: [] });
 
     renderPage('/painel/biteplaner?mode=user');
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
+    expect(screen.getByRole('heading', { name: /workspace do atleta/i })).toBeInTheDocument();
+    expect(screen.getByTestId('athlete-hero-visual')).toBeInTheDocument();
+    expect(screen.getAllByText(/jornada biteplaner/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/sua jornada biteplaner/i);
+    expect(screen.queryByText(/^BP$/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/próximo passo visível/i);
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
-    expect(screen.getByRole('link', { name: /continuar fluxo/i })).toHaveAttribute('href', '/painel/pre-requisito');
+    expect(screen.getByRole('link', { name: /ver jornada/i })).toHaveAttribute('href', '/painel/pre-requisito');
+  });
+
+  it('shows an onboarding CTA when the athlete has no Biteplaner order yet', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'user',
+        enrollment: null,
+        modes: [{ key: 'user', label: 'Cliente', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] });
+
+    renderPage('/painel/biteplaner?mode=user');
+
+    await waitFor(() => expect(screen.getByTestId('athlete-onboarding-empty-state')).toBeInTheDocument());
+    expect(screen.getByText(/você ainda não iniciou sua jornada biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /iniciar onboarding/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/onboarding'
+    );
+  });
+
+  it('sends the athlete to clinic selection when the prerequisite intake is already submitted', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'user',
+        enrollment: null,
+        modes: [{ key: 'user', label: 'Cliente', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-001',
+            status: 'registration_started',
+            statusLabel: 'Pre-requisito pendente',
+            stage: 'pre_requisite_pending',
+            created_at: '2026-05-01T14:00:00.000Z',
+            customer: { full_name: 'Eduardo Shoiti Fujiwara', email: 'eduardoshoitifujiwara@gmail.com', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ appointments: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'BP-WF-001-INTAKE',
+            orderId: 'BP-DEMO-001',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'pre_requisite_pending',
+            status: 'submitted',
+            roleState: { customer: 'submitted', dentist: 'locked' },
+            canViewPayload: true,
+            summary: { submittedAt: '2026-05-01T11:20:00.000Z' },
+            releasedAt: '2026-05-01T10:05:00.000Z',
+            submittedAt: '2026-05-01T11:20:00.000Z',
+            payload: { customer: { fullName: 'Eduardo Shoiti Fujiwara' } },
+          },
+        ],
+      });
+
+    renderPage('/painel/biteplaner?mode=user');
+
+    await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/aguardando consulta inicial/i));
+    expect(screen.getByTestId('athlete-primary-order')).toHaveTextContent(/escolher a cl.*nica da consulta inicial/i);
+    expect(screen.getByRole('link', { name: /ver jornada/i })).toHaveAttribute('href', '/painel/consulta-inicial');
+    expect(screen.queryByRole('link', { name: /abrir jornada/i })).not.toBeInTheDocument();
   });
 
   it('renders the dentist queue as a páginated table with status filters', async () => {
@@ -361,23 +678,23 @@ describe('BiteplanerHub', () => {
             status: 'treatment_required',
             statusLabel: 'Tratamento prévio pendente',
             stage: 'treatment_required',
-            created_at: '2026-05-01T11:00:00.000Z',
+            created_at: '2026-05-01T13:00:00.000Z',
             customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
           },
           {
             id: 'BP-DEMO-203',
             status: 'appointment_confirmed',
-            statusLabel: 'Consulta confirmada',
-            stage: 'consultation_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
             created_at: '2026-05-01T12:00:00.000Z',
             customer: { full_name: 'Carlos Demo', email: 'carlos@nexor.dev', phone: null },
           },
           {
             id: 'BP-DEMO-204',
             status: 'awaiting_dentist_forms',
-            statusLabel: 'Aguardando preenchimento dentista',
+            statusLabel: 'Aguardando envio ao laboratório',
             stage: 'awaiting_dentist_forms',
-            created_at: '2026-05-01T13:00:00.000Z',
+            created_at: '2026-05-01T11:00:00.000Z',
             customer: { full_name: 'Ana Demo', email: 'ana@nexor.dev', phone: null },
           },
           {
@@ -385,7 +702,7 @@ describe('BiteplanerHub', () => {
             status: 'awaiting_payment',
             statusLabel: 'Aguardando pagamento',
             stage: 'awaiting_payment',
-            created_at: '2026-05-01T14:00:00.000Z',
+            created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Paula Demo', email: 'paula@nexor.dev', phone: null },
           },
         ],
@@ -411,16 +728,47 @@ describe('BiteplanerHub', () => {
 
     for (let index = 0; index < 5; index += 1) {
       mockApiGet.mockResolvedValueOnce({
-        events: [
-          {
-            id: `event-${index + 1}`,
-            orderId: `BP-DEMO-20${index + 1}`,
-            fromStatus: null,
-            toStatus: 'seeded',
-            reason: `Evento ${index + 1}`,
-            createdAt: `2026-05-0${index + 1}T10:00:00.000Z`,
-          },
-        ],
+        events: index === 0
+          ? [
+              {
+                id: 'event-1-old',
+                orderId: 'BP-DEMO-201',
+                fromStatus: null,
+                toStatus: 'registration_started',
+                reason: 'order_created',
+                createdAt: '2026-05-01T09:00:00.000Z',
+              },
+              {
+                id: 'event-1-new',
+                orderId: 'BP-DEMO-201',
+                fromStatus: 'awaiting_scheduling',
+                toStatus: 'awaiting_dentist_acceptance',
+                reason: 'practice_location_selected_by_customer',
+                createdAt: '2026-05-01T10:00:00.000Z',
+              },
+              {
+                id: 'event-1-cancelled',
+                orderId: 'BP-DEMO-201',
+                fromStatus: 'awaiting_dentist_acceptance',
+                toStatus: 'awaiting_scheduling',
+                reason: 'practice_location_selection_cancelled_by_customer',
+                metadata: {
+                  previousPracticeLocationName: 'Clínica anterior',
+                  previousDentistName: 'Dr. Bruno Lima',
+                },
+                createdAt: '2026-05-01T10:30:00.000Z',
+              },
+            ]
+          : [
+              {
+                id: `event-${index + 1}`,
+                orderId: `BP-DEMO-20${index + 1}`,
+                fromStatus: null,
+                toStatus: 'seeded',
+                reason: `Evento ${index + 1}`,
+                createdAt: `2026-05-0${index + 1}T10:00:00.000Z`,
+              },
+            ],
       });
     }
     mockApiGet.mockResolvedValueOnce(licensedDentistWorkflow());
@@ -436,15 +784,23 @@ describe('BiteplanerHub', () => {
     expect(screen.getByText(/ordens com consulta agendada pelo cliente/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /vincular consulta/i })).not.toBeInTheDocument();
     expect(within(dentistQueueTable).getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
+    expect(within(dentistQueueTable).queryByRole('columnheader', { name: /^consulta$/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/aguardando aceite do dentista/i).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizacoes da ordem bp-demo-201/i }));
-    expect(await screen.findByRole('dialog', { name: /atualizacoes da ordem/i })).toBeInTheDocument();
-    expect(screen.getByText(/historico resumido da jornada operacional/i)).toBeInTheDocument();
-    expect(screen.getByText(/evento 1/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /fechar modal das atualizacoes/i }));
+    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizações da ordem bp-demo-201/i }));
+    const timelineDialog = await screen.findByRole('dialog', { name: /atualizações da ordem/i });
+    expect(timelineDialog).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/histórico resumido da jornada operacional/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/aguardando aceite do dentista/i)).toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/^awaiting_dentist_acceptance$/i)).not.toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/^practice_location_selected_by_customer$/i)).not.toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/cliente informou que combinou a consulta fora da plataforma/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/cliente cancelou a consulta na clínica anterior com dr\. bruno lima/i)).toBeInTheDocument();
+    const timelineRows = within(timelineDialog).getAllByRole('row');
+    expect(timelineRows[1]).toHaveTextContent(/aguardando agendamento/i);
+    fireEvent.click(screen.getByRole('button', { name: /fechar modal das atualizações/i }));
     fireEvent.click(screen.getByRole('button', { name: /aceitar consulta agendada da ordem bp-demo-201/i }));
     expect(await screen.findByRole('dialog', { name: /confirmar ação da ordem/i })).toBeInTheDocument();
-    expect(screen.getByText(/desejá aceitar a consulta agendada da ordem bp-demo-201/i)).toBeInTheDocument();
+    expect(screen.getByText(/deseja aceitar a consulta agendada da ordem bp-demo-201/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /cancelar/i }));
 
     fireEvent.click(screen.getByRole('button', { name: '2' }));
@@ -458,8 +814,57 @@ describe('BiteplanerHub', () => {
     await waitFor(() => {
       expect(screen.getByText('BP-DEMO-202')).toBeInTheDocument();
       expect(screen.queryByText('BP-DEMO-201')).not.toBeInTheDocument();
-      expect(screen.queryByText('BP-DEMO-205')).not.toBeInTheDocument();
+    expect(screen.queryByText('BP-DEMO-205')).not.toBeInTheDocument();
     });
+  });
+
+  it('explains account-removal interruptions in the operational timeline', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-301',
+            status: 'cancelled',
+            statusLabel: 'Cancelada',
+            stage: 'awaiting_initial_consultation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Paciente Demo', email: 'paciente@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ appointments: [] })
+      .mockResolvedValueOnce({
+        events: [
+          {
+            id: 'event-account-deletion',
+            orderId: 'BP-DEMO-301',
+            fromStatus: 'awaiting_scheduling',
+            toStatus: 'cancelled',
+            reason: 'account_deletion_approved',
+            createdAt: '2026-05-01T11:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce(licensedDentistWorkflow());
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentist',
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizações da ordem bp-demo-301/i }));
+
+    const timelineDialog = await screen.findByRole('dialog', { name: /atualizações da ordem/i });
+    expect(within(timelineDialog).getByText(/jornada interrompida/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/remoção de conta aprovada/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/não foi gerado ressarcimento automático/i)).toBeInTheDocument();
   });
 
   it('does not expose the old dentist-side consultation linking modal', async () => {
@@ -475,7 +880,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-002',
             status: 'in_progress',
-            statusLabel: 'Consulta vinculada',
+            statusLabel: 'Aguardando confirmação de consulta',
             stage: 'consultation_linked',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: '11999990001' },
@@ -497,7 +902,237 @@ describe('BiteplanerHub', () => {
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
-  it('locks the dentist home tab when the dentist is not licensed yet', async () => {
+  it('opens the pre-consultation review after both appointment confirmations for licensed dentists', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-CHECK',
+            status: 'in_progress',
+            statusLabel: 'Aguardando confirmação de consulta',
+            stage: 'consultation_linked',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Cliente Check', email: 'check@nexor.dev', phone: null },
+          },
+          {
+            id: 'BP-DEMO-CLINICAL',
+            status: 'appointment_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
+            created_at: '2026-05-01T11:00:00.000Z',
+            customer: { full_name: 'Cliente Clinico', email: 'clinico@nexor.dev', phone: null },
+          },
+          {
+            id: 'BP-DEMO-STALE',
+            status: 'in_progress',
+            statusLabel: 'Consulta em andamento',
+            stage: 'consultation_linked',
+            created_at: '2026-05-01T12:00:00.000Z',
+            customer: { full_name: 'Cliente Legado', email: 'legado@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-check',
+            order_id: 'BP-DEMO-CHECK',
+            type: 'initial',
+            status: 'scheduled',
+            scheduled_at: '2026-05-07T10:00:00.000Z',
+            user_confirmed_at: '2026-05-07T11:00:00.000Z',
+            dentist_confirmed_at: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-clinical',
+            order_id: 'BP-DEMO-CLINICAL',
+            type: 'initial',
+            status: 'completed',
+            scheduled_at: '2026-05-07T12:00:00.000Z',
+            user_confirmed_at: '2026-05-07T13:00:00.000Z',
+            dentist_confirmed_at: '2026-05-07T13:05:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-stale',
+            order_id: 'BP-DEMO-STALE',
+            type: 'initial',
+            status: 'scheduled',
+            scheduled_at: '2026-05-07T14:00:00.000Z',
+            user_confirmed_at: '2026-05-07T15:00:00.000Z',
+            dentist_confirmed_at: '2026-05-07T15:05:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ forms: [] })
+      .mockResolvedValueOnce({ forms: [] })
+      .mockResolvedValueOnce(licensedDentistWorkflow());
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista.licenciada@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    const confirmationRow = screen.getByText('BP-DEMO-CHECK').closest('tr');
+    const clinicalRow = screen.getByText('BP-DEMO-CLINICAL').closest('tr');
+    const staleRow = screen.getByText('BP-DEMO-STALE').closest('tr');
+
+    if (!confirmationRow || !clinicalRow || !staleRow) {
+      throw new Error('Expected all licensed dentist scenario rows to render.');
+    }
+
+    expect(confirmationRow).toHaveTextContent(/aguardando confirmação de consulta/i);
+    expect(within(confirmationRow).getByRole('button', { name: /confirmar consulta realizada/i })).toBeInTheDocument();
+    expect(within(confirmationRow).queryByRole('button', { name: /registrar apto/i })).not.toBeInTheDocument();
+
+    expect(clinicalRow).toHaveTextContent(/aguardando decisão clínica/i);
+    expect(within(clinicalRow).getByRole('button', { name: /complementar pre-consulta/i })).toBeInTheDocument();
+    expect(within(clinicalRow).queryByRole('button', { name: /registrar apto/i })).not.toBeInTheDocument();
+    expect(within(clinicalRow).queryByRole('button', { name: /registrar inapto/i })).not.toBeInTheDocument();
+    expect(within(clinicalRow).queryByRole('button', { name: /marcar tratamento pr/i })).not.toBeInTheDocument();
+    expect(within(clinicalRow).queryByRole('button', { name: /confirmar consulta realizada/i })).not.toBeInTheDocument();
+
+    expect(within(staleRow).getByRole('button', { name: /complementar pre-consulta/i })).toBeInTheDocument();
+    expect(within(staleRow).queryByRole('button', { name: /confirmar consulta realizada/i })).not.toBeInTheDocument();
+  });
+
+  it('shows inaptitude status and no dentist action when the pre-consultation form is already marked not eligible', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return Promise.resolve({
+          productKey: 'biteplaner',
+          defaultMode: 'dentist',
+          enrollment: null,
+          modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+        });
+      }
+
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-INELIGIBLE',
+              status: 'in_progress',
+              statusLabel: 'Em andamento',
+              stage: 'consultation_linked',
+              created_at: '2026-05-07T10:00:00.000Z',
+              customer: { full_name: 'Cliente Inapto', email: 'cliente@nexor.dev', phone: null },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/appointments') {
+        return Promise.resolve({
+          appointments: [
+            {
+              id: 'appointment-ineligible',
+              order_id: 'BP-DEMO-INELIGIBLE',
+              type: 'initial',
+              status: 'completed',
+              scheduled_at: '2026-05-07T10:00:00.000Z',
+              user_confirmed_at: '2026-05-07T11:00:00.000Z',
+              dentist_confirmed_at: '2026-05-07T11:05:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/timeline') {
+        return Promise.resolve({
+          events: [
+            {
+              id: 'event-ineligible',
+              orderId: 'BP-DEMO-INELIGIBLE',
+              fromStatus: 'in_progress',
+              toStatus: 'ineligible_reassessment',
+              reason: 'Dentista registrou inaptidão no complemento de pré-consulta.',
+              createdAt: '2026-05-07T11:10:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-INELIGIBLE/workflow-forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'BP-WF-INELIGIBLE-INTAKE',
+              orderId: 'BP-DEMO-INELIGIBLE',
+              templateKey: 'customer_pre_consultation_intake',
+              stepKey: 'initial_consultation_preparation',
+              status: 'submitted',
+              roleState: { customer: 'locked', dentist: 'submitted' },
+              customerSubmittedAt: '2026-05-07T10:30:00.000Z',
+              dentistReviewStartedAt: '2026-05-07T11:00:00.000Z',
+              dentistSubmittedAt: '2026-05-07T11:10:00.000Z',
+              canViewPayload: true,
+              summary: null,
+              releasedAt: '2026-05-07T10:00:00.000Z',
+              submittedAt: '2026-05-07T11:10:00.000Z',
+              payload: {
+                customer: { fullName: 'Cliente Inapto' },
+                dentist: {
+                  biteplannerEligible: 'no',
+                  ineligibilityDescriptionForCustomer: 'Cliente deve passar por nova avaliação.',
+                },
+              },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/account/biteplaner/dentist-licensing') {
+        return Promise.resolve(licensedDentistWorkflow());
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista2@gmail.com', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+    const row = screen.getByText('BP-DEMO-INELIGIBLE').closest('tr');
+
+    if (!row) {
+      throw new Error('Expected ineligible dentist row to render.');
+    }
+
+    expect(row).toHaveTextContent(/inaptidão/i);
+    expect(row).not.toHaveTextContent(/nova consulta disponível/i);
+    expect(row).toHaveTextContent(/consulta inicial/i);
+    expect(within(row).queryByTestId('dentist-order-action-open-pre-consultation-review')).not.toBeInTheDocument();
+    expect(within(row).queryByTestId('dentist-order-action-confirm-appointment')).not.toBeInTheDocument();
+    expect(row).toHaveTextContent('-');
+
+    fireEvent.click(screen.getByRole('button', { name: /visualizar atualizações da ordem bp-demo-ineligible/i }));
+    const timelineDialog = await screen.findByRole('dialog', { name: /atualizações da ordem/i });
+    expect(within(timelineDialog).getByText(/^inaptidão$/i)).toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/nova consulta disponível/i)).not.toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/ineligible reassessment/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the dentist workspace when the admin approval is already active', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         productKey: 'biteplaner',
@@ -525,18 +1160,96 @@ describe('BiteplanerHub', () => {
       backendUser: { email: 'dentista.aprovada@nexor.dev', roles: ['dentist'] },
     });
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      /conteúdo liberado apenas para dentistas licenciados/i
-    );
-    await waitFor(() => expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'warning'));
-    expect(screen.getByRole('link', { name: /ir para licenciamento/i })).toHaveAttribute(
-      'href',
-      '/painel/biteplaner/licenciamento?mode=dentist'
-    );
-    expect(screen.queryByTestId('dentist-queue-table')).not.toBeInTheDocument();
+    expect(await screen.findByText(/workspace do dentista/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'success'));
+    expect(screen.queryByText(/conteúdo liberado apenas para dentistas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /ir para licenciamento/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /confirmar pagamento/i })).not.toBeInTheDocument();
   });
 
+  it('renders the dentist workspace hero without the e-mail block', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] })
+      .mockResolvedValueOnce({
+        workflow: {
+          id: 'workflow-approved',
+          status: 'approved_pending_payment',
+          paymentStatus: 'not_started',
+          testAttempts: 0,
+          testPassed: false,
+          certificateIssuedAt: null,
+          metadata: { courseProgress: {} },
+        },
+        course: [],
+        notifications: [],
+      });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistApproved',
+      backendUser: { email: 'dentista.aprovada@nexor.dev', roles: ['dentist'] },
+    });
+
+    expect(await screen.findByText(/workspace do dentista/i)).toBeInTheDocument();
+    expect(screen.getByTestId('dentist-hero-visual')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'success'));
+    const statusLabel = screen.getByText(/status licenciamento/i);
+    const statusValue = statusLabel.parentElement?.querySelector('strong');
+
+    expect(screen.queryByText('E-mail')).not.toBeInTheDocument();
+    expect(screen.queryByText('dentista.aprovada@nexor.dev')).not.toBeInTheDocument();
+    if (!statusValue) {
+      throw new Error('Expected dentist status value in workspace hero.');
+    }
+    expect(statusValue).toHaveTextContent(/licenciado/i);
+    expect(statusLabel.parentElement).toContainElement(statusValue);
+  });
+
+  it('renders the laboratory workspace hero with licensing status', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'lab',
+        enrollment: null,
+        modes: [{ key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] });
+
+    renderPage('/painel/biteplaner?mode=lab', {
+      demoPersona: 'athlete',
+      backendUser: { email: 'lab@nexor.dev', roles: ['lab'] },
+    });
+
+    expect(await screen.findByText(/workspace do laboratório/i)).toBeInTheDocument();
+    expect(screen.getByTestId('lab-hero-visual')).toBeInTheDocument();
+    const statusLabel = screen.getByText(/status licenciamento/i);
+    const statusValue = statusLabel.parentElement?.querySelector('strong');
+
+    expect(screen.queryByText('E-mail')).not.toBeInTheDocument();
+    expect(screen.queryByText('lab@nexor.dev')).not.toBeInTheDocument();
+    if (!statusValue) {
+      throw new Error('Expected laboratory status value in workspace hero.');
+    }
+    expect(statusValue).toHaveTextContent(/sem processo de licenciamento/i);
+    expect(statusLabel.parentElement).toContainElement(statusValue);
+  });
+
+  it('treats legacy approved laboratory workflows as licensed in the workspace', () => {
+    expect(isLegacyLicensedLabStatus('lab', 'approved_pending_payment')).toBe(true);
+    expect(getDentistLicensingStatusLabel('lab', 'approved_pending_payment')).toBe('Licenciado');
+    expect(getDentistLicensingStatusTone('lab', 'approved_pending_payment')).toBe('success');
+  });
+  it('treats legacy approved dentist workflows as licensed in the workspace', () => {
+    expect(isLegacyLicensedLabStatus('dentist', 'approved_pending_payment')).toBe(true);
+    expect(getDentistLicensingStatusLabel('dentist', 'approved_pending_payment')).toBe('Licenciado');
+    expect(getDentistLicensingStatusTone('dentist', 'approved_pending_payment')).toBe('success');
+  });
   it('keeps the dentist home in skeleton state until licensing and orders finish loading', async () => {
     const licensingRequest = deferred<ReturnType<typeof licensedDentistWorkflow>>();
     mockApiGet
@@ -590,7 +1303,7 @@ describe('BiteplanerHub', () => {
     expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'neutral');
   });
 
-  it('shows only the payment step after Nexor approves the dentist', async () => {
+  it('shows the licensed state immediately after Nexor approves the dentist', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         productKey: 'biteplaner',
@@ -637,24 +1350,13 @@ describe('BiteplanerHub', () => {
             read: false,
           },
         ],
-      })
-      .mockResolvedValueOnce({
-        workflow: {
-          id: 'workflow-1',
-          status: 'payment_confirmed_pending_intention_contract',
-          paymentStatus: 'confirmed',
-          testAttempts: 0,
-          testPassed: false,
-          certificateIssuedAt: null,
-          metadata: { courseProgress: {} },
-        },
-        course: [],
-        notifications: [],
       });
-    mockApiPost.mockResolvedValueOnce({
-      workflow: {
-        id: 'workflow-1',
-        status: 'payment_confirmed_pending_intention_contract',
+    mockApiPatch.mockResolvedValueOnce({
+      notification: {
+        id: 'notification-1',
+        title: 'Cadastro aprovado',
+        message: 'Seu cadastro foi aprovado pela Nexor.',
+        read: true,
       },
     });
 
@@ -665,26 +1367,60 @@ describe('BiteplanerHub', () => {
 
     expect(await screen.findByRole('dialog', { name: /cadastro aprovado/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /entendi/i }));
+    await waitFor(() =>
+      expect(mockApiPatch).toHaveBeenCalledWith('/v1/account/notifications/notification-1/read', {}, 'tok')
+    );
 
     expect(screen.getByText(/licenciamento biteplaner/i)).toBeInTheDocument();
-    expect(screen.getByText(/status do dentista/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/aguardando pagamento/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^pagamento$/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/status licenciamento/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/licenciado/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/licenciamento concluído/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^pagamento$/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/fundamentos clínicos do biteplaner/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/curso de licenciamento/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /cliente/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: /dentista/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('dentist-queue-table')).not.toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: /confirmar pagamento/i }));
+  it('does not reopen the licensing approval modal after the approval notification was read', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({ orders: [] })
+      .mockResolvedValueOnce({
+        workflow: {
+          id: 'workflow-1',
+          status: 'licensed',
+          paymentStatus: 'not_started',
+          testAttempts: 0,
+          testPassed: false,
+          certificateIssuedAt: null,
+          metadata: { courseProgress: {} },
+        },
+        course: [],
+        notifications: [
+          {
+            id: 'notification-1',
+            title: 'Cadastro aprovado',
+            message: 'Seu cadastro foi aprovado pela Nexor.',
+            read: true,
+          },
+        ],
+      });
 
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/account/biteplaner/dentist-licensing/payment-confirmed',
-        {},
-        'tok'
-      )
-    );
+    renderPage('/painel/biteplaner/licenciamento?mode=dentist', {
+      demoPersona: 'dentist',
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByText(/licenciamento biteplaner/i)).toBeInTheDocument());
+    expect(screen.queryByRole('dialog', { name: /cadastro aprovado/i })).not.toBeInTheDocument();
+    expect(mockApiPatch).not.toHaveBeenCalled();
   });
 
   it('shows the licensing course content after payment is confirmed', async () => {
@@ -732,8 +1468,8 @@ describe('BiteplanerHub', () => {
     expect(screen.getAllByText(/fundamentos clínicos do biteplaner/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/neste modulo, o dentista revisa os fundamentos clínicos/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /baixar pdf/i })).toHaveAttribute('download', 'fundamentos-biteplaner.pdf');
-    expect(screen.getByRole('button', { name: /vídeo 2 fluxo operacional e documentação/i })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /vídeo 2 fluxo operacional e documentação/i }));
+    expect(screen.getByRole('button', { name: /vídeo 2\s*fluxo operacional e documentação/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /vídeo 2\s*fluxo operacional e documentação/i }));
     expect(screen.getAllByText(/fluxo operacional e documentação/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/checklist operacional/i)).toBeInTheDocument();
     expect(screen.getByText(/este modulo organiza o fluxo operacional/i)).toBeInTheDocument();
@@ -763,7 +1499,7 @@ describe('BiteplanerHub', () => {
     });
 
     expect(await screen.findByText(/licenciamento concluído/i)).toBeInTheDocument();
-    expect(screen.getByText(/parabens! seu licenciamento biteplaner foi concluído com sucesso/i)).toBeInTheDocument();
+    expect(screen.getByText(/parabéns! seu licenciamento biteplaner foi concluído com sucesso/i)).toBeInTheDocument();
     expect(screen.getByTestId('dentist-status-dot')).toHaveAttribute('data-tone', 'success');
     expect(screen.getAllByText(/licenciado/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /baixar certificado/i })).toHaveAttribute(
@@ -786,7 +1522,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-204',
             status: 'awaiting_dentist_forms',
-            statusLabel: 'Aguardando preenchimento dentista',
+            statusLabel: 'Aguardando envio ao laboratório',
             stage: 'awaiting_dentist_forms',
             created_at: '2026-05-01T13:00:00.000Z',
             customer: { full_name: 'Ana Demo', email: 'ana@nexor.dev', phone: null },
@@ -832,7 +1568,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-005',
             status: 'awaiting_lab_start',
-            statusLabel: 'Aguardando início da produção',
+            statusLabel: 'Aguardando aceite do laborat\u00f3rio',
             stage: 'awaiting_lab_start',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
@@ -846,6 +1582,7 @@ describe('BiteplanerHub', () => {
               prescriptionFileName: 'prescricao-marina-demo.pdf',
               lgpdConfirmed: true,
               selectedLabId: 'lab-demo-001',
+              purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 3 },
             },
           },
         ],
@@ -857,7 +1594,7 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-005',
             status: 'lab_processing',
-            statusLabel: 'Em processo - Laboratório',
+            statusLabel: 'Em produ\u00e7\u00e3o',
             stage: 'lab_production',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
@@ -871,6 +1608,7 @@ describe('BiteplanerHub', () => {
               prescriptionFileName: 'prescricao-marina-demo.pdf',
               lgpdConfirmed: true,
               selectedLabId: 'lab-demo-001',
+              purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 3 },
             },
           },
         ],
@@ -906,16 +1644,26 @@ describe('BiteplanerHub', () => {
     expect(within(labQueueTable).getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
     expect(within(labQueueTable).getByRole('columnheader', { name: /dentista/i })).toBeInTheDocument();
     expect(within(labQueueTable).getByText(/dra\. ana demo/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/aguardando início da produção/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/aguardando aceite do laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /verificar documentação da ordem bp-demo-005/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /verificar documentação da ordem bp-demo-005/i }));
     expect(await screen.findByRole('dialog', { name: /formulário de solicitação de produção/i })).toBeInTheDocument();
-    expect(screen.getByText(/paciente apta para biteplaner esportivo/i)).toBeInTheDocument();
     expect(screen.getByText(/protetor superior personalizado/i)).toBeInTheDocument();
     const documentationDialog = screen.getByRole('dialog', { name: /formulário de solicitação de produção/i });
     const dialogText = documentationDialog.textContent ?? '';
-    expect(dialogText.indexOf('Escaneamento 3D')).toBeGreaterThan(dialogText.indexOf('Laboratório selecionado'));
+    expect(within(documentationDialog).getByText(/dra\. ana demo/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/pedido biteplaner/i)).toBeInTheDocument();
+    const purchaseSection = within(documentationDialog).getByTestId('lab-documentation-purchase-section');
+    expect(purchaseSection).toHaveTextContent(/pedido biteplaner/i);
+    expect(purchaseSection).toHaveTextContent(/modelo: linha impacto/i);
+    expect(within(documentationDialog).getByText(/modelo: linha impacto/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/cor: preto/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/quantidade: 3/i)).toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/resumo da anamnese/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/paciente apta para biteplaner esportivo/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/lgpd e retenção/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/laboratório selecionado/i)).not.toBeInTheDocument();
     expect(dialogText.indexOf('Prescrição')).toBeGreaterThan(dialogText.indexOf('Escaneamento 3D'));
     const scanDownload = within(documentationDialog).getByRole('link', {
       name: /baixar escaneamento 3d marina-demo-arcada-superior\.stl/i
@@ -927,29 +1675,230 @@ describe('BiteplanerHub', () => {
     expect(scanDownload).toHaveAttribute('href', expect.stringContaining('marina-demo-arcada-superior.stl'));
     expect(prescriptionDownload).toHaveAttribute('download', 'prescricao-marina-demo.pdf');
     expect(prescriptionDownload).toHaveAttribute('href', expect.stringContaining('prescricao-marina-demo.pdf'));
-    fireEvent.click(screen.getByRole('button', { name: /fechar documentação/i }));
+    expect(within(documentationDialog).getAllByText(/baixar arquivo/i)).toHaveLength(2);
+    expect(within(documentationDialog).getAllByText(/tamanho não informado/i)).toHaveLength(2);
+    expect(screen.queryByTestId('lab-order-action-start')).not.toBeInTheDocument();
+    expect(within(documentationDialog).getByTestId('lab-documentation-action-start')).toBeInTheDocument();
+    expect(within(documentationDialog).getByTestId('lab-documentation-action-return')).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.getByTestId('lab-order-action-start')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('lab-order-action-start'));
+    fireEvent.click(within(documentationDialog).getByTestId('lab-documentation-action-start'));
     expect(await screen.findByRole('dialog', { name: /confirmar ação da ordem/i })).toBeInTheDocument();
-    expect(screen.getByText(/desejá iniciar formalmente a produção da ordem bp-demo-005/i)).toBeInTheDocument();
+    expect(screen.getByText(/deseja aprovar a ordem bp-demo-005 e iniciar a produ/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith('/v1/orders/BP-DEMO-005/lab-production-started', {}, 'tok')
     );
-    expect(screen.getAllByText(/em processo - laboratório/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/em produ/i).length).toBeGreaterThan(0);
 
     await waitFor(() => expect(screen.getByTestId('lab-order-action-complete')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('lab-order-action-complete'));
     expect(await screen.findByRole('dialog', { name: /confirmar ação da ordem/i })).toBeInTheDocument();
-    expect(screen.getByText(/desejá concluir a etapa produtiva da ordem bp-demo-005/i)).toBeInTheDocument();
+    expect(screen.getByText(/deseja registrar que a produ/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /confirmar/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith('/v1/orders/BP-DEMO-005/lab-production-completed', {}, 'tok')
     );
     expect(screen.getAllByText(/aguardando recebimento pelo dentista/i).length).toBeGreaterThan(0);
+  });
+
+  it('loads production request form details in the laboratory documentation modal', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/biteplaner/access') {
+        return Promise.resolve({
+          productKey: 'biteplaner',
+          defaultMode: 'lab',
+          enrollment: null,
+          modes: [{ key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: true, reason: null }],
+        });
+      }
+
+      if (path === '/v1/orders?as=lab') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-088',
+              status: 'awaiting_lab_start',
+              statusLabel: 'Aguardando aceite do laborat\u00f3rio',
+              stage: 'awaiting_lab_start',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'Eduardo Paciente', email: 'paciente@nexor.dev', phone: null },
+              dentist: { full_name: 'Dr. Eduardo Fujiwara', email: 'eduardoshoitifujiwara@gmail.com' },
+              productionRequestDraft: null,
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-088/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-088/timeline') {
+        return Promise.resolve({ events: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-088/forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'form-production-1',
+              order_id: 'BP-DEMO-088',
+              type: 'production_request',
+              version: 1,
+              created_at: '2026-06-03T13:00:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-088/forms/form-production-1') {
+        return Promise.resolve({
+          id: 'form-production-1',
+          order_id: 'BP-DEMO-088',
+          type: 'production_request',
+          version: 1,
+          created_at: '2026-06-03T13:00:00.000Z',
+          payload: {
+            anamnesisSummary: 'Resumo clínico validado para produção.',
+            anamnesisDownloaded: true,
+            productionRequestSummary: 'Solicitação de produção enviada ao laboratório.',
+            labNotes: 'Usar acabamento esportivo e conferir adaptação posterior.',
+            scan3dFileName: '',
+            scan3dFileRef: {
+              id: 'ext_scan_123',
+              fileName: 'scan-real.stl',
+              provider: 'simulated-external-storage',
+              mimeType: 'model/stl',
+              sizeBytes: 123456,
+              uploadedAt: '2026-06-03T12:55:00.000Z',
+            },
+            prescriptionFileName: '',
+            prescriptionFileRef: {
+              id: 'ext_rx_456',
+              fileName: 'prescricao-real.pdf',
+              provider: 'simulated-external-storage',
+              mimeType: 'application/pdf',
+              sizeBytes: 654321,
+              uploadedAt: '2026-06-03T12:56:00.000Z',
+            },
+            lgpdConfirmed: true,
+            selectedLabId: 'profile-lab-edu',
+            purchaseConfiguration: { productKey: 'biteplaner', model: 'esportes', color: 'branco', quantity: 2 },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unhandled GET ${path}`));
+    });
+
+    renderPage('/painel/biteplaner?mode=lab', {
+      demoPersona: 'lab',
+      backendUser: { email: 'eduardoshoitifujiwara123@gmail.com', roles: ['lab'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('lab-queue-table')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: /verificar documentação da ordem bp-demo-088/i }));
+
+    const documentationDialog = await screen.findByRole('dialog', { name: /formulário de solicitação de produção/i });
+    expect(within(documentationDialog).getByText(/dr\. eduardo fujiwara/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/eduardoshoitifujiwara@gmail\.com/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/modelo: linha esportes/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/cor: branco/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/quantidade: 2/i)).toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/resumo clínico validado para produção/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/resumo da anamnese/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/lgpd e retenção/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/laboratório selecionado/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/solicitação de produção enviada ao laboratório/i)).toBeInTheDocument();
+    const scanDownload = within(documentationDialog).getByRole('link', { name: /baixar escaneamento 3d scan-real\.stl/i });
+    const prescriptionDownload = within(documentationDialog).getByRole('link', { name: /baixar prescrição prescricao-real\.pdf/i });
+    expect(scanDownload).toHaveTextContent(/baixar arquivo/i);
+    expect(prescriptionDownload).toHaveTextContent(/baixar arquivo/i);
+    expect(within(documentationDialog).getByText(/tamanho: 120,6 kb/i)).toBeInTheDocument();
+    expect(within(documentationDialog).getByText(/tamanho: 639 kb/i)).toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/scan-real\.stl/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/prescricao-real\.pdf/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/id externo/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/serviço/i)).not.toBeInTheDocument();
+    expect(within(documentationDialog).queryByText(/^tipo:/i)).not.toBeInTheDocument();
+  });
+
+  it('shows reassigned lab orders as read-only history for the previous laboratory', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return Promise.resolve({
+          productKey: 'biteplaner',
+          defaultMode: 'lab',
+          enrollment: null,
+          modes: [{ key: 'lab', label: 'Laboratório', description: '', allowed: true, highlighted: true, reason: null }],
+        });
+      }
+
+      if (path === '/v1/orders?as=lab') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-REASSIGNED',
+              status: 'awaiting_lab_start',
+              statusLabel: 'Aguardando aceite do laboratório',
+              stage: 'awaiting_lab_start',
+              created_at: '2026-06-04T13:00:00.000Z',
+              lab_profile_id: 'lab-demo-002',
+              customer: { full_name: 'Cliente Reencaminhado', email: 'cliente@nexor.dev', phone: null },
+              dentist: { full_name: 'Dra. Ana Demo', email: 'ana@nexor.dev' },
+              productionRequestDraft: {
+                anamnesisSummary: 'Resumo preservado.',
+                anamnesisDownloaded: true,
+                productionRequestSummary: 'Solicitação reenviada para outro laboratório.',
+                labNotes: 'Histórico do laboratório anterior.',
+                scan3dFileName: 'scan.stl',
+                prescriptionFileName: 'prescricao.pdf',
+                lgpdConfirmed: true,
+                selectedLabId: 'lab-demo-002',
+              },
+              labAssignmentView: {
+                id: 'assignment-1',
+                orderId: 'BP-DEMO-REASSIGNED',
+                labProfileId: 'lab-demo-001',
+                sequence: 1,
+                status: 'returned_for_adjustment',
+                productionRequestVersionId: null,
+                returnReason: 'Ajuste solicitado pelo laboratório anterior.',
+                assignedAt: '2026-06-04T12:00:00.000Z',
+                returnedAt: '2026-06-04T12:30:00.000Z',
+                replacedAt: null,
+                completedAt: null,
+                isCurrent: false,
+              },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-REASSIGNED/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-REASSIGNED/timeline') {
+        return Promise.resolve({ events: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage('/painel/biteplaner?mode=lab', {
+      demoPersona: 'lab',
+      backendUser: { email: 'lab@nexor.dev', roles: ['lab'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('lab-queue-table')).toBeInTheDocument());
+    expect(screen.getByText(/mudança de lab/i)).toBeInTheDocument();
+    expect(screen.getByText(/encaminhado para outro laboratório/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('lab-order-action-documentation')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lab-order-action-start')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lab-order-action-return')).not.toBeInTheDocument();
   });
 
   it('lets the dentist confirm product receipt before adaptation', async () => {
@@ -1000,13 +1949,191 @@ describe('BiteplanerHub', () => {
     fireEvent.click(screen.getByTestId('dentist-order-action-confirm-product-received'));
     const receiptDialog = await screen.findByRole('dialog', { name: /confirmar ação da ordem/i });
     expect(receiptDialog).toBeInTheDocument();
-    expect(screen.getByText(/deseja confirmar que o produto da ordem bp-demo-017 chegou ao dentista/i)).toBeInTheDocument();
+    expect(screen.getByText(/deseja confirmar que o pedido da ordem bp-demo-017 foi recebido pelo dentista/i)).toBeInTheDocument();
     fireEvent.click(within(receiptDialog).getByRole('button', { name: /^confirmar$/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith('/v1/orders/BP-DEMO-017/product-received', {}, 'tok')
     );
     expect(screen.getAllByText(/aguardando adaptação/i).length).toBeGreaterThan(0);
+  });
+
+  it('lets the dentist schedule the adaptation return with customer contact details', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-018',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: {
+              full_name: 'Marina Demo',
+              email: 'marina@nexor.dev',
+              phone: null,
+            },
+            user_profile: {
+              phone: '11988887777',
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ appointments: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce(licensedDentistWorkflow())
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-018',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: {
+              full_name: 'Marina Demo',
+              email: 'marina@nexor.dev',
+              phone: null,
+            },
+            user_profile: {
+              phone: '11988887777',
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-adaptation-1',
+            order_id: 'BP-DEMO-018',
+            type: 'adaptation',
+            status: 'scheduled',
+            scheduled_at: '2026-06-10T17:30:00.000Z',
+            user_confirmed_at: null,
+            dentist_confirmed_at: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ events: [] });
+    mockApiPost.mockResolvedValueOnce({
+      id: 'appointment-adaptation-1',
+      order_id: 'BP-DEMO-018',
+      type: 'adaptation',
+      status: 'scheduled',
+      scheduled_at: '2026-06-10T17:30:00.000Z',
+      user_confirmed_at: null,
+      dentist_confirmed_at: null,
+    });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista.licenciada@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-order-action-schedule-adaptation')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('dentist-order-action-schedule-adaptation'));
+
+    const dialog = await screen.findByRole('dialog', { name: /agendar retorno/i });
+    expect(within(dialog).getByText(/marina demo/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/\(11\) 98888-7777/i)).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /abrir whatsapp/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('web.whatsapp.com/send')
+    );
+    expect(within(dialog).queryByText(/^abrir whatsapp$/i)).not.toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText(/data agendada/i), {
+      target: { value: '2026-06-10T14:30' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^salvar$/i }));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-018/appointments',
+        expect.objectContaining({ type: 'adaptation', scheduledAt: expect.stringContaining('2026-06-10T') }),
+        'tok'
+      )
+    );
+    expect(mockApiPatch).not.toHaveBeenCalled();
+  });
+
+  it('loads the adaptation customer phone from the pre-consultation form when the order profile has no phone', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-019',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: {
+              full_name: 'Cliente Intake',
+              email: 'cliente@nexor.dev',
+              phone: null,
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ appointments: [] })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce(licensedDentistWorkflow())
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'workflow-pre-consultation-1',
+            orderId: 'BP-DEMO-019',
+            templateKey: 'customer_pre_consultation_intake',
+            stepKey: 'initial_consultation_preparation',
+            status: 'submitted',
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-01T10:00:00.000Z',
+            submittedAt: '2026-05-01T10:30:00.000Z',
+            payload: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        id: 'workflow-pre-consultation-1',
+        orderId: 'BP-DEMO-019',
+        templateKey: 'customer_pre_consultation_intake',
+        stepKey: 'initial_consultation_preparation',
+        status: 'submitted',
+        canViewPayload: true,
+        summary: null,
+        releasedAt: '2026-05-01T10:00:00.000Z',
+        submittedAt: '2026-05-01T10:30:00.000Z',
+        payload: { customer: { phone: '(11) 97777-6666' } },
+      });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista.licenciada@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-order-action-schedule-adaptation')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('dentist-order-action-schedule-adaptation'));
+
+    const dialog = await screen.findByRole('dialog', { name: /agendar retorno/i });
+    await waitFor(() => expect(within(dialog).getByText(/\(11\) 97777-6666/i)).toBeInTheDocument());
+    expect(mockApiGet).toHaveBeenCalledWith('/v1/orders/BP-DEMO-019/workflow-forms', 'tok');
+    expect(mockApiGet).toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-019/workflow-forms/workflow-pre-consultation-1',
+      'tok'
+    );
   });
 
   it('requires a return reason before sending a laboratory order back to the dentist', async () => {
@@ -1022,10 +2149,21 @@ describe('BiteplanerHub', () => {
           {
             id: 'BP-DEMO-006',
             status: 'awaiting_lab_start',
-            statusLabel: 'Aguardando início da produção',
+            statusLabel: 'Aguardando aceite do laborat\u00f3rio',
             stage: 'awaiting_lab_start',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Carlos Demo', email: 'carlos@nexor.dev', phone: null },
+            productionRequestDraft: {
+              anamnesisSummary: 'Paciente apto para Biteplaner.',
+              anamnesisDownloaded: true,
+              productionRequestSummary: 'Solicitação pronta para revisão do laboratório.',
+              labNotes: 'Conferir escaneamento antes de produzir.',
+              scan3dFileName: 'scan-carlos.stl',
+              prescriptionFileName: 'prescricao-carlos.pdf',
+              lgpdConfirmed: true,
+              selectedLabId: 'lab-demo-001',
+              purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 1 },
+            },
           },
         ],
       })
@@ -1035,8 +2173,8 @@ describe('BiteplanerHub', () => {
         orders: [
           {
             id: 'BP-DEMO-006',
-            status: 'awaiting_dentist_forms',
-            statusLabel: 'Ajuste solicitado pelo laboratório',
+            status: 'dentist_adjustment_required',
+            statusLabel: 'Ajuste de produção',
             stage: 'dentist_adjustment_required',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Carlos Demo', email: 'carlos@nexor.dev', phone: null },
@@ -1052,15 +2190,22 @@ describe('BiteplanerHub', () => {
       backendUser: { email: 'lab@nexor.dev', roles: ['lab'] },
     });
 
-    await waitFor(() => expect(screen.getByTestId('lab-order-action-return')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('lab-order-action-return'));
+    await waitFor(() => expect(screen.getByTestId('lab-order-action-documentation')).toBeInTheDocument());
+    expect(screen.queryByTestId('lab-order-action-return')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('lab-order-action-documentation'));
+
+    const documentationDialog = await screen.findByRole('dialog', { name: /formulário de solicitação de produção/i });
+    fireEvent.click(within(documentationDialog).getByTestId('lab-documentation-action-return'));
 
     const dialog = await screen.findByRole('dialog', { name: /confirmar ação da ordem/i });
-    expect(screen.getByLabelText(/descricao do motivo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/descrição do motivo/i)).toBeInTheDocument();
+    const cancelButton = within(dialog).getByRole('button', { name: /cancelar/i });
     const confirmButton = within(dialog).getByRole('button', { name: /confirmar/i });
+    expect(cancelButton.querySelector('svg')).toBeNull();
+    expect(confirmButton.querySelector('svg')).toBeNull();
     expect(confirmButton).toBeDisabled();
 
-    fireEvent.change(screen.getByLabelText(/descricao do motivo/i), {
+    fireEvent.change(screen.getByLabelText(/descrição do motivo/i), {
       target: { value: 'Escaneamento 3D incompleto e precisa de novo envio.' },
     });
 
@@ -1074,5 +2219,113 @@ describe('BiteplanerHub', () => {
         'tok'
       )
     );
+    await waitFor(() => expect(screen.getAllByText(/ajuste de produção/i).length).toBeGreaterThan(0));
+    expect(screen.queryByTestId('lab-order-action-return')).not.toBeInTheDocument();
+  });
+
+  it('shows lab adjustment details to the dentist with contact and production request shortcut', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return Promise.resolve({
+          productKey: 'biteplaner',
+          defaultMode: 'dentist',
+          enrollment: null,
+          modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+        });
+      }
+
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-090',
+              status: 'dentist_adjustment_required',
+              statusLabel: 'Consulta em andamento',
+              stage: 'dentist_adjustment_required',
+              created_at: '2026-06-03T13:00:00.000Z',
+              lab_profile_id: 'profile-lab-edu',
+              customer: { full_name: 'Eduardo Paciente', email: 'paciente@nexor.dev', phone: null },
+              productionRequestDraft: {
+                anamnesisSummary: 'Resumo já preenchido.',
+                anamnesisDownloaded: true,
+                productionRequestSummary: 'Solicitação de produção com ajuste pendente.',
+                labNotes: 'Conferir acabamento.',
+                scan3dFileName: 'scan.stl',
+                prescriptionFileName: 'prescricao.pdf',
+                lgpdConfirmed: true,
+                selectedLabId: 'profile-lab-edu',
+              },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-090/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-090/timeline') {
+        return Promise.resolve({
+          events: [
+            {
+              id: 'event-adjustment-1',
+              orderId: 'BP-DEMO-090',
+              fromStatus: 'lab_processing',
+              toStatus: 'dentist_adjustment_required',
+              reason: 'Escaneamento 3D incompleto e precisa de novo envio.',
+              createdAt: '2026-06-03T13:10:00.000Z',
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/account/biteplaner/dentist-licensing') {
+        return Promise.resolve(licensedDentistWorkflow());
+      }
+
+      if (path === '/v1/account/biteplaner/licensed-labs') {
+        return Promise.resolve({
+          labs: [
+            {
+              id: 'lab-role-edu',
+              profileId: 'profile-lab-edu',
+              labName: 'Laboratório do Edu',
+              cnpj: '27.122.387/0001-05',
+              professionalSummary: 'Resumo operacional',
+              address: 'Rua Conselheiro Brotero',
+              cep: '01232-011',
+              phone: '(11) 1111-1111',
+              email: 'eduardoshoitifujiwara123@gmail.com',
+              serviceHours: 'Segunda a Sexta - 06h a 19h',
+              city: 'São Paulo',
+              state: 'SP',
+            },
+          ],
+        });
+      }
+
+      return Promise.reject(new Error(`Unhandled GET ${path}`));
+    });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentistLicensed',
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-order-action-view-lab-adjustment')).toBeInTheDocument());
+    expect(screen.getAllByText(/ajuste de produção/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/consulta em andamento/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('dentist-order-action-view-lab-adjustment'));
+
+    const dialog = await screen.findByRole('dialog', { name: /ajuste de produção/i });
+    const reasonCard = within(dialog).getByTestId('dentist-adjustment-reason-card');
+    expect(reasonCard).toHaveTextContent(/mensagem do laboratório/i);
+    expect(reasonCard).toHaveTextContent(/escaneamento 3d incompleto/i);
+    expect(within(dialog).getByText(/escaneamento 3d incompleto/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/solicitação de produção com ajuste pendente/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/laboratório do edu/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/\(11\) 1111-1111/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/eduardoshoitifujiwara123@gmail\.com/i)).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /abrir solicitação de produção/i })).toBeInTheDocument();
   });
 });

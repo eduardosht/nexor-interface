@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ACTIVE_DEMO_PERSONA_STORAGE_KEY,
   DemoStateError,
+  approveLabLicenseRequest,
   applyOrderAction,
+  createProductRole,
   getAccessOptions,
   getAppointments,
   getAuthPayload,
+  getClinicalFollowUps,
   getDemoStateSnapshot,
   getPartnerInviteLinks,
   getTimelineEvents,
@@ -15,8 +18,10 @@ import {
   listOrders,
   markAccountNotificationRead,
   parseClinicalDecisionPayload,
+  removePartnerInviteLink,
   resetDemoState,
-  resolveActiveDemoPersona
+  resolveActiveDemoPersona,
+  scheduleClinicalFollowUp
 } from './demoState';
 
 describe('shared Biteplaner demo state', () => {
@@ -51,6 +56,32 @@ describe('shared Biteplaner demo state', () => {
     expect(result.orders.length).toBeGreaterThan(0);
   });
 
+  it('applies bounded order list filters in the demo API state', () => {
+    const result = listOrders(
+      { requestHeaders: { 'x-demo-persona': 'admin' } },
+      'admin',
+      { status: 'awaiting_payment', limit: 1 }
+    );
+
+    expect(result.orders).toHaveLength(1);
+    expect(result.orders[0].status).toBe('awaiting_payment');
+  });
+
+  it('licenses the laboratory immediately after admin approval without awaiting payment', () => {
+    const context = { requestHeaders: { authorization: 'Bearer demo-athleteRegistered-token' } };
+    const productRole = createProductRole(context, 'lab', {
+      labName: 'Lab Sem Pagamento',
+      cnpj: '12.345.678/0001-90'
+    });
+
+    const approved = approveLabLicenseRequest(productRole.id);
+    const snapshot = getDemoStateSnapshot();
+    const workflow = snapshot.dentistLicensingWorkflows.find((item) => item.productRoleId === productRole.id);
+
+    expect(approved.request.workflowStatus).toBe('licensed');
+    expect(workflow?.status).toBe('licensed');
+  });
+
   it('returns a valid auth payload for the active persona and fixes the partner role', () => {
     const partnerAuth = getAuthPayload({ requestHeaders: { 'x-demo-persona': 'partner' } });
 
@@ -58,6 +89,37 @@ describe('shared Biteplaner demo state', () => {
     expect(partnerAuth.user.roles).toContain('partner');
     expect(partnerAuth.user.roles).not.toContain('parner');
     expect(partnerAuth.user.partnerId).toBeTruthy();
+  });
+
+  it('keeps the registered-only customer persona without a Biteplaner order until acquisition', () => {
+    const context = { requestHeaders: { 'x-demo-persona': 'athleteRegistered' } };
+
+    const initialAuth = getAuthPayload(context);
+    expect(initialAuth.user.email).toBe('cliente.cadastrado@nexor.dev');
+    expect(initialAuth.user.roles).toEqual([]);
+    expect(initialAuth.user.productRoles).toEqual([]);
+    expect(getAccessOptions(context).enrollment).toBeNull();
+    expect(listOrders(context, 'user').orders).toEqual([]);
+
+    const productRole = createProductRole(context, 'customer', {});
+    expect(productRole.status).toBe('active');
+
+    const afterAuth = getAuthPayload(context);
+    const orders = listOrders(context, 'user').orders;
+
+    expect(afterAuth.user.roles).toContain('customer');
+    expect(afterAuth.user.productRoles).toEqual([expect.objectContaining({ role: 'customer', status: 'active' })]);
+    expect(orders).toEqual([
+      expect.objectContaining({
+        status: 'registration_started',
+        stage: 'new_user_onboarding',
+        customer: expect.objectContaining({ email: 'cliente.cadastrado@nexor.dev' })
+      })
+    ]);
+    expect(getWorkflowForms(orders[0].id, context).forms.map((form) => form.templateKey)).toEqual([
+      'customer_new_user_onboarding',
+      'customer_pre_consultation_intake'
+    ]);
   });
 
   it('lists mock notifications and persists read state per active user', () => {
@@ -160,10 +222,33 @@ describe('shared Biteplaner demo state', () => {
     ]));
     expect(
       labOrders.orders.filter((order) => order.productionRequestDraft !== null).map((order) => order.id)
-    ).toEqual(['BP-DEMO-007', 'BP-DEMO-016']);
+    ).toEqual(['BP-DEMO-016', 'BP-DEMO-007']);
     expect(labOrders.orders.find((order) => order.id === 'BP-DEMO-007')?.dentist?.full_name).toBe('Dr. Rafael Demo');
     expect(labOrders.orders.every((order) => order.preLabChecklistDraft === null)).toBe(true);
     expect(adminOrders.orders.length).toBe(getDemoStateSnapshot().orders.length);
+  });
+
+  it('exposes one customer order per stage-specific demo persona', () => {
+    const scenarios = [
+      ['athletePrerequisite', 'BP-DEMO-001'],
+      ['athleteScheduling', 'BP-DEMO-002'],
+      ['athletePreConsultation', 'BP-DEMO-003'],
+      ['athleteClinicalDecision', 'BP-DEMO-014'],
+      ['athleteDentistForms', 'BP-DEMO-004'],
+      ['athletePayment', 'BP-DEMO-005'],
+      ['athleteTreatmentRequired', 'BP-DEMO-006'],
+      ['athleteLabProduction', 'BP-DEMO-007'],
+      ['athleteAdaptation', 'BP-DEMO-008'],
+      ['athleteFollowUp', 'BP-DEMO-009'],
+      ['athleteIneligible', 'BP-DEMO-010'],
+      ['athleteCancelled', 'BP-DEMO-011']
+    ] as const;
+
+    scenarios.forEach(([persona, expectedOrderId]) => {
+      const response = listOrders({ requestHeaders: { 'x-demo-persona': persona } }, 'user');
+
+      expect(response.orders.map((order) => order.id)).toEqual([expectedOrderId]);
+    });
   });
 
   it('exposes operational client order scenarios to the licensed dentist demo persona', () => {
@@ -187,6 +272,12 @@ describe('shared Biteplaner demo state', () => {
       'awaiting_dentist_forms',
       'awaiting_lab_start'
     ]));
+    expect(licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-013')?.statusLabel).toBe(
+      'Aguardando confirmação de consulta'
+    );
+    expect(licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-014')?.statusLabel).toBe(
+      'Aguardando decisão clínica'
+    );
     expect(
       licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-016')?.productionRequestDraft
     ).toEqual(expect.objectContaining({
@@ -203,6 +294,7 @@ describe('shared Biteplaner demo state', () => {
       throw new Error('Licensed dentist acceptance did not return an order summary.');
     }
     expect(acceptedOrder.status).toBe('in_progress');
+    expect(acceptedOrder.statusLabel).toBe('Aguardando confirmação de consulta');
     expect(getTimelineEvents('BP-DEMO-012', {
       requestHeaders: { 'x-demo-persona': 'dentistLicensed' }
     }).events.at(-1)?.toStatus).toBe('in_progress');
@@ -236,7 +328,73 @@ describe('shared Biteplaner demo state', () => {
         (order) => order.id === 'BP-DEMO-003'
       )?.status
     ).toBe('appointment_confirmed');
+    expect(
+      listOrders({ requestHeaders: { 'x-demo-persona': 'dentist' } }, 'dentist').orders.find(
+        (order) => order.id === 'BP-DEMO-003'
+      )?.statusLabel
+    ).toBe('Aguardando decisão clínica');
     expect(events.events.at(-1)?.toStatus).toBe('appointment_confirmed');
+  });
+
+  it('simulates post-completed clinical follow-up scheduling and match without reopening the order', () => {
+    const initialCards = getClinicalFollowUps('BP-DEMO-009', {
+      requestHeaders: { 'x-demo-persona': 'athleteFollowUp' }
+    }).followUps;
+
+    expect(initialCards).toEqual([
+      expect.objectContaining({
+        kind: 'return_15_days',
+        title: 'Check-up de 15 dias',
+        status: 'overdue'
+      }),
+      expect.objectContaining({
+        kind: 'return_30_days',
+        title: 'Check-up de 30 dias',
+        status: 'locked'
+      })
+    ]);
+
+    const scheduleResponse = scheduleClinicalFollowUp(
+      'BP-DEMO-009',
+      'return_15_days',
+      { scheduledAt: '2026-06-20T14:00:00.000Z' },
+      { requestHeaders: { 'x-demo-persona': 'athleteFollowUp' } }
+    );
+    expect(scheduleResponse.order.status).toBe('completed');
+
+    const scheduledAppointment = getAppointments('BP-DEMO-009', {
+      requestHeaders: { 'x-demo-persona': 'athleteFollowUp' }
+    }).appointments.find((appointment) => appointment.purpose === 'return_15_days');
+    expect(scheduledAppointment).toEqual(expect.objectContaining({
+      type: 'follow_up',
+      status: 'scheduled',
+      metadata: expect.objectContaining({ followUpKind: 'return_15_days' })
+    }));
+
+    if (!scheduledAppointment) {
+      throw new Error('Expected return_15_days appointment to be scheduled.');
+    }
+
+    applyOrderAction('BP-DEMO-009', {
+      type: 'user-confirmation',
+      appointmentId: scheduledAppointment.id
+    }, { requestHeaders: { 'x-demo-persona': 'athleteFollowUp' } });
+    applyOrderAction('BP-DEMO-009', {
+      type: 'dentist-confirmation',
+      appointmentId: scheduledAppointment.id
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    const completedOrder = listOrders({ requestHeaders: { 'x-demo-persona': 'athleteFollowUp' } }, 'user')
+      .orders.find((order) => order.id === 'BP-DEMO-009');
+    expect(completedOrder?.status).toBe('completed');
+
+    const unlockedCards = getClinicalFollowUps('BP-DEMO-009', {
+      requestHeaders: { 'x-demo-persona': 'athleteFollowUp' }
+    }).followUps;
+    expect(unlockedCards).toEqual([
+      expect.objectContaining({ kind: 'return_15_days', status: 'completed' }),
+      expect.objectContaining({ kind: 'return_30_days', status: 'overdue' })
+    ]);
   });
 
   it('stores workflow form submissions and revisions in the shared state', () => {
@@ -278,6 +436,77 @@ describe('shared Biteplaner demo state', () => {
     expect((stored.payload?.comment as string).length).toBeLessThanOrEqual(500);
     expect(stored.summary?.scoreAverage).toBe(5);
     expect(stored.summary?.hasComment).toBe(true);
+  });
+
+  it('keeps sequential laboratory assignments when the dentist changes labs after returns', () => {
+    applyOrderAction('BP-DEMO-007', { type: 'lab-return-for-adjustment', reason: 'Lab 1 solicitou ajuste.' }, {
+      requestHeaders: { 'x-demo-persona': 'lab' },
+    });
+    applyOrderAction('BP-DEMO-007', {
+      type: 'complete-production-request',
+      anamnesisSummary: 'Resumo revisado.',
+      anamnesisDownloaded: true,
+      productionRequestSummary: 'Pedido reenviado para o segundo laboratório.',
+      labNotes: 'Nova tentativa com laboratório alternativo.',
+      scan3dFileName: 'scan-v2.stl',
+      prescriptionFileName: 'prescricao-v2.pdf',
+      lgpdConfirmed: true,
+      selectedLabId: 'lab-demo-002',
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    const labOneViewAfterLabTwoSelection = listOrders({ requestHeaders: { 'x-demo-persona': 'lab' } }, 'lab')
+      .orders.find((order) => order.id === 'BP-DEMO-007');
+    expect(labOneViewAfterLabTwoSelection?.lab_profile_id).toBe('lab-demo-002');
+    expect(labOneViewAfterLabTwoSelection?.labAssignmentView).toEqual(
+      expect.objectContaining({
+        labProfileId: 'lab-demo-001',
+        status: 'returned_for_adjustment',
+        isCurrent: false,
+      })
+    );
+
+    applyOrderAction('BP-DEMO-007', { type: 'lab-return-for-adjustment', reason: 'Lab 2 também solicitou ajuste.' }, {
+      requestHeaders: { 'x-demo-persona': 'lab' },
+    });
+
+    const reassigned = applyOrderAction('BP-DEMO-007', {
+      type: 'complete-production-request',
+      anamnesisSummary: 'Resumo revisado novamente.',
+      anamnesisDownloaded: true,
+      productionRequestSummary: 'Pedido reenviado para o primeiro laboratório.',
+      labNotes: 'Retorno para o laboratório inicial.',
+      scan3dFileName: 'scan-v3.stl',
+      prescriptionFileName: 'prescricao-v3.pdf',
+      lgpdConfirmed: true,
+      selectedLabId: 'lab-demo-001',
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    expect('labAssignments' in reassigned).toBe(true);
+    if (!('labAssignments' in reassigned)) {
+      throw new Error('Order response did not include laboratory assignments.');
+    }
+    expect(reassigned.lab_profile_id).toBe('lab-demo-001');
+    expect(reassigned.labAssignmentView).toBeNull();
+    expect(reassigned.labAssignments).toEqual([
+      expect.objectContaining({
+        sequence: 1,
+        labProfileId: 'lab-demo-001',
+        status: 'returned_for_adjustment',
+        returnReason: 'Lab 1 solicitou ajuste.',
+      }),
+      expect.objectContaining({
+        sequence: 2,
+        labProfileId: 'lab-demo-002',
+        status: 'returned_for_adjustment',
+        returnReason: 'Lab 2 também solicitou ajuste.',
+      }),
+      expect.objectContaining({
+        sequence: 3,
+        labProfileId: 'lab-demo-001',
+        status: 'awaiting_acceptance',
+        returnReason: null,
+      }),
+    ]);
   });
 
   it('releases the shared initial evaluation intake during the prerequisite step', () => {
@@ -326,7 +555,7 @@ describe('shared Biteplaner demo state', () => {
       throw new Error('Dentist acceptance did not return an order summary.');
     }
     expect(acceptedOrder.status).toBe('in_progress');
-    expect(acceptedOrder.statusLabel).toBe('Consulta vinculada');
+    expect(acceptedOrder.statusLabel).toBe('Aguardando confirmação de consulta');
     expect(acceptedOrder.stage).toBe('consultation_linked');
   });
 
@@ -365,9 +594,10 @@ describe('shared Biteplaner demo state', () => {
       workflowFormId: 'BP-WF-002-INTAKE',
       payload: {
         customer: {
-          fullName: 'Alterádo pelo dentista'
+          fullName: 'Alterado pelo dentista'
         },
         dentist: {
+          biteplannerEligible: 'yes',
           painlessMaxOpeningMm: 42,
           initialEvaluationSummary: 'Sem sinais impeditivos.'
         }
@@ -388,6 +618,7 @@ describe('shared Biteplaner demo state', () => {
         sportRoutine: 'Crossfit'
       },
       dentist: {
+        biteplannerEligible: 'yes',
         painlessMaxOpeningMm: 42,
         initialEvaluationSummary: 'Sem sinais impeditivos.'
       }
@@ -440,6 +671,57 @@ describe('shared Biteplaner demo state', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(DemoStateError);
       expect((error as DemoStateError).status).toBe(403);
+    }
+  });
+
+  it('moves dentist-marked inaptitude to reassessment instead of refund closure', () => {
+    applyOrderAction('BP-DEMO-004', {
+      type: 'submit-workflow-form',
+      workflowFormId: 'BP-WF-004-INTAKE',
+      payload: {
+        dentist: {
+          biteplannerEligible: 'no',
+          ineligibilityDescriptionForCustomer:
+            'No momento existem sinais clínicos que pedem nova avaliação antes do Biteplaner.',
+          consultationDate: '2026-05-12'
+        }
+      }
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    const order = getDemoStateSnapshot().orders.find((item) => item.id === 'BP-DEMO-004');
+
+    expect(order?.status).toBe('ineligible_reassessment');
+    expect(order?.statusLabel).toBe('Inaptidão');
+    expect(order?.stage).toBe('awaiting_initial_consultation');
+    expect(order?.nextActions).toContain('schedule-initial-consultation');
+  });
+
+  it('requires a customer-facing inaptitude description when the dentist marks Biteplaner as not eligible', () => {
+    try {
+      applyOrderAction('BP-DEMO-004', {
+        type: 'submit-workflow-form',
+        workflowFormId: 'BP-WF-004-INTAKE',
+        payload: {
+          dentist: {
+            biteplannerEligible: 'no',
+            consultationDate: '2026-05-12'
+          }
+        }
+      }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+      throw new Error('Expected inaptitude description to be required.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(DemoStateError);
+      expect((error as DemoStateError).status).toBe(422);
+    }
+  });
+
+  it('does not remove partner invite links that are no longer active', () => {
+    try {
+      removePartnerInviteLink('partner-link-expired-001', { requestHeaders: { 'x-demo-persona': 'partner' } });
+      throw new Error('Expected expired partner invite link removal to be rejected.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(DemoStateError);
+      expect((error as DemoStateError).status).toBe(409);
     }
   });
 

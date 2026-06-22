@@ -1,16 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { writeStorageValue } from '../../lib/browser-storage';
 import { redirectToExternal, resolvePostLoginPath } from '../../lib/navigation';
 import {
   Alert,
   AuthBackLink,
+  AuthVisualBrandLogo,
   AuthCard,
   AuthFormSide,
   AuthPage,
   AuthVisualContent,
   AuthVisualDivider,
-  AuthVisualLogo,
   AuthVisualSide,
   AuthVisualTagline,
   Button,
@@ -33,7 +34,20 @@ import * as S from './styles';
 
 const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
   { persona: 'partner', testId: 'demo-login-partner' },
+  { persona: 'athleteRegistered', testId: 'demo-login-athlete-registered' },
   { persona: 'athlete', testId: 'demo-login-athlete' },
+  { persona: 'athletePrerequisite', testId: 'demo-login-athlete-prerequisite' },
+  { persona: 'athleteScheduling', testId: 'demo-login-athlete-scheduling' },
+  { persona: 'athletePreConsultation', testId: 'demo-login-athlete-pre-consultation' },
+  { persona: 'athleteClinicalDecision', testId: 'demo-login-athlete-clinical-decision' },
+  { persona: 'athleteDentistForms', testId: 'demo-login-athlete-dentist-forms' },
+  { persona: 'athletePayment', testId: 'demo-login-athlete-payment' },
+  { persona: 'athleteTreatmentRequired', testId: 'demo-login-athlete-treatment-required' },
+  { persona: 'athleteLabProduction', testId: 'demo-login-athlete-lab-production' },
+  { persona: 'athleteAdaptation', testId: 'demo-login-athlete-adaptation' },
+  { persona: 'athleteFollowUp', testId: 'demo-login-athlete-follow-up' },
+  { persona: 'athleteIneligible', testId: 'demo-login-athlete-ineligible' },
+  { persona: 'athleteCancelled', testId: 'demo-login-athlete-cancelled' },
   { persona: 'dentist', testId: 'demo-login-dentist' },
   { persona: 'dentistApproved', testId: 'demo-login-dentist-approved' },
   { persona: 'dentistProgress', testId: 'demo-login-dentist-progress' },
@@ -46,7 +60,26 @@ const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
 ];
 
 const DEMO_TABS = [
-  { key: 'cliente', label: 'Cliente', personas: ['athlete'] },
+  {
+    key: 'cliente',
+    label: 'Cliente',
+    personas: [
+      'athleteRegistered',
+      'athlete',
+      'athletePrerequisite',
+      'athleteScheduling',
+      'athletePreConsultation',
+      'athleteClinicalDecision',
+      'athleteDentistForms',
+      'athletePayment',
+      'athleteTreatmentRequired',
+      'athleteLabProduction',
+      'athleteAdaptation',
+      'athleteFollowUp',
+      'athleteIneligible',
+      'athleteCancelled'
+    ]
+  },
   { key: 'parceiros', label: 'Parceiros', personas: ['partner'] },
   { key: 'dentista', label: 'Dentista', personas: ['dentist', 'dentistApproved', 'dentistProgress', 'dentistLicensed'] },
   { key: 'lab', label: 'Lab', personas: ['lab', 'labApproved', 'labProgress', 'labLicensed'] },
@@ -58,18 +91,27 @@ type DemoTabKey = (typeof DEMO_TABS)[number]['key'];
 export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { session, backendUser, backendUserResolved, loading, signIn, signInDemo, isMockMode } =
-    useAuth();
+  const {
+    session,
+    backendUser,
+    backendUserResolved,
+    authError,
+    loading,
+    signIn,
+    signInDemo,
+    isMockMode
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeDemoTab, setActiveDemoTab] = useState<DemoTabKey>('cliente');
+  const visibleError = error || authError;
 
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
-      sessionStorage.setItem('nexor_referral_ref', ref);
+      writeStorageValue('nexor_referral_ref', ref, 'session');
     }
   }, [searchParams]);
 
@@ -143,7 +185,7 @@ export function Login() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </Field>
-            {error ? <Alert role="alert">{error}</Alert> : null}
+            {visibleError ? <Alert role="alert">{visibleError}</Alert> : null}
             <Button type="submit" disabled={submitting} aria-busy={submitting}>
               {submitting ? 'Entrando...' : 'Entrar'}
             </Button>
@@ -198,7 +240,7 @@ export function Login() {
       </AuthFormSide>
       <AuthVisualSide>
         <AuthVisualContent>
-          <AuthVisualLogo>Nexor</AuthVisualLogo>
+          <AuthVisualBrandLogo />
           <AuthVisualDivider />
           <AuthVisualTagline>Sua conta central para o ecossistema de performance.</AuthVisualTagline>
         </AuthVisualContent>

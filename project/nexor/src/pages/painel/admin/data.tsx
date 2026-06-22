@@ -48,19 +48,19 @@ export const ADMIN_ORDER_STATS: AdminStat[] = [
   { label: 'Pendentes', value: '1' },
   { label: 'Em Produção', value: '1' },
   { label: 'Em Entrega', value: '1' },
-  { label: 'Concluidas', value: '1' },
+  { label: 'Concluídas', value: '1' },
 ];
 
 export const ADMIN_ORDERS: AdminOrderRow[] = [
   {
     id: 'BP-001',
-    customer: 'Joao Silva',
+    customer: 'João Silva',
     email: 'joao@email.com',
     product: 'Biteplaner Premium',
     status: 'Produção',
     stage: 'Fabricação',
     date: '03/05/2026',
-    amount: 'R$ 400,00',
+    amount: 'R$ 1.370,00',
   },
   {
     id: 'BP-002',
@@ -70,7 +70,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Avaliação',
     stage: 'Moldagem',
     date: '02/05/2026',
-    amount: 'R$ 400,00',
+    amount: 'R$ 1.370,00',
   },
   {
     id: 'BP-003',
@@ -80,7 +80,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Concluído',
     stage: 'Finalizado',
     date: '01/05/2026',
-    amount: 'R$ 400,00',
+    amount: 'R$ 1.370,00',
   },
   {
     id: 'BP-004',
@@ -88,9 +88,9 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     email: 'ana@email.com',
     product: 'Biteplaner Premium',
     status: 'Entrega',
-    stage: 'Em transito',
+    stage: 'Em trânsito',
     date: '30/04/2026',
-    amount: 'R$ 400,00',
+    amount: 'R$ 1.370,00',
   },
   {
     id: 'BP-005',
@@ -100,7 +100,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Pendente',
     stage: 'Agendamento',
     date: '29/04/2026',
-    amount: 'R$ 400,00',
+    amount: 'R$ 1.370,00',
   },
 ];
 
@@ -225,7 +225,7 @@ export const BUSINESS_SETTINGS_CONTENT: Record<'partners' | 'labs' | 'dentists',
     contracts: [
       {
         title: 'Carta de Intencao Laboratorial',
-        description: 'Manifestácao inicial de interesse para credenciamento laboratorial.',
+        description: 'Manifestação inicial de interesse para credenciamento laboratorial.',
       },
       {
         title: 'Contrato de Credenciamento Laboratório',

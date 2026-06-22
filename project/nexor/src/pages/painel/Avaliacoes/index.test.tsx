@@ -1,9 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 
 const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -32,7 +36,21 @@ function renderPage(path = '/painel/biteplaner/avaliacoes?mode=dentist') {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <ThemeProvider theme={lightTheme}>
-        <Avaliacoes />
+        <TestQueryClientProvider>
+          <Avaliacoes />
+        </TestQueryClientProvider>
+      </ThemeProvider>
+    </MemoryRouter>
+  );
+}
+
+function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQueryClient>, path = '/painel/biteplaner/avaliacoes?mode=dentist') {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <ThemeProvider theme={lightTheme}>
+        <QueryClientProvider client={queryClient}>
+          <Avaliacoes />
+        </QueryClientProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -45,7 +63,60 @@ describe('Avaliações', () => {
     mockApiPost.mockReset();
   });
 
-  it('renders the dentist review dashboard with submitted feedback templates', async () => {
+  it('does not refetch evaluations when only the auth token changes', async () => {
+    const queryClient = createTestQueryClient();
+    let accessToken = 'tok';
+    mockUseAuth.mockImplementation(() => ({
+      session: { access_token: accessToken, user: { id: '1', email: 'demo@nexor.dev' } },
+      backendUser: { id: 'dentist-user-1', email: 'demo@nexor.dev', roles: ['dentist'] },
+    }));
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=dentist') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-DEMO-009',
+              status: 'follow_up',
+              statusLabel: 'Em acompanhamento',
+              stage: 'follow_up',
+              created_at: '2026-05-03T14:00:00.000Z',
+              customer: { full_name: 'Joao Demo', email: 'atleta.demo@nexor.dev', phone: null },
+              dentist: { full_name: 'Dra. Helena Licenciada', email: 'dentista@nexor.dev' },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-009/workflow-forms') {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    const view = renderPageWithQueryClient(queryClient);
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument());
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+
+    accessToken = 'tok-refreshed';
+    view.rerender(
+      <MemoryRouter initialEntries={['/painel/biteplaner/avaliacoes?mode=dentist']}>
+        <ThemeProvider theme={lightTheme}>
+          <QueryClientProvider client={queryClient}>
+            <Avaliacoes />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument());
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+  });
+
+  it('filters survey comments by the selected survey moment tab', async () => {
+    const user = userEvent.setup();
+
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -118,11 +189,62 @@ describe('Avaliações', () => {
     renderPage();
 
     expect(await screen.findByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.queryByText(/após consulta de adaptação/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/cliente avaliando dentista/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/dentista avaliando laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/atendimento claro, pontual/i)).toBeInTheDocument();
+    expect(screen.queryByText(/laboratório respondeu rápido/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /dentista avalia laboratório/i }));
+
+    expect(screen.getByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(/dentista avaliando laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/laboratório respondeu rápido/i)).toBeInTheDocument();
+    expect(screen.queryByText(/atendimento claro, pontual/i)).not.toBeInTheDocument();
     expect(screen.getByText(/templates ativos/i)).toBeInTheDocument();
+  });
+
+  it('keeps review metadata on a single line in survey comments', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const reviewMetaSource = source.slice(source.indexOf('export const ReviewMeta'), source.indexOf('export const ReviewScore'));
+
+    expect(reviewMetaSource).toContain('white-space: nowrap');
+    expect(reviewMetaSource).toContain('text-overflow: ellipsis');
+  });
+
+  it('keeps template summary labels inline without green card backgrounds', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const templateGridSource = source.slice(source.indexOf('export const TemplateGrid'), source.indexOf('export const TemplateCard'));
+    const templateCardSource = source.slice(source.indexOf('export const TemplateCard'), source.indexOf('export const TemplateScore'));
+    const templateScoreSource = source.slice(source.indexOf('export const TemplateScore'), source.indexOf('export const TemplateLabel'));
+    const templateLabelSource = source.slice(source.indexOf('export const TemplateLabel'), source.indexOf('export const Section'));
+
+    expect(templateGridSource).toContain('display: flex');
+    expect(templateGridSource).toContain('flex-wrap: nowrap');
+    expect(templateGridSource).toContain('overflow-x: auto');
+    expect(templateCardSource).not.toContain('rgba(240, 253, 244');
+    expect(templateScoreSource).not.toContain('#f0fdf4');
+    expect(templateLabelSource).toContain('white-space: nowrap');
+  });
+
+  it('renders pending surveys as carousel cards', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/styles.ts'), 'utf8');
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Avaliacoes/index.tsx'), 'utf8');
+    const pendingCarouselSource = stylesSource.slice(
+      stylesSource.indexOf('export const PendingCarousel'),
+      stylesSource.indexOf('export const PendingTitle')
+    );
+
+    expect(pageSource).toContain('PendingCarousel');
+    expect(pageSource).toContain('aria-label="Survey anterior"');
+    expect(pageSource).toContain('aria-label="Proximo survey"');
+    expect(pageSource).toContain('<S.Banner>Nenhum survey pendente para este perfil.</S.Banner>');
+    expect(pageSource).not.toContain('<Inbox size={16} aria-hidden />');
+    expect(pendingCarouselSource).toContain('overflow-x: auto');
+    expect(pendingCarouselSource).toContain('scroll-snap-type: x mandatory');
+    expect(pendingCarouselSource).toContain('scroll-snap-align: start');
   });
 
   it('uses partner-specific feedback templates', async () => {
@@ -132,8 +254,8 @@ describe('Avaliações', () => {
           {
             id: 'BP-DEMO-014',
             status: 'appointment_confirmed',
-            statusLabel: 'Consulta confirmada',
-            stage: 'consultation_confirmed',
+            statusLabel: 'Aguardando decisão clínica',
+            stage: 'awaiting_clinical_decision',
             created_at: '2026-05-05T11:30:00.000Z',
             customer: { full_name: 'Renata Crossfit', email: 'renata@nexor.dev', phone: null },
           },
@@ -165,7 +287,7 @@ describe('Avaliações', () => {
     renderPage('/painel/biteplaner/avaliacoes?mode=partner');
 
     expect(await screen.findByRole('heading', { name: /avaliações do parceiro/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/cliente avaliando parceiro/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/cliente avaliando parceiro/i)).length).toBeGreaterThan(0);
     expect(screen.getByText(/parceiro explicou bem o fluxo/i)).toBeInTheDocument();
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?as=partner', 'tok'));
   });
@@ -224,7 +346,7 @@ describe('Avaliações', () => {
     renderPage('/painel/biteplaner/avaliacoes?mode=user');
 
     expect(await screen.findByRole('heading', { name: /avaliações enviadas pelo cliente/i })).toBeInTheDocument();
-    expect(screen.getByText(/cadastro via link de recomendação do parceiro/i)).toBeInTheDocument();
+    expect(await screen.findByText(/cadastro via link de recomendação do parceiro/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /responder/i }));
     expect(screen.getByText(/nota de 1 a 5 estrelas/i)).toBeInTheDocument();
@@ -235,7 +357,7 @@ describe('Avaliações', () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /enviar survey/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/gentileza no atendimento/i);
+    expect(screen.getByText(/preencha o campo obrigatório: gentileza no atendimento/i)).toBeInTheDocument();
 
     await user.click(within(screen.getByRole('radiogroup', { name: /gentileza no atendimento/i })).getByRole('radio', { name: /5 estrelas/i }));
     await user.click(
@@ -266,5 +388,42 @@ describe('Avaliações', () => {
       )
     );
     expect(await screen.findByText(/cadastro por link bem orientado/i)).toBeInTheDocument();
+  }, 10_000);
+
+  it('opens a pending survey from the surveyId query parameter', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-006',
+            status: 'awaiting_adaptation',
+            statusLabel: 'Aguardando adaptação',
+            stage: 'awaiting_adaptation',
+            created_at: '2026-05-04T10:00:00.000Z',
+            customer: { full_name: 'Marina Costa', email: 'marina@nexor.dev', phone: null },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        forms: [
+          {
+            id: 'review-partner-pending',
+            orderId: 'BP-DEMO-006',
+            templateKey: 'partner_review_by_customer',
+            stepKey: 'partner_review_by_customer',
+            status: 'pending',
+            canViewPayload: true,
+            summary: null,
+            releasedAt: '2026-05-04T12:00:00.000Z',
+            submittedAt: null,
+            payload: null,
+          },
+        ],
+      });
+
+    renderPage('/painel/biteplaner/avaliacoes?mode=user&surveyId=review-partner-pending');
+
+    expect(await screen.findByRole('dialog', { name: /cliente avaliando parceiro indicador/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/cadastro via link de recomendação do parceiro/i).length).toBeGreaterThan(0);
   });
 });

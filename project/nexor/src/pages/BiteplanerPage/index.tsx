@@ -1,6 +1,9 @@
 import {
   Activity,
   BadgeCheck,
+  Box,
+  ClipboardList,
+  CreditCard,
   Dumbbell,
   Heart,
   Quote,
@@ -8,12 +11,16 @@ import {
   SlidersHorizontal,
   Star,
   Target,
+  TrendingUp,
   Trophy,
-  UsersRound,
+  UserRound,
   Zap,
 } from 'lucide-react';
+import { useState } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
+import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png';
+import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
@@ -31,117 +38,219 @@ const cardVariants: Variants = {
   }),
 };
 
-const productVariants: Variants = {
-  hidden: { opacity: 0, x: 42, scale: 0.95, rotate: -2 },
-  show: {
-    opacity: 1,
-    x: 0,
-    scale: 1,
-    rotate: 0,
-    transition: { duration: 1.14, ease: [0.16, 1, 0.3, 1] },
-  },
-};
-
-const HERO_PROOFS = [
-  { icon: ShieldCheck, title: 'Avaliação antes da compra' },
-  { icon: BadgeCheck, title: 'Produção personalizada' },
-  { icon: ShieldCheck, title: 'Protocolo e acompanhamento profissional' },
-];
-
-const USE_CASES = [
-  {
-    icon: Trophy,
-    title: 'Esportes de combate',
-    body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
-  },
-  {
-    icon: Zap,
-    title: 'Força e alta intensidade',
-    body: 'Para quem percebe apertamento, tensão mandibular ou dores mais previsíveis em treinos de carga e esforço.',
-  },
-  {
-    icon: UsersRound,
-    title: 'Esportes coletivos',
-    body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
-  },
-];
-
 const JOURNEY_STEPS = [
   {
     n: 1,
-    icon: Dumbbell,
+    icon: UserRound,
     label: 'Entrada',
     title: 'Conta Nexor',
     body: 'Crie ou acesse sua conta para iniciar o processo de elegibilidade e garantir segurança dos dados.',
   },
   {
     n: 2,
-    icon: Trophy,
+    icon: ClipboardList,
     label: 'Elegibilidade',
-    title: 'Pre-check Biteplaner',
-    body: 'Informe esporte, rotina, histórico e sintomas para entender uma clínica licenciada.',
+    title: 'Pré-consulta',
+    body: 'Informe esporte, rotina, histórico e sintomas para selecionar um dentista licenciado.',
   },
   {
     n: 3,
     icon: ShieldCheck,
     label: 'Avaliação',
     title: 'Dentista licenciado',
-    body: 'Um profissional avalia sua queixa, marca pontos odontológicos e conduz a etapa clínica inicial.',
+    body: 'Profissional avalia sua condição clínica e conduz até a produção do dispositivo.',
   },
   {
     n: 4,
-    icon: Activity,
+    icon: CreditCard,
     label: 'Compra segura',
     title: 'Pagamento após aptidão',
-    body: 'O pagamento é realizado apenas quando houver declaração de aptidão para realização.',
+    body: 'Confirmada sua aptidão na primeira consulta, o pagamento será realizado através da plataforma Nexor.',
   },
   {
     n: 5,
-    icon: SlidersHorizontal,
+    icon: Box,
     label: 'Laboratório',
     title: 'Produção personalizada',
-    body: 'A fabricação segue a solicitação profissional, os padrões necessários e o processo operacional do produto.',
+    body: 'A fabricação ocorre após confirmação do pagamento.',
   },
   {
     n: 6,
-    icon: BadgeCheck,
+    icon: TrendingUp,
     label: 'Uso real',
     title: 'Adaptação e acompanhamento',
-    body: 'A entrega inclui orientação, retorno de adaptação e retornos periódicos para garantir uso consistente.',
+    body: 'A instalação inicial do dispositivo será feita pelo dentista, o qual realizará os devidos ajustes e adaptações, com retornos para os novos ajustes.',
   },
 ];
 
+const SPORT_CONTEXT_CARDS = [
+  {
+    imagePosition: 'left' as const,
+    title: 'Esportes de combate',
+    body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
+  },
+  {
+    imagePosition: 'center' as const,
+    title: 'Força e alta intensidade',
+    body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
+  },
+  {
+    imagePosition: 'right' as const,
+    title: 'Esportes coletivos',
+    body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
+  },
+];
+
+const INITIAL_COMPARISON_ROWS = 7;
+
 const COMPARISON = [
-  ['Avaliação', 'Sem avaliação profissional', 'Avaliação odontológica antes da compra'],
-  ['Ajuste', 'Tentativa padrão e adaptação limitada', 'Processo personalizado a partir da jornada profissional'],
-  ['Compra', 'Usuário decide sozinho', 'Pagamento após aptidão clínica declarada'],
-  ['Acompanhamento', 'Normalmente não incluído', 'Entrega, adaptação e retornos orientados'],
+  {
+    icon: ShieldCheck,
+    criterion: 'Adequação para Treinos e Competições de Lutas, esportes de contato e alto risco de colisão facial',
+    generic: 'Baixa',
+    traditional: 'Alta',
+    biteplaner: 'Alta',
+  },
+  {
+    icon: Dumbbell,
+    criterion:
+      'Adequação para Treinos de força, Musculação, Alta intensidade, Cross training, Competições e Todos os esportes, atividades e cenários que ocorra Apertamento Mandibular',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'Total',
+  },
+  {
+    icon: BadgeCheck,
+    criterion: 'Proteção dental contra impactos',
+    generic: 'Parcial',
+    traditional: 'Sim',
+    biteplaner: 'Sim',
+  },
+  {
+    icon: Target,
+    criterion: 'Proteção Articular (ATM)',
+    generic: 'Não',
+    traditional: 'Indireta',
+    biteplaner: 'Direta com redução de carga articular e controle do apertamento',
+  },
+  {
+    icon: Activity,
+    criterion: 'Prevenção de microtrauma repetitivo',
+    generic: 'Não',
+    traditional: 'Limitada',
+    biteplaner: 'Alta',
+  },
+  {
+    icon: SlidersHorizontal,
+    criterion: 'Efeito sobre dor cervicofacial crônica',
+    generic: 'Não',
+    traditional: 'Secundário',
+    biteplaner: 'Primário; projetado para reduzir dores relacionadas a DTM induzida por apertamento',
+  },
+  {
+    icon: Heart,
+    criterion: 'Conforto em uso prolongado',
+    generic: 'Não',
+    traditional: 'Parcial',
+    biteplaner: 'Projetado para maior conforto e adaptação individualizada',
+  },
+  {
+    icon: Zap,
+    criterion: 'Interferência na fala',
+    generic: 'Alta',
+    traditional: 'Moderada',
+    biteplaner: 'Geralmente menor',
+  },
+  {
+    icon: Trophy,
+    criterion: 'Momento típico de uso no Esporte',
+    generic: 'Durante treinos com risco de impacto',
+    traditional: 'Durante competições/jogos e treinos com risco de impacto',
+    biteplaner:
+      'Durante competições/jogos e treinos com risco de impacto, treinos de alta intensidade com foco em performance e prevenção',
+  },
+  {
+    icon: SlidersHorizontal,
+    criterion: 'Personalização',
+    generic: 'Baixa (“Boil and bite”)',
+    traditional: 'Sob medida',
+    biteplaner:
+      'Totalmente Individualizado com ajustes tecnológicos precisos de acordo com os esportes, atividades e contexto do usuário',
+  },
+  {
+    icon: BadgeCheck,
+    criterion: 'Qualidade da Matéria-prima',
+    generic: 'Muito Baixa',
+    traditional: 'Moderada',
+    biteplaner: 'Alta',
+  },
+  {
+    icon: Star,
+    criterion: 'Eficácia',
+    generic: 'Muito baixa',
+    traditional: 'Parcial (apenas proteção dental)',
+    biteplaner: 'Muito alta (proteção dental e articular)',
+  },
+  {
+    icon: Target,
+    criterion: 'Relação custo-benefício em contato pleno',
+    generic: 'Ruim',
+    traditional: 'Muito favorável (redução de traumas graves)',
+    biteplaner: 'Altamente relevante pois protege a ATM além dos dentes',
+  },
+  {
+    icon: Dumbbell,
+    criterion: 'Relação custo-benefício em atividades de força/intensidade',
+    generic: 'Ruim',
+    traditional: 'Limitada, pois não ataca o problema dos traumas na ATM',
+    biteplaner: 'Elevada, por atuar diretamente sobre a causa biomecânica da sobrecarga',
+  },
+  {
+    icon: Trophy,
+    criterion: 'Foco em performance a longo prazo',
+    generic: 'Baixo',
+    traditional: 'Indireto (preserva integridade dentária)',
+    biteplaner: 'Direto (reduz dor, melhora constância e longevidade de treino)',
+  },
+  {
+    icon: Zap,
+    criterion: 'Tecnologia e Aperfeiçoamento Científico Contínuo',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'O BITEPLANER encontra-se em processo contínuo de aperfeiçoamento, validação técnica e científica',
+  },
+  {
+    icon: Activity,
+    criterion: 'Integração com plataforma de Dados',
+    generic: 'Não',
+    traditional: 'Não',
+    biteplaner: 'Concebido como parte de uma plataforma de prevenção, dados e performance',
+  },
 ];
 
 const EDUCATION = [
   {
-    icon: ShieldCheck,
+    icon: Activity,
     title: 'Impacto e apertamento',
     body: 'Treinos intensos podem envolver contato, tensão e apertamento mandibular. Entender esse contexto ajuda a decidir com clareza.',
   },
   {
     icon: Heart,
     title: 'Conforto e consistência',
-    body: 'Um produto que pode auxiliar no conforto traz clareza com mais segurança, sempre conforme avaliação profissional.',
+    body: 'Um produto que pode auxiliar no conforto e prevenção, trazendo mais segurança e longevidade.',
   },
   {
-    icon: Target,
+    icon: ShieldCheck,
     title: 'Limites claros',
-    body: 'Biteplaner não promete resultado universal. A proposta é clareza, diagnóstico, personalização, adaptação e acompanhamento.',
+    body: 'Biteplaner não promete resultados imediatos. A proposta é clareza, diagnóstico, personalização, adaptação e acompanhamento.',
   },
 ];
 
 const TRUST_POINTS = [
   { icon: ShieldCheck, title: 'Avaliação profissional antes da compra' },
   { icon: SlidersHorizontal, title: 'Plano com dentistas licenciados' },
-  { icon: Activity, title: 'Produção sob padrões operacionais' },
+  { icon: Activity, title: 'Produção sob padrões de excelência' },
   { icon: Heart, title: 'Acompanhamento após recebimento' },
-  { icon: Target, title: 'Dados e experiências usados no desenho do produto' },
 ];
 
 const CUSTOMER_COMMENTS = [
@@ -149,72 +258,80 @@ const CUSTOMER_COMMENTS = [
     name: 'Marina Costa',
     context: 'Jiu-jitsu',
     quote:
-      'A jornada deixou claro o que eu precisava fazer antes da compra. Gostei de ter avaliação e acompanhamento no mesmo fluxo.',
+      'O Biteplaner ficou firme sem incomodar durante o rola. Senti mais confiança para treinar sem ficar ajustando o dispositivo o tempo todo.',
   },
   {
     name: 'Rafael Nunes',
     context: 'Boxe amador',
     quote:
-      'O processo foi mais organizado do que comprar um protetor comum. Entendi cada etapa, da elegibilidade até a adaptação.',
+      'A diferença para um protetor comum foi grande. O encaixe ficou melhor, a respiração fluiu bem e consegui manter foco no treino.',
   },
   {
     name: 'Bianca Torres',
     context: 'Cross training',
     quote:
-      'O que mais ajudou foi ter orientação profissional antes de avançar. A experiência passou segurança e reduziu dúvidas.',
+      'Nos treinos com carga alta, o Biteplaner trouxe conforto e estabilidade. Virou um item que eu uso junto com munhequeira e cinturão.',
   },
   {
     name: 'Lucas Almeida',
     context: 'MMA',
     quote:
-      'Consegui acompanhar o status da jornada e saber quando dependia de mim, do dentista ou da produção. Isso fez diferença.',
+      'O produto encaixou bem na rotina de sparring. Gostei porque protege sem dar aquela sensação volumosa que atrapalha a comunicação.',
   },
   {
     name: 'Camila Rocha',
     context: 'Handebol',
     quote:
-      'O retorno de adaptação foi importante para entender o uso correto. Não ficou parecendo uma compra solta, e sim um processo.',
+      'Depois dos ajustes com o dentista, o Biteplaner ficou confortável para jogo e treino. Senti segurança para usar sem pensar nele.',
   },
 ];
 
 const FAQ = [
   {
-    q: 'Qual a visão do Biteplaner?',
-    a: 'O Biteplaner é uma jornada de protetor bucal personalizado para atletas, com avaliação odontológica, produção sob protocolo e acompanhamento profissional.',
+    q: 'O que é Biteplaner?',
+    a: 'O Biteplaner é um dispositivo bucal personalizado para atletas, com avaliação odontológica, produção sob protocolo e acompanhamento profissional.',
   },
   {
     q: 'Por que preciso passar por avaliação odontológica?',
-    a: 'Porque a avaliação ajuda a confirmar se o produto é adequado para o seu caso, reduzindo decisões apressadas antes da compra.',
+    a: 'A avaliação é necessária para confirmar se o cliente está apto para o uso.',
   },
   {
     q: 'Eu pago antes da avaliação?',
-    a: 'Não. No fluxo aprovado, a primeira avaliação acontece antes da cobrança do produto. O pagamento só avança após aptidão clínica.',
+    a: 'Não. A compra é feita através da plataforma Nexor, na primeira consulta com o dentista, após a confirmação de sua aptidão clínica.',
   },
   {
     q: 'E se eu não for considerado apto?',
-    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar tratamento prévio antes de uma nova decisão.',
+    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar algum tratamento necessário antes de aprovar a aptidão.',
   },
   {
     q: 'Para quais esportes o Biteplaner é indicado?',
-    a: 'A proposta atende atletas e praticantes expostos a contato, impacto repetido ou treinos intensos. A indicação final depende da avaliação profissional.',
-  },
-  {
-    q: 'O Biteplaner substitui acompanhamento odontológico?',
-    a: 'Não. O produto depende de avaliação, produção e acompanhamento conduzidos por profissionais licenciados dentro da jornada.',
+    a: 'O Biteplaner é indicado para TODOS esportes, principalmente para praticantes expostos a contato, impacto repetido ou treinos intensos.',
   },
 ];
 
 export function BiteplanerPage() {
+  const [comparisonExpanded, setComparisonExpanded] = useState(false);
+  const visibleComparisonRows = comparisonExpanded ? COMPARISON : COMPARISON.slice(0, INITIAL_COMPARISON_ROWS);
+
   return (
-    <S.Page>
+    <S.Page id="main-content" tabIndex={-1}>
+      <S.ProductImageHero aria-label="Biteplaner em destaque">
+        <S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />
+      </S.ProductImageHero>
+
       <S.HeroSection>
+        <S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />
         <S.HeroCopy>
-          <S.ProductLabel>Biteplaner</S.ProductLabel>
-          <S.HeroTitle>Proteção personalizada para atletas de impacto</S.HeroTitle>
+          <S.HeroTitle aria-label="Segurança. Conforto. Performance.">
+            Segurança.
+            <br />
+            <span style={{ color: '#1c5e3a' }}>Conforto.</span>
+            <br />
+            Performance.
+          </S.HeroTitle>
           <S.HeroSubtitle>
-            Um protetor bucal personalizado para atletas, construído por uma jornada com
-            avaliação odontológica, análise de áreas de contato, produção sob protocolo e
-            acompanhamento profissional.
+            Dispositivo intraoral personalizado para atletas e praticantes de esportes construído através de uma
+            jornada com avaliação odontológica, produção sob protocolo e acompanhamento profissional.
           </S.HeroSubtitle>
           <S.HeroActions>
             <S.PrimaryCta to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
@@ -223,59 +340,63 @@ export function BiteplanerPage() {
             <S.SecondaryCta href="#como-funciona">Ver como funciona</S.SecondaryCta>
           </S.HeroActions>
         </S.HeroCopy>
-
-        <S.HeroProof aria-label="Resumo da jornada Biteplaner">
-          {HERO_PROOFS.map(({ icon: Icon, title }) => (
-            <S.ProofItem key={title}>
-              <Icon aria-hidden="true" size={28} strokeWidth={1.8} />
-              <span>{title}</span>
-            </S.ProofItem>
-          ))}
-        </S.HeroProof>
       </S.HeroSection>
 
-      <S.SplitSection>
-        <S.SectionIntro>
-          <S.SectionLabel>Contexto esportivo</S.SectionLabel>
-          <S.SectionTitle>Feito para a rotina real de treino</S.SectionTitle>
-          <S.SectionLead>
-            Durante sparring, levantamento pesado, disputas físicas e blocos intensos de treino,
-            muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber.
-            Biteplaner organiza essa decisão com protocolo, avaliação e acompanhamento.
-          </S.SectionLead>
-        </S.SectionIntro>
-        <S.CardGrid>
-          {USE_CASES.map(({ icon: Icon, title, body }, index) => (
-            <S.FeatureCard
+      <S.TrustOuter>
+        <S.TrustHero>
+          <S.TrustIntro>
+            <S.MarketingSectionTitle>Educação para decidir <S.MarketingTitleAccent>melhor</S.MarketingTitleAccent></S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
+              Informações e tecnologia para transformar performance em decisões mais inteligentes.
+            </S.MarketingSectionLead>
+          </S.TrustIntro>
+        </S.TrustHero>
+
+        <S.EducationRail>
+          {EDUCATION.map(({ icon: Icon, title, body }, index) => (
+            <S.EducationItem
               key={title}
+              data-testid="education-layout-item"
               custom={index}
               variants={cardVariants}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, amount: 0.34 }}
             >
-              <S.CardIcon><Icon aria-hidden="true" size={48} strokeWidth={1.6} /></S.CardIcon>
-              <S.CardTitle>{title}</S.CardTitle>
-              <S.CardBody>{body}</S.CardBody>
-            </S.FeatureCard>
+              <S.EducationIcon data-testid="education-icon">
+                <Icon aria-hidden="true" size={34} strokeWidth={1.7} />
+              </S.EducationIcon>
+              <S.EducationCopy>
+                <S.EducationTitle>{title}</S.EducationTitle>
+                <S.EducationBody>{body}</S.EducationBody>
+              </S.EducationCopy>
+            </S.EducationItem>
           ))}
-        </S.CardGrid>
-      </S.SplitSection>
+        </S.EducationRail>
+        <S.TrustRail>
+          {TRUST_POINTS.map(({ icon: Icon, title }) => (
+            <S.TrustPoint key={title} data-testid="trust-rail-item">
+              <Icon aria-hidden="true" size={30} strokeWidth={1.6} />
+              <span>{title}</span>
+            </S.TrustPoint>
+          ))}
+        </S.TrustRail>
+      </S.TrustOuter>
 
       <S.ProcessOuter id="como-funciona">
         <S.SplitSection>
           <S.SectionIntro>
-            <S.SectionLabel>Como funciona</S.SectionLabel>
-            <S.SectionTitle>Da elegibilidade ao acompanhamento</S.SectionTitle>
-            <S.SectionLead>
-              A jornada foi desenhada para que o atleta entenda o próximo passo, passe por avaliação
-              profissional e compre apenas quando houver objetivo declarado.
-            </S.SectionLead>
+            <S.MarketingSectionTitle>Da elegibilidade ao acompanhamento</S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
+              A jornada foi desenhada para que o atleta entenda o passo a passo e possa adquirir o dispositivo
+              após avaliação do dentista.
+            </S.MarketingSectionLead>
           </S.SectionIntro>
           <S.JourneyGrid data-testid="biteplaner-process-journey">
             {JOURNEY_STEPS.map(({ icon: Icon, ...step }, index) => (
               <S.StepCard
                 key={step.n}
+                data-step-number={step.n}
                 custom={index}
                 variants={cardVariants}
                 initial="hidden"
@@ -284,86 +405,165 @@ export function BiteplanerPage() {
               >
                 <S.StepHeader>
                   <S.StepNumber>{step.n}</S.StepNumber>
-                  <div>
-                    <S.StepLabel>{step.label}</S.StepLabel>
-                    <S.StepTitle>{step.title}</S.StepTitle>
-                  </div>
                 </S.StepHeader>
-                <S.StepBody>{step.body}</S.StepBody>
                 <S.StepIcon aria-hidden="true">
                   <Icon size={34} strokeWidth={1.5} />
                 </S.StepIcon>
+                <S.StepCopy>
+                  <S.StepLabel>{step.label}</S.StepLabel>
+                  <S.StepTitle>{step.title}</S.StepTitle>
+                </S.StepCopy>
+                <S.StepBody>{step.body}</S.StepBody>
               </S.StepCard>
             ))}
           </S.JourneyGrid>
+          <S.ProcessAssurance>
+            <S.ProcessAssuranceIcon aria-hidden="true">
+              <ShieldCheck size={48} strokeWidth={1.45} />
+            </S.ProcessAssuranceIcon>
+            <div>
+              <strong>Transparência em cada etapa</strong>
+              <p>Você sempre saberá em que etapa está e o que vem a seguir.</p>
+            </div>
+          </S.ProcessAssurance>
         </S.SplitSection>
       </S.ProcessOuter>
 
-      <S.ComparisonSection>
-        <S.SectionIntro>
-          <S.SectionLabel>Comparação</S.SectionLabel>
-          <S.SectionTitle>Genérico vs Biteplaner</S.SectionTitle>
-        </S.SectionIntro>
-        <S.ComparisonTable>
-          <thead>
-            <tr>
-              <th>Decisão</th>
-              <th>Protetor genérico</th>
-              <th>Biteplaner</th>
-            </tr>
-          </thead>
-          <tbody>
-            {COMPARISON.map(([label, common, biteplaner]) => (
-              <tr key={label}>
-                <td>{label}</td>
-                <td><S.Cross aria-hidden="true">×</S.Cross>{common}</td>
-                <td><S.Check aria-hidden="true">✓</S.Check>{biteplaner}</td>
-              </tr>
-            ))}
-          </tbody>
-        </S.ComparisonTable>
-      </S.ComparisonSection>
-
-      <S.TrustOuter>
-        <S.SplitSection>
-          <S.SectionIntro>
-            <S.SectionLabel>Confiança</S.SectionLabel>
-            <S.SectionTitle>Educação para decidir melhor</S.SectionTitle>
-          </S.SectionIntro>
-          <S.CardGrid>
-          {EDUCATION.map(({ icon: Icon, title, body }, index) => (
-              <S.FeatureCard
-                key={title}
-                custom={index}
-                variants={cardVariants}
-                initial="hidden"
-                whileInView="show"
-                viewport={{ once: true, amount: 0.34 }}
-              >
-                <S.CardIcon><Icon aria-hidden="true" size={46} strokeWidth={1.6} /></S.CardIcon>
-                <S.CardTitle>{title}</S.CardTitle>
-                <S.CardBody>{body}</S.CardBody>
-              </S.FeatureCard>
-            ))}
-          </S.CardGrid>
-        </S.SplitSection>
-        <S.TrustRail>
-          {TRUST_POINTS.map(({ icon: Icon, title }) => (
-            <S.TrustPoint key={title}>
-              <Icon aria-hidden="true" size={30} strokeWidth={1.6} />
-              <span>{title}</span>
-            </S.TrustPoint>
+      <S.RealRoutineSection>
+        <S.RealRoutineContent>
+          <S.MarketingSectionTitle $size="feature">
+            Feito para a rotina real de <span>treinos e competições</span>
+          </S.MarketingSectionTitle>
+          <S.MarketingSectionLead $size="feature">
+            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e competições,
+            muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O Biteplaner® modula
+            as sobrecargas através de um processo tecnológico e avaliações periódicas.
+          </S.MarketingSectionLead>
+        </S.RealRoutineContent>
+        <S.RealRoutineVisual>
+          {SPORT_CONTEXT_CARDS.map(({ ...card }) => (
+            <S.RealRoutineCard key={card.title} $imagePosition={card.imagePosition}>
+              <S.RealRoutineCardAccent aria-hidden="true" />
+              <S.MarketingCardTitle $tone="light" $size="lg">{card.title}</S.MarketingCardTitle>
+              <S.MarketingBodyText $tone="light">{card.body}</S.MarketingBodyText>
+            </S.RealRoutineCard>
           ))}
-        </S.TrustRail>
-      </S.TrustOuter>
+        </S.RealRoutineVisual>
+      </S.RealRoutineSection>
+
+      <S.ComparisonSection>
+        <S.ComparisonHeader>
+          <S.SectionIntro>
+            <S.MarketingSectionTitle>Protetores Bucais vs <S.MarketingTitleAccent>Biteplaner</S.MarketingTitleAccent></S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
+              Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
+            </S.MarketingSectionLead>
+          </S.SectionIntro>
+          <S.ComparisonProductVisual>
+            <picture>
+              <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
+              <img
+                src={publicOptimizedImages.biteplaner.faqProduct.webp}
+                alt="Dispositivo Biteplaner na comparação"
+                loading="lazy"
+              />
+            </picture>
+          </S.ComparisonProductVisual>
+        </S.ComparisonHeader>
+        <S.ComparisonTableViewport
+          role="region"
+          aria-label="Tabela comparativa com rolagem horizontal"
+          tabIndex={0}
+        >
+          <S.ComparisonTable>
+            <thead>
+              <tr>
+                <th>Critério</th>
+                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Genérico</S.ColumnHeaderContent></th>
+                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Tradicional</S.ColumnHeaderContent></th>
+                <th data-highlighted-column="true" style={{ fontSize: 18 }}><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.7} />BITEPLANER</S.ColumnHeaderContent></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
+                <tr key={row.criterion}>
+                  <td>
+                    <S.CriterionContent>
+                      <S.CriterionIcon data-testid="comparison-criterion-icon">
+                        <Icon aria-hidden="true" size={32} strokeWidth={1.7} />
+                      </S.CriterionIcon>
+                      <span>{row.criterion}</span>
+                    </S.CriterionContent>
+                  </td>
+                  <td><S.ComparisonValue>{row.generic}</S.ComparisonValue></td>
+                  <td><S.ComparisonValue>{row.traditional}</S.ComparisonValue></td>
+                  <td data-highlighted-cell="true"><S.ComparisonValue>{row.biteplaner}</S.ComparisonValue></td>
+                </tr>
+              ))}
+            </tbody>
+          </S.ComparisonTable>
+        </S.ComparisonTableViewport>
+        <S.MobileComparisonLayout aria-label="Comparação entre protetores bucais e Biteplaner">
+          <S.MobileComparisonLegend aria-hidden="true">
+            <S.MobileComparisonLegendItem>
+              <ShieldCheck size={34} strokeWidth={1.5} />
+              <span>Protetor genérico</span>
+            </S.MobileComparisonLegendItem>
+            <S.MobileComparisonLegendItem>
+              <ShieldCheck size={34} strokeWidth={1.5} />
+              <span>Protetor tradicional</span>
+            </S.MobileComparisonLegendItem>
+            <S.MobileComparisonLegendItem $highlighted>
+              <ShieldCheck size={34} strokeWidth={1.6} />
+              <span>Biteplaner</span>
+            </S.MobileComparisonLegendItem>
+          </S.MobileComparisonLegend>
+
+          <S.MobileComparisonCards>
+            {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
+              <S.MobileComparisonCard
+                key={`mobile-${row.criterion}`}
+                aria-label={`${row.criterion}: protetor genérico ${row.generic}, protetor tradicional ${row.traditional}, Biteplaner ${row.biteplaner}`}
+              >
+                <S.MobileComparisonCriterion>
+                  <S.MobileComparisonCriterionIcon aria-hidden="true">
+                    <Icon size={34} strokeWidth={1.7} />
+                  </S.MobileComparisonCriterionIcon>
+                  <h3 aria-label={row.criterion} data-label={row.criterion} />
+                </S.MobileComparisonCriterion>
+
+                <S.MobileComparisonValueRow>
+                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+                  <strong aria-label="Protetor genérico" data-label="Protetor genérico" />
+                  <span aria-label={row.generic} data-value={row.generic} />
+                </S.MobileComparisonValueRow>
+                <S.MobileComparisonValueRow>
+                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
+                  <strong aria-label="Protetor tradicional" data-label="Protetor tradicional" />
+                  <span aria-label={row.traditional} data-value={row.traditional} />
+                </S.MobileComparisonValueRow>
+                <S.MobileComparisonValueRow $highlighted>
+                  <ShieldCheck size={24} strokeWidth={1.6} aria-hidden="true" />
+                  <strong aria-label="Biteplaner" data-label="Biteplaner" />
+                  <span aria-label={row.biteplaner} data-value={row.biteplaner} />
+                </S.MobileComparisonValueRow>
+              </S.MobileComparisonCard>
+            ))}
+          </S.MobileComparisonCards>
+        </S.MobileComparisonLayout>
+        {!comparisonExpanded ? (
+          <S.ComparisonToggleButton type="button" onClick={() => setComparisonExpanded(true)}>
+            Mostrar comparação completa
+          </S.ComparisonToggleButton>
+        ) : null}
+      </S.ComparisonSection>
 
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
-          <S.SectionLabel>Comentários</S.SectionLabel>
-          <S.SectionTitle id="biteplaner-comments-title">Clientes que passaram pela jornada</S.SectionTitle>
-          <S.SectionLead>
-            Relatos sobre clareza, acompanhamento e confiança durante o processo Biteplaner.
-          </S.SectionLead>
+          <S.MarketingSectionTitle id="biteplaner-comments-title">Clientes satisfeitos com o Biteplaner</S.MarketingSectionTitle>
+          <S.MarketingSectionLead>
+            Relatos sobre conforto, adaptação e confiança no uso real do produto.
+          </S.MarketingSectionLead>
         </S.SectionIntro>
         <S.CommentsViewport data-comments-viewport>
           <S.CommentsTrack data-comments-track aria-label="Carrossel automático de comentários dos clientes">
@@ -392,30 +592,12 @@ export function BiteplanerPage() {
 
       <S.FaqSection>
         <S.FaqMedia>
-          <S.SectionLabel>Dúvidas</S.SectionLabel>
-          <S.SectionTitle>Perguntas frequentes</S.SectionTitle>
+          <S.MarketingSectionTitle>Perguntas frequentes</S.MarketingSectionTitle>
         </S.FaqMedia>
-        <S.FaqProductWrap>
-          <picture>
-            <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
-            <S.FaqProduct
-              src={publicOptimizedImages.biteplaner.faqProduct.webp}
-              alt="Biteplaner"
-              width={675}
-              height={369}
-              loading="lazy"
-              decoding="async"
-              variants={productVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, amount: 0.35 }}
-            />
-          </picture>
-        </S.FaqProductWrap>
         <S.FaqContent>
           <S.FaqList>
-            {FAQ.map((item, index) => (
-              <Collapse key={item.q} trigger={item.q} defaultOpen={index === FAQ.length - 1}>
+            {FAQ.map((item) => (
+              <Collapse key={item.q} trigger={item.q} defaultOpen={item.q === FAQ[0].q}>
                 {item.a}
               </Collapse>
             ))}
@@ -424,19 +606,20 @@ export function BiteplanerPage() {
       </S.FaqSection>
 
       <S.FinalCtaOuter>
-        <S.FinalCtaMedia aria-hidden="true" />
-        <S.FinalCtaContent>
-          <S.FinalCtaTitle>Comece pela elegibilidade</S.FinalCtaTitle>
-          <S.FinalCtaBody>
-            Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
-            qualquer pagamento do produto.
-          </S.FinalCtaBody>
-        </S.FinalCtaContent>
-        <S.FinalCtaAction>
-          <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
-            Iniciar elegibilidade <span aria-hidden="true">→</span>
-          </S.FinalButton>
-        </S.FinalCtaAction>
+        <S.FinalCtaInner>
+          <S.FinalCtaContent>
+            <S.MarketingSectionTitle $tone="light">Comece pela elegibilidade</S.MarketingSectionTitle>
+            <S.MarketingSectionLead $tone="light">
+              Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
+              qualquer pagamento do produto.
+            </S.MarketingSectionLead>
+          </S.FinalCtaContent>
+          <S.FinalCtaAction>
+            <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+              Iniciar elegibilidade <span aria-hidden="true">→</span>
+            </S.FinalButton>
+          </S.FinalCtaAction>
+        </S.FinalCtaInner>
       </S.FinalCtaOuter>
     </S.Page>
   );

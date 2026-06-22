@@ -53,8 +53,14 @@ export const FilterChip = styled.span`
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.bgInset};
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
+`;
+
+export const LoadMoreRow = styled.div`
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
 `;
 
 export const OrderCard = styled.article`
@@ -85,6 +91,6 @@ export const OrderCardTitle = styled.strong`
 export const OrderCardMeta = styled.span`
   display: block;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 `;

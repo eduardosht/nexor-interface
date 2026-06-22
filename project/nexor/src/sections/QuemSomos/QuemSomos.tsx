@@ -36,7 +36,7 @@ const PILLARS = [
   },
   {
     title: 'Evolução Contínua',
-    desc: 'Análise, feedback e melhorias constantes para máxima evolução do atleta.',
+    desc: 'Análise, feedback e melhorias constantes para máxima evolução do atleta ou praticante esportivo.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
         <polyline points="23 4 23 10 17 10" />
@@ -65,7 +65,7 @@ export function QuemSomos() {
         >
           <div>
             <S.Headline as={motion.h2} variants={fadeUp}>
-              Ciência. Tecnologia.
+              Segurança. Prevenção.
               <br />
               Performance<S.Dot>.</S.Dot>
             </S.Headline>
@@ -73,7 +73,10 @@ export function QuemSomos() {
 
           <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <S.BodyText>
-              A Nexor nasce da convicção de que o alto desempenho começa com informação precisa, métodos científicos e soluções desenvolvidas para o atleta.
+              A Nexor nasce da convicção de que o alto desempenho começa com informação precisa, métodos científicos e soluções desenvolvidas para atletas e praticantes esportivos.
+            </S.BodyText>
+            <S.BodyText>
+              Estamos desenvolvendo uma nova abordagem para prevenção e performance biomecânica durante o treino.
             </S.BodyText>
             <S.BodyText>
               Unimos <S.EmphasisText>pesquisa científica, tecnologia de ponta</S.EmphasisText> e{' '}

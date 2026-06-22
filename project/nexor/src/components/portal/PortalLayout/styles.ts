@@ -1,10 +1,21 @@
 import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 const fadeIn = keyframes`from { opacity: 0; } to { opacity: 1; }`;
 
 const slideUp = keyframes`from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); }`;
+
+const skeletonShimmer = keyframes`
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+`;
+
+const skeletonFill = css`
+  background: linear-gradient(90deg, #F3F4F6 25%, #E5E7EB 37%, #F3F4F6 63%);
+  background-size: 240% 100%;
+  animation: ${skeletonShimmer} 1.25s ease-in-out infinite;
+`;
 
 export const Overlay = styled.div`
   position: fixed;
@@ -100,6 +111,49 @@ export const AccessCard = styled.button<{ $selected: boolean; $allowed: boolean 
   }
 `;
 
+export const AccessCardSkeleton = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  min-height: 190px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #E5E5E5;
+  background: #ffffff;
+  overflow: hidden;
+`;
+
+export const AccessSkeletonRadio = styled.span`
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  ${skeletonFill}
+`;
+
+export const AccessSkeletonIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  ${skeletonFill}
+`;
+
+export const AccessSkeletonLine = styled.span<{ $width: string }>`
+  width: ${({ $width }) => $width};
+  height: 10px;
+  border-radius: 999px;
+  ${skeletonFill}
+
+  &:first-of-type {
+    height: 14px;
+  }
+`;
+
 export const AccessCardRadio = styled.span<{ $selected: boolean }>`
   position: absolute;
   top: 14px;
@@ -180,34 +234,41 @@ export const ModalActions = styled.div`
   display: flex;
   gap: 10px;
   justify-content: flex-end;
+  flex-wrap: wrap;
 `;
 
 export const ModalBtnSecondary = styled.button`
-  min-height: 44px;
-  padding: 0 24px;
+  min-width: 150px;
+  min-height: 46px;
+  padding: 0 22px;
   border-radius: 4px;
   border: 1px solid #E0E0E0;
   background: #ffffff;
   color: #171717;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 150px;
   transition: background 120ms ease;
   &:hover { background: #F5F5F5; }
 `;
 
 export const ModalBtnPrimary = styled.button`
-  min-height: 44px;
-  padding: 0 32px;
+  min-width: 150px;
+  min-height: 46px;
+  padding: 0 22px;
   border-radius: 4px;
   border: none;
   background: #171717;
   color: #FAFAFA;
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
   cursor: pointer;
-  flex: 1;
+  flex: 1 1 150px;
   transition: opacity 120ms ease;
   &:hover { opacity: 0.88; }
   &:disabled { opacity: 0.4; cursor: default; }
@@ -535,9 +596,11 @@ export const MobileDrawerOverlay = styled.div`
 `;
 
 export const MobileDrawer = styled.aside`
+  position: relative;
+  z-index: 1;
   width: min(320px, 86vw);
   height: 100%;
-  background: ${({ theme }) => theme.colors.bgElevated};
+  background: #ffffff;
   border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
   box-shadow: 18px 0 48px rgba(23, 23, 23, 0.18);
   display: flex;
@@ -571,26 +634,60 @@ export const MobileDrawerTitle = styled.strong`
 `;
 
 export const MobileDrawerNav = styled.nav`
-  display: grid;
-  gap: 2px;
-  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 0;
   overflow-y: auto;
+  flex: 1;
 `;
 
 export const MobileDrawerLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 8px;
+  padding: 10px 16px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   text-decoration: none;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
 
   &:hover,
   &.active {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  svg { flex-shrink: 0; }
+`;
+
+export const MobileDrawerFooter = styled.div`
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+`;
+
+export const MobileDrawerLogoutButton = styled.button`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+  white-space: nowrap;
+  transition: color 120ms ease, background 120ms ease;
+
+  &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.bgInset};
   }
@@ -704,9 +801,47 @@ export const NotificationsPanelMeta = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const NotificationsPanelHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+`;
+
+export const MarkAllNotificationsReadButton = styled.button`
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    color: ${({ theme }) => theme.colors.textMuted};
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+`;
+
 export const NotificationsList = styled.div`
   display: grid;
   overflow-y: auto;
+`;
+
+export const NotificationsEmpty = styled.p`
+  margin: 0;
+  padding: 22px 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
 `;
 
 export const NotificationItem = styled.button<{ $unread: boolean }>`
@@ -818,6 +953,9 @@ export const ContentScroll = styled.div`
 `;
 
 export const ContentInner = styled(motion.main)`
+  --portal-panel-card-padding: 24px;
+  --portal-panel-gap: 18px;
+  --portal-panel-icon-size: 44px;
   width: 100%;
   max-width: none;
   min-width: 0;
@@ -828,13 +966,81 @@ export const ContentInner = styled(motion.main)`
     padding: 28px 20px;
   }
 
+  @media (max-width: 1280px) {
+    --portal-panel-card-padding: 16px;
+    --portal-panel-gap: 12px;
+    --portal-panel-icon-size: 32px;
+    padding: 28px 24px;
+
+    :where(section, article, aside, form, [role='region']) {
+      gap: var(--portal-panel-gap);
+    }
+
+    :where(article, aside, [role='region']) {
+      padding: var(--portal-panel-card-padding);
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child),
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) {
+      width: var(--portal-panel-icon-size);
+      height: var(--portal-panel-icon-size);
+      min-width: var(--portal-panel-icon-size);
+      max-width: var(--portal-panel-icon-size);
+      flex-basis: var(--portal-panel-icon-size);
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child) svg,
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) svg {
+      width: 20px;
+      height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+    }
+  }
+
   @media (max-width: 640px) {
     padding: 20px 14px;
   }
 
   @media (max-width: 768px) {
-    padding: 24px 18px calc(76px + env(safe-area-inset-bottom));
+    --portal-panel-card-padding: 12px;
+    --portal-panel-gap: 8px;
+    --portal-panel-icon-size: 32px;
+    padding: 16px 12px calc(76px + env(safe-area-inset-bottom));
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
+
+    && :where(h1, h2, h3, h4, h5, h6) {
+      font-size: min(16px, 1em);
+      line-height: 1.2;
+    }
+
+    && :where(p, li, small, figcaption, dt, dd) {
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child),
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      max-width: 32px;
+      flex-basis: 32px;
+    }
+
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:only-child) svg,
+    :where(article, section, aside, a, button) > :where(span, div):has(> svg:first-child:last-child) svg,
+    :where(article, section, aside, a, button) svg {
+      width: 16px;
+      height: 16px;
+      max-width: 16px;
+      max-height: 16px;
+    }
+
+    :where(p, li, dd) {
+      font-size: 12px;
+      line-height: 1.45;
+    }
   }
 
   @media (max-width: 640px) {

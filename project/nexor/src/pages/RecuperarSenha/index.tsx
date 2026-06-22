@@ -61,7 +61,7 @@ export function RecuperarSenha() {
 
     try {
       await sendPasswordReset(email.trim());
-      setMessage('Enviamos um link de recuperação para o seu e-mail.');
+      setMessage('Caso esse e-mail esteja cadastrado, você receberá um e-mail para recuperação de senha.');
     } catch {
       setError('Não foi possível solicitar a recuperação de senha agora. Tente novamente em instantes.');
     } finally {

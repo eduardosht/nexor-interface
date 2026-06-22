@@ -1,43 +1,579 @@
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import journeyCardBackground from '../../../assets/backgrounds/background-card-jornada.png';
+import {
+  biteplanerButtonHoverStyles,
+  biteplanerButtonSurfaceStyles,
+  biteplanerFormButtonStyles,
+} from '../styles/biteplanerFormButton';
+import {
+  PortalCardText,
+  PortalCardTitle,
+  PortalMetaLabel,
+  PortalModalDescription,
+  PortalModalTitle,
+  PortalPageDescription,
+  PortalPageTitle,
+  PortalSectionDescription,
+  PortalSectionTitle,
+} from '../styles/portalTypography';
+
+type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+
+const workspaceHeroBackground = (mode: WorkspaceHeroMode | undefined, fallback: string) => {
+  switch (mode) {
+    case 'partner':
+      return `radial-gradient(circle at 88% 16%, rgba(34, 197, 94, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(20, 184, 166, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 251, 0.99) 0%, rgba(239, 253, 246, 0.94) 58%, rgba(236, 253, 245, 0.92) 100%),
+    ${fallback}`;
+    case 'dentist':
+      return `radial-gradient(circle at 88% 16%, rgba(14, 165, 233, 0.18), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(45, 212, 191, 0.13), transparent 28%),
+    linear-gradient(135deg, rgba(250, 253, 255, 0.99) 0%, rgba(239, 250, 255, 0.94) 58%, rgba(236, 254, 255, 0.9) 100%),
+    ${fallback}`;
+    case 'lab':
+      return `radial-gradient(circle at 88% 16%, rgba(124, 58, 237, 0.16), transparent 31%),
+    radial-gradient(circle at 7% 12%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(252, 251, 255, 0.99) 0%, rgba(245, 243, 255, 0.94) 58%, rgba(239, 246, 255, 0.9) 100%),
+    ${fallback}`;
+    default:
+      return `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
+    radial-gradient(circle at 6% 14%, rgba(59, 130, 246, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 58%, rgba(255, 247, 237, 0.92) 100%),
+    ${fallback}`;
+  }
+};
+
+const workspaceHeroAccent = (mode: WorkspaceHeroMode | undefined) => {
+  switch (mode) {
+    case 'partner':
+      return '#16a34a';
+    case 'dentist':
+      return '#0891b2';
+    case 'lab':
+      return '#7c3aed';
+    default:
+      return '#f59e0b';
+  }
+};
 
 export const Page = styled.div`
   display: grid;
   gap: 24px;
 `;
 
-export const Hero = styled.section`
+export const RoleTabs = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  padding-bottom: 1px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  overflow-x: auto;
+`;
+
+export const RoleTabButton = styled.button<{ $active: boolean }>`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 0 0 14px;
+  border: 0;
+  background: transparent;
+  color: ${({ $active, theme }) => ($active ? '#6d3df5' : theme.colors.textSecondary)};
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 3px;
+    border-radius: 999px 999px 0 0;
+    background: ${({ $active }) => ($active ? '#6d3df5' : 'transparent')};
+  }
+
+  &:hover {
+    color: ${({ $active, theme }) => ($active ? '#6d3df5' : theme.colors.textPrimary)};
+  }
+`;
+
+export const Hero = styled.section<{ $showcase?: boolean; $mode?: WorkspaceHeroMode }>`
   display: grid;
+  grid-template-columns: ${({ $showcase }) => ($showcase ? 'minmax(0, 1fr) minmax(320px, 0.9fr)' : '1fr')};
+  align-items: ${({ $showcase }) => ($showcase ? 'center' : 'stretch')};
+  gap: ${({ $showcase }) => ($showcase ? '28px' : '10px')};
+  min-height: ${({ $showcase }) => ($showcase ? '260px' : 'auto')};
+  padding: ${({ $showcase }) => ($showcase ? '38px 46px' : '24px')};
+  border-radius: ${({ $showcase }) => ($showcase ? '18px' : '16px')};
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ $showcase, $mode, theme }) =>
+    $showcase
+      ? workspaceHeroBackground($mode, theme.colors.bgElevated)
+      : theme.colors.bgElevated};
+  box-shadow: ${({ $showcase }) => ($showcase ? '0 18px 48px rgba(15, 23, 42, 0.07)' : 'none')};
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding: ${({ $showcase }) => ($showcase ? '28px' : '24px')};
+  }
+
+  @media (max-width: 720px) {
+    gap: ${({ $showcase }) => ($showcase ? '8px' : '6px')};
+    min-height: auto;
+    padding: ${({ $showcase }) => ($showcase ? '14px' : '12px')};
+    border-radius: 12px;
+    box-shadow: ${({ $showcase }) => ($showcase ? '0 10px 24px rgba(15, 23, 42, 0.06)' : 'none')};
+  }
+`;
+
+export const HeroCopy = styled.div`
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+
+  @media (max-width: 720px) {
+    gap: 6px;
+  }
+`;
+
+export const Eyebrow = PortalMetaLabel;
+
+export const Title = styled(PortalPageTitle).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+})) <{ $showcase?: boolean }>`
+  @media (max-width: 720px) {
+    line-height: 1.16;
+  }
+`;
+
+export const Description = styled(PortalPageDescription).attrs<{ $showcase?: boolean }>(({ $showcase }) => ({
+  $size: $showcase ? 'showcase' : 'default',
+})) <{ $showcase?: boolean }>`
+  ${({ $showcase }) => (!$showcase ? 'font-size: 14px; line-height: 1.6;' : '')}
+
+  @media (max-width: 720px) {
+    max-width: 64ch;
+    line-height: 1.35;
+  }
+`;
+
+export const HeroVisual = styled.div`
+  position: relative;
+  min-height: 190px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+export const HeroBrowser = styled.div`
+  position: absolute;
+  inset: 0 0 0 24px;
+  border-radius: 16px 16px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 22px 42px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+`;
+
+export const HeroBrowserChrome = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+
+  span {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #f59e0b;
+  }
+
+  span:nth-child(2) {
+    background: #fbbf24;
+  }
+
+  span:nth-child(3) {
+    background: #d1d5db;
+  }
+`;
+
+export const HeroBrowserBody = styled.div`
+  position: relative;
+  height: calc(100% - 34px);
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px) 0 0 / 33.3% 100%,
+    linear-gradient(180deg, rgba(15, 23, 42, 0.04), transparent 44%);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 12%;
+    width: 72px;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.08);
+  }
+
+  &::before {
+    top: 20px;
+  }
+
+  &::after {
+    top: 46px;
+    width: 48px;
+  }
+`;
+
+export const HeroChartLine = styled.span`
+  position: absolute;
+  left: 13%;
+  right: 8%;
+  top: 48%;
+  height: 54px;
+  border-top: 2px solid rgba(15, 23, 42, 0.32);
+  transform: skewY(-16deg);
+`;
+
+export const HeroChartPoint = styled.span<{ $left: string; $top: string; $active?: boolean; $mode?: WorkspaceHeroMode }>`
+  position: absolute;
+  left: ${({ $left }) => $left};
+  top: ${({ $top }) => $top};
+  width: ${({ $active }) => ($active ? '34px' : '10px')};
+  height: ${({ $active }) => ($active ? '34px' : '10px')};
+  border-radius: 999px;
+  border: ${({ $active, $mode }) => ($active ? `8px solid ${workspaceHeroAccent($mode)}66` : '2px solid rgba(15, 23, 42, 0.66)')};
+  background: ${({ $active, $mode }) => ($active ? workspaceHeroAccent($mode) : 'rgba(255, 255, 255, 0.96)')};
+  transform: translate(-50%, -50%);
+  box-shadow: ${({ $active, $mode }) => ($active ? `0 0 0 4px ${workspaceHeroAccent($mode)}24` : 'none')};
+`;
+
+export const HeroFloatingCard = styled.div`
+  position: absolute;
+  left: -8px;
+  top: 62px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 230px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  span {
+    display: grid;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+`;
+
+export const HeroFloatingIcon = styled.span<{ $mode?: WorkspaceHeroMode; $tone?: 'success' | 'warning' | 'neutral' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: ${({ $tone, $mode }) =>
+    $tone === 'warning'
+      ? 'rgba(245, 158, 11, 0.14)'
+      : $tone === 'neutral'
+        ? 'rgba(148, 163, 184, 0.16)'
+        : `${workspaceHeroAccent($mode)}18`};
+  color: ${({ $tone, $mode }) =>
+    $tone === 'warning' ? '#d18a00' : $tone === 'neutral' ? '#64748b' : workspaceHeroAccent($mode)};
+`;
+
+export const PartnerHeroVisual = styled.div`
+  position: relative;
+  min-height: 190px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
+`;
+
+export const PartnerHeroBrowser = styled.div`
+  position: absolute;
+  top: 0;
+  right: 70px;
+  width: min(360px, 82%);
+  height: 192px;
+  border-radius: 16px 16px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.38);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+`;
+
+export const PartnerHeroBrowserBody = styled.div`
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  height: calc(100% - 34px);
+  padding: 28px 42px 0;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px) 0 0 / 50% 100%,
+    linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.94));
+`;
+
+export const PartnerHeroLine = styled.span<{ $width: string }>`
+  display: block;
+  width: ${({ $width }) => $width};
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+`;
+
+export const PartnerHeroSuccess = styled.span`
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #2ca36a;
+  color: #ffffff;
+  box-shadow: 0 0 0 8px rgba(44, 163, 106, 0.12);
+`;
+
+export const PartnerHeroLinkBadge = styled.span`
+  position: absolute;
+  left: 18px;
+  top: 76px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.86);
+  background: rgba(239, 246, 255, 0.94);
+  color: #3b82f6;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.14);
+`;
+
+export const PartnerHeroBars = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
   gap: 10px;
-  padding: 24px;
+  width: 100px;
+  height: 82px;
+  padding: 18px 18px 12px;
+  border-radius: 24px 0 16px 0;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+
+  span {
+    display: block;
+    width: 14px;
+    border-radius: 5px 5px 2px 2px;
+    background: #cbd5e1;
+  }
+
+  span:nth-child(1) {
+    height: 22px;
+  }
+
+  span:nth-child(2) {
+    height: 38px;
+  }
+
+  span:nth-child(3) {
+    height: 58px;
+    background: #2ca36a;
+  }
+`;
+
+export const PartnerHeroArrow = styled.span`
+  position: absolute;
+  right: 58px;
+  top: 70px;
+  width: 86px;
+  height: 42px;
+  border-top: 2px dashed rgba(71, 85, 105, 0.38);
+  border-radius: 80% 60% 0 0;
+  transform: rotate(-8deg);
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -2px;
+    top: -5px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid rgba(71, 85, 105, 0.46);
+    border-right: 2px solid rgba(71, 85, 105, 0.46);
+    transform: rotate(28deg);
+  }
+`;
+
+export const ReferralHero = styled.section`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  align-items: center;
+  gap: 28px;
+  min-height: 188px;
+  padding: 32px 40px;
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
+  background:
+    radial-gradient(circle at 90% 12%, rgba(59, 130, 246, 0.12), transparent 26%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.94) 68%, rgba(255, 255, 255, 0.96) 100%),
+    ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    padding: 28px;
+  }
 `;
 
-export const Eyebrow = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const ReferralHeroVisual = styled.div`
+  position: relative;
+  min-height: 150px;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
 `;
 
-export const Title = styled.h1`
-  margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const ReferralHeroBrowser = styled.div`
+  position: absolute;
+  top: -12px;
+  right: 50px;
+  width: min(360px, 82%);
+  height: 164px;
+  border-radius: 14px 14px 0 0;
+  border: 1px solid rgba(148, 163, 184, 0.34);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 44px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
 `;
 
-export const Description = styled.p`
-  margin: 0;
-  max-width: 760px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const ReferralHeroBrowserBody = styled.div`
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  height: calc(100% - 34px);
+  padding: 24px 110px 0 28px;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.88), rgba(255, 255, 255, 0.94));
+`;
+
+export const ReferralHeroLinkBadge = styled.span`
+  position: absolute;
+  left: 30px;
+  top: 56px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  border: 1px solid rgba(229, 231, 235, 0.86);
+  background: rgba(239, 246, 255, 0.96);
+  color: #3b82f6;
+  box-shadow: 0 18px 34px rgba(59, 130, 246, 0.14);
+`;
+
+export const ReferralHeroSuccess = styled.span`
+  position: absolute;
+  top: 36px;
+  right: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(240, 253, 244, 0.96);
+  color: #16a34a;
+  box-shadow: 0 16px 28px rgba(22, 163, 74, 0.12);
+
+  svg {
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 999px;
+    background: #22c55e;
+    color: #ffffff;
+  }
+`;
+
+export const ReferralHeroBars = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  width: 98px;
+  height: 80px;
+  padding: 20px 18px 14px;
+  border-radius: 16px 0 14px 14px;
+  border: 1px solid rgba(229, 231, 235, 0.76);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+
+  span {
+    display: block;
+    width: 14px;
+    border-radius: 5px 5px 2px 2px;
+  }
+
+  span:nth-child(1) {
+    height: 22px;
+    background: #bbf7d0;
+  }
+
+  span:nth-child(2) {
+    height: 38px;
+    background: #7dd3fc;
+  }
+
+  span:nth-child(3) {
+    height: 56px;
+    background: #818cf8;
+  }
 `;
 
 export const Banner = styled.div`
@@ -109,14 +645,294 @@ export const StatsGrid = styled.section`
   gap: 12px;
 `;
 
+type AthleteTone = 'blue' | 'amber' | 'green';
+type PartnerTone = 'blue' | 'green' | 'purple';
+type OperationalTone = 'purple' | 'amber' | 'blue';
+
+const athleteTone = {
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(59, 130, 246, 0.06))',
+    color: '#2563eb',
+    halo: 'rgba(59, 130, 246, 0.12)'
+  },
+  amber: {
+    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06))',
+    color: '#d18a00',
+    halo: 'rgba(245, 158, 11, 0.14)'
+  },
+  green: {
+    bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))',
+    color: '#16a34a',
+    halo: 'rgba(34, 197, 94, 0.12)'
+  }
+} satisfies Record<AthleteTone, { bg: string; color: string; halo: string }>;
+
+const partnerTone = {
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(79, 70, 229, 0.07))',
+    color: '#3b82f6',
+    halo: 'rgba(59, 130, 246, 0.08)'
+  },
+  green: {
+    bg: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.06))',
+    color: '#1f9d66',
+    halo: 'rgba(34, 197, 94, 0.08)'
+  },
+  purple: {
+    bg: 'linear-gradient(135deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.06))',
+    color: '#7c3aed',
+    halo: 'rgba(124, 58, 237, 0.08)'
+  }
+} satisfies Record<PartnerTone, { bg: string; color: string; halo: string }>;
+
+const operationalTone = {
+  purple: {
+    bg: 'linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06))',
+    color: '#6d3df5',
+    halo: 'rgba(109, 61, 245, 0.08)'
+  },
+  amber: {
+    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(245, 158, 11, 0.06))',
+    color: '#d18a00',
+    halo: 'rgba(245, 158, 11, 0.1)'
+  },
+  blue: {
+    bg: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.06))',
+    color: '#2784d6',
+    halo: 'rgba(59, 130, 246, 0.1)'
+  }
+} satisfies Record<OperationalTone, { bg: string; color: string; halo: string }>;
+
+const compactStatCard = css`
+  gap: 12px;
+  min-height: auto;
+  padding: 14px;
+  border-radius: 12px;
+
+  @media (max-width: 1280px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  @media (max-width: 640px) {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+`;
+
+const compactStatIcon = css`
+  flex: 0 0 auto;
+  border-radius: 10px;
+  box-shadow: none;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media (max-width: 1280px) {
+    border-radius: 8px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+`;
+
+export const AthleteStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+
+    > :last-child {
+      grid-column: 1 / -1;
+    }
+  }
+`;
+
+export const AthleteStatCard = styled.article<{ $tone: AthleteTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
+`;
+
+export const AthleteStatIcon = styled.span<{ $tone: AthleteTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: ${({ $tone }) => athleteTone[$tone].bg};
+  color: ${({ $tone }) => athleteTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => athleteTone[$tone].halo};
+
+  ${compactStatIcon}
+`;
+
+export const AthleteStatContent = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+
+  @media (max-width: 640px) {
+    gap: 2px;
+  }
+`;
+
+export const PartnerStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PartnerStatCard = styled.article<{ $tone: PartnerTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
+`;
+
+export const PartnerStatIcon = styled.span<{ $tone: PartnerTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: ${({ $tone }) => partnerTone[$tone].bg};
+  color: ${({ $tone }) => partnerTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => partnerTone[$tone].halo};
+
+  ${compactStatIcon}
+`;
+
+export const PartnerStatContent = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const OperationalStatsGrid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const OperationalStatCard = styled.article<{ $tone: OperationalTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 118px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.92);
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  ${compactStatCard}
+`;
+
+export const OperationalStatIcon = styled.span<{ $tone: OperationalTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: ${({ $tone }) => operationalTone[$tone].bg};
+  color: ${({ $tone }) => operationalTone[$tone].color};
+  box-shadow: 0 0 0 8px ${({ $tone }) => operationalTone[$tone].halo};
+
+  ${compactStatIcon}
+`;
+
+export const OperationalStatContent = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+`;
+
 export const PartnerDashboardGrid = styled.section`
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
-  gap: 16px;
+  gap: 18px;
+  align-items: stretch;
+
+  @media (max-width: 1400px) {
+    grid-template-columns: 1fr;
+  }
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
+`;
+
+export const PartnerChartPanel = styled.section`
+  display: grid;
+  gap: 22px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 `;
 
 export const PartnerChartHeader = styled.div`
@@ -125,6 +941,36 @@ export const PartnerChartHeader = styled.div`
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
+`;
+
+export const PartnerPanelTitleGroup = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  span {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const PartnerPanelIcon = styled.span<{ $tone: 'blue' | 'purple' | 'green' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  flex: 0 0 auto;
+  background: ${({ $tone }) =>
+    $tone === 'blue'
+      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.13), rgba(59, 130, 246, 0.05))'
+      : $tone === 'green'
+        ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))'
+        : 'linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(124, 58, 237, 0.05))'};
+  color: ${({ $tone }) => ($tone === 'blue' ? '#3b82f6' : $tone === 'green' ? '#16a34a' : '#7c3aed')};
 `;
 
 export const PartnerPeriodControl = styled.div`
@@ -159,13 +1005,7 @@ export const PartnerPeriodButton = styled.button<{ $active: boolean }>`
 export const PartnerBarChart = styled.div`
   display: grid;
   gap: 14px;
-  min-height: 348px;
-  padding: 16px 12px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(250, 250, 250, 0.72) 100%),
-    ${({ theme }) => theme.colors.bgBase};
+  min-height: 380px;
 
   .recharts-wrapper,
   .recharts-surface {
@@ -206,6 +1046,136 @@ export const PartnerChartLegendItem = styled.div`
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 14px;
     font-weight: 800;
+  }
+`;
+
+export const PartnerOperationPanel = styled.section`
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+`;
+
+export const PartnerActionCards = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+
+  @media (max-width: 1120px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PartnerActionCard = styled(Link)`
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 244px;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-decoration: none;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  > svg:last-child {
+    margin-top: auto;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  }
+`;
+
+export const PartnerActionButton = styled.button`
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 244px;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  strong {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  > svg:last-child {
+    margin-top: auto;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(23, 23, 23, 0.24);
+    outline-offset: 3px;
+  }
+`;
+
+export const PartnerActionCardPrimary = styled(PartnerActionCard)`
+  border-color: #171717;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 36%),
+    linear-gradient(135deg, #111111, #242424);
+  color: #ffffff;
+
+`;
+
+export const PartnerActionText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.55;
+
+  ${PartnerActionCardPrimary} & {
+    color: rgba(255, 255, 255, 0.84);
+  }
+`;
+
+export const PartnerActionIcon = styled.span<{ $dark?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 12px;
+  background: ${({ $dark }) => ($dark ? 'rgba(255, 255, 255, 0.12)' : '#f5f5f5')};
+  color: ${({ $dark, theme }) => ($dark ? '#ffffff' : theme.colors.textPrimary)};
+
+  svg {
+    margin: 0;
   }
 `;
 
@@ -298,24 +1268,39 @@ export const StatCard = styled.article`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const StatLabel = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
+export const StatLabel = styled(PortalMetaLabel)`
+  display: block;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.15;
+  }
 `;
 
 export const StatValue = styled.strong`
-  font-size: 26px;
+  display: block;
+  min-width: 0;
+  font-size: 16px;
   font-weight: 800;
+  line-height: 1.2;
   color: ${({ theme }) => theme.colors.textPrimary};
+  overflow-wrap: anywhere;
+
+  @media (max-width: 640px) {
+    font-size: 16px;
+    line-height: 1.15;
+  }
 `;
 
 export const StatHint = styled.span`
   font-size: 13px;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+    line-height: 1.25;
+  }
 `;
 
 export const Panel = styled.section`
@@ -325,6 +1310,157 @@ export const Panel = styled.section`
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const OperationalPanel = styled.section`
+  display: grid;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+
+  @media (max-width: 720px) {
+    padding: 20px;
+  }
+`;
+
+export const OperationalPanelHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  > span:last-child {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const OperationalTableShell = styled.div`
+  min-width: 0;
+`;
+
+export const ReferralPanel = styled.section`
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+
+  @media (max-width: 720px) {
+    padding: 20px;
+  }
+`;
+
+export const ReferralPanelHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+
+  > span:last-child {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+`;
+
+export const ReferralForm = styled.form`
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) minmax(140px, auto);
+  gap: 18px;
+  align-items: end;
+
+  @media (max-width: 980px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const ReferralField = styled.div`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+
+  > span {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.colors.textSecondary};
+  }
+
+  label {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    background: ${({ theme }) => theme.colors.bgElevated};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+
+    &:focus-within {
+      border-color: ${({ theme }) => theme.colors.textPrimary};
+      box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
+    }
+  }
+
+  input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font: inherit;
+    font-size: 14px;
+
+    &::placeholder {
+      color: ${({ theme }) => theme.colors.textSecondary};
+    }
+  }
+`;
+
+export const ReferralSubmitButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid ${({ theme }) => theme.colors.textPrimary};
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 36%),
+    linear-gradient(135deg, #111111, #242424);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(23, 23, 23, 0.14);
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+    transform: none;
+  }
 `;
 
 export const PanelHeader = styled.div`
@@ -343,18 +1479,25 @@ export const PanelHeaderRow = styled.div`
   }
 `;
 
-export const PanelTitle = styled.h2`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const PanelTitle = styled(PortalSectionTitle).attrs({ $size: 'md' as const })``;
+
+export const PanelText = PortalSectionDescription;
+
+export const AthleteCasePanel = styled.section`
+  display: grid;
+  gap: 0;
 `;
 
-export const PanelText = styled.p`
+export const AthleteCaseTitle = styled.h2`
   margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: clamp(24px, 2.4vw, 30px);
+  font-weight: 850;
+  line-height: 1.15;
+
+  @media (max-width: 560px) {
+    font-size: 22px;
+  }
 `;
 
 export const ActionRow = styled.div`
@@ -367,6 +1510,7 @@ export const PrimaryLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 36px;
   padding: 0 14px;
   border-radius: 8px;
@@ -381,6 +1525,7 @@ export const SecondaryLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 36px;
   padding: 0 14px;
   border-radius: 8px;
@@ -429,16 +1574,86 @@ export const TableActionRow = styled.div`
   gap: 8px;
 `;
 
-export const TableIconButton = styled.button`
+export const StatusCellStack = styled.div`
+  display: grid;
+  gap: 4px;
+  align-items: start;
+`;
+
+export const TableCellHint = styled.span`
+  display: block;
+  max-width: 22ch;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.35;
+`;
+
+const tableButtonTone = {
+  neutral: {
+    bg: '#ffffff',
+    border: '#E0E0E0',
+    color: '#171717',
+    hover: '#f5f5f5'
+  },
+  success: {
+    bg: '#ecfdf5',
+    border: '#bbf7d0',
+    color: '#059669',
+    hover: '#d1fae5'
+  },
+  danger: {
+    bg: '#fef2f2',
+    border: '#fecaca',
+    color: '#dc2626',
+    hover: '#fee2e2'
+  },
+  warning: {
+    bg: '#fffbeb',
+    border: '#fde68a',
+    color: '#d18a00',
+    hover: '#fef3c7'
+  },
+  info: {
+    bg: '#ecfdf5',
+    border: '#d1fae5',
+    color: '#059669',
+    hover: '#d1fae5'
+  }
+} satisfies Record<string, { bg: string; border: string; color: string; hover: string }>;
+
+const documentationActionButtonTone = {
+  neutral: tableButtonTone.neutral,
+  success: {
+    bg: '#15803d',
+    border: '#15803d',
+    color: '#f8fbff',
+    hover: '#166534'
+  },
+  danger: {
+    bg: '#b91c1c',
+    border: '#b91c1c',
+    color: '#f8fbff',
+    hover: '#991b1b'
+  },
+  warning: {
+    bg: '#b91c1c',
+    border: '#b91c1c',
+    color: '#f8fbff',
+    hover: '#991b1b'
+  },
+  info: tableButtonTone.info
+} satisfies Record<keyof typeof tableButtonTone, { bg: string; border: string; color: string; hover: string }>;
+
+export const TableIconButton = styled.button<{ $tone?: keyof typeof tableButtonTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  border: 1px solid ${({ $tone = 'neutral' }) => tableButtonTone[$tone].border};
+  background: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].bg};
+  color: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].color};
   cursor: pointer;
   transition:
     background 180ms ease,
@@ -446,8 +1661,8 @@ export const TableIconButton = styled.button`
     color 180ms ease;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.bgElevated};
-    border-color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].hover};
+    border-color: ${({ $tone = 'neutral' }) => tableButtonTone[$tone].color};
   }
 
   &:disabled {
@@ -458,6 +1673,22 @@ export const TableIconButton = styled.button`
     box-shadow: none;
     filter: saturate(0.72);
   }
+`;
+
+export const StagePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #e8f3ff;
+  color: #0f4b85;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 `;
 
 export const OrderCard = styled.article`
@@ -476,12 +1707,9 @@ export const OrderHeader = styled.div`
   gap: 12px;
 `;
 
-export const OrderTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const OrderTitle = PortalCardTitle;
+
+export const OrderText = PortalCardText;
 
 export const OrderMeta = styled.div`
   display: flex;
@@ -489,20 +1717,275 @@ export const OrderMeta = styled.div`
   gap: 8px;
 `;
 
-export const OrderText = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
+export const AthleteOrderHighlight = styled.article`
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-height: 250px;
+  padding: 24px 34px;
+  border-radius: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background:
+    linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 48%, rgba(255, 255, 255, 0.48) 68%, rgba(255, 255, 255, 0.04) 100%),
+    url(${journeyCardBackground}) right center / auto 100% no-repeat,
+    #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+
+  @media (max-width: 1100px) {
+    min-height: auto;
+    background:
+      linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 55%, rgba(255, 255, 255, 0.5) 100%),
+      url(${journeyCardBackground}) right center / auto 100% no-repeat,
+      #ffffff;
+  }
+
+  @media (max-width: 720px) {
+    padding: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.96)),
+      url(${journeyCardBackground}) right bottom / 78% auto no-repeat,
+      #ffffff;
+  }
+`;
+
+export const AthletePendingActionsPanel = styled.section`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(21, 128, 61, 0.28);
+  background:
+    radial-gradient(circle at 6% 0%, rgba(21, 128, 61, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(240, 253, 244, 0.9), rgba(255, 255, 255, 0.96));
+
+  @media (max-width: 720px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const AthletePendingActionsCopy = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+`;
+
+export const AthletePendingActionButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 18px;
+
+  @media (max-width: 720px) {
+    width: 100%;
+  }
+`;
+
+export const AthleteOrderAvatar = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 86px;
+  height: 86px;
+  align-self: start;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.72), transparent 28%),
+    linear-gradient(135deg, #fff4c8 0%, #f7df83 100%);
+  color: #081225;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0;
+
+  @media (max-width: 720px) {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+  }
+`;
+
+export const AthleteOrderMain = styled.div`
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  align-self: stretch;
+  align-content: start;
+  position: relative;
+  z-index: 1;
+`;
+
+export const AthleteCardHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 10px;
+  }
+`;
+
+export const AthleteOrderHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 14px;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+  }
+`;
+
+export const AthleteOrderMeta = styled.span`
+  display: block;
+  margin-bottom: 6px;
   color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+`;
+
+export const AthleteOrderTitle = styled.h3`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 22px;
+  font-weight: 850;
+  line-height: 1.16;
+  letter-spacing: 0;
+`;
+
+export const AthleteOrderStage = styled.p`
+  margin: 8px 0 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.45;
+
+  strong {
+    color: #16803b;
+    font-weight: 800;
+  }
+`;
+
+export const AthleteOrderDescription = styled.p`
+  margin: 0;
+  max-width: 460px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.55;
+`;
+
+export const AthleteOrderAssistiveText = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`;
+
+const athleteStatusTone = {
+  success: {
+    bg: '#ecfdf5',
+    border: '#bbf7d0',
+    color: '#15803d',
+    dot: '#15803d',
+  },
+  warning: {
+    bg: '#fff8eb',
+    border: '#f3d39a',
+    color: '#a96a10',
+    dot: '#d18a00',
+  },
+  neutral: {
+    bg: '#f8fafc',
+    border: '#dbe3ec',
+    color: '#475569',
+    dot: '#94a3b8',
+  },
+} satisfies Record<'success' | 'warning' | 'neutral', { bg: string; border: string; color: string; dot: string }>;
+
+export const AthleteOrderStatusBadge = styled.span<{ $tone: 'success' | 'warning' | 'neutral' }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid ${({ $tone }) => athleteStatusTone[$tone].border};
+  background: ${({ $tone }) => athleteStatusTone[$tone].bg};
+  color: ${({ $tone }) => athleteStatusTone[$tone].color};
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+
+  span {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 999px;
+    background: ${({ $tone }) => athleteStatusTone[$tone].dot};
+  }
+
+  @media (max-width: 720px) {
+    position: static;
+    width: fit-content;
+    max-width: 100%;
+  }
+`;
+
+export const AthleteJourneyAction = styled(Link)`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: fit-content;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+
+  @media (max-width: 520px) {
+    width: 100%;
+    min-width: 0;
+  }
 `;
 
 export const EmptyState = styled.div`
+  display: grid;
+  justify-items: start;
+  gap: 12px;
   padding: 18px;
   border-radius: 12px;
   border: 1px dashed ${({ theme }) => theme.colors.borderDefault};
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 14px;
   line-height: 1.6;
+
+  p {
+    margin: 0;
+  }
 `;
 
 export const LeadTable = styled.div``;
@@ -514,33 +1997,83 @@ export const SectionStack = styled.div`
 
 export const DentistStatusBar = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
-  gap: 12px;
-  padding: 16px 18px;
-  border-radius: 10px;
+  grid-template-columns: minmax(300px, 1.35fr) minmax(220px, 0.75fr) minmax(220px, 0.9fr);
+  gap: 28px;
+  padding: 28px 32px;
+  border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
 
-  @media (max-width: 720px) {
+  @media (max-width: 1280px) {
+    grid-template-columns: minmax(260px, 1fr) minmax(180px, 0.7fr) minmax(180px, 0.8fr);
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 960px) {
     grid-template-columns: 1fr;
+    padding: 14px;
   }
 `;
 
 export const DentistStatusItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
+
+  > span:last-child {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+`;
+
+export const DentistStatusContent = styled.div`
   display: grid;
+  grid-template-rows: auto auto;
   gap: 4px;
   min-width: 0;
 `;
 
-export const DentistStatusValue = styled.strong`
+export const DentistStatusIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06));
+  color: #6d3df5;
+
+  ${compactStatIcon}
+`;
+
+export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' | 'neutral' }>`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 15px;
+  width: fit-content;
+  max-width: 100%;
+  color: ${({ $tone, theme }) =>
+    $tone === 'success' ? '#059669' : $tone === 'warning' ? '#d18a00' : theme.colors.textPrimary};
+  font-size: 22px;
   font-weight: 800;
   line-height: 1.35;
   overflow-wrap: anywhere;
+`;
+
+export const DentistStatusDescription = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 14px;
+  line-height: 1.5;
 `;
 
 export const DentistStatusDot = styled.span<{ $tone: 'success' | 'warning' | 'neutral' }>`
@@ -552,11 +2085,11 @@ export const DentistStatusDot = styled.span<{ $tone: 'success' | 'warning' | 'ne
     $tone === 'success' ? '#16A34A' : $tone === 'warning' ? '#D18A00' : '#9CA3AF'};
   box-shadow: 0 0 0 3px
     ${({ $tone }) =>
-      $tone === 'success'
-        ? 'rgba(22, 163, 74, 0.14)'
-        : $tone === 'warning'
-          ? 'rgba(209, 138, 0, 0.16)'
-          : 'rgba(156, 163, 175, 0.14)'};
+    $tone === 'success'
+      ? 'rgba(22, 163, 74, 0.14)'
+      : $tone === 'warning'
+        ? 'rgba(209, 138, 0, 0.16)'
+        : 'rgba(156, 163, 175, 0.14)'};
 `;
 
 export const LicensingCard = styled.div`
@@ -598,7 +2131,7 @@ export const CourseTabButton = styled.button<{ $active: boolean }>`
   cursor: pointer;
 
   span {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -616,7 +2149,7 @@ export const CourseCompletionMark = styled.small`
   align-items: center;
   gap: 5px;
   width: fit-content;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -766,25 +2299,16 @@ export const SectionHeading = styled.div`
   gap: 4px;
 `;
 
-export const SectionTitle = styled.h3`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const SectionTitle = styled(PortalSectionTitle).attrs({ as: 'h3', $size: 'sm' as const })``;
 
-export const SectionDescription = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const SectionDescription = styled(PortalSectionDescription).attrs({ $size: 'sm' as const })``;
 
 export const InlineForm = styled.form`
   display: grid;
   grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1fr) auto;
   gap: 12px;
   align-items: end;
+  ${biteplanerFormButtonStyles}
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
@@ -810,6 +2334,11 @@ export const IconActionButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.bgElevated};
     border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
   }
 `;
 
@@ -848,19 +2377,9 @@ export const ModalHeader = styled.div`
   gap: 16px;
 `;
 
-export const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
+export const ModalTitle = styled(PortalModalTitle).attrs({ as: 'h3' })``;
 
-export const ModalSubtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalSubtitle = PortalModalDescription;
 
 export const ModalCloseButton = styled.button`
   display: inline-flex;
@@ -885,26 +2404,14 @@ export const QrShell = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const QrCaption = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const QrCaption = PortalMetaLabel;
 
 export const ModalField = styled.div`
   display: grid;
   gap: 8px;
 `;
 
-export const ModalLabel = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ModalLabel = PortalMetaLabel;
 
 export const LinkPreview = styled.input`
   width: 100%;
@@ -920,7 +2427,281 @@ export const LinkPreview = styled.input`
 export const ModalActions = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
+
+  @media (max-width: 560px) {
+    justify-content: stretch;
+
+    > button,
+    > a {
+      width: 100%;
+    }
+  }
+`;
+
+export const DocumentationModalActions = styled(ModalActions)`
+  margin-top: 2px;
+  padding-top: 16px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const DocumentationActionButton = styled.button<{ $tone?: keyof typeof tableButtonTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].border};
+  background: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].bg};
+  color: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].color};
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+
+  &:hover {
+    background: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].hover};
+    border-color: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].hover};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: ${({ theme }) => theme.colors.borderDefault};
+    background: ${({ theme }) => theme.colors.bgInset};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    box-shadow: none;
+    filter: saturate(0.72);
+  }
+`;
+
+export const ReferralInviteModalBox = styled(ModalBox)`
+  width: min(100%, 760px);
+  gap: 20px;
+  padding: 28px;
+  border-radius: 16px;
+  border-color: rgba(148, 163, 184, 0.34);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+
+  @media (max-width: 720px) {
+    max-height: calc(100vh - 28px);
+    overflow-y: auto;
+    padding: 22px;
+  }
+`;
+
+export const ReferralInviteModalHeader = styled(ModalHeader)`
+  align-items: flex-start;
+  gap: 16px;
+`;
+
+export const ReferralInviteModalTitle = styled(ModalTitle)`
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+`;
+
+export const ReferralInviteModalSubtitle = styled(ModalSubtitle)`
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.55;
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-weight: 800;
+  }
+`;
+
+export const ReferralInviteModalCloseButton = styled(ModalCloseButton)`
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  svg {
+    display: block;
+  }
+
+  @media (max-width: 720px) {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+`;
+
+export const ReferralInviteQrShell = styled(QrShell)`
+  position: relative;
+  gap: 14px;
+  min-height: 320px;
+  padding: 28px;
+  border-radius: 18px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+
+  @media (max-width: 720px) {
+    min-height: auto;
+    padding: 20px 16px;
+  }
+`;
+
+export const ReferralInviteQrFrame = styled.div`
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+
+  svg {
+    width: min(100%, 240px);
+    height: auto;
+    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.12));
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(#16803b, #16803b) left top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right top / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) left bottom / 2px 28px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 28px 2px no-repeat,
+      linear-gradient(#16803b, #16803b) right bottom / 2px 28px no-repeat;
+    border-radius: 12px;
+  }
+`;
+
+export const ReferralInviteQrCaption = styled(QrCaption)`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  svg {
+    color: #16803b;
+  }
+`;
+
+export const ReferralInviteModalField = styled(ModalField)`
+  gap: 12px;
+`;
+
+export const ReferralInviteModalLabel = styled(ModalLabel)`
+  font-size: 12px;
+  letter-spacing: 0.08em;
+`;
+
+export const ReferralInviteLinkInputGroup = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  min-height: 52px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 12px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    min-height: 58px;
+  }
+`;
+
+export const ReferralInviteLinkPreview = styled(LinkPreview)`
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+export const ReferralInviteInlineCopyButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+`;
+
+export const ReferralInviteModalActions = styled(ModalActions)`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+
+  @media (max-width: 820px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+const referralInviteActionBase = css`
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+`;
+
+export const ReferralInviteCopyButton = styled.button`
+  ${referralInviteActionBase}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  background: linear-gradient(135deg, #16803b, #239655);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(22, 128, 59, 0.24);
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+`;
+
+export const ModalSecondaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  min-height: 44px;
+  padding: 0 18px;
+  border-color: #b91c1c;
+  background: #fff1f2;
+  color: #b91c1c;
+  box-shadow: none;
+
+  &:not(:disabled):hover {
+    transform: translateY(-1px);
+    border-color: #991b1b;
+    background: #fee2e2;
+    color: #991b1b;
+    box-shadow: 0 10px 22px rgba(185, 28, 28, 0.12);
+  }
+`;
+
+export const ModalPrimaryButton = styled.button`
+  ${biteplanerButtonSurfaceStyles}
+  ${biteplanerButtonHoverStyles}
+  min-height: 44px;
+  padding: 0 20px;
 `;
 
 export const ModalActionLink = styled(motion.a)`
@@ -948,9 +2729,68 @@ export const ModalActionLink = styled(motion.a)`
   }
 `;
 
+const whatsappActionStyles = css`
+  min-height: 58px;
+  gap: 14px;
+  padding: 0 26px;
+  border-color: #52b967;
+  border-radius: 999px;
+  background: #52b967;
+  color: #f8fff9;
+  box-shadow: 0 12px 24px rgba(31, 150, 72, 0.24);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+
+  svg {
+    width: 32px;
+    height: 32px;
+    color: currentColor;
+    stroke-width: 2.6;
+  }
+
+  &:hover {
+    border-color: #47a95d;
+    background: #47a95d;
+    box-shadow: 0 14px 28px rgba(31, 150, 72, 0.3);
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
+    font-size: 14px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+export const ReferralInviteActionLink = styled(ModalActionLink) <{ $variant?: 'whatsapp' }>`
+  ${referralInviteActionBase}
+  gap: 10px;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 15px;
+
+  svg {
+    color: #16803b;
+  }
+
+  ${({ $variant }) => ($variant === 'whatsapp' ? whatsappActionStyles : '')}
+`;
+
 export const ModalForm = styled.form`
   display: grid;
   gap: 14px;
+`;
+
+export const DocumentationContent = styled.div`
+  display: grid;
+  gap: 12px;
 `;
 
 export const DocumentationGrid = styled.div`
@@ -972,13 +2812,7 @@ export const DocumentationItem = styled.div`
   background: ${({ theme }) => theme.colors.bgElevated};
 `;
 
-export const DocumentationLabel = styled.span`
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const DocumentationLabel = PortalMetaLabel;
 
 export const DocumentationValue = styled.p`
   margin: 0;
@@ -988,21 +2822,113 @@ export const DocumentationValue = styled.p`
   overflow-wrap: anywhere;
 `;
 
+export const DocumentationPurchaseSection = styled.section`
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(21, 128, 61, 0.24);
+  border-radius: 12px;
+  background: rgba(21, 128, 61, 0.06);
+
+  ${DocumentationValue} {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.45;
+  }
+`;
+
+export const AdjustmentReasonItem = styled(DocumentationItem)`
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 16px;
+  border-color: rgba(180, 83, 9, 0.28);
+  background: #fffbeb;
+
+  ${DocumentationLabel} {
+    color: #92400e;
+  }
+
+  ${DocumentationValue} {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #78350f;
+  }
+`;
+
+export const DocumentationValueRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+
+  ${DocumentationValue} {
+    min-width: 0;
+  }
+`;
+
+export const DocumentationIconLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid #52b967;
+  background: #52b967;
+  color: #f8fff9;
+  box-shadow: 0 8px 18px rgba(31, 150, 72, 0.22);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.6;
+  }
+
+  &:hover {
+    border-color: #47a95d;
+    background: #47a95d;
+    box-shadow: 0 10px 22px rgba(31, 150, 72, 0.28);
+    transform: translateY(-1px);
+  }
+`;
+
 export const DocumentationDownloadLink = styled.a`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: fit-content;
   max-width: 100%;
-  color: ${({ theme }) => theme.colors.accent};
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.55;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid #15803d;
+  border-radius: 8px;
+  background: rgba(21, 128, 61, 0.08);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
   text-decoration: none;
   overflow-wrap: anywhere;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
 
   &:hover {
-    text-decoration: underline;
+    border-color: #166534;
+    background: #166534;
+    color: #f8fbff;
   }
 
   svg {
@@ -1014,6 +2940,15 @@ export const SimpleTableWrap = styled.div`
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const TimelineTableWrap = styled(SimpleTableWrap)`
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+
+  @media (max-width: 640px) {
+    max-height: 42vh;
+  }
 `;
 
 export const SimpleTable = styled.table`
@@ -1031,7 +2966,7 @@ export const SimpleTable = styled.table`
   }
 
   th {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1044,7 +2979,7 @@ export const SimpleTable = styled.table`
   }
 `;
 
-export const ActionHref = styled.a`
+export const ActionHref = styled.a<{ $variant?: 'whatsapp' }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1058,4 +2993,6 @@ export const ActionHref = styled.a`
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
+
+  ${({ $variant }) => ($variant === 'whatsapp' ? whatsappActionStyles : '')}
 `;

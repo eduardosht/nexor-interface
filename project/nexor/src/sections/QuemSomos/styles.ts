@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const Section = styled.section`
   position: relative;
@@ -43,10 +43,8 @@ export const BackgroundMesh = styled.div`
 export const Content = styled.div`
   position: relative;
   z-index: 1;
-  max-width: ${({ theme }) => theme.maxWidth};
+  ${pageContainer}
   min-height: calc(100svh - 240px);
-  margin: 0 auto;
-  padding: 0 48px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -54,7 +52,6 @@ export const Content = styled.div`
 
   @media (max-width: 768px) {
     min-height: auto;
-    padding: 0 24px;
     gap: 48px;
   }
 `;
@@ -67,12 +64,16 @@ export const HeroCopy = styled.div`
 `;
 
 export const Headline = styled.h2`
-  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 900;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   line-height: 0.96;
   color: #fafafa;
   margin: 0;
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 
   em {
     font-style: normal;

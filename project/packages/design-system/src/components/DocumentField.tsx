@@ -35,14 +35,12 @@ const Wrapper = styled.div<{ $tokens: BrandTokens }>`
 const Label = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`
-  color: ${({ $tokens }) => $tokens.colors.danger};
+  color: inherit;
 `;
 
 const Control = styled.div<{ $tokens: BrandTokens; $invalid: boolean }>`
@@ -111,7 +109,7 @@ const Message = styled.span<{ $tokens: BrandTokens; $tone: 'hint' | 'error' }>`
   color: ${({ $tokens, $tone }) =>
     $tone === 'error' ? $tokens.colors.danger : $tokens.colors.textSoft};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 `;
 
@@ -136,7 +134,7 @@ export function DocumentField({
   return (
     <Wrapper $tokens={tokens}>
       <Label $tokens={tokens} htmlFor={inputId}>
-        {label} {required ? <RequiredMark $tokens={tokens}>*</RequiredMark> : null}
+        {label} {required ? <RequiredMark $tokens={tokens}>(*)</RequiredMark> : null}
       </Label>
       <Control $tokens={tokens} $invalid={invalid}>
         <TypeSelect

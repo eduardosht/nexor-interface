@@ -14,6 +14,7 @@ import {
 } from './features/cookies/storage';
 import { useAuth } from './hooks/useAuth';
 import { api } from './lib/api';
+import { getAccessibleScrollBehavior } from './lib/accessibility';
 
 function ScrollToTop() {
   const { hash, pathname } = useLocation();
@@ -23,7 +24,7 @@ function ScrollToTop() {
       return;
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [hash, pathname]);
 
   return null;
@@ -40,7 +41,7 @@ function ScrollToHash() {
     const targetId = decodeURIComponent(hash.slice(1));
 
     window.requestAnimationFrame(() => {
-      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById(targetId)?.scrollIntoView({ behavior: getAccessibleScrollBehavior(), block: 'start' });
     });
   }, [hash, pathname]);
 
@@ -141,6 +142,7 @@ export function Layout() {
       <ScrollToTop />
       <ScrollToHash />
       <RecoveryHashRedirect />
+      <a className="skip-link" href="#main-content">Pular para o conteúdo principal</a>
       <Header />
       <Outlet />
       <Footer onManageCookies={() => setShowCookiePreferences(true)} />

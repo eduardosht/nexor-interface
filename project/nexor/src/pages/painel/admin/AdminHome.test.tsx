@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor } from '@testing-library/react';
 import { initDesignSystem } from '@nexor/design-system';
 import { MemoryRouter } from 'react-router-dom';
@@ -67,5 +69,13 @@ describe('AdminHome', () => {
     });
 
     expect(screen.getByText(/acompanhe a evolução operacional semanal das ordens do biteplaner/i)).toBeInTheDocument();
+  });
+
+  it('uses compact density for shared administrative cards and licensing modals', () => {
+    const adminStyles = readFileSync(join(process.cwd(), 'src/pages/painel/admin/styles.ts'), 'utf8');
+    expect(adminStyles).toContain('@media (max-width: 1280px)');
+    expect(adminStyles).toContain('min-height: 88px');
+    expect(adminStyles).toContain('gap: 12px');
+    expect(adminStyles).toContain('grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))');
   });
 });

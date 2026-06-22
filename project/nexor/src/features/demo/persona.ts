@@ -1,7 +1,26 @@
+import {
+  readStorageValue,
+  removeStorageValue,
+  writeStorageValue,
+} from '../../lib/browser-storage';
+
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
 
 export type DemoPersona =
+  | 'athleteRegistered'
   | 'athlete'
+  | 'athletePrerequisite'
+  | 'athleteScheduling'
+  | 'athletePreConsultation'
+  | 'athleteClinicalDecision'
+  | 'athleteDentistForms'
+  | 'athletePayment'
+  | 'athleteTreatmentRequired'
+  | 'athleteLabProduction'
+  | 'athleteAdaptation'
+  | 'athleteFollowUp'
+  | 'athleteIneligible'
+  | 'athleteCancelled'
   | 'partner'
   | 'dentist'
   | 'dentistApproved'
@@ -14,7 +33,20 @@ export type DemoPersona =
   | 'admin';
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
+  athleteRegistered: 'Cliente - Apenas cadastrado',
   athlete: 'Atleta',
+  athletePrerequisite: 'Cliente - Pre-requisito',
+  athleteScheduling: 'Cliente - Selecionar clinica',
+  athletePreConsultation: 'Cliente - Pre-consulta clinica',
+  athleteClinicalDecision: 'Cliente - Decisao clinica',
+  athleteDentistForms: 'Cliente - Formularios do dentista',
+  athletePayment: 'Cliente - Pagamento',
+  athleteTreatmentRequired: 'Cliente - Tratamento previo',
+  athleteLabProduction: 'Cliente - Laboratorio',
+  athleteAdaptation: 'Cliente - Adaptacao',
+  athleteFollowUp: 'Cliente - Acompanhamento',
+  athleteIneligible: 'Cliente - Inapto para reavaliação',
+  athleteCancelled: 'Cliente - Cancelado',
   partner: 'Parceiro',
   dentist: 'Dentista',
   dentistApproved: 'Dentista não licenciado - aprovado',
@@ -34,6 +66,19 @@ export function isMockModeEnabled() {
 export function isDemoPersona(value: string | null | undefined): value is DemoPersona {
   return (
     value === 'athlete' ||
+    value === 'athleteRegistered' ||
+    value === 'athletePrerequisite' ||
+    value === 'athleteScheduling' ||
+    value === 'athletePreConsultation' ||
+    value === 'athleteClinicalDecision' ||
+    value === 'athleteDentistForms' ||
+    value === 'athletePayment' ||
+    value === 'athleteTreatmentRequired' ||
+    value === 'athleteLabProduction' ||
+    value === 'athleteAdaptation' ||
+    value === 'athleteFollowUp' ||
+    value === 'athleteIneligible' ||
+    value === 'athleteCancelled' ||
     value === 'partner' ||
     value === 'dentist' ||
     value === 'dentistApproved' ||
@@ -48,26 +93,14 @@ export function isDemoPersona(value: string | null | undefined): value is DemoPe
 }
 
 export function readActiveDemoPersona() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const value = window.localStorage.getItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
+  const value = readStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
   return isDemoPersona(value) ? value : null;
 }
 
 export function writeActiveDemoPersona(persona: DemoPersona) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.setItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY, persona);
+  writeStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY, persona);
 }
 
 export function clearActiveDemoPersona() {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.localStorage.removeItem(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
+  removeStorageValue(ACTIVE_DEMO_PERSONA_STORAGE_KEY);
 }

@@ -1,16 +1,12 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { imageSet, publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import { pageContainer } from '../../styles/layout';
 
 export const SectionWrapper = styled.section`
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  background: ${imageSet(publicOptimizedImages.home.heroPoster.desktop)} center / cover no-repeat;
-
-  @media (max-width: 768px) {
-    background-image: ${imageSet(publicOptimizedImages.home.heroPoster.mobile)};
-  }
+  background: ${({ theme }) => theme.colors.bgBase};
 `;
 
 export const VideoBackground = styled.video`
@@ -24,10 +20,6 @@ export const VideoBackground = styled.video`
   @media (prefers-reduced-motion: reduce) {
     display: none;
   }
-
-  @media (max-width: 768px) {
-    display: none;
-  }
 `;
 
 export const VideoOverlay = styled.div`
@@ -39,9 +31,8 @@ export const VideoOverlay = styled.div`
 
 export const Section = styled.div`
   min-height: 100vh;
-  padding: 140px 48px 80px;
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
+  ${pageContainer}
+  padding: 140px 0 80px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -49,7 +40,8 @@ export const Section = styled.div`
   z-index: 2;
 
   @media (max-width: 768px) {
-    padding: 120px 24px 60px;
+    padding-top: 120px;
+    padding-bottom: 60px;
   }
 `;
 
@@ -72,9 +64,9 @@ export const LabelLine = styled.span`
 `;
 
 export const Headline = styled(motion.h1)`
-  font-size: clamp(3rem, 5.5vw, 5rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1.05;
   margin: 0 0 16px;
 `;

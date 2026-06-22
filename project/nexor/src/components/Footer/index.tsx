@@ -38,7 +38,7 @@ export function Footer({ onManageCookies }: FooterProps) {
             />
           </S.LogoLink>
           <S.Tagline>
-            Pesquisa, criação e tecnologia para atletas que exigem o máximo com segurança e resultado.
+            Plataforma de pesquisa, tecnologia e criação de produtos de alta performance para atletas e praticantes esportivos.
           </S.Tagline>
         </S.Brand>
 

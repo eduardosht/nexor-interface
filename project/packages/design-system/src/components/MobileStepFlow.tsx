@@ -38,14 +38,14 @@ const Progress = styled.span<{ $tokens: BrandTokens }>`
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
   color: ${({ $tokens }) => $tokens.colors.textMuted};
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
 `;
 
 const Title = styled.h2<{ $tokens: BrandTokens }>`
   margin: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 650;
   line-height: 1.22;
 `;

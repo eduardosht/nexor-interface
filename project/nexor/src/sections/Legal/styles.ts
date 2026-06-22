@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { fullBleedSection } from '../../styles/layout';
+import { fullBleedSection, pageContainer } from '../../styles/layout';
 
 export const SectionOuter = styled.div`
   ${fullBleedSection}
@@ -9,12 +9,12 @@ export const SectionOuter = styled.div`
 `;
 
 export const Section = styled.section`
-  max-width: ${({ theme }) => theme.maxWidth};
-  margin: 0 auto;
-  padding: 80px 48px;
+  ${pageContainer}
+  padding: 80px 0;
 
   @media (max-width: 768px) {
-    padding: 64px 24px;
+    padding-top: 64px;
+    padding-bottom: 64px;
   }
 `;
 
@@ -27,12 +27,16 @@ export const SectionLabel = styled.p`
 `;
 
 export const Title = styled.h2`
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-size: clamp(3rem, 3.5vw, 5rem);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1.15;
   margin: 0 0 12px;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 640px) {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+  }
 `;
 
 export const Subtitle = styled.p`

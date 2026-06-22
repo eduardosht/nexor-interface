@@ -76,7 +76,7 @@ const Thead = styled.thead<{ $tokens: BrandTokens }>`
 
 const Th = styled.th<{ $tokens: BrandTokens; $width?: string }>`
   padding: 12px 16px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;

@@ -31,6 +31,11 @@ const Bar = styled.div<{ $tokens: BrandTokens }>`
   @media (min-width: 769px) {
     display: none;
   }
+
+  @media (max-width: 768px) {
+    gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
 `;
 
 export function StickyActionBar({

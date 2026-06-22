@@ -1,6 +1,14 @@
 import { Surface } from '@nexor/design-system';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import {
+  PortalCardText,
+  PortalCardTitle,
+  PortalPageDescription,
+  PortalPageTitle,
+  PortalSectionDescription,
+  PortalSectionTitle,
+} from '../styles/portalTypography';
 
 export const PageStack = styled.div`
   width: 100%;
@@ -14,6 +22,10 @@ export const PageStack = styled.div`
   @media (max-width: 768px) {
     gap: 18px;
   }
+
+  @media (max-width: 1280px) {
+    gap: 16px;
+  }
 `;
 
 export const PageHeader = styled.header`
@@ -24,32 +36,10 @@ export const PageHeader = styled.header`
   gap: 8px;
 `;
 
-export const PageTitle = styled.h1`
-  margin: 0;
-  font-size: clamp(2rem, 3vw, 2.5rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const PageTitle = PortalPageTitle;
 
-  @media (max-width: 768px) {
-    font-size: clamp(1.5rem, 7vw, 1.75rem);
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1.15;
-  }
-`;
-
-export const PageSubtitle = styled.p`
-  margin: 0;
+export const PageSubtitle = styled(PortalPageDescription)`
   max-width: none;
-  font-size: 14px;
-  line-height: 1.65;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-    line-height: 1.5;
-  }
 `;
 
 export const StatGrid = styled.div`
@@ -58,6 +48,10 @@ export const StatGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 
   @media (max-width: 560px) {
     grid-template-columns: 1fr;
@@ -72,6 +66,11 @@ export const StatCard = styled(Surface)`
   justify-content: center;
   gap: 10px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    min-height: 88px;
+    gap: 8px;
+  }
 
   @media (max-width: 768px) {
     min-height: 88px;
@@ -108,6 +107,10 @@ export const TableSection = styled(Surface)`
   flex-direction: column;
   gap: 18px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
     gap: 14px;
@@ -148,35 +151,18 @@ export const FormSection = styled(Surface)`
   gap: 20px;
   box-shadow: none;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 768px) {
     gap: 14px;
   }
 `;
 
-export const SectionTitle = styled.h2`
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+export const SectionTitle = styled(PortalSectionTitle).attrs({ $size: 'lg' as const })``;
 
-  @media (max-width: 768px) {
-    font-size: 1.0625rem;
-    font-weight: 650;
-    line-height: 1.25;
-  }
-`;
-
-export const SectionDescription = styled.p`
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.65;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    line-height: 1.5;
-  }
-`;
+export const SectionDescription = styled(PortalSectionDescription).attrs({ $size: 'sm' as const })``;
 
 export const FieldsGrid = styled.div`
   width: 100%;
@@ -184,6 +170,10 @@ export const FieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 780px) {
     grid-template-columns: 1fr;
@@ -196,6 +186,10 @@ export const CompactFieldsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 1080px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -213,6 +207,10 @@ export const SplitSectionGrid = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap: 20px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -235,6 +233,10 @@ export const SectionCardGrid = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
@@ -268,6 +270,12 @@ export const ContractCard = styled.div`
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgBase};
 
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 10px;
+  }
+
   @media (max-width: 640px) {
     flex-direction: column;
     align-items: flex-start;
@@ -276,23 +284,11 @@ export const ContractCard = styled.div`
   }
 `;
 
-export const ContractTitle = styled.h3`
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-
-  @media (max-width: 768px) {
-    font-size: 13px;
-    font-weight: 650;
-  }
+export const ContractTitle = styled(PortalCardTitle).attrs({ $size: 'sm' as const })`
+  margin-bottom: 4px;
 `;
 
-export const ContractDescription = styled.p`
-  margin: 0;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+export const ContractDescription = styled(PortalCardText).attrs({ $size: 'sm' as const })``;
 
 export const ProductGrid = styled.div`
   width: 100%;
@@ -300,6 +296,10 @@ export const ProductGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
@@ -315,17 +315,18 @@ export const ProductCard = styled(Surface)<{ $selected?: boolean; $available?: b
   border-color: ${({ $selected, theme }) => ($selected ? theme.colors.textPrimary : theme.colors.borderDefault)};
   opacity: ${({ $available = true }) => ($available ? 1 : 0.72)};
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 768px) {
     gap: 12px;
   }
 `;
 
-export const ProductCardTitle = styled.h2`
-  margin: 0;
+export const ProductCardTitle = styled(PortalCardTitle).attrs({ as: 'h2' })`
   font-size: 1.375rem;
-  font-weight: 800;
   letter-spacing: -0.02em;
-  color: ${({ theme }) => theme.colors.textPrimary};
 
   @media (max-width: 768px) {
     font-size: 1.0625rem;
@@ -334,17 +335,7 @@ export const ProductCardTitle = styled.h2`
   }
 `;
 
-export const ProductCardText = styled.p`
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.65;
-  color: ${({ theme }) => theme.colors.textSecondary};
-
-  @media (max-width: 768px) {
-    font-size: 12px;
-    line-height: 1.5;
-  }
-`;
+export const ProductCardText = PortalSectionDescription;
 
 export const InlineActions = styled.div`
   width: 100%;
@@ -363,6 +354,10 @@ export const HighlightPanel = styled(Surface)`
   gap: 20px;
   box-shadow: none;
 
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
+
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
   }
@@ -376,6 +371,10 @@ export const ChartPanel = styled(Surface)`
   flex-direction: column;
   gap: 20px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+  }
 
   @media (max-width: 768px) {
     gap: 14px;
@@ -421,14 +420,19 @@ export const EmptyStateWrap = styled(Surface)`
   align-items: flex-start;
   gap: 14px;
   box-shadow: none;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const EmptyStateLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 12px 20px;
+  min-height: 46px;
+  max-width: 100%;
+  padding: 12px 22px;
   border-radius: 4px;
   background: ${({ theme }) => theme.colors.textPrimary};
   color: ${({ theme }) => theme.colors.bgBase};
@@ -436,15 +440,18 @@ export const EmptyStateLink = styled(Link)`
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
+  line-height: 1.2;
   text-decoration: none;
   text-transform: uppercase;
+  white-space: nowrap;
 
   &:hover {
     opacity: 0.88;
   }
 
   @media (max-width: 768px) {
-    font-size: 12px;
+    width: 100%;
+    font-size: 14px;
     font-weight: 600;
   }
 `;

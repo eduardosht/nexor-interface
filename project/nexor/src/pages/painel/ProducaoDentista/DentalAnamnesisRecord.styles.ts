@@ -10,6 +10,12 @@ export const Shell = styled.section`
     linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.92)),
     ${({ theme }) => theme.colors.bgBase};
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+
+  @media (max-width: 1280px) {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 14px;
+  }
 `;
 
 export const Header = styled.header`
@@ -20,6 +26,12 @@ export const Header = styled.header`
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(14px);
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
+  }
 `;
 
 export const StickySummary = styled.div`
@@ -51,6 +63,10 @@ export const Brand = styled.div`
   display: flex;
   gap: 14px;
   align-items: center;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
 `;
 
 export const BrandMark = styled.span`
@@ -61,6 +77,17 @@ export const BrandMark = styled.span`
   border-radius: 14px;
   background: #0f2f57;
   color: #ffffff;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const TitleGroup = styled.div`
@@ -82,6 +109,10 @@ export const Title = styled.h3`
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
+
+  @media (max-width: 1280px) {
+    font-size: 20px;
+  }
 `;
 
 export const Subtitle = styled.p`
@@ -107,19 +138,19 @@ export const Badge = styled.span<{ $tone?: 'success' | 'warning' | 'neutral' | '
   padding: 0 10px;
   border: 1px solid
     ${({ $tone, theme }) => {
-      if ($tone === 'success') return '#b7d9c2';
-      if ($tone === 'warning') return '#f2d49b';
-      if ($tone === 'danger') return '#f2b8b5';
-      return theme.colors.borderDefault;
-    }};
+    if ($tone === 'success') return '#b7d9c2';
+    if ($tone === 'warning') return '#f2d49b';
+    if ($tone === 'danger') return '#f2b8b5';
+    return theme.colors.borderDefault;
+  }};
   border-radius: 999px;
   background:
     ${({ $tone, theme }) => {
-      if ($tone === 'success') return '#effaf2';
-      if ($tone === 'warning') return '#fff8eb';
-      if ($tone === 'danger') return '#fff1f1';
-      return theme.colors.bgInset;
-    }};
+    if ($tone === 'success') return '#effaf2';
+    if ($tone === 'warning') return '#fff8eb';
+    if ($tone === 'danger') return '#fff1f1';
+    return theme.colors.bgInset;
+  }};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 12px;
   font-weight: 400;
@@ -156,17 +187,12 @@ export const ProgressFill = styled.div<{ $value: number }>`
 `;
 
 export const PatientStrip = styled.div`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) repeat(3, minmax(140px, 1fr));
-  gap: 12px;
+  display: flex;
+  gap: 16px;
   align-items: center;
   padding: 14px;
   border-radius: 14px;
   background: ${({ theme }) => theme.colors.bgInset};
-
-  @media (max-width: 980px) {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
 `;
 
 export const Avatar = styled.div`
@@ -179,6 +205,13 @@ export const Avatar = styled.div`
   color: #0f2f57;
   font-size: 20px;
   font-weight: 900;
+
+  @media (max-width: 1280px) {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
 `;
 
 export const PatientName = styled.strong`
@@ -196,13 +229,14 @@ export const PatientHint = styled.span`
 `;
 
 export const QuickItem = styled.div`
-  display: grid;
-  gap: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 `;
 
 export const QuickLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -271,6 +305,42 @@ export const NavItem = styled.a`
 export const Sections = styled.div`
   display: grid;
   gap: 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+  }
+`;
+
+export const SectionGroup = styled.div`
+  display: grid;
+  gap: 10px;
+`;
+
+export const VisibleNotesCard = styled.article`
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #d8c28a;
+  border-radius: 16px;
+  background: #fffaf0;
+  box-shadow: 0 14px 30px rgba(120, 78, 18, 0.08);
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+`;
+
+export const VisibleNotesHeader = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const Card = styled.details`
@@ -285,11 +355,20 @@ export const Card = styled.details`
   &[open] {
     padding-bottom: 16px;
   }
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    border-radius: 12px;
+
+    &[open] {
+      padding-bottom: 12px;
+    }
+  }
 `;
 
 export const CardSummary = styled.summary`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 16px;
@@ -299,16 +378,38 @@ export const CardSummary = styled.summary`
   &::-webkit-details-marker {
     display: none;
   }
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 12px;
+  }
 `;
 
-export const SectionIcon = styled.span`
-  display: grid;
+export const CardSummaryMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+`;
+
+export const ExpandIcon = styled.span`
+  display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: #eef4ff;
-  color: #0f2f57;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.bgInset};
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+
+  ${Card}[open] & {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    transform: rotate(180deg);
+  }
 `;
 
 export const SectionTitle = styled.h4`
@@ -329,6 +430,11 @@ export const CardContent = styled.div`
   display: grid;
   gap: 14px;
   padding: 0 16px;
+
+  @media (max-width: 1280px) {
+    gap: 10px;
+    padding: 0 12px;
+  }
 `;
 
 export const Grid = styled.div<{ $columns?: number }>`
@@ -345,6 +451,56 @@ export const Grid = styled.div<{ $columns?: number }>`
   }
 `;
 
+export const DownloadActionRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  min-width: 0;
+
+  > button {
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
+    background: #15803d;
+    border-color: #15803d;
+    color: #f8fafc;
+    white-space: normal;
+  }
+
+  > button [data-button-content],
+  > button [data-button-label] {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    text-wrap: wrap;
+  }
+
+  > button [data-button-icon] {
+    flex: 0 0 auto;
+  }
+
+  > button:not(:disabled):hover {
+    background: #166534;
+    border-color: #166534;
+  }
+
+  > button:not(:disabled):active {
+    background: #14532d;
+    border-color: #14532d;
+  }
+
+  @media (max-width: 640px) {
+    display: grid;
+    justify-content: initial;
+
+    > button {
+      width: min(100%, max-content);
+    }
+  }
+`;
+
 export const DataField = styled.div<{ $important?: boolean }>`
   display: grid;
   gap: 6px;
@@ -353,11 +509,16 @@ export const DataField = styled.div<{ $important?: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ $important, theme }) => ($important ? '#f8fbff' : theme.colors.bgInset)};
+
+  @media (max-width: 1280px) {
+    padding: ${({ $important }) => ($important ? '12px' : '10px')};
+    border-radius: 10px;
+  }
 `;
 
 export const DataLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -390,11 +551,11 @@ export const Tag = styled.span<{ $tone?: 'blue' | 'green' | 'amber' | 'gray' }>`
   border-radius: 999px;
   background:
     ${({ $tone }) => {
-      if ($tone === 'green') return '#ecfdf3';
-      if ($tone === 'amber') return '#fff7ed';
-      if ($tone === 'blue') return '#eff6ff';
-      return '#f3f4f6';
-    }};
+    if ($tone === 'green') return '#ecfdf3';
+    if ($tone === 'amber') return '#fff7ed';
+    if ($tone === 'blue') return '#eff6ff';
+    return '#f3f4f6';
+  }};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 12px;
   font-weight: 400;
@@ -441,7 +602,7 @@ export const ModernTable = styled.table`
   th {
     background: ${({ theme }) => theme.colors.bgInset};
     color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -501,18 +662,4 @@ export const TextArea = styled.textarea`
     border-color: #0f2f57;
     box-shadow: 0 0 0 3px rgba(15, 47, 87, 0.12);
   }
-`;
-
-export const UploadBox = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
-  border: 1px dashed ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.colors.bgInset};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  font-weight: 400;
 `;

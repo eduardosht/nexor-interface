@@ -11,7 +11,8 @@ describe('Produtos', () => {
         <ThemeProvider theme={lightTheme}><Produtos /></ThemeProvider>
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: /tecnologia feita/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /atletas e praticantes esportivos/i })).toBeInTheDocument();
+    expect(screen.getByText(/dispositivo intraoral personalizado/i)).toBeInTheDocument();
   });
 
   it('renderiza o logo do Biteplaner na seção', () => {

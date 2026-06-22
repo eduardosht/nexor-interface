@@ -20,7 +20,19 @@ describe('Parceiros', () => {
     renderPage();
     expect(screen.getByText('Dentista Licenciado')).toBeInTheDocument();
     expect(screen.getAllByText(/academia.*coach/i).length).toBeGreaterThan(0);
-    expect(screen.getByText('Laboratório Certificado')).toBeInTheDocument();
+    expect(screen.getByText('Laboratório Licenciado')).toBeInTheDocument();
+  });
+
+  it('uses licensing and device language consistently', () => {
+    renderPage();
+
+    expect(screen.getByRole('heading', { name: /seja licenciado pela nexor/i })).toBeInTheDocument();
+    expect(screen.getByText(/três trilhas de licenciamento/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/dispositivo biteplaner/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/atuação como parceiro licenciado/i)).toBeInTheDocument();
+    expect(screen.getByText(/atuação como dentista licenciado/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/atuação como laboratório licenciado/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/moldeiras|moldagem/i)).not.toBeInTheDocument();
   });
 
   it('renders CTA links to /cadastro with tipo param', () => {
@@ -36,7 +48,7 @@ describe('Parceiros', () => {
     const { container } = renderPage();
 
     expect(container.querySelector('#dentistas')).toHaveTextContent('Dentista Licenciado');
-    expect(container.querySelector('#parceiros')).toHaveTextContent('Academia / Coach');
-    expect(container.querySelector('#laboratórios')).toHaveTextContent('Laboratório Certificado');
+    expect(container.querySelector('#parceiros')).toHaveTextContent('Academia / Coach Licenciado');
+    expect(container.querySelector('#laboratórios')).toHaveTextContent('Laboratório Licenciado');
   });
 });

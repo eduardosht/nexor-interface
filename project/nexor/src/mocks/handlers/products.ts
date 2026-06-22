@@ -19,6 +19,7 @@ import {
   updateDentistLicensing,
   updateLabLicensing
 } from '../demoState';
+import { DEMO_LAB_LOCATIONS } from '../../features/demo/labLocations';
 
 export function productHandlers(server: Server) {
   server.get('/v1/products', () => ({
@@ -175,6 +176,25 @@ export function productHandlers(server: Server) {
 
   server.get('/v1/account/biteplaner/lab-licensing', (_schema, request) => {
     return new Response(200, {}, getLabLicensing({ requestHeaders: request.requestHeaders }));
+  });
+
+  server.get('/v1/account/biteplaner/licensed-labs', () => {
+    return new Response(200, {}, {
+      labs: DEMO_LAB_LOCATIONS.map((lab) => ({
+        id: lab.id,
+        profileId: lab.profileId ?? lab.id,
+        labName: lab.name,
+        cnpj: lab.cnpj ?? '12.345.678/0001-90',
+        professionalSummary: lab.professionalSummary ?? 'Laboratório licenciado para produção Biteplaner.',
+        address: lab.address,
+        cep: lab.cep,
+        phone: lab.phone,
+        serviceHours: lab.serviceHours ?? 'Segunda a sexta, 08:00 às 18:00',
+        city: lab.city ?? 'São Paulo',
+        state: lab.state ?? 'SP',
+        coordinates: lab.coordinates,
+      })),
+    });
   });
 
   server.post('/v1/account/biteplaner/lab-licensing/payment-confirmed', (_schema, request) => {

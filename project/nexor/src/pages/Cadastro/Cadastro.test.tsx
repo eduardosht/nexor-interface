@@ -3,14 +3,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../styles/theme';
-import { supabase } from '../../lib/supabase';
 
 const { mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
 }));
 
-vi.mock('../../lib/supabase', () => ({ supabase: { auth: { signUp: vi.fn() } } }));
 vi.mock('../../lib/api', () => ({ api: { get: mockApiGet, post: mockApiPost } }));
 
 import { Cadastro } from './index';
@@ -26,23 +24,21 @@ const renderCadastro = (search = '') =>
 
 function fillStepOneWithValidData() {
   fireEvent.change(screen.getByLabelText(/nome completo/i), {
-    target: { value: 'Atleta Teste' }
+    target: { value: 'Atleta Teste' },
   });
   fireEvent.change(screen.getByLabelText(/e-mail/i), {
-    target: { value: 'atleta@example.com' }
+    target: { value: 'atleta@example.com' },
   });
   fireEvent.change(screen.getByLabelText(/^senha$/i), {
-    target: { value: 'Senha1234' }
+    target: { value: 'Senha1234' },
   });
   fireEvent.change(screen.getByLabelText(/confirmar sua senha/i), {
-    target: { value: 'Senha1234' }
+    target: { value: 'Senha1234' },
   });
 }
 
 describe('Cadastro', () => {
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    vi.mocked(supabase!.auth.signUp).mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     document.cookie = 'nexor_partner_invite=; path=/; max-age=0';
@@ -74,16 +70,16 @@ describe('Cadastro', () => {
     renderCadastro();
 
     fireEvent.change(screen.getByLabelText(/nome completo/i), {
-      target: { value: 'Atleta Teste' }
+      target: { value: 'Atleta Teste' },
     });
     fireEvent.change(screen.getByLabelText(/e-mail/i), {
-      target: { value: 'atleta@example.com' }
+      target: { value: 'atleta@example.com' },
     });
     fireEvent.change(screen.getByLabelText(/^senha$/i), {
-      target: { value: 'Senha1234' }
+      target: { value: 'Senha1234' },
     });
     fireEvent.change(screen.getByLabelText(/confirmar sua senha/i), {
-      target: { value: 'Senha4321' }
+      target: { value: 'Senha4321' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
@@ -97,7 +93,7 @@ describe('Cadastro', () => {
     renderCadastro();
 
     fireEvent.change(screen.getByLabelText(/nome completo/i), {
-      target: { value: 'Ana 123 Silva' }
+      target: { value: 'Ana 123 Silva' },
     });
 
     expect(screen.getByLabelText(/nome completo/i)).toHaveValue('Ana  Silva');
@@ -105,14 +101,22 @@ describe('Cadastro', () => {
 
   it('saves ref from URL to sessionStorage on mount', () => {
     sessionStorage.clear();
-    mockApiGet.mockResolvedValueOnce({ inviteLink: { token: 'PARTNER456', status: 'valid', partner: { id: '1', name: 'Parceiro' } } });
+    mockApiGet.mockResolvedValueOnce({
+      inviteLink: { token: 'PARTNER456', status: 'valid', partner: { id: '1', name: 'Parceiro' } },
+    });
+
     renderCadastro('?ref=PARTNER456');
+
     expect(sessionStorage.getItem('nexor_referral_ref')).toBe('PARTNER456');
   });
 
   it('validates and persists an invite token from the URL in a first-party cookie', async () => {
     mockApiGet.mockResolvedValueOnce({
-      inviteLink: { token: 'bp-partner-demo-001', status: 'valid', partner: { id: '1', name: 'Parceiro' } },
+      inviteLink: {
+        token: 'bp-partner-demo-001',
+        status: 'valid',
+        partner: { id: '1', name: 'Parceiro' },
+      },
     });
 
     renderCadastro('?invite=bp-partner-demo-001');
@@ -151,12 +155,8 @@ describe('Cadastro', () => {
     expect(screen.getByRole('link', { name: /fazer login/i })).toHaveAttribute('href', '/entrar');
   });
 
-  it('shows confirmation message when account is created without immediate session', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    vi.mocked(supabase!.auth.signUp).mockResolvedValue({
-      error: null,
-      data: { session: null }
-    } as never);
+  it('registers the account, profile and consents through the backend', async () => {
+    mockApiPost.mockResolvedValue({});
 
     renderCadastro();
     fillStepOneWithValidData();
@@ -167,20 +167,51 @@ describe('Cadastro', () => {
     fireEvent.click(screen.getAllByRole('checkbox')[1]);
     fireEvent.click(screen.getByRole('button', { name: /criar conta/i }));
 
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(
-        /enviamos um link de confirmação para o seu e-mail/i
-      )
-    );
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith('/v1/auth/register', {
+        email: 'atleta@example.com',
+        password: 'Senha1234',
+        fullName: 'Atleta Teste',
+        consents: [
+          { type: 'terms', accepted: true },
+          { type: 'privacy', accepted: true },
+          { type: 'marketing', accepted: false },
+        ],
+      });
+    });
   });
 
-  it('creates the base Nexor profile before recording account consents when session is immediate', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    vi.mocked(supabase!.auth.signUp).mockResolvedValue({
-      error: null,
-      data: { session: { access_token: 'tok' } }
-    } as never);
+  it('sends the referral invite token with the backend registration', async () => {
+    document.cookie = 'nexor_partner_invite=bp-partner-demo-001; path=/';
     mockApiPost.mockResolvedValue({});
+
+    renderCadastro();
+    fillStepOneWithValidData();
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    await waitFor(() => screen.getByText(/termos de uso/i));
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    fireEvent.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/auth/register',
+        expect.objectContaining({ referralInviteToken: 'bp-partner-demo-001' })
+      );
+    });
+  });
+
+  it('clears a stale referral invite cookie and retries registration without it', async () => {
+    document.cookie = 'nexor_partner_invite=stale-partner-token; path=/';
+    mockApiPost
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Partner invite link not found.'), {
+          status: 404,
+          code: 'not_found',
+        })
+      )
+      .mockResolvedValueOnce({});
 
     renderCadastro();
     fillStepOneWithValidData();
@@ -194,27 +225,25 @@ describe('Cadastro', () => {
     await waitFor(() => {
       expect(mockApiPost).toHaveBeenNthCalledWith(
         1,
-        '/v1/account/profile',
-        { fullName: 'Atleta Teste' },
-        'tok'
+        '/v1/auth/register',
+        expect.objectContaining({ referralInviteToken: 'stale-partner-token' })
       );
       expect(mockApiPost).toHaveBeenNthCalledWith(
         2,
-        '/v1/account/consents',
-        expect.objectContaining({ consents: expect.any(Array) }),
-        'tok'
+        '/v1/auth/register',
+        expect.not.objectContaining({ referralInviteToken: expect.any(String) })
       );
+      expect(document.cookie).not.toContain('nexor_partner_invite=');
     });
   });
 
-  it('hydrates the referral invite cookie when creating an immediate profile', async () => {
-    document.cookie = 'nexor_partner_invite=bp-partner-demo-001; path=/';
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    vi.mocked(supabase!.auth.signUp).mockResolvedValue({
-      error: null,
-      data: { session: { access_token: 'tok' } }
-    } as never);
-    mockApiPost.mockResolvedValue({});
+  it('shows the backend validation message when registration is rejected', async () => {
+    mockApiPost.mockRejectedValue(
+      Object.assign(new Error('E-mail já cadastrado. Entre na sua conta ou recupere a senha.'), {
+        status: 409,
+        code: 'conflict',
+      })
+    );
 
     renderCadastro();
     fillStepOneWithValidData();
@@ -226,13 +255,30 @@ describe('Cadastro', () => {
     fireEvent.click(screen.getByRole('button', { name: /criar conta/i }));
 
     await waitFor(() => {
-      expect(mockApiPost).toHaveBeenNthCalledWith(
-        1,
-        '/v1/account/profile',
-        { fullName: 'Atleta Teste', referralInviteToken: 'bp-partner-demo-001' },
-        'tok'
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /e-mail já cadastrado/i
       );
     });
+  });
+
+  it('does not show a partial account creation message when backend registration fails', async () => {
+    mockApiPost.mockRejectedValue(new Error('consent failure'));
+
+    renderCadastro();
+    fillStepOneWithValidData();
+    fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
+
+    await waitFor(() => screen.getByText(/termos de uso/i));
+    fireEvent.click(screen.getAllByRole('checkbox')[0]);
+    fireEvent.click(screen.getAllByRole('checkbox')[1]);
+    fireEvent.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /não foi possível criar sua conta agora/i
+      );
+    });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('keeps legal consent messaging on the second step', async () => {

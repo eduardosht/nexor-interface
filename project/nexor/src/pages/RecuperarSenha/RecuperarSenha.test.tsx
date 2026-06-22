@@ -30,6 +30,7 @@ function createAuthMock(overrides: Record<string, unknown> = {}) {
     session: null,
     backendUser: null,
     backendUserResolved: true,
+    authError: '',
     loading: false,
     hasConfiguredAuth: true,
     isMockMode: false,
@@ -73,7 +74,7 @@ describe('RecuperarSenha', () => {
     await waitFor(() => expect(mockSendPasswordReset).toHaveBeenCalledWith('a@b.com'));
   });
 
-  it('shows confirmation message after successful reset request', async () => {
+  it('shows a neutral confirmation message after successful reset request', async () => {
     mockSendPasswordReset.mockResolvedValue(undefined);
 
     renderPage();
@@ -82,7 +83,9 @@ describe('RecuperarSenha', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar/i }));
 
     await waitFor(() =>
-      expect(screen.getByText(/enviamos um link de recuperação para o seu e-mail/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(/caso esse e-mail esteja cadastrado, você receberá um e-mail para recuperação de senha/i)
+      ).toBeInTheDocument()
     );
   });
 

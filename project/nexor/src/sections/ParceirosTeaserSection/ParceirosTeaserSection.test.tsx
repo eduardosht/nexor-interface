@@ -19,13 +19,16 @@ describe('ParceirosTeaserSection', () => {
   it('renders three partner types', () => {
     renderSection();
     expect(screen.getByText('Dentista Licenciado')).toBeInTheDocument();
-    expect(screen.getByText('Academia / Coach')).toBeInTheDocument();
-    expect(screen.getByText('Laboratório Certificado')).toBeInTheDocument();
+    expect(screen.getByText('Academia / Coach Licenciado')).toBeInTheDocument();
+    expect(screen.getByText('Laboratório Licenciado')).toBeInTheDocument();
+    expect(screen.getByText(/público diferenciado e serviços premium/i)).toBeInTheDocument();
+    expect(screen.getByText(/aumento do valuation e upgrade profissional/i)).toBeInTheDocument();
+    expect(screen.getByText(/upgrade de produtos e novos nichos de mercado/i)).toBeInTheDocument();
   });
 
   it('renders link to /parceiros', () => {
     renderSection();
-    const link = screen.getByText(/Ver como ser parceiro/i).closest('a');
+    const link = screen.getByText(/Veja como ser licenciado/i).closest('a');
     expect(link).toHaveAttribute('href', '/parceiros');
   });
 });

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -71,33 +71,62 @@ describe('PainelHome', () => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     mockNavigate.mockReset();
+    vi.unstubAllEnvs();
+    vi.stubEnv('DISABLE_BITEPLANER', 'true');
   });
 
-  it('renders welcome heading', async () => {
+  it('renders the coming soon hero and quick actions heading', async () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /informações da conta/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breveno nosso site/i })).toBeInTheDocument();
+    expect(screen.getByText(/a compra do biteplaner estar/i)).toBeInTheDocument();
+    expect(screen.getByText(/fique ligado/i)).toBeInTheDocument();
+    expect(screen.getByText(/tecnologia/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ações rápidas/i })).toBeInTheDocument();
+    expect(screen.getByText(/atalhos para otimizar sua rotina no biteplaner/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /informações da conta/i })).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('renders Biteplaner product card', async () => {
+  it('renders Biteplaner coming soon content', async () => {
     renderPage();
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
-    expect(screen.getByText(/R\$ 400/)).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /em breveno nosso site/i })).toBeInTheDocument();
+    expect(screen.queryByText(/R\$ 400/)).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('uses the Biteplaner mold image as a static banner background', async () => {
+  it('renders the product purchase banner when Biteplaner is enabled', async () => {
+    vi.stubEnv('DISABLE_BITEPLANER', 'false');
+
     renderPage();
 
+    expect(screen.queryByTestId('biteplaner-coming-soon-hero')).not.toBeInTheDocument();
     expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
+    expect(screen.getByText('R$ 1.370,00')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /valor é referente a uma unidade do biteplaner/i,
+      })
+    ).toBeInTheDocument();
+    expect(await findEnabledCustomerAction()).toBeInTheDocument();
+  });
+
+  it('uses the generated Biteplaner product as a hero image', async () => {
+    renderPage();
+
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-product')).toHaveAttribute(
+      'src',
+      expect.stringContaining('biteplaner-coming-soon-product')
+    );
     expect(document.querySelector('img[src*="biteplaner-moldera"]')).not.toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
   });
 
-  it('renders the product hub area with Biteplaner actions', async () => {
+  it('renders the quick actions area with Biteplaner actions', async () => {
     renderPage();
-    expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
+    expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ações rápidas/i })).toBeInTheDocument();
     expect(await findEnabledCustomerAction()).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar parceria/i })).toBeInTheDocument();
   });
@@ -111,25 +140,34 @@ describe('PainelHome', () => {
     expect(screen.getByRole('button', { name: /solicitar cadastro de laboratório/i })).toBeInTheDocument();
   });
 
-  it('creates active customer role and sends the user to prerequisite flow', async () => {
-    mockApiPost.mockResolvedValueOnce({
-      productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
-    });
+  it('creates active customer role and sends the user to Biteplaner onboarding flow', async () => {
+    mockApiPost
+      .mockResolvedValueOnce({
+        productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
+        order: { id: 'order-1', status: 'registration_started' },
+      });
     renderPage();
 
     fireEvent.click(await findEnabledCustomerAction());
 
     await waitFor(() => {
-      expect(mockApiPost).toHaveBeenCalledWith(
+      expect(mockApiPost).toHaveBeenNthCalledWith(
+        1,
         '/v1/account/products/biteplaner/roles/customer',
         {},
         'tok'
       );
-      expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito');
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
     });
   });
 
-  it('replaces the acquisition CTA with order tracking when Biteplaner is already active', async () => {
+  it('keeps the acquisition CTA when Biteplaner is active but no order exists yet', async () => {
+    mockApiPost
+      .mockResolvedValueOnce({
+        productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
+        order: { id: 'order-1', status: 'registration_started' },
+      });
     renderPage(
       {},
       {
@@ -138,12 +176,21 @@ describe('PainelHome', () => {
       }
     );
 
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).length).toBeGreaterThan(0));
-    expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
+    const action = await findEnabledCustomerAction();
+    expect(screen.queryByRole('button', { name: /acompanhar sua ordem/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole('button', { name: /acompanhar sua ordem/i })[0]);
+    fireEvent.click(action);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenNthCalledWith(
+        1,
+        '/v1/account/products/biteplaner/roles/customer',
+        {},
+        'tok'
+      );
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
+    });
   });
 
   it('replaces the acquisition CTA with order tracking when there is an order in progress', async () => {
@@ -159,6 +206,18 @@ describe('PainelHome', () => {
     expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
   });
 
+  it('keeps order tracking available for completed orders in check-up stage', async () => {
+    renderPage(
+      {},
+      {
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+        orders: [{ id: 'BP-CHECKUP-001', status: 'completed' }],
+      }
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).length).toBeGreaterThan(0));
+    expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
+  });
   it('sends professional role requests to the dedicated registration page', async () => {
     renderPage();
 
@@ -190,11 +249,12 @@ describe('PainelHome', () => {
       }
     );
 
-    await waitFor(() =>
-      expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).some((button) => !button.hasAttribute('disabled'))).toBe(true)
-    );
+    expect(await findEnabledCustomerAction()).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar parceria/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /solicitar cadastro de dentista/i })).toBeDisabled();
+    const pendingDentistCard = screen.getByText(/cadastro de dentista em an.lise/i).closest('article');
+    expect(pendingDentistCard).toBeInTheDocument();
+    expect(within(pendingDentistCard as HTMLElement).queryByText(/^solicitar cadastro$/i)).not.toBeInTheDocument();
+    expect(within(pendingDentistCard as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar cadastro de laborat/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /solicitar parceria/i }).closest('article')).toHaveAttribute(
       'aria-disabled',
@@ -205,6 +265,30 @@ describe('PainelHome', () => {
     });
     expect(screen.getAllByText(/indispon/i).length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText(/perfil de dentista/i).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('hides the laboratory request link when the account already has an active lab registration', async () => {
+    renderPage(
+      {
+        backendUser: {
+          email: 'eduardoshoitifujiwara123@gmail.com',
+          roles: ['lab'],
+          productRoles: [],
+        },
+      },
+      {
+        productRoles: [
+          { productKey: 'biteplaner', role: 'lab', status: 'active' },
+        ],
+        orders: [],
+      }
+    );
+
+    const labCard = (await screen.findByText(/solicitar cadastro de laborat.rio/i)).closest('article');
+
+    expect(labCard).toBeInTheDocument();
+    expect(within(labCard as HTMLElement).getByText(/ativo/i)).toBeInTheDocument();
+    expect(within(labCard as HTMLElement).queryByRole('button', { name: /solicitar cadastro/i })).not.toBeInTheDocument();
   });
 
   it('shows active demo profile banner when using mock persona', async () => {

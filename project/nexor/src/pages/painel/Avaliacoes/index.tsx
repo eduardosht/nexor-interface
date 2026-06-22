@@ -1,17 +1,21 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { CheckCircle2, Star, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, ClipboardList, Clock3, Star, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
   fetchWorkflowForms,
   formatDate,
   getAuthToken,
+  getOrderDisplayId,
   submitWorkflowForm,
   type AccessMode,
   type DemoOrderSummary,
   type DemoWorkflowForm,
 } from '../../../features/demo/biteplanerFlow';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import {
   BITEPLANER_REVIEW_TEMPLATES,
   type BiteplanerReviewFieldDefinition,
@@ -86,6 +90,10 @@ const SURVEY_MOMENTS = [
       'Quando o laboratório recebe/inicia a produção e consegue avaliar o arquivo 3D intraoral e a facilidade de contato.',
   },
 ];
+
+function getDefaultMomentKey(copy: (typeof MODE_COPY)[ReviewMode]) {
+  return SURVEY_MOMENTS.find((moment) => copy.templates.includes(moment.templateKey))?.templateKey ?? copy.templates[0];
+}
 
 function getMode(value: string | null): ReviewMode {
   if (value === 'user' || value === 'partner' || value === 'lab' || value === 'dentist') {
@@ -199,79 +207,75 @@ function getEmptyPayload(template: BiteplanerReviewTemplateDefinition) {
 }
 
 function getPendingSurveyContext(form: DemoWorkflowForm, order: DemoOrderSummary) {
+  const orderLabel = getOrderDisplayId(order);
+
   if (form.templateKey === 'partner_review_by_customer') {
     return 'Cadastro via link de recomendação do parceiro';
   }
 
   if (form.templateKey === 'dentist_review_by_customer') {
-    return `Ordem ${order.id} | feedback pós-atendimento`;
+    return `Ordem ${orderLabel} | feedback pós-atendimento`;
   }
 
   if (form.templateKey === 'lab_review_by_dentist') {
-    return `Ordem ${order.id} | laboratório ${order.practice_location?.name ?? 'selecionado'}`;
+    return `Ordem ${orderLabel} | laboratório ${order.practice_location?.name ?? 'selecionado'}`;
   }
 
-  return `Ordem ${order.id} | dentista ${order.dentist?.full_name ?? 'responsável'}`;
+  return `Ordem ${orderLabel} | dentista ${order.dentist?.full_name ?? 'responsável'}`;
 }
 
 export function Avaliacoes() {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
-  const [searchParams] = useSearchParams();
+  const queryOwnerId = session?.user.id ?? 'anonymous';
+  const [searchParams, setSearchParams] = useSearchParams();
   const mode = getMode(searchParams.get('mode'));
-  const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
-  const [forms, setForms] = useState<Array<{ order: DemoOrderSummary; form: DemoWorkflowForm }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const copy = MODE_COPY[mode];
+  const [selectedMomentKey, setSelectedMomentKey] = useState(getDefaultMomentKey(copy));
   const [selectedSurvey, setSelectedSurvey] = useState<{ order: DemoOrderSummary; form: DemoWorkflowForm } | null>(null);
   const [surveyPayload, setSurveyPayload] = useState<Record<string, string>>({});
   const [surveyError, setSurveyError] = useState('');
+  const [surveyFieldErrors, setSurveyFieldErrors] = useState<Record<string, string>>({});
   const [surveySubmitting, setSurveySubmitting] = useState(false);
-  const copy = MODE_COPY[mode];
+  const pendingCarouselRef = useRef<HTMLDivElement | null>(null);
+
+  const reviewsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.reviews(mode, queryOwnerId),
+    queryFn: async () => {
+      const ordersResponse = await queryClient.fetchQuery({
+        queryKey: biteplanerQueryKeys.orders(mode, queryOwnerId),
+        queryFn: () => fetchOrders(mode, token),
+        staleTime: 60_000,
+      });
+      const formEntries = await Promise.all(
+        ordersResponse.orders.map(async (order) => {
+          const response = await queryClient.fetchQuery({
+            queryKey: biteplanerQueryKeys.workflowForms(order.id),
+            queryFn: () => fetchWorkflowForms(order.id, token),
+            staleTime: 5 * 60_000,
+          });
+          return response.forms.map((form) => ({ order, form }));
+        })
+      );
+
+      return {
+        orders: ordersResponse.orders,
+        forms: formEntries.flat(),
+      };
+    },
+    enabled: Boolean(token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const orders = reviewsQuery.data?.orders ?? [];
+  const forms = reviewsQuery.data?.forms ?? [];
+  const loading = reviewsQuery.isLoading;
+  const error = reviewsQuery.isError ? 'Não foi possível carregar as avaliações agora.' : '';
 
   useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadReviews() {
-      setLoading(true);
-      setError('');
-
-      try {
-        const ordersResponse = await fetchOrders(mode, token);
-        const formEntries = await Promise.all(
-          ordersResponse.orders.map(async (order) => {
-            const response = await fetchWorkflowForms(order.id, token);
-            return response.forms.map((form) => ({ order, form }));
-          })
-        );
-
-        if (!active) {
-          return;
-        }
-
-        setOrders(ordersResponse.orders);
-        setForms(formEntries.flat());
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar as avaliações agora.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadReviews();
-
-    return () => {
-      active = false;
-    };
-  }, [mode, token]);
+    setSelectedMomentKey(getDefaultMomentKey(copy));
+  }, [copy.templates, mode]);
 
   const rows = useMemo<ReviewRow[]>(
     () =>
@@ -325,8 +329,27 @@ export function Avaliacoes() {
       score: average(templateRows.map((row) => row.score)),
     };
   });
+  const surveyMoments = SURVEY_MOMENTS.filter((moment) => copy.templates.includes(moment.templateKey));
+  const selectedMoment = surveyMoments.find((moment) => moment.templateKey === selectedMomentKey) ?? surveyMoments[0];
+  const selectedMomentRows = selectedMoment
+    ? rows.filter((row) => row.form.templateKey === selectedMoment.templateKey)
+    : [];
 
   const selectedTemplate = selectedSurvey ? getTemplate(selectedSurvey.form.templateKey) : null;
+
+  useEffect(() => {
+    const surveyId = searchParams.get('surveyId');
+
+    if (!surveyId || selectedSurvey?.form.id === surveyId) {
+      return;
+    }
+
+    const pendingSurvey = pendingSurveys.find((entry) => entry.form.id === surveyId);
+
+    if (pendingSurvey) {
+      openSurvey(pendingSurvey);
+    }
+  }, [pendingSurveys, searchParams, selectedSurvey?.form.id]);
 
   function openSurvey(entry: { order: DemoOrderSummary; form: DemoWorkflowForm }) {
     const template = getTemplate(entry.form.templateKey);
@@ -338,6 +361,20 @@ export function Avaliacoes() {
     setSelectedSurvey(entry);
     setSurveyPayload(getEmptyPayload(template));
     setSurveyError('');
+    setSurveyFieldErrors({});
+  }
+
+  function scrollPendingSurveys(direction: 'previous' | 'next') {
+    const carousel = pendingCarouselRef.current;
+
+    if (!carousel) {
+      return;
+    }
+
+    carousel.scrollBy({
+      left: direction === 'next' ? carousel.clientWidth : -carousel.clientWidth,
+      behavior: 'smooth',
+    });
   }
 
   function closeSurvey() {
@@ -345,9 +382,74 @@ export function Avaliacoes() {
       return;
     }
 
+    const surveyId = searchParams.get('surveyId');
+    if (surveyId && selectedSurvey?.form.id === surveyId) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('surveyId');
+      setSearchParams(nextParams, { replace: true });
+    }
+
     setSelectedSurvey(null);
     setSurveyPayload({});
     setSurveyError('');
+    setSurveyFieldErrors({});
+  }
+
+  function getSurveyFieldError(field: BiteplanerReviewFieldDefinition) {
+    const value = surveyPayload[field.key] ?? '';
+
+    if (field.required && !String(value).trim()) {
+      return 'Campo obrigatório';
+    }
+
+    if (isScoreField(field) && String(value).trim()) {
+      const score = Number(value);
+
+      if (!Number.isFinite(score) || score < 1 || score > 5) {
+        return 'Escolha uma nota de 1 a 5 estrelas.';
+      }
+    }
+
+    return '';
+  }
+
+  function validateSurveyField(field: BiteplanerReviewFieldDefinition) {
+    const message = getSurveyFieldError(field);
+    setSurveyFieldErrors((current) => {
+      if (!message) {
+        const { [field.key]: _removed, ...next } = current;
+        return next;
+      }
+
+      return { ...current, [field.key]: message };
+    });
+  }
+
+  function clearSurveyFieldError(fieldKey: string) {
+    setSurveyFieldErrors((current) => {
+      if (!current[fieldKey]) {
+        return current;
+      }
+
+      const { [fieldKey]: _removed, ...next } = current;
+      return next;
+    });
+  }
+
+  function validateSurveyFields(): Record<string, string> {
+    if (!selectedTemplate) {
+      return {};
+    }
+
+    const nextErrors = selectedTemplate.fields.reduce<Record<string, string>>((result, field) => {
+      const message = getSurveyFieldError(field);
+      if (message) {
+        result[field.key] = message;
+      }
+      return result;
+    }, {});
+    setSurveyFieldErrors(nextErrors);
+    return nextErrors;
   }
 
   async function handleSurveySubmit(event: FormEvent<HTMLFormElement>) {
@@ -357,34 +459,17 @@ export function Avaliacoes() {
       return;
     }
 
-    const missingField = selectedTemplate.fields.find((field) => {
-      if (!field.required) {
-        return false;
-      }
-
-      return !String(surveyPayload[field.key] ?? '').trim();
-    });
+    const fieldErrors = validateSurveyFields();
+    const missingField = selectedTemplate.fields.find((field) => fieldErrors[field.key] === 'Campo obrigatório');
 
     if (missingField) {
       setSurveyError(`Preencha o campo obrigatório: ${missingField.label.replace(/^Nota - /, '')}.`);
       return;
     }
 
-    const invalidScoreField = selectedTemplate.fields.find((field) => {
-      if (!isScoreField(field)) {
-        return false;
-      }
-
-      const value = surveyPayload[field.key];
-
-      if (!String(value ?? '').trim()) {
-        return false;
-      }
-
-      const score = Number(value);
-
-      return !Number.isFinite(score) || score < 1 || score > 5;
-    });
+    const invalidScoreField = selectedTemplate.fields.find(
+      (field) => fieldErrors[field.key] === 'Escolha uma nota de 1 a 5 estrelas.'
+    );
 
     if (invalidScoreField) {
       setSurveyError(`Escolha uma nota de 1 a 5 estrelas em: ${invalidScoreField.label.replace(/^Nota - /, '')}.`);
@@ -412,13 +497,27 @@ export function Avaliacoes() {
       setSurveySubmitting(true);
       setSurveyError('');
       const updatedForm = await submitWorkflowForm(selectedSurvey.order.id, selectedSurvey.form.id, payload, token);
-      setForms((current) =>
-        current.map((entry) =>
-          entry.form.id === updatedForm.id && entry.order.id === selectedSurvey.order.id
-            ? { ...entry, form: updatedForm }
-            : entry
-        )
+      queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
+        biteplanerQueryKeys.workflowForms(selectedSurvey.order.id),
+        (current) => ({
+          forms: (current?.forms ?? []).map((form) => (form.id === updatedForm.id ? updatedForm : form)),
+        })
       );
+      queryClient.setQueryData<{ orders: DemoOrderSummary[]; forms: Array<{ order: DemoOrderSummary; form: DemoWorkflowForm }> }>(
+        biteplanerQueryKeys.reviews(mode, queryOwnerId),
+        (current) =>
+          current
+            ? {
+                ...current,
+                forms: current.forms.map((entry) =>
+                  entry.form.id === updatedForm.id && entry.order.id === selectedSurvey.order.id
+                    ? { ...entry, form: updatedForm }
+                    : entry
+                ),
+              }
+            : current
+      );
+      setSelectedMomentKey(updatedForm.templateKey);
       closeSurvey();
     } catch {
       setSurveyError('Não foi possível enviar o survey agora.');
@@ -431,11 +530,21 @@ export function Avaliacoes() {
     <S.Page>
       <S.Panel>
         <S.Header>
-          <S.Title>{copy.title}</S.Title>
-          <S.Description>{copy.description}</S.Description>
+          <S.HeaderIcon>
+            <Star size={28} aria-hidden />
+          </S.HeaderIcon>
+          <div>
+            <S.Title>{copy.title}</S.Title>
+            <S.Description>{copy.description}</S.Description>
+          </div>
         </S.Header>
 
-        {loading ? <S.Banner>Carregando avaliações...</S.Banner> : null}
+        {loading ? (
+          <>
+            <SkeletonGrid cards={3} minCardWidth="180px" />
+            <SkeletonCard lines={5} blockHeight="120px" />
+          </>
+        ) : null}
         {error ? <S.Banner role="alert">{error}</S.Banner> : null}
 
         {!loading && !error ? (
@@ -461,12 +570,22 @@ export function Avaliacoes() {
 
               <S.StatStack>
                 <S.StatCard>
-                  <S.SmallText>Ordens analisadas</S.SmallText>
-                  <S.StatValue>{orders.length}</S.StatValue>
+                  <S.StatIcon>
+                    <ClipboardList size={22} aria-hidden />
+                  </S.StatIcon>
+                  <span>
+                    <S.SmallText>Ordens analisadas</S.SmallText>
+                    <S.StatValue>{orders.length}</S.StatValue>
+                  </span>
                 </S.StatCard>
                 <S.StatCard>
-                  <S.SmallText>Templates ativos</S.SmallText>
-                  <S.StatValue>{copy.templates.length}</S.StatValue>
+                  <S.StatIcon $tone="blue">
+                    <ClipboardList size={22} aria-hidden />
+                  </S.StatIcon>
+                  <span>
+                    <S.SmallText>Templates ativos</S.SmallText>
+                    <S.StatValue>{copy.templates.length}</S.StatValue>
+                  </span>
                 </S.StatCard>
               </S.StatStack>
             </S.SummaryGrid>
@@ -482,91 +601,142 @@ export function Avaliacoes() {
 
             <S.Section>
               <S.SectionHeader>
+                <S.SectionTitleGroup>
+                  <S.SectionIcon>
+                    <ClipboardList size={20} aria-hidden />
+                  </S.SectionIcon>
                 <div>
                   <S.SectionTitle>Surveys pendentes</S.SectionTitle>
                   <S.SectionDescription>
                     Formulários liberados para este perfil responder após os pontos de interação previstos no fluxo.
                   </S.SectionDescription>
                 </div>
+                </S.SectionTitleGroup>
                 <S.PendingCount>{pendingSurveys.length}</S.PendingCount>
               </S.SectionHeader>
-              <S.PendingGrid>
-                {pendingSurveys.map((entry) => {
-                  const template = getTemplate(entry.form.templateKey);
+              {pendingSurveys.length > 0 ? (
+                <S.PendingCarouselShell>
+                  {pendingSurveys.length > 1 ? (
+                    <S.PendingCarouselActions aria-label="Navegacao dos surveys pendentes">
+                      <S.PendingCarouselButton
+                        type="button"
+                        aria-label="Survey anterior"
+                        onClick={() => scrollPendingSurveys('previous')}
+                      >
+                        <ChevronLeft size={16} aria-hidden />
+                      </S.PendingCarouselButton>
+                      <S.PendingCarouselButton
+                        type="button"
+                        aria-label="Proximo survey"
+                        onClick={() => scrollPendingSurveys('next')}
+                      >
+                        <ChevronRight size={16} aria-hidden />
+                      </S.PendingCarouselButton>
+                    </S.PendingCarouselActions>
+                  ) : null}
+                  <S.PendingCarousel ref={pendingCarouselRef} aria-label="Surveys pendentes para responder">
+                    {pendingSurveys.map((entry) => {
+                      const template = getTemplate(entry.form.templateKey);
 
-                  return (
-                    <S.PendingCard key={entry.form.id}>
-                      <div>
-                        <S.PendingTitle>{template?.label ?? entry.form.templateKey}</S.PendingTitle>
-                        <S.ReviewMeta>{getPendingSurveyContext(entry.form, entry.order)}</S.ReviewMeta>
-                        <S.SmallText>Liberado em {formatDate(entry.form.releasedAt)}</S.SmallText>
-                      </div>
-                      <S.SecondaryButton type="button" onClick={() => openSurvey(entry)}>
-                        Responder
-                      </S.SecondaryButton>
-                    </S.PendingCard>
-                  );
-                })}
-                {pendingSurveys.length === 0 ? <S.Banner>Nenhum survey pendente para este perfil.</S.Banner> : null}
-              </S.PendingGrid>
+                      return (
+                        <S.PendingCard key={entry.form.id}>
+                          <div>
+                            <S.PendingTitle>{template?.label ?? entry.form.templateKey}</S.PendingTitle>
+                            <S.ReviewMeta>{getPendingSurveyContext(entry.form, entry.order)}</S.ReviewMeta>
+                            <S.SmallText>Liberado em {formatDate(entry.form.releasedAt)}</S.SmallText>
+                          </div>
+                          <S.SecondaryButton type="button" onClick={() => openSurvey(entry)}>
+                            Responder
+                          </S.SecondaryButton>
+                        </S.PendingCard>
+                      );
+                    })}
+                  </S.PendingCarousel>
+                </S.PendingCarouselShell>
+              ) : (
+                <S.Banner>Nenhum survey pendente para este perfil.</S.Banner>
+              )}
             </S.Section>
 
             <S.Section>
               <S.SectionHeader>
+                <S.SectionTitleGroup>
+                  <S.SectionIcon>
+                    <Clock3 size={20} aria-hidden />
+                  </S.SectionIcon>
                 <div>
                   <S.SectionTitle>Momentos dos surveys</S.SectionTitle>
                   <S.SectionDescription>
                     Pontos em que os modais devem aparecer para validar todos os feedbacks do MVP.
                   </S.SectionDescription>
                 </div>
+                </S.SectionTitleGroup>
               </S.SectionHeader>
               <S.TriggerList>
-                {SURVEY_MOMENTS.map((moment) => (
-                  <S.TriggerItem key={moment.templateKey}>
-                    <S.TriggerIcon>
-                      <CheckCircle2 size={15} />
-                    </S.TriggerIcon>
-                    <div>
-                      <S.PendingTitle>{moment.title}</S.PendingTitle>
-                      <S.ReviewMeta>{moment.actor}</S.ReviewMeta>
-                      <S.Comment>{moment.moment}</S.Comment>
-                    </div>
-                  </S.TriggerItem>
-                ))}
+                <S.SurveyTabs role="tablist" aria-label="Momentos dos surveys">
+                  {surveyMoments.map((moment) => {
+                    const isSelected = selectedMoment?.templateKey === moment.templateKey;
+
+                    return (
+                      <S.SurveyTab
+                        key={moment.templateKey}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        aria-controls={`survey-moment-${moment.templateKey}`}
+                        id={`survey-tab-${moment.templateKey}`}
+                        $active={isSelected}
+                        onClick={() => setSelectedMomentKey(moment.templateKey)}
+                      >
+                        {moment.title}
+                      </S.SurveyTab>
+                    );
+                  })}
+                </S.SurveyTabs>
+                {selectedMoment ? (
+                  <S.MomentPanel
+                    role="tabpanel"
+                    id={`survey-moment-${selectedMoment.templateKey}`}
+                    aria-labelledby={`survey-tab-${selectedMoment.templateKey}`}
+                  >
+                    <S.ReviewList>
+                      {selectedMomentRows.map((row) => (
+                        <S.ReviewCard key={row.id}>
+                          <S.ReviewHeader>
+                            <S.Reviewer>
+                              <S.Avatar>{getInitials(row.reviewer)}</S.Avatar>
+                              <div>
+                                <S.ReviewerName>{row.reviewer}</S.ReviewerName>
+                                <S.ReviewMeta>
+                                  {row.direction} | Ordem {getOrderDisplayId(row.order)} |{' '}
+                                  {row.form.submittedAt ? formatDate(row.form.submittedAt) : 'Data pendente'}
+                                </S.ReviewMeta>
+                              </div>
+                            </S.Reviewer>
+                            <S.ReviewScore>
+                              {row.score.toFixed(1)}
+                              <Stars score={row.score} />
+                            </S.ReviewScore>
+                          </S.ReviewHeader>
+                          <S.Comment>{row.comment}</S.Comment>
+                          <S.CriteriaGrid>
+                            {row.criteria.slice(0, 6).map((critérion) => (
+                              <S.CriteriaPill key={`${row.id}-${critérion.label}`}>
+                                <strong>{critérion.value.toFixed(1)}</strong>
+                                {critérion.label}
+                              </S.CriteriaPill>
+                            ))}
+                          </S.CriteriaGrid>
+                        </S.ReviewCard>
+                      ))}
+                      {selectedMomentRows.length === 0 ? (
+                        <S.Banner>Nenhum comentário enviado para este momento ainda.</S.Banner>
+                      ) : null}
+                    </S.ReviewList>
+                  </S.MomentPanel>
+                ) : null}
               </S.TriggerList>
             </S.Section>
-
-            <S.ReviewList>
-              {rows.map((row) => (
-                <S.ReviewCard key={row.id}>
-                  <S.ReviewHeader>
-                    <S.Reviewer>
-                      <S.Avatar>{getInitials(row.reviewer)}</S.Avatar>
-                      <div>
-                        <S.ReviewerName>{row.reviewer}</S.ReviewerName>
-                        <S.ReviewMeta>
-                          {row.direction} | Ordem {row.order.id} | {row.form.submittedAt ? formatDate(row.form.submittedAt) : 'Data pendente'}
-                        </S.ReviewMeta>
-                      </div>
-                    </S.Reviewer>
-                    <S.ReviewScore>
-                      {row.score.toFixed(1)}
-                      <Stars score={row.score} />
-                    </S.ReviewScore>
-                  </S.ReviewHeader>
-                  <S.Comment>{row.comment}</S.Comment>
-                  <S.CriteriaGrid>
-                    {row.criteria.slice(0, 6).map((critérion) => (
-                      <S.CriteriaPill key={`${row.id}-${critérion.label}`}>
-                        <strong>{critérion.value.toFixed(1)}</strong>
-                        {critérion.label}
-                      </S.CriteriaPill>
-                    ))}
-                  </S.CriteriaGrid>
-                </S.ReviewCard>
-              ))}
-              {rows.length === 0 ? <S.Banner>Nenhuma avaliação enviada para este perfil ainda.</S.Banner> : null}
-            </S.ReviewList>
           </>
         ) : null}
       </S.Panel>
@@ -598,11 +768,15 @@ export function Avaliacoes() {
                 <S.SurveyField key={field.key}>
                   <S.SurveyLabel>
                     {field.label}
-                    {field.required ? <span>*</span> : null}
+                    {field.required ? <span>(*)</span> : null}
                   </S.SurveyLabel>
                   {field.helpText ? <S.SmallText>{field.helpText}</S.SmallText> : null}
                   {isScoreField(field) ? (
-                    <S.ScoreOptions role="radiogroup" aria-label={field.label}>
+                    <S.ScoreOptions
+                      role="radiogroup"
+                      aria-label={field.label}
+                      onBlur={() => validateSurveyField(field)}
+                    >
                       {field.options?.map((option) => {
                         const selectedValue = Number(surveyPayload[field.key]);
                         const isSelected = surveyPayload[field.key] === String(option.value);
@@ -615,9 +789,10 @@ export function Avaliacoes() {
                             name={field.key}
                             value={option.value}
                             checked={surveyPayload[field.key] === String(option.value)}
-                            onChange={(event) =>
-                              setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }))
-                            }
+                            onChange={(event) => {
+                              clearSurveyFieldError(field.key);
+                              setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }));
+                            }}
                           />
                           <span>
                             <Star size={24} fill="currentColor" aria-hidden="true" />
@@ -631,18 +806,24 @@ export function Avaliacoes() {
                     </S.ScoreOptions>
                   ) : (
                     <S.TextArea
+                      aria-label={field.label}
                       value={surveyPayload[field.key] ?? ''}
                       maxLength={500}
-                      onChange={(event) =>
-                        setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }))
-                      }
+                      onBlur={() => validateSurveyField(field)}
+                      onChange={(event) => {
+                        clearSurveyFieldError(field.key);
+                        setSurveyPayload((current) => ({ ...current, [field.key]: event.target.value }));
+                      }}
                     />
                   )}
                   {isScoreField(field) && (field.minLabel || field.maxLabel) ? (
                     <S.ScaleHint>
                       <span>{field.minLabel}</span>
                       <span>{field.maxLabel}</span>
-                    </S.ScaleHint>
+                      </S.ScaleHint>
+                    ) : null}
+                  {surveyFieldErrors[field.key] ? (
+                    <S.FieldError role="alert">{surveyFieldErrors[field.key]}</S.FieldError>
                   ) : null}
                 </S.SurveyField>
               ))}

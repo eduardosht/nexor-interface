@@ -26,4 +26,9 @@ describe('Layout', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
+
+  it('renderiza link para pular direto ao conteúdo principal', () => {
+    render(<Layout />, { wrapper: Wrapper });
+    expect(screen.getByRole('link', { name: /pular para o conteúdo principal/i })).toHaveAttribute('href', '#main-content');
+  });
 });

@@ -7,7 +7,9 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     address: 'Rua das Palmeiras, 245 - Jardim Paulista, São Paulo - SP',
     cep: '04567-000',
     phone: '(11) 4000-1001',
+    isAdapted: true,
     dentistName: 'Dr. Rafael Demo',
+    dentistReviewScore: 4,
     distanceKm: 1.2,
     coordinates: {
       lat: -23.5923,
@@ -20,7 +22,9 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     address: 'Alameda dos Atletas, 88 - Itaim Bibi, São Paulo - SP',
     cep: '04567-120',
     phone: '(11) 4000-1003',
+    isAdapted: false,
     dentistName: 'Dra. Camila Moura',
+    dentistReviewScore: 4,
     distanceKm: 2.1,
     coordinates: {
       lat: -23.5904,
@@ -33,17 +37,66 @@ export const DEMO_CONSULTATION_LOCATIONS: DemoPracticeLocationSelection[] = [
     address: 'Avenida Horizonte, 510 - Vila Olimpia, São Paulo - SP',
     cep: '04567-210',
     phone: '(11) 4000-1004',
+    isAdapted: true,
     dentistName: 'Dr. Felipe Andrade',
+    dentistReviewScore: 5,
     distanceKm: 3.4,
     coordinates: {
       lat: -23.5967,
       lng: -46.6831,
     },
   },
+  {
+    id: 'practice-demo-005',
+    name: 'Clínica Atlética Vila Olímpia',
+    address: 'Rua Olimpíadas, 640 - Vila Olímpia, São Paulo - SP',
+    cep: '04567-300',
+    phone: '(11) 4000-1005',
+    isAdapted: false,
+    dentistName: 'Dra. Marina Costa',
+    dentistReviewScore: 4,
+    distanceKm: 4.2,
+    coordinates: {
+      lat: -23.5989,
+      lng: -46.6878,
+    },
+  },
+  {
+    id: 'practice-demo-006',
+    name: 'Núcleo Adaptado de Odontologia Esportiva',
+    address: 'Rua Casa do Atleta, 72 - Brooklin, São Paulo - SP',
+    cep: '04567-410',
+    phone: '(11) 4000-1006',
+    isAdapted: true,
+    dentistName: 'Dr. Bruno Teixeira',
+    dentistReviewScore: 5,
+    distanceKm: 5.1,
+    coordinates: {
+      lat: -23.6024,
+      lng: -46.6816,
+    },
+  },
 ];
+
+const DEMO_CEP_COORDINATES: Record<string, { lat: number; lng: number; label: string }> = {
+  '04567000': {
+    lat: -23.5932,
+    lng: -46.6812,
+    label: 'CEP 04567-000 - Itaim Bibi, São Paulo - SP',
+  },
+  '01001000': {
+    lat: -23.5505,
+    lng: -46.6333,
+    label: 'CEP 01001-000 - Sé, São Paulo - SP',
+  },
+};
 
 function normalizeCep(value: string) {
   return value.replace(/\D/g, '').slice(0, 5);
+}
+
+function normalizeFullCep(value: string) {
+  return value.replace(/\D/g, '').slice(0, 8);
 }
 
 export function listConsultationLocationsByCep(cep: string) {
@@ -62,4 +115,39 @@ export function listConsultationLocationsByCep(cep: string) {
 
 export function getConsultationLocation(locationId: string) {
   return DEMO_CONSULTATION_LOCATIONS.find((location) => location.id === locationId) ?? null;
+}
+
+export function getConsultationCepLocation(
+  cep: string,
+  nearbyLocations: DemoPracticeLocationSelection[] = DEMO_CONSULTATION_LOCATIONS
+) {
+  const fullCep = normalizeFullCep(cep);
+  const mappedCep = DEMO_CEP_COORDINATES[fullCep];
+
+  if (mappedCep) {
+    return mappedCep;
+  }
+
+  const normalizedPrefix = normalizeCep(cep);
+  const prefixMatch = DEMO_CONSULTATION_LOCATIONS.find((location) =>
+    normalizeCep(location.cep).startsWith(normalizedPrefix)
+  );
+
+  if (prefixMatch) {
+    return {
+      lat: prefixMatch.coordinates.lat,
+      lng: prefixMatch.coordinates.lng,
+      label: `CEP ${cep}`,
+    };
+  }
+
+  if (nearbyLocations.length === 0) {
+    return null;
+  }
+
+  return {
+    lat: nearbyLocations.reduce((sum, location) => sum + location.coordinates.lat, 0) / nearbyLocations.length,
+    lng: nearbyLocations.reduce((sum, location) => sum + location.coordinates.lng, 0) / nearbyLocations.length,
+    label: `CEP ${cep}`,
+  };
 }

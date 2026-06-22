@@ -3,6 +3,7 @@ import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { Boxes, Info, Mail, Star, type LucideIcon } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import { getAccessibleScrollBehavior } from '../../lib/accessibility';
 import * as S from './styles';
 
 
@@ -23,7 +24,7 @@ export function Header() {
 
   function goToSection(hash: string) {
     if (location.pathname === '/') {
-      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById(hash)?.scrollIntoView({ behavior: getAccessibleScrollBehavior(), block: 'start' });
     } else {
       navigate(`/#${hash}`);
     }
@@ -31,7 +32,7 @@ export function Header() {
 
   function goHome() {
     if (location.pathname === '/') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: getAccessibleScrollBehavior() });
     } else {
       navigate('/');
     }
@@ -39,7 +40,6 @@ export function Header() {
 
   return (
     <>
-      <S.MobilePublicNavigationSpace />
       <S.Nav
         style={{
           boxShadow: scrolled
@@ -48,13 +48,13 @@ export function Header() {
         }}
         aria-label="Navegação principal"
       >
-        <S.Brand onClick={goHome} aria-label="Nexor — início">
+        <S.Brand type="button" onClick={goHome} aria-label="Nexor — início">
           <S.LogoImg src={publicOptimizedImages.shared.nexorLogo.webp} alt="Nexor" width={260} height={83} />
         </S.Brand>
         <S.Links>
           {NAV_ITEMS.map(({ label, hash }) => (
             <li key={hash}>
-              <S.NavLink onClick={() => goToSection(hash)}>{label}</S.NavLink>
+              <S.NavLink type="button" onClick={() => goToSection(hash)}>{label}</S.NavLink>
             </li>
           ))}
         </S.Links>

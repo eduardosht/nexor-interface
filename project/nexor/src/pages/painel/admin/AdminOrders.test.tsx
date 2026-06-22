@@ -63,7 +63,7 @@ describe('AdminOrders', () => {
         {
           id: 'BP-DEMO-004',
           status: 'awaiting_dentist_forms',
-          statusLabel: 'Aguardando preenchimento dentista',
+          statusLabel: 'aguardando envio ao laboratório',
           stage: 'awaiting_dentist_forms',
           created_at: '2026-05-02T12:00:00.000Z',
           customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -96,11 +96,19 @@ describe('AdminOrders', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('admin-orders-table')).toBeInTheDocument());
-    expect(screen.getAllByText(/aguardando preenchimento dentista/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/aguardando envio ao laboratório/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/escaneamento 3d intraoral pendente/i).length).toBeGreaterThan(0);
     const pendingLabStat = screen.getByText(/aguardando liberação ao lab/i).closest('div');
     expect(pendingLabStat).not.toBeNull();
     expect(within(pendingLabStat as HTMLElement).getByText('1')).toBeInTheDocument();
+  });
+
+  it('requests the first admin order page with a backend limit', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [] });
+
+    renderPage();
+
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?limit=30', 'tok'));
   });
 
   it('uses the design-system multi-select removable chips for admin filters', async () => {
@@ -109,7 +117,7 @@ describe('AdminOrders', () => {
         {
           id: 'BP-DEMO-004',
           status: 'awaiting_dentist_forms',
-          statusLabel: 'Aguardando preenchimento dentista',
+          statusLabel: 'aguardando envio ao laboratório',
           stage: 'awaiting_dentist_forms',
           created_at: '2026-05-02T12:00:00.000Z',
           customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -160,7 +168,7 @@ describe('AdminOrders', () => {
         {
           id: 'BP-DEMO-004',
           status: 'awaiting_dentist_forms',
-          statusLabel: 'Aguardando preenchimento dentista',
+          statusLabel: 'aguardando envio ao laboratório',
           stage: 'awaiting_dentist_forms',
           created_at: '2026-05-02T12:00:00.000Z',
           customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -188,7 +196,7 @@ describe('AdminOrders', () => {
         {
           id: 'BP-DEMO-004',
           status: 'awaiting_dentist_forms',
-          statusLabel: 'Aguardando preenchimento dentista',
+          statusLabel: 'aguardando envio ao laboratório',
           stage: 'awaiting_dentist_forms',
           created_at: '2026-05-02T12:00:00.000Z',
           customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -228,7 +236,7 @@ describe('AdminOrders', () => {
         {
           id: 'BP-DEMO-004',
           status: 'awaiting_dentist_forms',
-          statusLabel: 'Aguardando preenchimento dentista',
+          statusLabel: 'aguardando envio ao laboratório',
           stage: 'awaiting_dentist_forms',
           created_at: '2026-05-02T12:00:00.000Z',
           customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },

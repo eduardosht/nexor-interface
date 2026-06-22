@@ -4,6 +4,7 @@ import { createFinalAnamnesisPdfBlob } from './finalAnamnesisPdf';
 interface FinalAnamnesisPdfWorkerRequest {
   order: DemoOrderSummary;
   intakeForm: DemoWorkflowForm | undefined;
+  onboardingForm: DemoWorkflowForm | undefined;
   draft: ProductionRequestDraft;
 }
 
@@ -26,8 +27,8 @@ const workerScope = self as unknown as FinalAnamnesisPdfWorkerScope;
 
 workerScope.onmessage = async (event: MessageEvent<FinalAnamnesisPdfWorkerRequest>) => {
   try {
-    const { order, intakeForm, draft } = event.data;
-    const blob = await createFinalAnamnesisPdfBlob(order, intakeForm, draft);
+    const { order, intakeForm, onboardingForm, draft } = event.data;
+    const blob = await createFinalAnamnesisPdfBlob(order, intakeForm, onboardingForm, draft);
     const arrayBuffer = await blob.arrayBuffer();
     const response: FinalAnamnesisPdfWorkerResponse = { status: 'success', arrayBuffer };
 

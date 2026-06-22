@@ -6,15 +6,15 @@ import * as S from './styles';
 const PARTNERS = [
   {
     title: 'Dentista Licenciado',
-    body: 'Credenciamento para avaliação, moldagem e acompanhamento dos pacientes Biteplaner.',
+    body: 'Público diferenciado e serviços premium.',
   },
   {
-    title: 'Academia / Coach',
-    body: 'Programa de indicação com benefícios para parceiros que recomendam o Biteplaner.',
+    title: 'Academia / Coach Licenciado',
+    body: 'Aumento do Valuation e upgrade profissional.',
   },
   {
-    title: 'Laboratório Certificado',
-    body: 'Parceria para produção laboratorial de alto padrão das moldeiras personalizadas.',
+    title: 'Laboratório Licenciado',
+    body: 'Upgrade de produtos e novos nichos de mercado.',
   },
 ];
 
@@ -39,7 +39,7 @@ export function ParceirosTeaserSection() {
           </S.Grid>
 
           <S.CtaRow as={motion.div} variants={fadeUp}>
-            <S.CtaLink to="/parceiros">Ver como ser parceiro →</S.CtaLink>
+            <S.CtaLink to="/parceiros">Veja como ser licenciado</S.CtaLink>
           </S.CtaRow>
         </motion.div>
       </S.Section>

@@ -12,6 +12,8 @@ describe('Depoimentos', () => {
   it('renderiza o primeiro depoimento', () => {
     render(<ThemeProvider theme={lightTheme}><Depoimentos /></ThemeProvider>);
     expect(screen.getByText(/carlos m\./i)).toBeInTheDocument();
+    expect(screen.getByText(/dispositivo de segurança/i)).toBeInTheDocument();
+    expect(screen.getByText(/detalhe do dispositivo/i)).toBeInTheDocument();
   });
 
   it('tem id depoimentos para âncora', () => {

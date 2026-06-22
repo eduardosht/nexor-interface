@@ -4,13 +4,16 @@ import {
   DemoStateError,
   applyOrderAction,
   getAppointments,
+  getClinicalFollowUps,
   getOrderForms,
   getTimelineEvents,
   getWorkflowForm,
   getWorkflowForms,
   getWorkflowVersions,
   listOrders,
-  parseClinicalDecisionPayload
+  parseClinicalDecisionPayload,
+  scheduleClinicalFollowUp,
+  type ClinicalFollowUpKind
 } from '../demoState';
 
 function parseBody(request: { requestBody: string }) {
@@ -47,12 +50,98 @@ export function orderHandlers(server: Server) {
   server.get('/v1/orders', withDemoErrors((_schema, request) => {
     const rawMode = request.queryParams['as'];
     const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode ?? null;
-    return listOrders({ requestHeaders: request.requestHeaders }, mode);
+    const rawStatus = request.queryParams.status;
+    const rawLimit = request.queryParams.limit;
+    const rawCreatedBefore = request.queryParams.createdBefore;
+    const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
+    const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
+    const createdBefore = Array.isArray(rawCreatedBefore) ? rawCreatedBefore[0] : rawCreatedBefore;
+    return listOrders(
+      { requestHeaders: request.requestHeaders },
+      mode,
+      {
+        status: typeof status === 'string' ? status : undefined,
+        limit: typeof limitValue === 'string' ? Number(limitValue) : undefined,
+        createdBefore: typeof createdBefore === 'string' ? createdBefore : undefined
+      }
+    );
   }));
 
   server.get('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) =>
     getAppointments(request.params.orderId, { requestHeaders: request.requestHeaders })
   ));
+
+  server.get('/v1/orders/:orderId/clinical-follow-ups', withDemoErrors((_schema, request) =>
+    getClinicalFollowUps(request.params.orderId, { requestHeaders: request.requestHeaders })
+  ));
+
+  server.post('/v1/orders/:orderId/clinical-follow-ups/:kind/schedule', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const rawKind = request.params.kind;
+    if (rawKind !== 'return_15_days' && rawKind !== 'return_30_days' && rawKind !== 'on_demand') {
+      throw new DemoStateError(422, 'invalid_follow_up_kind', 'Tipo de retorno clínico inválido.');
+    }
+
+    const kind: ClinicalFollowUpKind = rawKind;
+
+    return new Response(
+      200,
+      {},
+      scheduleClinicalFollowUp(
+        request.params.orderId,
+        kind,
+        {
+          practiceLocationId: typeof body.practiceLocationId === 'string' ? body.practiceLocationId : undefined,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : undefined
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
+
+  server.post('/v1/orders/:orderId/appointments', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const type = body.type === 'initial' || body.type === 'adaptation' || body.type === 'follow_up'
+      ? body.type
+      : 'adaptation';
+
+    return new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        {
+          type: 'create-appointment',
+          appointmentType: type,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : new Date().toISOString()
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
+
+  server.patch('/v1/orders/:orderId/appointments/:appointmentId', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const status = body.status === 'scheduled' || body.status === 'rescheduled' || body.status === 'cancelled'
+      ? body.status
+      : 'rescheduled';
+
+    return new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        {
+          type: 'update-appointment',
+          appointmentId: request.params.appointmentId,
+          status,
+          scheduledAt: typeof body.scheduledAt === 'string' ? body.scheduledAt : undefined,
+          reason: typeof body.reason === 'string' ? body.reason : undefined
+        },
+        { requestHeaders: request.requestHeaders }
+      )
+    );
+  }));
 
   server.get('/v1/orders/:orderId/timeline', withDemoErrors((_schema, request) =>
     getTimelineEvents(request.params.orderId, { requestHeaders: request.requestHeaders })
@@ -144,6 +233,18 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/practice-location-selection/cancel', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      applyOrderAction(
+        request.params.orderId,
+        { type: 'cancel-practice-location-selection' },
+        { requestHeaders: request.requestHeaders }
+      )
+    )
+  ));
+
   server.post('/v1/orders/:orderId/initial-consultation-accepted', withDemoErrors((_schema, request) =>
     new Response(
       200,
@@ -171,6 +272,16 @@ export function orderHandlers(server: Server) {
       }, { requestHeaders: request.requestHeaders })
     );
   }));
+
+  server.post('/v1/orders/:orderId/workflow-forms/training-report', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      applyOrderAction(request.params.orderId, {
+        type: 'create-training-report'
+      }, { requestHeaders: request.requestHeaders })
+    )
+  ));
 
   server.post('/v1/orders/:orderId/workflow-forms/:workflowFormId/revise', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
@@ -280,6 +391,32 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/checkout-session', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const model = typeof body.model === 'string' ? body.model : 'impacto';
+    const color = typeof body.color === 'string' ? body.color : 'preto';
+    const quantity = typeof body.quantity === 'number' ? body.quantity : Number(body.quantity);
+
+    applyOrderAction(
+      request.params.orderId,
+      {
+        type: 'create-checkout-session',
+        model,
+        color,
+        quantity,
+      },
+      { requestHeaders: request.requestHeaders }
+    );
+
+    return new Response(
+      200,
+      {},
+      {
+        url: 'https://checkout.stripe.test/session'
+      }
+    );
+  }));
+
   server.post('/v1/orders/:orderId/payment-confirmed', withDemoErrors((_schema, request) =>
     new Response(
       200,
@@ -323,10 +460,22 @@ export function orderHandlers(server: Server) {
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
             labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
+            scan3dFileRef:
+              body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
+                ? body.scan3dFileRef as Record<string, unknown>
+                : null,
             prescriptionFileName:
               typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
+            prescriptionFileRef:
+              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
+                ? body.prescriptionFileRef as Record<string, unknown>
+                : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
+            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            purchaseConfiguration:
+              body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
+                ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
           },
           { requestHeaders: request.requestHeaders }
         )
@@ -351,10 +500,65 @@ export function orderHandlers(server: Server) {
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
             labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
+            scan3dFileRef:
+              body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
+                ? body.scan3dFileRef as Record<string, unknown>
+                : null,
             prescriptionFileName:
               typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
+            prescriptionFileRef:
+              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
+                ? body.prescriptionFileRef as Record<string, unknown>
+                : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null
+            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            purchaseConfiguration:
+              body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
+                ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
+          },
+          { requestHeaders: request.requestHeaders }
+        )
+      }
+    );
+  }));
+
+  server.post('/v1/orders/:orderId/forms/production-request', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const payload = body.payload && typeof body.payload === 'object'
+      ? body.payload as Record<string, unknown>
+      : {};
+
+    return new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(
+          request.params.orderId,
+          {
+            type: 'complete-production-request',
+            anamnesisSummary: typeof payload.anamnesisSummary === 'string' ? payload.anamnesisSummary : '',
+            anamnesisDownloaded: payload.anamnesisDownloaded === true,
+            productionRequestSummary:
+              typeof payload.productionRequestSummary === 'string' ? payload.productionRequestSummary : '',
+            labNotes: typeof payload.labNotes === 'string' ? payload.labNotes : '',
+            scan3dFileName: typeof payload.scan3dFileName === 'string' ? payload.scan3dFileName : '',
+            scan3dFileRef:
+              payload.scan3dFileRef && typeof payload.scan3dFileRef === 'object'
+                ? payload.scan3dFileRef as Record<string, unknown>
+                : null,
+            prescriptionFileName:
+              typeof payload.prescriptionFileName === 'string' ? payload.prescriptionFileName : '',
+            prescriptionFileRef:
+              payload.prescriptionFileRef && typeof payload.prescriptionFileRef === 'object'
+                ? payload.prescriptionFileRef as Record<string, unknown>
+                : null,
+            lgpdConfirmed: payload.lgpdConfirmed === true,
+            selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null,
+            purchaseConfiguration:
+              payload.purchaseConfiguration && typeof payload.purchaseConfiguration === 'object'
+                ? payload.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
+                : null
           },
           { requestHeaders: request.requestHeaders }
         )
@@ -431,6 +635,24 @@ export function orderHandlers(server: Server) {
   server.post('/v1/orders/:orderId/clinical-decision', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
     const action = parseClinicalDecisionPayload(body);
+
+    return new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(request.params.orderId, action, {
+          requestHeaders: request.requestHeaders
+        })
+      }
+    );
+  }));
+
+  server.post('/v1/orders/:orderId/clinical-evaluation', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const outcome = body.outcome;
+    const action = parseClinicalDecisionPayload({
+      decision: outcome === 'eligible' || outcome === 'ineligible' ? outcome : undefined
+    });
 
     return new Response(
       200,

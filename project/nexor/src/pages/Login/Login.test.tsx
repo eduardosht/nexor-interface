@@ -29,6 +29,7 @@ function createAuthMock(overrides: Record<string, unknown> = {}) {
     loading: false,
     hasConfiguredAuth: true,
     isMockMode: true,
+    authError: '',
     demoPersona: null,
     signIn: mockSignIn,
     signInDemo: mockSignInDemo,
@@ -84,6 +85,18 @@ describe('Login', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
   });
 
+  it('shows account errors reported by auth sync', () => {
+    vi.mocked(useAuth).mockReturnValue(createAuthMock({
+      authError: 'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.'
+    }));
+
+    renderLogin('?next=%2Fpainel%2Fconta');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Sua conta está bloqueada ou foi removida. Entre em contato com a Nexor para mais detalhes.'
+    );
+  });
+
   it('shows validation error when email is empty', async () => {
     renderLogin();
     fireEvent.click(getSubmitButton());
@@ -102,6 +115,12 @@ describe('Login', () => {
     sessionStorage.setItem('nexor_referral_ref', 'EXISTING');
     renderLogin();
     expect(sessionStorage.getItem('nexor_referral_ref')).toBe('EXISTING');
+  });
+
+  it('shows the Nexor logo image on the visual side', () => {
+    renderLogin('?next=%2F');
+
+    expect(screen.getByAltText('Nexor')).toHaveAttribute('src', expect.stringContaining('logo-nexor-white'));
   });
 
   it('redirects admin users to local admin panel after login', async () => {
@@ -186,7 +205,12 @@ describe('Login', () => {
     renderLogin();
 
     expect(screen.getByRole('tab', { name: /cliente/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('demo-login-athlete-registered')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-prerequisite')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-payment')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-lab-production')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-cancelled')).toBeInTheDocument();
     expect(screen.queryByTestId('demo-login-partner')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /parceiros/i }));

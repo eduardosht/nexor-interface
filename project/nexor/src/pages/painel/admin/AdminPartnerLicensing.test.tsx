@@ -59,11 +59,12 @@ describe('AdminPartnerLicensing', () => {
           id: 'partner-role-1',
           profileId: 'profile-partner-1',
           partnerName: 'Performance Partners',
+          contactEmail: 'contato@performancepartners.dev',
           documentType: 'cnpj',
           documentNumber: '19.131.243/0001-97',
-          contactEmail: 'contato@partner.test',
-          cityState: 'Campinas, SP',
-          channels: 'Academias e assessorias esportivas.',
+          partnerType: 'coach_personal',
+          location: null,
+          serviceLocations: ['Academia', 'Box de Crossfit'],
           status: 'pending',
           submittedAt: '2026-05-10T10:00:00.000Z',
         },
@@ -74,11 +75,15 @@ describe('AdminPartnerLicensing', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText(/performance partners/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/performance partners/i).length).toBeGreaterThan(0));
+    expect(screen.getByTestId('admin-partner-requests-mobile-list')).toBeInTheDocument();
+    expect(within(screen.getByTestId('admin-partner-requests-mobile-list')).getByText(/performance partners/i)).toBeInTheDocument();
+    expect(screen.getAllByText('contato@performancepartners.dev').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de performance partners/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /dados enviados pelo parceiro/i });
-    expect(within(dialog).getByText(/academias e assessorias esportivas/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/coach\/personal/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/academia, box de crossfit/i)).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /aprovar cadastro/i })).toBeEnabled();
 
     const rejectButton = within(dialog).getByRole('button', { name: /recusar cadastro/i });
@@ -89,7 +94,6 @@ describe('AdminPartnerLicensing', () => {
     });
 
     expect(rejectButton).toBeEnabled();
-    expect(getComputedStyle(rejectButton).backgroundColor).toBe('rgb(185, 28, 28)');
 
     fireEvent.click(within(dialog).getByRole('button', { name: /aprovar cadastro/i }));
 

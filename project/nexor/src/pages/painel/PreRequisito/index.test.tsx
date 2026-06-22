@@ -1,8 +1,13 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 
 const { mockUseAuth, mockApiGet, mockApiPost, mockNavigate } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
@@ -52,7 +57,21 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <ThemeProvider theme={lightTheme}>
-        <PreRequisito />
+        <TestQueryClientProvider>
+          <PreRequisito />
+        </TestQueryClientProvider>
+      </ThemeProvider>
+    </MemoryRouter>
+  );
+}
+
+function renderPageWithQueryClient(queryClient: ReturnType<typeof createTestQueryClient>) {
+  return render(
+    <MemoryRouter>
+      <ThemeProvider theme={lightTheme}>
+        <QueryClientProvider client={queryClient}>
+          <PreRequisito />
+        </QueryClientProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
@@ -61,6 +80,7 @@ function renderPage() {
 function demoOrder(status = 'registration_started') {
   return {
     id: 'BP-DEMO-001',
+    display_number: 39,
     status,
     statusLabel: status === 'registration_started' ? 'Pre-requisito pendente' : 'Aguardando consulta inicial',
     stage: status === 'registration_started' ? 'pre_requisite_pending' : 'awaiting_initial_consultation',
@@ -87,17 +107,92 @@ function sharedIntake(status: 'pending' | 'submitted' = 'pending') {
         : null,
     releasedAt: '2026-05-01T10:05:00.000Z',
     submittedAt: status === 'submitted' ? '2026-05-01T11:20:00.000Z' : null,
-    payload: status === 'submitted' ? { customer: { fullName: 'Joao Demo', sportRoutine: 'Boxe' } } : null,
+    payload: status === 'submitted' ? { customer: { fullName: 'Joao Demo', clinicalPrivacyConsent: ['accepted'] } } : {},
   };
 }
 
-async function fillMinimumRequiredCustomerFields() {
-  fireEvent.change(screen.getByLabelText(/telefone/i), { target: { value: '11999999999' } });
-  fireEvent.change(screen.getByLabelText(/modalidade principal/i), { target: { value: 'Boxe' } });
-  const medicalDiagnosisGroup = await screen.findByRole('group', {
-    name: /possui algum diagn/i,
-  });
-  fireEvent.click(within(medicalDiagnosisGroup).getByRole('radio', { name: /n/i }));
+function customerOnboarding(status: 'pending' | 'submitted' = 'pending') {
+  return {
+    id: 'BP-WF-001-ONBOARDING',
+    orderId: 'BP-DEMO-001',
+    templateKey: 'customer_new_user_onboarding',
+    stepKey: 'new_user_onboarding',
+    status,
+    roleState: { customer: status === 'submitted' ? 'submitted' : 'pending', dentist: 'locked' },
+    customerSubmittedAt: status === 'submitted' ? '2026-05-01T10:20:00.000Z' : null,
+    dentistReviewStartedAt: null,
+    dentistSubmittedAt: null,
+    canViewPayload: true,
+    summary:
+      status === 'submitted'
+        ? { scoreAverage: null, hasComment: false, responseCount: 1, submittedAt: '2026-05-01T10:20:00.000Z' }
+        : null,
+    releasedAt: '2026-05-01T10:05:00.000Z',
+    submittedAt: status === 'submitted' ? '2026-05-01T10:20:00.000Z' : null,
+    payload: status === 'submitted' ? { fullName: 'Joao Demo' } : {},
+  };
+}
+
+function sharedIntakeWithClinicalPayload(payload: Record<string, unknown>) {
+  return {
+    ...sharedIntake(),
+    payload: {
+      customer: payload,
+    },
+  };
+}
+
+function getDropdown(label: RegExp) {
+  const trigger = screen
+    .getAllByLabelText(label)
+    .find((element) => element.getAttribute('aria-haspopup') === 'listbox');
+  if (!trigger) {
+    throw new Error(`Dropdown not found for ${String(label)}`);
+  }
+
+  return trigger;
+}
+
+function findDropdown(label: RegExp) {
+  return waitFor(() => getDropdown(label));
+}
+
+function findField(label: RegExp) {
+  return screen.findByLabelText(label, { selector: 'input, textarea' });
+}
+
+function completeClinicalSectionPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    orthodonticTreatmentStatus: 'none',
+    activeDentalTreatmentStatus: 'no',
+    fullName: 'Joao Demo',
+    phone: '11999999999',
+    needsAdaptedClinic: 'no',
+    hasRelevantMedicalDiagnosis: 'no',
+    currentMedicationUse: 'no',
+    longTermPainOrSleepMedicationUse: 'no',
+    headNeckSpineSurgeryHistory: 'no',
+    faceJawTraumaHistory: 'no',
+    headNeckSpineAccidentHistory: 'no',
+    sleepQualityScore: '8',
+    hasTmdDiagnosis: 'no',
+    orofacialSymptomsHistory: ['none'],
+    atmJointSymptoms: ['none'],
+    awakeParafunctionalHabits: ['none'],
+    previousOrofacialTreatments: ['none'],
+    orthodonticApplianceHistory: 'never',
+    dentalProsthesisTypes: ['none'],
+    regularDentistVisit: 'no',
+    hasCurrentPain: 'no',
+    nicotineUse: 'none',
+    alcoholPattern: 'none',
+    usesCaffeineStimulants: 'no',
+    stressLevel: '4',
+    averageSleepHours: '8',
+    subjectiveSleepQuality: '8',
+    workPosture: 'mixed',
+    ...overrides,
+  };
 }
 
 describe('PreRequisito', () => {
@@ -116,175 +211,283 @@ describe('PreRequisito', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
-    expect(screen.getByRole('link', { name: /visão geral dos steps/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
-    expect(screen.getByTestId('step-breadcrumb-current')).toHaveTextContent(/pre-requisito/i);
+    expect(screen.getByTestId('pre-requisito-onboarding-card')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
+    expect(screen.getByText('#39')).toBeInTheDocument();
+    expect(screen.queryByText('BP-DEMO-001')).not.toBeInTheDocument();
     expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
+    expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
   });
 
-  it('replaces the old prerequisite questions with the shared Biteplaner intake and consents', async () => {
+  it('redirects to customer onboarding when the prerequisite intake is not released because onboarding is still pending', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [customerOnboarding('pending')] });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding', { replace: true })
+    );
+    expect(screen.queryByText(/avaliação inicial compartilhada ainda não foi liberada/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the user on the prerequisite page while the released intake is being prepared after onboarding', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [customerOnboarding('submitted')] });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
+    expect(await screen.findByText(/estamos liberando o pre-requisito biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByText(/seu cadastro foi recebido/i)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.queryByText(/agradecemos sua disponibilidade/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the clinical form from the DOCX with the same stepped intake experience without duplicate privacy consent', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
       .mockResolvedValueOnce({ forms: [sharedIntake()] });
 
     renderPage();
 
-    expect(screen.getByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
-    expect(screen.getByText(/campos marcados com/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('pre-requisito-onboarding-card')).toBeInTheDocument());
 
-    await waitFor(() => expect(screen.getByTestId('athlete-order-card')).toBeInTheDocument());
-
-    expect(screen.getByText('BP-DEMO-001')).toBeInTheDocument();
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
-    expect((await screen.findAllByText(/avalia.*inicial compartilhada biteplaner/i)).length).toBeGreaterThan(0);
-    expect(screen.getByText(/25% completo/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /1 perfil e sa/i })).toHaveAttribute('aria-current', 'step');
-    expect(screen.getByRole('button', { name: /4 consentimentos/i })).toBeInTheDocument();
-    const sleepQualityInput = screen.getByLabelText(/qualidade do sono/i);
-    expect(sleepQualityInput).toHaveAttribute('type', 'number');
-    expect(sleepQualityInput).toHaveAttribute('min', '0');
-    expect(sleepQualityInput).toHaveAttribute('max', '10');
-    expect(screen.queryByRole('button', { name: /concluir pre-requisito/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /dados iniciais/i })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/a nexor desenvolve pesquisas científicas/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /1 política de privacidade/i })).not.toBeInTheDocument();
+    const progressCard = await screen.findByRole('region', { name: /seu progresso/i });
+    expect(progressCard.querySelector('[aria-current="step"]')).toHaveTextContent(/dados iniciais/i);
+    expect(within(progressCard).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(progressCard).getByText(/dados clínicos/i)).toBeInTheDocument();
+    expect(within(progressCard).getByText(/pesquisa de satisfação/i)).toBeInTheDocument();
+    expect(within(progressCard).queryByText(/experiência com o dispositivo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/questionario odontológico/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/^documento/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/esporte ou atividade/i)).not.toBeInTheDocument();
   });
 
-  it('renders shared intake step titles without bold weight', async () => {
+  it('keeps the visual progress card non-clickable', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
       .mockResolvedValueOnce({ forms: [sharedIntake()] });
 
     renderPage();
 
-    await screen.findByRole('button', { name: /1 perfil e sa/i });
+    const progressCard = await screen.findByRole('region', { name: /seu progresso/i });
 
-    const profileAndHealthTitles = screen.getAllByText('Perfil e saúde');
-    expect(profileAndHealthTitles.length).toBeGreaterThan(0);
-    profileAndHealthTitles.forEach((title) => {
-      expect(Number(getComputedStyle(title).fontWeight)).toBeLessThan(600);
+    expect(progressCard).toHaveTextContent(/dados iniciais/i);
+    expect(progressCard).toHaveTextContent(/dados clínicos/i);
+    expect(progressCard).toHaveTextContent(/pesquisa de satisfação/i);
+    expect(progressCard).not.toHaveTextContent(/experiência com o dispositivo/i);
+    expect(within(progressCard).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('shows only the completed message when the prerequisite intake was already submitted', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder('awaiting_scheduling')] })
+      .mockResolvedValueOnce({ forms: [sharedIntake('submitted')] });
+
+    renderPage();
+
+    expect(await screen.findByText(/preencheu este formulário/i)).toBeInTheDocument();
+    expect(screen.getByText(/próxima etapa da jornada biteplaner já está disponível/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /fluxo da jornada/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/jornada'
+    );
+    expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enviar formulário/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the prerequisite customer flow with three visual steps and moves satisfaction checkboxes into the third step', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+
+    expect(source).toContain('const satisfactionCheckboxFields');
+    expect(source).toContain("field.type === 'checkbox-group'");
+    expect(source).toContain('fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields]');
+    expect(source).toContain("title: 'Pesquisa de satisfação'");
+    expect(source).not.toContain("'clinical-satisfaction'");
+  });
+
+  it('does not call the legacy prerequisite-completed endpoint after the workflow intake submission', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/PreRequisito/index.tsx'), 'utf8');
+    const flowSource = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+
+    expect(pageSource).not.toContain('completePrerequisite');
+    expect(pageSource).not.toContain('prerequisite-completed');
+    expect(flowSource).toContain('submitWorkflowForm(form.orderId, form.id, payloadToSubmit, token)');
+  });
+
+  it('does not allow resubmitting a customer intake that is already submitted', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+
+    expect(source).toContain("roleState.customer === 'pending'");
+    expect(source).toContain("form.status !== 'submitted'");
+    expect(source).toContain('submitError instanceof ApiError && submitError.status === 409');
+  });
+
+  it('keeps the shared intake progress card compact enough for four steps', () => {
+    const styles = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.styles.ts'), 'utf8');
+    const onboardingRailStart = styles.indexOf('export const OnboardingProgressRail');
+    const onboardingStepStart = styles.indexOf('export const OnboardingProgressStep', onboardingRailStart);
+    const onboardingRailStyles = styles.slice(onboardingRailStart, onboardingStepStart);
+    const stepRailStart = styles.indexOf('export const StepRail');
+    const stepTabStart = styles.indexOf('export const StepTab =', stepRailStart);
+    const stepRailStyles = styles.slice(stepRailStart, stepTabStart);
+    const stepTabStyles = styles.slice(stepTabStart, styles.indexOf('export const StepNumber', stepTabStart));
+
+    expect(onboardingRailStyles).toContain('grid-auto-flow: column;');
+    expect(onboardingRailStyles).toContain('grid-auto-columns: minmax(104px, 1fr);');
+    expect(onboardingRailStyles).toContain('overflow-x: auto;');
+    expect(onboardingRailStyles).not.toContain('grid-template-columns: 1fr;');
+    expect(stepRailStyles).toContain('minmax(min(100%, 92px), 1fr)');
+    expect(stepRailStyles).toContain('gap: 8px;');
+    expect(stepTabStyles).toContain('min-height: 48px;');
+    expect(stepTabStyles).toContain('padding: 9px 10px;');
+  });
+
+  it('starts the prerequisite form on initial data because Biteplaner consent was already collected', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    expect(await findDropdown(/está em tratamento ortodôntico/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
+  });
+
+  it('does not ask for contact identity again during prerequisite because it comes from customer onboarding', async () => {
+    const user = userEvent.setup();
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    const orthodonticSelect = await findDropdown(/tratamento ortod/i);
+    await user.click(orthodonticSelect);
+    await user.click(await screen.findByRole('option', { name: /^não$/i }));
+
+    expect(screen.queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/telefone/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the local draft when the auth token refreshes after returning to the tab', async () => {
+    const user = userEvent.setup();
+    const queryClient = createTestQueryClient();
+    let accessToken = 'tok';
+    mockUseAuth.mockImplementation(() => ({
+      loading: false,
+      session: { access_token: accessToken, user: { id: '1', email: 'demo@nexor.dev' } },
+      backendUser: { email: 'demo@nexor.dev', roles: ['customer'] },
+      backendUserResolved: true,
+      hasConfiguredAuth: true,
+      isMockMode: true,
+      demoPersona: 'athlete',
+      signIn: vi.fn(),
+      signInDemo: vi.fn(),
+      signOut: vi.fn(),
+      sendPasswordReset: vi.fn(),
+      refreshBackendUser: vi.fn(),
+    }));
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({ orders: [demoOrder()] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-001/workflow-forms') {
+        return Promise.resolve({ forms: [{ ...sharedIntake(), payload: { customer: {} } }] });
+      }
+
+      return Promise.resolve({});
     });
+
+    const view = renderPageWithQueryClient(queryClient);
+    const orthodonticSelect = await findDropdown(/está em tratamento ortodôntico/i);
+    await user.click(orthodonticSelect);
+    await user.click(await screen.findByRole('option', { name: /^não$/i }));
+    expect(getDropdown(/tratamento ortod/i)).toHaveTextContent(/^Não$/);
+
+    accessToken = 'tok-refreshed';
+    view.rerender(
+      <MemoryRouter>
+        <ThemeProvider theme={lightTheme}>
+          <QueryClientProvider client={queryClient}>
+            <PreRequisito />
+          </QueryClientProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(mockApiGet).toHaveBeenCalledTimes(2));
+    expect(getDropdown(/está em tratamento ortodôntico/i)).toHaveTextContent(/^Não$/);
+    expect(screen.queryByLabelText(/nome completo/i)).not.toBeInTheDocument();
   });
 
-  it('limits numeric 0 to 10 intake fields while typing', async () => {
+  it('requires a visible conditional clinical field before advancing from clinical data', async () => {
+    const user = userEvent.setup();
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [sharedIntake()] });
-
-    renderPage();
-
-    const sleepQualityInput = await screen.findByLabelText(/qualidade do sono/i);
-    fireEvent.change(sleepQualityInput, { target: { value: '15' } });
-    expect(sleepQualityInput).toHaveValue(10);
-
-    fireEvent.change(sleepQualityInput, { target: { value: '-3' } });
-    expect(sleepQualityInput).toHaveValue(0);
-
-    fireEvent.click(screen.getByRole('button', { name: /3 treino e expectativas/i }));
-    const stressInput = await screen.findByLabelText(/n.*vel de estresse percebido/i);
-    expect(stressInput).toHaveAttribute('type', 'number');
-    fireEvent.change(stressInput, { target: { value: '11' } });
-    expect(stressInput).toHaveValue(10);
-  });
-
-  it('keeps the shared form submission disabled until required Biteplaner consents are accepted', async () => {
-    mockApiGet
-      .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [sharedIntake()] });
-
-    renderPage();
-
-    expect((await screen.findAllByText(/avalia.*inicial compartilhada biteplaner/i)).length).toBeGreaterThan(0);
-    await fillMinimumRequiredCustomerFields();
-    fireEvent.click(screen.getByRole('button', { name: /4 consentimentos/i }));
-
-    const submitButton = await screen.findByRole('button', { name: /enviar formulário/i });
-    expect(screen.getAllByRole('heading', { name: /consentimentos/i }).length).toBeGreaterThan(0);
-    expect(submitButton).toBeDisabled();
-
-    fireEvent.click(screen.getByLabelText(/tratamento necessário para inscrição/i));
-    expect(submitButton).toBeDisabled();
-
-    fireEvent.click(screen.getByLabelText(/tratamento de dados sensíveis/i));
-    expect(submitButton).not.toBeDisabled();
-  });
-
-  it('advances the order when the shared intake is submitted with required consents', async () => {
-    mockApiGet
-      .mockResolvedValueOnce({ orders: [demoOrder()] })
-      .mockResolvedValueOnce({ forms: [sharedIntake()] });
-    mockApiPost
       .mockResolvedValueOnce({
-        ...sharedIntake('submitted'),
-        payload: {
-          customer: {
-            fullName: 'Joao Demo',
-            phone: '11999999999',
-            sportRoutine: 'Boxe',
-            serviceConsent: ['accepted'],
-            sensitiveHealthConsent: ['accepted'],
-            researchConsent: ['accepted'],
-          },
-        },
-      })
-      .mockResolvedValueOnce({ order: demoOrder('awaiting_scheduling') });
+        forms: [
+          sharedIntakeWithClinicalPayload(
+            completeClinicalSectionPayload({
+              hasRelevantMedicalDiagnosis: 'yes',
+              relevantMedicalDiagnosisDetails: '',
+            })
+          ),
+        ],
+      });
 
     renderPage();
 
-    expect((await screen.findAllByText(/avalia.*inicial compartilhada biteplaner/i)).length).toBeGreaterThan(0);
-    await fillMinimumRequiredCustomerFields();
-    fireEvent.click(screen.getByRole('button', { name: /próxima etapa/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /4 consentimentos/i }));
-    fireEvent.click(screen.getByLabelText(/tratamento necessário para inscrição/i));
-    fireEvent.click(screen.getByLabelText(/tratamento de dados sensíveis/i));
-    fireEvent.click(screen.getByLabelText(/pesquisa e p&d/i));
-    fireEvent.click(screen.getByRole('button', { name: /enviar formulário/i }));
+    await user.click(await screen.findByRole('button', { name: /próxima etapa/i }));
 
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-001/workflow-forms/BP-WF-001-INTAKE/submit',
-        {
-          payload: expect.objectContaining({
-            customer: expect.objectContaining({
-              fullName: 'Joao Demo',
-              phone: '11999999999',
-              sportRoutine: 'Boxe',
-              serviceConsent: ['accepted'],
-              sensitiveHealthConsent: ['accepted'],
-              researchConsent: ['accepted'],
-            }),
-          }),
-        },
-        'tok'
-      )
-    );
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/BP-DEMO-001/prerequisite-completed',
-        expect.objectContaining({
-          documentType: 'workflow_intake',
-          documentNumber: '',
-          sport: '',
-          isMinor: false,
-          eligibility: {
-            orthodontic: false,
-            activeDentalTreatment: false,
-            relevantCondition: false,
-          },
-          consents: expect.objectContaining({
-            service: true,
-            sensitiveHealth: true,
-            research: true,
-            marketing: false,
-          }),
-        }),
-        'tok'
-      )
-    );
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/aguardando consulta inicial/i);
-    expect(screen.getByRole('status')).toHaveTextContent(/pre-requisito concluído/i);
-    expect(screen.getByRole('status')).toHaveTextContent(/escolha o consultório/i);
+    expect(await findField(/quais diagnósticos ou condições/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /próxima etapa/i })).toBeDisabled();
+  });
 
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/consulta-inicial'));
+  it('uses the minimum slider value as a filled default in the prerequisite clinical flow', async () => {
+    const user = userEvent.setup();
+    const { sleepQualityScore: _sleepQualityScore, ...payloadWithoutSleepScore } =
+      completeClinicalSectionPayload();
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({
+        forms: [
+          sharedIntakeWithClinicalPayload(payloadWithoutSleepScore),
+        ],
+      });
+
+    renderPage();
+
+    await user.click(await screen.findByRole('button', { name: /pr.xima etapa/i }));
+
+    const sleepQualitySlider = await screen.findByRole('slider', { name: /qualidade do sono/i });
+    expect(sleepQualitySlider).toHaveValue('0');
+    expect(screen.getByRole('button', { name: /pr.xima etapa/i })).not.toBeDisabled();
+  });
+
+  it('maps 0 to 10 health scores to accessible slider fields with endpoint descriptions', () => {
+    const source = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
+
+    expect(source).toContain('SliderField');
+    [
+      'sleepQualityScore',
+      'previousTreatmentSatisfactionDental',
+      'previousTreatmentSatisfactionTherapies',
+      'stressLevel',
+      'subjectiveSleepQuality',
+    ].forEach((fieldKey) => {
+      expect(source).toContain(`'${fieldKey}'`);
+    });
+    expect(source).toContain('minLabel="Pior caso"');
+    expect(source).toContain('maxLabel="Melhor caso"');
   });
 });

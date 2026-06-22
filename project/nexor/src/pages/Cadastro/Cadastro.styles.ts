@@ -21,65 +21,7 @@ export const VisualSide = styled(AuthVisualSide)`
   }
 `;
 
-export const VisualContent = styled(AuthVisualContent)`
-  isolation: isolate;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 240px;
-    height: 240px;
-    border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.28);
-    transform: translate(-50%, -50%) scale(0.82);
-    opacity: 0;
-    animation: cadastro-ripple 4.8s ease-out infinite;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  &::after {
-    animation-delay: 2.4s;
-  }
-
-  @keyframes cadastro-ripple {
-    0% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(0.72);
-    }
-
-    18% {
-      opacity: 0.5;
-    }
-
-    72% {
-      opacity: 0.16;
-    }
-
-    100% {
-      opacity: 0;
-      transform: translate(-50%, -50%) scale(2.35);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    &::before,
-    &::after {
-      animation: none;
-      opacity: 0.28;
-      transform: translate(-50%, -50%) scale(1.35);
-    }
-  }
-`;
-
-export const VisualLogoImage = styled.img`
-  width: min(260px, 64%);
-  height: auto;
-  display: block;
-`;
+export const VisualContent = styled(AuthVisualContent)``;
 
 export const StepList = styled.div`
   display: flex;

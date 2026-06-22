@@ -8,17 +8,17 @@ import {
   readReferralInviteToken,
   saveReferralInviteToken,
 } from '../../lib/referral-cookie';
-import { supabase } from '../../lib/supabase';
+import { writeStorageValue } from '../../lib/browser-storage';
 import { validatePartnerInviteToken } from '../../features/demo/biteplanerFlow';
 import {
   Alert,
   AuthBackLink,
+  AuthVisualBrandLogo,
   AuthVisualTagline,
   Description,
   Success,
   Title
 } from '../auth-shared';
-import logoWhite from '../../assets/logo-nexor-white.png';
 import {
   Actions,
   Button,
@@ -38,7 +38,6 @@ import {
   StepSectionDesc,
   StepSectionTitle,
   VisualContent,
-  VisualLogoImage,
   VisualSide
 } from './Cadastro.styles';
 
@@ -47,6 +46,11 @@ const ONBOARDING_ROUTES_BY_TYPE: Record<string, string> = {
   dentista: '/painel/biteplaner/cadastro/dentista',
   laboratório: '/painel/biteplaner/cadastro/laboratório',
 };
+
+const isApiErrorLike = (
+  error: unknown
+): error is Error & { status?: number; code?: string } =>
+  error instanceof Error && ('status' in error || 'code' in error);
 
 export function Cadastro() {
   const navigate = useNavigate();
@@ -82,7 +86,7 @@ export function Cadastro() {
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
-      sessionStorage.setItem('nexor_referral_ref', ref);
+      writeStorageValue('nexor_referral_ref', ref, 'session');
     }
 
     const invite = searchParams.get('invite') ?? ref ?? '';
@@ -166,89 +170,55 @@ export function Cadastro() {
       return;
     }
 
-    if (!supabase) {
-      setError('A autenticação não está disponível neste ambiente.');
-      return;
-    }
-
     setSubmitting(true);
 
-    const auth = supabase.auth as {
-      signUp(input: {
-        email: string;
-        password: string;
-        options: {
-          data: {
-            fullName: string;
-          };
-        };
-      }): Promise<{ error: { message?: string } | null; data: { session: { access_token: string } | null } }>;
-    };
-
-    const signUpResult = await auth.signUp({
+    const buildRegistrationPayload = (referralInviteToken: string) => ({
       email: email.trim(),
       password,
-      options: {
-        data: {
-          fullName: fullName.trim()
-        }
-      }
+      fullName: fullName.trim(),
+      ...(referralInviteToken ? { referralInviteToken } : {}),
+      consents: [
+        { type: 'terms', accepted: true },
+        { type: 'privacy', accepted: true },
+        { type: 'marketing', accepted: marketing }
+      ]
     });
-
-    if (signUpResult.error) {
-      setSubmitting(false);
-      setError('Não foi possível criar sua conta agora. Revise os dados e tente novamente.');
-      return;
-    }
-
-    const token = signUpResult.data.session?.access_token;
-
-    if (!token) {
-      setSubmitting(false);
-      setSuccessMessage(
-        'Conta criada com sucesso. Enviamos um link de confirmação para o seu e-mail.'
-      );
-      return;
-    }
 
     try {
       const referralInviteToken = readReferralInviteToken();
 
-      await api.post(
-        '/v1/account/profile',
-        referralInviteToken
-          ? {
-              fullName: fullName.trim(),
-              referralInviteToken
-            }
-          : {
-              fullName: fullName.trim()
-            },
-        token
-      );
+      try {
+        await api.post('/v1/auth/register', buildRegistrationPayload(referralInviteToken));
+      } catch (error) {
+        const isStaleInvite =
+          isApiErrorLike(error) &&
+          error.status === 404 &&
+          error.code === 'not_found' &&
+          error.message === 'Partner invite link not found.';
 
-      await api.post(
-        '/v1/account/consents',
-        {
-          consents: [
-            { type: 'terms', accepted: true },
-            { type: 'privacy', accepted: true },
-            { type: 'marketing', accepted: marketing }
-          ]
-        },
-        token
-      );
-    } catch {
+        if (!isStaleInvite || !referralInviteToken) {
+          throw error;
+        }
+
+        clearReferralInviteToken();
+        await api.post('/v1/auth/register', buildRegistrationPayload(''));
+      }
+      clearReferralInviteToken();
+    } catch (error) {
       setSubmitting(false);
-      setError('Sua conta foi criada, mas não conseguimos registrar os consentimentos. Entre e revise sua conta.');
+      setError(
+        isApiErrorLike(error)
+          ? error.message
+          : 'Não foi possível criar sua conta agora. Revise os dados e tente novamente.'
+      );
       return;
     }
 
     setSubmitting(false);
-    navigate('/conta', {
+    navigate(loginPath, {
       replace: true,
       state: {
-        notice: 'Conta criada com sucesso. Agora você já pode continuar na plataforma.'
+        notice: 'Conta criada com sucesso. Entre para continuar na plataforma.'
       }
     });
   }
@@ -438,7 +408,7 @@ export function Cadastro() {
       </FormSide>
       <VisualSide>
         <VisualContent>
-          <VisualLogoImage src={logoWhite} alt="Nexor" />
+          <AuthVisualBrandLogo />
           <AuthVisualTagline>Uma conta central para todo o ecossistema de performance.</AuthVisualTagline>
         </VisualContent>
       </VisualSide>

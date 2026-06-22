@@ -20,18 +20,18 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const sizeStyles: Record<ButtonSize, ReturnType<typeof css>> = {
   sm: css`
-    min-height: 36px;
-    padding: 8px 14px;
-    font-size: 11px;
+    min-height: 40px;
+    padding: 6px 14px;
+    font-size: 12px;
   `,
   md: css`
-    min-height: 44px;
-    padding: 11px 18px;
-    font-size: 13px;
+    min-height: 46px;
+    padding: 8px 16px;
+    font-size: 14px;
   `,
   lg: css`
-    min-height: 50px;
-    padding: 13px 22px;
+    min-height: 52px;
+    padding: 14px 24px;
     font-size: 14px;
   `,
 };
@@ -114,7 +114,7 @@ function variantStyles(tokens: BrandTokens, variant: ButtonVariant, tone: Button
         background: rgba(255, 255, 255, 0.04);
       }
     `;
-  }
+    }
 
     return css`
       background: ${tokens.colors.accentSoft};
@@ -189,11 +189,17 @@ const StyledButton = styled.button<{
   justify-content: center;
   gap: 8px;
   width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
+  max-width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'none')};
+  min-width: ${({ $fullWidth }) => ($fullWidth ? '0' : 'max-content')};
   border-radius: ${({ $tokens }) => $tokens.radius.sm};
   font-family: ${({ $tokens }) => $tokens.fonts.display};
   font-weight: 400;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
   cursor: pointer;
   transition:
     background ${({ $tokens }) => $tokens.motion.base} ease,
@@ -222,6 +228,14 @@ const StyledButton = styled.button<{
 
   ${({ $size }) => sizeStyles[$size]}
   ${({ $tokens, $variant, $tone }) => variantStyles($tokens, $variant, $tone)}
+
+  @media (max-width: 768px) {
+    min-height: ${({ $size }) => ($size === 'lg' ? '40px' : $size === 'md' ? '38px' : '34px')};
+    padding: ${({ $size }) => ($size === 'lg' ? '9px 14px' : $size === 'md' ? '8px 12px' : '7px 10px')};
+    gap: 6px;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+  }
 `;
 
 const Content = styled.span`
@@ -229,12 +243,51 @@ const Content = styled.span`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  line-height: inherit;
+  overflow-wrap: inherit;
+  white-space: inherit;
+  text-wrap: inherit;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
+`;
+
+const IconSlot = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+const Label = styled.span`
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: inherit;
+  white-space: inherit;
+  text-wrap: inherit;
 `;
 
 export function Button({
   variant = 'primary',
   tone = 'default',
   size = 'md',
+  type = 'button',
   fullWidth = false,
   loading = false,
   leadingIcon,
@@ -252,13 +305,15 @@ export function Button({
       $tone={tone}
       $size={size}
       $fullWidth={fullWidth}
+      data-variant={variant}
+      type={type}
       disabled={disabled || loading}
       {...rest}
     >
-      <Content>
-        {leadingIcon}
-        {loading ? 'Carregando...' : children}
-        {trailingIcon}
+      <Content data-button-content>
+        {leadingIcon ? <IconSlot data-button-icon>{leadingIcon}</IconSlot> : null}
+        <Label data-button-label>{loading ? 'Carregando...' : children}</Label>
+        {trailingIcon ? <IconSlot data-button-icon>{trailingIcon}</IconSlot> : null}
       </Content>
     </StyledButton>
   );
