@@ -42,6 +42,21 @@ describe('orders api module', () => {
     expect(apiGet).toHaveBeenCalledWith('/v1/orders', 'tok');
   });
 
+  it('serializes bounded order list filters', async () => {
+    apiGet.mockResolvedValueOnce({ orders: [] });
+
+    await fetchOrders('dentist', 'tok', {
+      status: 'awaiting_payment',
+      limit: 25,
+      createdBefore: '2026-06-17T12:00:00.000Z',
+    });
+
+    expect(apiGet).toHaveBeenCalledWith(
+      '/v1/orders?as=dentist&status=awaiting_payment&limit=25&createdBefore=2026-06-17T12%3A00%3A00.000Z',
+      'tok',
+    );
+  });
+
   it('submits production requests through the clinical form route', async () => {
     const payload = {
       anamnesisSummary: '',

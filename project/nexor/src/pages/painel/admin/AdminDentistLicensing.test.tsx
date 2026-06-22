@@ -60,6 +60,8 @@ describe('AdminDentistLicensing', () => {
           profileId: 'profile-dentist-1',
           dentistName: 'Dra Maria',
           croNumber: 'CRO-SP 12345',
+          cpf: '52998224725',
+          cnpj: '19131243000197',
           professionalSummary: 'Odontologia esportiva e DTM.',
           status: 'pending',
           workflowStatus: 'admin_review_pending',
@@ -93,6 +95,8 @@ describe('AdminDentistLicensing', () => {
     fireEvent.click(screen.getByRole('button', { name: /visualizar solicitação de dra maria/i }));
 
     const dialog = await screen.findByRole('dialog', { name: /dados enviados pelo dentista/i });
+    expect(within(dialog).getByText('529.982.247-25')).toBeInTheDocument();
+    expect(within(dialog).getByText('19.131.243/0001-97')).toBeInTheDocument();
     expect(within(dialog).getByText(/odontologia esportiva e dtm/i)).toBeInTheDocument();
     expect(within(dialog).getByText(/clínica centro/i)).toBeInTheDocument();
 
@@ -188,8 +192,10 @@ describe('AdminDentistLicensing', () => {
       target: { value: 'maria' },
     });
 
-    expect(screen.getAllByText(/dra maria/i).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/dr carlos/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText(/dra maria/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/dr carlos/i)).not.toBeInTheDocument();
+    });
 
     fireEvent.change(screen.getByLabelText(/buscar dentistas/i), {
       target: { value: '' },
@@ -197,7 +203,9 @@ describe('AdminDentistLicensing', () => {
     fireEvent.click(screen.getByRole('button', { name: /filtrar solicitações por status/i }));
     fireEvent.click(screen.getByRole('option', { name: /aprovados/i }));
 
-    expect(screen.queryByText(/dra maria/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/dr carlos/i).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.queryByText(/dra maria/i)).not.toBeInTheDocument();
+      expect(screen.getAllByText(/dr carlos/i).length).toBeGreaterThan(0);
+    });
   });
 });

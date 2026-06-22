@@ -373,7 +373,7 @@ export const BpRowLabel = styled.span`
   text-transform: uppercase;
 
   @media (max-width: 640px) {
-    font-size: 10px;
+    font-size: 12px;
     letter-spacing: 0.06em;
   }
 `;
@@ -458,7 +458,7 @@ export const BpTooltipBubble = styled.span`
     right: -8px;
     width: min(250px, calc(100vw - 32px));
     padding: 9px 10px;
-    font-size: 11px;
+    font-size: 12px;
   }
 `;
 
@@ -738,7 +738,7 @@ export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neu
     justify-self: end;
     min-height: 22px;
     padding: 3px 8px;
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.1;
     box-shadow: none;
   }

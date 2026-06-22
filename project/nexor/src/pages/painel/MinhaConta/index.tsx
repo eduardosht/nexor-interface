@@ -11,6 +11,8 @@ import {
 import { SkeletonCard } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
+import { fetchCommunicationPreferences, updateCommunicationPreferences } from '../../../features/platformEmails/platformEmails.api';
+import type { CommunicationPreferences } from '../../../features/platformEmails/platformEmails.types';
 import * as S from './styles';
 
 
@@ -147,6 +149,28 @@ function getString(value: unknown) {
   return typeof value === 'string' ? value : '';
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, '');
+}
+
+function formatCpf(value: string) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11) {
+    return value;
+  }
+
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function formatCnpj(value: string) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 14) {
+    return value;
+  }
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 function getPracticeLocations(metadata: Record<string, unknown>): PracticeLocationMetadata[] {
   const source = Array.isArray(metadata.practiceLocations) ? metadata.practiceLocations : [];
 
@@ -166,9 +190,9 @@ function getPracticeLocations(metadata: Record<string, unknown>): PracticeLocati
       coordinates:
         typeof item.coordinates === 'object' && item.coordinates !== null && !Array.isArray(item.coordinates)
           ? {
-              lat: Number((item.coordinates as Record<string, unknown>).lat),
-              lng: Number((item.coordinates as Record<string, unknown>).lng),
-            }
+            lat: Number((item.coordinates as Record<string, unknown>).lat),
+            lng: Number((item.coordinates as Record<string, unknown>).lng),
+          }
           : undefined,
     }));
 }
@@ -212,9 +236,9 @@ function getMetadataLocations(metadata: Record<string, unknown>, listField: stri
       coordinates:
         typeof item.coordinates === 'object' && item.coordinates !== null && !Array.isArray(item.coordinates)
           ? {
-              lat: Number((item.coordinates as Record<string, unknown>).lat),
-              lng: Number((item.coordinates as Record<string, unknown>).lng),
-            }
+            lat: Number((item.coordinates as Record<string, unknown>).lat),
+            lng: Number((item.coordinates as Record<string, unknown>).lng),
+          }
           : undefined,
     }));
 }
@@ -301,6 +325,9 @@ export function MinhaConta() {
   const [deletionSubmitting, setDeletionSubmitting] = useState(false);
   const [deletionRequest, setDeletionRequest] = useState<AccountDeletionResponse | null>(null);
   const [deletionActionSubmitting, setDeletionActionSubmitting] = useState(false);
+  const [communicationPreferences, setCommunicationPreferences] = useState<CommunicationPreferences | null>(null);
+  const [communicationPreferencesSaving, setCommunicationPreferencesSaving] = useState(false);
+  const [disableCommunicationModalOpen, setDisableCommunicationModalOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<AccountSnackbar | null>(null);
 
   const email = backendUser?.email ?? session?.user.email ?? '—';
@@ -310,6 +337,7 @@ export function MinhaConta() {
   const canConfirmDeletion = deletionConfirmation.trim() === firstName;
   const acquiredProducts = useMemo(() => getMockAcquiredProducts(email), [email]);
   const deletionStatus = deletionRequest?.request?.status;
+  const systemFlowEmailEnabled = communicationPreferences?.systemFlowEmailEnabled ?? true;
 
   function getOnboardingEditKey(role: ProductRole, field: string) {
     return `${role.id ?? `${role.productKey}:${role.role}`}:${field}`;
@@ -462,7 +490,9 @@ export function MinhaConta() {
             role,
             'documentNumber',
             'Documento',
-            getString(metadata.documentNumber),
+            getString(metadata.documentType) === 'cpf'
+              ? formatCpf(getString(metadata.documentNumber))
+              : formatCnpj(getString(metadata.documentNumber)),
             <S.FieldInput
               type="text"
               value={getString(metadata.documentNumber)}
@@ -564,11 +594,22 @@ export function MinhaConta() {
             role,
             'cnpj',
             'CNPJ',
-            getString(metadata.cnpj),
+            formatCnpj(getString(metadata.cnpj)),
             <S.FieldInput
               type="text"
               value={getString(metadata.cnpj)}
               onChange={(event) => updateRoleMetadata(role.id, 'cnpj', event.target.value)}
+            />
+          )}
+          {renderOnboardingField(
+            role,
+            'cpf',
+            'CPF',
+            formatCpf(getString(metadata.cpf)),
+            <S.FieldInput
+              type="text"
+              value={getString(metadata.cpf)}
+              onChange={(event) => updateRoleMetadata(role.id, 'cpf', event.target.value)}
             />
           )}
         </S.CardRow>
@@ -699,6 +740,28 @@ export function MinhaConta() {
               onChange={(event) => updateDentistMetadata(role.id, 'croNumber', event.target.value)}
             />
           )}
+          {renderOnboardingField(
+            role,
+            'cpf',
+            'CPF',
+            formatCpf(getString(metadata.cpf)),
+            <S.FieldInput
+              type="text"
+              value={getString(metadata.cpf)}
+              onChange={(event) => updateDentistMetadata(role.id, 'cpf', event.target.value)}
+            />
+          )}
+          {renderOnboardingField(
+            role,
+            'cnpj',
+            'CNPJ',
+            formatCnpj(getString(metadata.cnpj)),
+            <S.FieldInput
+              type="text"
+              value={getString(metadata.cnpj)}
+              onChange={(event) => updateDentistMetadata(role.id, 'cnpj', event.target.value)}
+            />
+          )}
         </S.CardRow>
         {renderOnboardingField(
           role,
@@ -816,10 +879,11 @@ export function MinhaConta() {
     async function load() {
       setLoadingProfile(true);
       try {
-        const [resp, productRolesResp, deletionResp] = await Promise.all([
+        const [resp, productRolesResp, deletionResp, communicationPreferencesResp] = await Promise.all([
           api.get<MeResponse>('/v1/auth/me', session!.access_token),
           api.get<ProductRolesResponse>('/v1/account/product-roles', session!.access_token),
           api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', session!.access_token),
+          fetchCommunicationPreferences(session!.access_token),
         ]);
         if (!active) {
           return;
@@ -835,6 +899,7 @@ export function MinhaConta() {
         setLoadedRoles(nextRoles);
         setProductRoles(productRolesResp?.productRoles ?? []);
         setDeletionRequest(deletionResp?.deletionRequest ?? null);
+        setCommunicationPreferences(communicationPreferencesResp?.preferences ?? null);
       } catch {
         /* silently skip — name stays empty */
       } finally {
@@ -860,9 +925,9 @@ export function MinhaConta() {
       current.map((role) =>
         role.id === productRoleId
           ? {
-              ...role,
-              metadata: updater(role.metadata),
-            }
+            ...role,
+            metadata: updater(role.metadata),
+          }
           : role
       )
     );
@@ -949,6 +1014,43 @@ export function MinhaConta() {
     } finally {
       setSavingProductRoleId('');
     }
+  }
+
+  async function persistCommunicationPreferences(systemFlowEmailEnabled: boolean) {
+    if (!session) {
+      return;
+    }
+
+    setCommunicationPreferencesSaving(true);
+    setSnackbar(null);
+
+    try {
+      const response = await updateCommunicationPreferences(session.access_token, { systemFlowEmailEnabled });
+      setCommunicationPreferences(response.preferences);
+      setDisableCommunicationModalOpen(false);
+      setSnackbar({
+        tone: 'success',
+        title: 'Preferências atualizadas',
+        message: 'Sua preferência de comunicação foi salva.',
+      });
+    } catch {
+      setSnackbar({
+        tone: 'error',
+        title: 'Falha ao salvar preferências',
+        message: 'Não foi possível atualizar sua preferência de comunicação. Tente novamente.',
+      });
+    } finally {
+      setCommunicationPreferencesSaving(false);
+    }
+  }
+
+  function handleCommunicationPreferenceChange(enabled: boolean) {
+    if (enabled) {
+      void persistCommunicationPreferences(true);
+      return;
+    }
+
+    setDisableCommunicationModalOpen(true);
   }
 
   async function handleSave(e: FormEvent) {
@@ -1156,31 +1258,31 @@ export function MinhaConta() {
           {loadingProfile ? (
             <SkeletonCard lines={4} blockHeight="44px" />
           ) : (
-          <S.Card as="form" onSubmit={handleSave}>
-            <S.CardRow>
-              <S.Field as="label">
-                <S.FieldLabel>Nome completo</S.FieldLabel>
-                <S.FieldInput
-                  type="text"
-                  aria-label="Nome completo"
-                  value={fullName}
-                  onChange={(e) => { setFullName(sanitizePersonName(e.target.value)); }}
-                  placeholder="Seu nome"
-                />
-              </S.Field>
-              <S.Field>
-                <S.FieldLabel>E-mail <S.FieldLocked>(não editável)</S.FieldLocked></S.FieldLabel>
-                <S.FieldValue>{email}</S.FieldValue>
-              </S.Field>
-              <S.Field>
-                <S.FieldLabel>Status</S.FieldLabel>
-                <S.FieldValue>Ativo</S.FieldValue>
-              </S.Field>
-            </S.CardRow>
-            <S.FormActions>
-              <S.SaveBtn type="submit" disabled={saving}>Salvar</S.SaveBtn>
-            </S.FormActions>
-          </S.Card>
+            <S.Card as="form" onSubmit={handleSave}>
+              <S.CardRow>
+                <S.Field as="label">
+                  <S.FieldLabel>Nome completo</S.FieldLabel>
+                  <S.FieldInput
+                    type="text"
+                    aria-label="Nome completo"
+                    value={fullName}
+                    onChange={(e) => { setFullName(sanitizePersonName(e.target.value)); }}
+                    placeholder="Seu nome"
+                  />
+                </S.Field>
+                <S.Field>
+                  <S.FieldLabel>E-mail <S.FieldLocked>(não editável)</S.FieldLocked></S.FieldLabel>
+                  <S.FieldValue>{email}</S.FieldValue>
+                </S.Field>
+                <S.Field>
+                  <S.FieldLabel>Status</S.FieldLabel>
+                  <S.FieldValue>Ativo</S.FieldValue>
+                </S.Field>
+              </S.CardRow>
+              <S.FormActions>
+                <S.SaveBtn type="submit" disabled={saving}>Salvar</S.SaveBtn>
+              </S.FormActions>
+            </S.Card>
           )}
         </S.Section>
 
@@ -1266,6 +1368,36 @@ export function MinhaConta() {
         )}
       </S.Section>
 
+      {!isAdmin ? (
+        <S.Section
+          variants={fadeSection}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.075 } as never}
+        >
+          <S.SectionTitle>Preferências de comunicação</S.SectionTitle>
+          <S.Card>
+            <S.PreferenceRow>
+              <S.PreferenceContent>
+                <S.SecurityTitle>Fluxos do sistema por e-mail</S.SecurityTitle>
+                <S.SecurityText>
+                  Inclui lembretes de check-up, andamento de pedidos e comunicações operacionais da sua jornada. E-mails de segurança e autenticação continuam ativos.
+                </S.SecurityText>
+                <S.PreferenceSwitchLabel>
+                  <S.PreferenceSwitchInput
+                    type="checkbox"
+                    checked={systemFlowEmailEnabled}
+                    disabled={communicationPreferencesSaving}
+                    onChange={(event) => handleCommunicationPreferenceChange(event.target.checked)}
+                  />
+                  <S.PreferenceSwitchText>Receber comunicações de fluxos do sistema por e-mail</S.PreferenceSwitchText>
+                </S.PreferenceSwitchLabel>
+              </S.PreferenceContent>
+            </S.PreferenceRow>
+          </S.Card>
+        </S.Section>
+      ) : null}
+
       <S.Section
         variants={fadeSection}
         initial="hidden"
@@ -1308,7 +1440,7 @@ export function MinhaConta() {
                       : deletionStatus === 'cancelled_by_user'
                         ? 'Remoção cancelada'
                         : deletionStatus === 'approved_direct' ||
-                            deletionStatus === 'approved_processing_privacy'
+                          deletionStatus === 'approved_processing_privacy'
                           ? 'Remoção aprovada'
                           : 'Solicitar exclusão da conta'}
               </S.SecurityTitle>
@@ -1421,6 +1553,33 @@ export function MinhaConta() {
               </S.CancelButton>
               <S.DangerButton type="button" disabled={!canConfirmDeletion || deletionSubmitting} onClick={handleDeletionRequest}>
                 {deletionSubmitting ? 'Enviando...' : 'Confirmar exclusão'}
+              </S.DangerButton>
+            </S.ModalActions>
+          </S.Modal>
+        </S.ModalOverlay>
+      ) : null}
+
+      {disableCommunicationModalOpen ? (
+        <S.ModalOverlay role="presentation">
+          <S.Modal role="dialog" aria-modal="true" aria-labelledby="disable-communication-title">
+            <S.ModalHeader>
+              <div>
+                <S.ModalTitle id="disable-communication-title">Desativar e-mails de fluxo?</S.ModalTitle>
+                <S.SecurityText>
+                  Você deixará de receber lembretes operacionais, como os avisos de check-up. E-mails de segurança e autenticação continuam ativos.
+                </S.SecurityText>
+              </div>
+            </S.ModalHeader>
+            <S.ModalActions>
+              <S.CancelButton type="button" disabled={communicationPreferencesSaving} onClick={() => setDisableCommunicationModalOpen(false)}>
+                Cancelar
+              </S.CancelButton>
+              <S.DangerButton
+                type="button"
+                disabled={communicationPreferencesSaving}
+                onClick={() => void persistCommunicationPreferences(false)}
+              >
+                {communicationPreferencesSaving ? 'Salvando...' : 'Desativar e-mails'}
               </S.DangerButton>
             </S.ModalActions>
           </S.Modal>

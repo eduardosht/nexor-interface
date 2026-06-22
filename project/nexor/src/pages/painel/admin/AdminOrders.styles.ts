@@ -57,6 +57,12 @@ export const FilterChip = styled.span`
   font-weight: 650;
 `;
 
+export const LoadMoreRow = styled.div`
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+`;
+
 export const OrderCard = styled.article`
   min-width: 0;
   display: grid;

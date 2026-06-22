@@ -120,6 +120,6 @@ const CountBadge = styled.span`
   place-items: center;
   background: #15803d;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 `;

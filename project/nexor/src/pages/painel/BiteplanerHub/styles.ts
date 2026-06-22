@@ -704,34 +704,47 @@ const operationalTone = {
 } satisfies Record<OperationalTone, { bg: string; color: string; halo: string }>;
 
 const compactStatCard = css`
+  gap: 12px;
+  min-height: auto;
+  padding: 14px;
+  border-radius: 12px;
+
   @media (max-width: 1280px) {
     grid-template-columns: auto minmax(0, 1fr);
-    align-items: flex-start;
-    gap: 12px;
-    min-height: auto;
-    padding: 16px;
-    border-radius: 12px;
+    gap: 10px;
+    padding: 12px;
   }
 
   @media (max-width: 640px) {
     gap: 8px;
-    padding: 10px;
+    padding: 8px;
     border-radius: 10px;
   }
 `;
 
 const compactStatIcon = css`
+  flex: 0 0 auto;
+  border-radius: 10px;
+  box-shadow: none;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
   @media (max-width: 1280px) {
-    width: 32px;
-    height: 32px;
-    flex: 0 0 32px;
-    align-self: flex-start;
     border-radius: 8px;
-    box-shadow: none;
 
     svg {
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    svg {
+      width: 15px;
+      height: 15px;
     }
   }
 `;
@@ -763,9 +776,8 @@ export const AthleteStatCard = styled.article<{ $tone: AthleteTone }>`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  min-height: 136px;
-  padding: 24px;
+  gap: 16px;
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(229, 231, 235, 0.9);
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -779,8 +791,8 @@ export const AthleteStatIcon = styled.span<{ $tone: AthleteTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   background: ${({ $tone }) => athleteTone[$tone].bg};
   color: ${({ $tone }) => athleteTone[$tone].color};
@@ -817,9 +829,8 @@ export const PartnerStatCard = styled.article<{ $tone: PartnerTone }>`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  min-height: 136px;
-  padding: 24px;
+  gap: 16px;
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -833,8 +844,8 @@ export const PartnerStatIcon = styled.span<{ $tone: PartnerTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   background: ${({ $tone }) => partnerTone[$tone].bg};
   color: ${({ $tone }) => partnerTone[$tone].color};
@@ -867,9 +878,9 @@ export const OperationalStatCard = styled.article<{ $tone: OperationalTone }>`
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 24px;
-  min-height: 150px;
-  padding: 28px;
+  gap: 16px;
+  min-height: 118px;
+  padding: 20px;
   border-radius: 16px;
   border: 1px solid rgba(229, 231, 235, 0.92);
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -883,8 +894,8 @@ export const OperationalStatIcon = styled.span<{ $tone: OperationalTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 74px;
-  height: 74px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   background: ${({ $tone }) => operationalTone[$tone].bg};
   color: ${({ $tone }) => operationalTone[$tone].color};
@@ -1269,7 +1280,7 @@ export const StatLabel = styled(PortalMetaLabel)`
 export const StatValue = styled.strong`
   display: block;
   min-width: 0;
-  font-size: 26px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.2;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -1563,6 +1574,20 @@ export const TableActionRow = styled.div`
   gap: 8px;
 `;
 
+export const StatusCellStack = styled.div`
+  display: grid;
+  gap: 4px;
+  align-items: start;
+`;
+
+export const TableCellHint = styled.span`
+  display: block;
+  max-width: 22ch;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.35;
+`;
+
 const tableButtonTone = {
   neutral: {
     bg: '#ffffff',
@@ -1595,6 +1620,29 @@ const tableButtonTone = {
     hover: '#d1fae5'
   }
 } satisfies Record<string, { bg: string; border: string; color: string; hover: string }>;
+
+const documentationActionButtonTone = {
+  neutral: tableButtonTone.neutral,
+  success: {
+    bg: '#15803d',
+    border: '#15803d',
+    color: '#f8fbff',
+    hover: '#166534'
+  },
+  danger: {
+    bg: '#b91c1c',
+    border: '#b91c1c',
+    color: '#f8fbff',
+    hover: '#991b1b'
+  },
+  warning: {
+    bg: '#b91c1c',
+    border: '#b91c1c',
+    color: '#f8fbff',
+    hover: '#991b1b'
+  },
+  info: tableButtonTone.info
+} satisfies Record<keyof typeof tableButtonTone, { bg: string; border: string; color: string; hover: string }>;
 
 export const TableIconButton = styled.button<{ $tone?: keyof typeof tableButtonTone }>`
   display: inline-flex;
@@ -1998,9 +2046,9 @@ export const DentistStatusIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  height: 58px;
-  flex: 0 0 58px;
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(109, 61, 245, 0.14), rgba(109, 61, 245, 0.06));
   color: #6d3df5;
@@ -2393,6 +2441,47 @@ export const ModalActions = styled.div`
   }
 `;
 
+export const DocumentationModalActions = styled(ModalActions)`
+  margin-top: 2px;
+  padding-top: 16px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const DocumentationActionButton = styled.button<{ $tone?: keyof typeof tableButtonTone }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1px solid ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].border};
+  background: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].bg};
+  color: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].color};
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
+
+  &:hover {
+    background: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].hover};
+    border-color: ${({ $tone = 'neutral' }) => documentationActionButtonTone[$tone].hover};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: ${({ theme }) => theme.colors.borderDefault};
+    background: ${({ theme }) => theme.colors.bgInset};
+    color: ${({ theme }) => theme.colors.textSecondary};
+    box-shadow: none;
+    filter: saturate(0.72);
+  }
+`;
+
 export const ReferralInviteModalBox = styled(ModalBox)`
   width: min(100%, 760px);
   gap: 20px;
@@ -2562,7 +2651,7 @@ export const ReferralInviteModalActions = styled(ModalActions)`
   gap: 12px;
 
   @media (max-width: 820px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 `;
 
@@ -2640,7 +2729,46 @@ export const ModalActionLink = styled(motion.a)`
   }
 `;
 
-export const ReferralInviteActionLink = styled(ModalActionLink)`
+const whatsappActionStyles = css`
+  min-height: 58px;
+  gap: 14px;
+  padding: 0 26px;
+  border-color: #52b967;
+  border-radius: 999px;
+  background: #52b967;
+  color: #f8fff9;
+  box-shadow: 0 12px 24px rgba(31, 150, 72, 0.24);
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+
+  svg {
+    width: 32px;
+    height: 32px;
+    color: currentColor;
+    stroke-width: 2.6;
+  }
+
+  &:hover {
+    border-color: #47a95d;
+    background: #47a95d;
+    box-shadow: 0 14px 28px rgba(31, 150, 72, 0.3);
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
+    min-height: 52px;
+    padding: 0 14px;
+    font-size: 14px;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+`;
+
+export const ReferralInviteActionLink = styled(ModalActionLink) <{ $variant?: 'whatsapp' }>`
   ${referralInviteActionBase}
   gap: 10px;
   border-radius: 12px;
@@ -2651,11 +2779,18 @@ export const ReferralInviteActionLink = styled(ModalActionLink)`
   svg {
     color: #16803b;
   }
+
+  ${({ $variant }) => ($variant === 'whatsapp' ? whatsappActionStyles : '')}
 `;
 
 export const ModalForm = styled.form`
   display: grid;
   gap: 14px;
+`;
+
+export const DocumentationContent = styled.div`
+  display: grid;
+  gap: 12px;
 `;
 
 export const DocumentationGrid = styled.div`
@@ -2687,6 +2822,40 @@ export const DocumentationValue = styled.p`
   overflow-wrap: anywhere;
 `;
 
+export const DocumentationPurchaseSection = styled.section`
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(21, 128, 61, 0.24);
+  border-radius: 12px;
+  background: rgba(21, 128, 61, 0.06);
+
+  ${DocumentationValue} {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.45;
+  }
+`;
+
+export const AdjustmentReasonItem = styled(DocumentationItem)`
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 16px;
+  border-color: rgba(180, 83, 9, 0.28);
+  background: #fffbeb;
+
+  ${DocumentationLabel} {
+    color: #92400e;
+  }
+
+  ${DocumentationValue} {
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #78350f;
+  }
+`;
+
 export const DocumentationValueRow = styled.div`
   display: flex;
   align-items: center;
@@ -2704,39 +2873,62 @@ export const DocumentationIconLink = styled.a`
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.accent};
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  border: 1px solid #52b967;
+  background: #52b967;
+  color: #f8fff9;
+  box-shadow: 0 8px 18px rgba(31, 150, 72, 0.22);
   text-decoration: none;
   transition:
     border-color 160ms ease,
     background 160ms ease,
-    color 160ms ease;
+    color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.6;
+  }
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
-    background: rgba(22, 101, 52, 0.08);
+    border-color: #47a95d;
+    background: #47a95d;
+    box-shadow: 0 10px 22px rgba(31, 150, 72, 0.28);
+    transform: translateY(-1px);
   }
 `;
 
 export const DocumentationDownloadLink = styled.a`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   width: fit-content;
   max-width: 100%;
-  color: ${({ theme }) => theme.colors.accent};
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.55;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid #15803d;
+  border-radius: 8px;
+  background: rgba(21, 128, 61, 0.08);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
   text-decoration: none;
   overflow-wrap: anywhere;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
 
   &:hover {
-    text-decoration: underline;
+    border-color: #166534;
+    background: #166534;
+    color: #f8fbff;
   }
 
   svg {
@@ -2748,6 +2940,15 @@ export const SimpleTableWrap = styled.div`
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+`;
+
+export const TimelineTableWrap = styled(SimpleTableWrap)`
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+
+  @media (max-width: 640px) {
+    max-height: 42vh;
+  }
 `;
 
 export const SimpleTable = styled.table`
@@ -2778,7 +2979,7 @@ export const SimpleTable = styled.table`
   }
 `;
 
-export const ActionHref = styled.a`
+export const ActionHref = styled.a<{ $variant?: 'whatsapp' }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2792,4 +2993,6 @@ export const ActionHref = styled.a`
   text-decoration: none;
   font-size: 13px;
   font-weight: 600;
+
+  ${({ $variant }) => ($variant === 'whatsapp' ? whatsappActionStyles : '')}
 `;

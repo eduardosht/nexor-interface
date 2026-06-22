@@ -46,13 +46,13 @@ describe('biteplanerFlow backend route adapters', () => {
   it('creates a Stripe checkout session through the order checkout route', async () => {
     apiPost.mockResolvedValue({ url: 'https://checkout.stripe.test/session' });
 
-    await expect(createCheckoutSession(order.id, 'token')).resolves.toEqual({
+    await expect(createCheckoutSession(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
       url: 'https://checkout.stripe.test/session',
     });
 
     expect(apiPost).toHaveBeenCalledWith(
       '/v1/orders/order-1/checkout-session',
-      {},
+      { model: 'impacto', color: 'preto', quantity: 2 },
       'token'
     );
   });

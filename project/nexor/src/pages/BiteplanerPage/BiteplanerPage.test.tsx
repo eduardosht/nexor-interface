@@ -31,6 +31,7 @@ describe('BiteplanerPage', () => {
   it('renders the Biteplaner hero and the comparison product image only in the comparison section', () => {
     renderPage();
     expect(screen.getAllByText('Biteplaner').length).toBeGreaterThan(0);
+    expect(screen.getByRole('img', { name: /^biteplaner$/i })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /dispositivo biteplaner na comparação/i })).toBeInTheDocument();
   });
 
@@ -40,6 +41,18 @@ describe('BiteplanerPage', () => {
     expect(screen.getByText(/dispositivo intraoral personalizado para atletas e praticantes de esportes/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
+  });
+
+  it('places the product image section before the existing hero section', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/BiteplanerPage/styles.ts'), 'utf8');
+
+    expect(pageSource).toContain("import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png'");
+    expect(pageSource.indexOf('<S.ProductImageHero')).toBeLessThan(pageSource.indexOf('<S.HeroSection>'));
+    expect(pageSource).toContain('<S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />');
+    expect(stylesSource).toContain('export const ProductImageHero = styled.section');
+    expect(stylesSource).toContain('export const ProductHeroImage = styled.img');
+    expect(stylesSource).toContain('object-fit: cover;');
   });
 
   it('layers the decorative hero item above the background and below the hero copy', () => {

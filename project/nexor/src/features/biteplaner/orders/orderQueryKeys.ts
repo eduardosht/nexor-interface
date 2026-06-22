@@ -3,7 +3,9 @@ import type { AccessMode } from './orders.types';
 export const orderQueryKeys = {
   all: ['biteplaner', 'orders'] as const,
   list: (mode: AccessMode, ownerId: string) => [...orderQueryKeys.all, mode, ownerId] as const,
+  detail: (orderId: string) => [...orderQueryKeys.all, orderId, 'detail'] as const,
   appointments: (orderId: string) => [...orderQueryKeys.all, orderId, 'appointments'] as const,
+  clinicalFollowUps: (orderId: string) => [...orderQueryKeys.all, orderId, 'clinical-follow-ups'] as const,
   timeline: (orderId: string) => [...orderQueryKeys.all, orderId, 'timeline'] as const,
   workflowForms: (orderId: string) => [...orderQueryKeys.all, orderId, 'workflow-forms'] as const,
   workflowForm: (orderId: string, workflowFormId: string) =>

@@ -465,6 +465,72 @@ describe('PortalLayout navigation', () => {
     );
   });
 
+  it('marks every unread notification as read from the notifications panel', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/notifications') {
+        return Promise.resolve({
+          notifications: [
+            {
+              id: 'notification-unread-1',
+              title: 'Primeira notificação',
+              message: 'Primeira mensagem operacional.',
+              read: false,
+              createdAt: '2026-05-12T09:30:00.000Z',
+            },
+            {
+              id: 'notification-unread-2',
+              title: 'Segunda notificação',
+              message: 'Segunda mensagem operacional.',
+              read: false,
+              createdAt: '2026-05-12T10:30:00.000Z',
+            },
+            {
+              id: 'notification-read',
+              title: 'Notificação já lida',
+              message: 'Mensagem já lida.',
+              read: true,
+              createdAt: '2026-05-11T17:10:00.000Z',
+            },
+          ],
+          unreadCount: 2,
+        });
+      }
+
+      return Promise.resolve({ modes: [] });
+    });
+    mockApiPatch.mockResolvedValue({ markedCount: 2, unreadCount: 0 });
+
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    expect(await screen.findByRole('button', { name: /primeira notificação/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /marcar tudo como lido/i }));
+
+    await waitFor(() =>
+      expect(mockApiPatch).toHaveBeenCalledWith('/v1/account/notifications/read-all', {}, 'tok')
+    );
+    expect(mockApiPatch).toHaveBeenCalledTimes(1);
+    expect(mockApiPatch).not.toHaveBeenCalledWith(
+      '/v1/account/notifications/notification-unread-1/read',
+      {},
+      'tok'
+    );
+    expect(mockApiPatch).not.toHaveBeenCalledWith(
+      '/v1/account/notifications/notification-unread-2/read',
+      {},
+      'tok'
+    );
+    expect(mockApiPatch).not.toHaveBeenCalledWith(
+      '/v1/account/notifications/notification-read/read',
+      {},
+      'tok'
+    );
+  });
+
   it('navigates directly to the Biteplaner page for non-admin users', () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/products/biteplaner/access-options') {

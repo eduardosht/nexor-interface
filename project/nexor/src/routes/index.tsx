@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import styled from 'styled-components';
 import { RequireAdmin, RequireAuth, RequireNonAdmin } from '../features/auth/guards';
 import { Layout } from '../Layout';
 import { PortalLayout } from '../components/portal/PortalLayout';
@@ -41,6 +42,7 @@ const AdminAccountDeletions = lazy(() => import('../pages/painel/admin/AdminAcco
 const AdminUsers = lazy(() => import('../pages/painel/admin/AdminUsers').then(({ AdminUsers }) => ({ default: AdminUsers })));
 const AdminBusinessSettings = lazy(() => import('../pages/painel/admin/AdminBusinessSettings').then(({ AdminBusinessSettings }) => ({ default: AdminBusinessSettings })));
 const AdminSystemSettings = lazy(() => import('../pages/painel/admin/AdminSystemSettings').then(({ AdminSystemSettings }) => ({ default: AdminSystemSettings })));
+const AdminCheckupEmails = lazy(() => import('../pages/painel/admin/AdminCheckupEmails').then(({ AdminCheckupEmails }) => ({ default: AdminCheckupEmails })));
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return (
@@ -68,13 +70,23 @@ function AdminPainelRoute({ children }: { children: ReactNode }) {
       <RequireAdmin>
         <AdminPortalProvider>
           <PortalLayout>
-            <LazyRoute>{children}</LazyRoute>
+            <AdminRouteViewport>
+              <LazyRoute>{children}</LazyRoute>
+            </AdminRouteViewport>
           </PortalLayout>
         </AdminPortalProvider>
       </RequireAdmin>
     </RequireAuth>
   );
 }
+
+const AdminRouteViewport = styled.div`
+  min-width: 0;
+
+  button {
+    min-width: 100px;
+  }
+`;
 
 function AccountRedirect() {
   const { loading, session, backendUser, backendUserResolved } = useAuth();
@@ -154,6 +166,7 @@ export const router = createBrowserRouter([
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
   { path: '/painel/admin/parceiros', element: <AdminPainelRoute><AdminPartnerLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/remocoes-conta', element: <AdminPainelRoute><AdminAccountDeletions /></AdminPainelRoute> },
+  { path: '/painel/admin/checkups/emails', element: <AdminPainelRoute><AdminCheckupEmails /></AdminPainelRoute> },
   { path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/laboratórios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },

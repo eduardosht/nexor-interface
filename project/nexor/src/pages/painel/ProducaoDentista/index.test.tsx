@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
@@ -321,10 +321,30 @@ async function ensureAnamnesisSummaryStep() {
   }
 
   try {
-    await screen.findByTestId('dental-anamnesis-record', {}, { timeout: 250 });
+    await screen.findByTestId('dental-anamnesis-record', {}, { timeout: 1500 });
     return;
   } catch {
-    // The initial evaluation is still pending, so the test needs to advance from step 1.
+    // The initial evaluation may still be pending, so the test may need to advance from step 1.
+  }
+
+  await waitFor(
+    () => {
+      expect(
+        screen.queryByText(/etapa 1 de 4/i) ??
+          screen.queryByText(/etapa 2 de 4/i) ??
+          screen.queryByText(/etapa 3 de 4/i)
+      ).toBeTruthy();
+    },
+    { timeout: 5000 }
+  );
+
+  if (screen.queryByText(/etapa 3 de 4/i)) {
+    return;
+  }
+
+  if (screen.queryByText(/etapa 2 de 4/i)) {
+    await screen.findByTestId('dental-anamnesis-record');
+    return;
   }
 
   await clickWizardNextButton();
@@ -346,6 +366,14 @@ function fillRequiredDentistComplement() {
 
   const eligibilityGroup = screen.getByRole('group', { name: /cliente est.*apto para uso do biteplaner/i });
   fireEvent.click(within(eligibilityGroup).getByRole('radio', { name: /sim/i }));
+
+  fireEvent.click(screen.getByRole('button', { name: /^modelo/i }));
+  fireEvent.click(screen.getByRole('option', { name: /linha impacto/i }));
+
+  fireEvent.click(screen.getByRole('button', { name: /^cor/i }));
+  fireEvent.click(screen.getByRole('option', { name: /preto/i }));
+
+  fireEvent.change(screen.getByLabelText(/^quantidade/i), { target: { value: '2' } });
   fireEvent.change(consultationDateInput, { target: { value: '2026-05-12' } });
   fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
   fireEvent.click(
@@ -404,10 +432,16 @@ async function fillProductionRequestUntilLabSelection() {
   await screen.findByTestId('athlete-order-card');
   await ensureAnamnesisSummaryStep();
 
-  fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-    target: { value: 'Resumo clínico completo.' },
-  });
-  await clickWizardNextButton();
+  const summaryInput = screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i);
+  if (summaryInput) {
+    fireEvent.change(summaryInput, {
+      target: { value: 'Resumo clínico completo.' },
+    });
+    fireEvent.blur(summaryInput);
+    await clickWizardNextButton();
+  } else {
+    await screen.findByLabelText(/solicitação de produção/i);
+  }
 
   fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
     target: { value: 'Solicitação preenchida.' },
@@ -442,6 +476,46 @@ describe('ProducaoDentista', () => {
       value: vi.fn(),
     });
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  it('loads a real UUID production order from the order detail endpoint', async () => {
+    const realOrderId = 'f5666284-2479-4ec4-8fe5-e915032d72f7';
+    const realOrder = createOrder({
+      id: realOrderId,
+      displayId: '#42',
+      status: 'awaiting_dentist_forms',
+      statusLabel: 'Aguardando formulários do dentista',
+      stage: 'awaiting_dentist_forms',
+      customer: { full_name: 'Cliente Banco Local', email: 'cliente.local@nexor.dev', phone: null },
+      purchaseConfiguration: { productKey: 'biteplaner', quantity: 4, model: 'esportes', color: 'preto' },
+    });
+
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === '/v1/orders?as=dentist') {
+        return Promise.resolve({ orders: [createOrder({ id: 'BP-DEMO-004' })] });
+      }
+
+      if (url === `/v1/orders/${realOrderId}`) {
+        return Promise.resolve(realOrder);
+      }
+
+      if (url === `/v1/orders/${realOrderId}/workflow-forms`) {
+        return Promise.resolve({ forms: [reviewedSharedIntake({ orderId: realOrderId })] });
+      }
+
+      if (url === `/v1/orders/${realOrderId}/forms`) {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage(`/painel/dentista/producao/${realOrderId}`);
+
+    expect(await screen.findByText('#42')).toBeInTheDocument();
+    expect(mockApiGet).toHaveBeenCalledWith(`/v1/orders/${realOrderId}`, 'tok');
+    expect(mockApiGet).toHaveBeenCalledWith(`/v1/orders/${realOrderId}/workflow-forms`, 'tok');
+    expect(screen.queryByText(/bp-demo-004/i)).not.toBeInTheDocument();
   });
 
   it('uses compact dashboard density for dentist production cards on notebook and mobile screens', () => {
@@ -501,6 +575,69 @@ describe('ProducaoDentista', () => {
     expect(anamnesisSource).not.toContain('<S.SectionIcon>');
   });
 
+  it('keeps professional observations typing local before syncing the heavy production draft', () => {
+    const anamnesisSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.tsx'), 'utf8');
+    const productionRequestFieldsSource = readFileSync(
+      join(process.cwd(), 'src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx'),
+      'utf8'
+    );
+
+    expect(anamnesisSource).toContain('function DebouncedTextArea');
+    expect(anamnesisSource).toContain('const [localValue, setLocalValue] = useState(value)');
+    expect(anamnesisSource).toContain('window.setTimeout(() => {');
+    expect(anamnesisSource).toContain('delayMs = 300');
+    expect(anamnesisSource).toContain('}, delayMs);');
+    expect(anamnesisSource).toContain('<DebouncedTextArea');
+    expect(anamnesisSource).toContain('onCommit={onSummaryChange}');
+    expect(anamnesisSource).toContain('onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setLocalValue(event.target.value)}');
+    expect(anamnesisSource).not.toContain('const [localSummary, setLocalSummary] = useState(draft.anamnesisSummary)');
+    expect(anamnesisSource).not.toContain('onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onSummaryChange(event.target.value)}');
+    expect(productionRequestFieldsSource).toContain('function useDebouncedDraftText');
+    expect(productionRequestFieldsSource).toContain('}, delayMs);');
+    expect(productionRequestFieldsSource).toContain('function useDebouncedDraftText(value: string, onCommit: (value: string) => void, delayMs = 300)');
+    expect(productionRequestFieldsSource).toContain('const productionRequestSummaryField = useDebouncedDraftText');
+    expect(productionRequestFieldsSource).toContain('const labNotesField = useDebouncedDraftText');
+    expect(productionRequestFieldsSource).not.toContain('onChange={(event: FieldChangeEvent) => onChange({ productionRequestSummary: event.target.value })}');
+    expect(productionRequestFieldsSource).not.toContain('onChange={(event: FieldChangeEvent) => onChange({ labNotes: event.target.value })}');
+  });
+
+  it('keeps the dental anamnesis card free of redundant order metadata', () => {
+    const anamnesisSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.tsx'), 'utf8');
+    const headerSource = anamnesisSource.slice(
+      anamnesisSource.indexOf('<S.Header>'),
+      anamnesisSource.indexOf('</S.Header>') + '</S.Header>'.length
+    );
+    const patientStripSource = anamnesisSource.slice(
+      anamnesisSource.indexOf('<S.PatientStrip>'),
+      anamnesisSource.indexOf('</S.PatientStrip>') + '</S.PatientStrip>'.length
+    );
+
+    expect(headerSource).toContain('Ficha de anamnese odontológica');
+    expect(headerSource).not.toContain('Auto-save visual');
+    expect(patientStripSource).not.toContain('<S.QuickLabel>Tipo</S.QuickLabel>');
+    expect(patientStripSource).not.toContain('<S.QuickLabel>Ordem</S.QuickLabel>');
+    expect(patientStripSource).not.toContain('<S.QuickLabel>Pedido biteplaner</S.QuickLabel>');
+    expect(patientStripSource).toContain('<S.QuickLabel>Status clínico</S.QuickLabel>');
+  });
+
+  it('allows any file type for the intraoral scan upload field', () => {
+    const productionRequestFieldsSource = readFileSync(
+      join(process.cwd(), 'src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx'),
+      'utf8'
+    );
+    const scanUploadSource = productionRequestFieldsSource.slice(
+      productionRequestFieldsSource.indexOf('label="Escaneamento 3D intraoral (*)"'),
+      productionRequestFieldsSource.indexOf('label="Prescrição médica assinada e carimbada (*)"')
+    );
+    const prescriptionUploadSource = productionRequestFieldsSource.slice(
+      productionRequestFieldsSource.indexOf('label="Prescrição médica assinada e carimbada (*)"')
+    );
+
+    expect(scanUploadSource).not.toContain('accept=');
+    expect(scanUploadSource).toContain('hint="Obrigatório anexar 1 arquivo de escaneamento 3D intraoral."');
+    expect(prescriptionUploadSource).toContain('accept=".pdf,.png,.jpg,.jpeg"');
+  });
+
   it('keeps form action buttons on the onboarding button pattern and admin actions on the design-system Button', () => {
     const workflowFormsSource = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
     const workflowFormsStyles = readFileSync(
@@ -520,9 +657,10 @@ describe('ProducaoDentista', () => {
     expect(workflowFormsSource).toContain('<S.FormActionButton');
     expect(workflowFormsSource).toContain('<S.FormActionButtonContent>');
     expect(workflowFormsSource).toContain('<S.FormActionButtonLabel>');
+    expect(workflowFormsSource).toContain('hideProceedActionIcons');
+    expect(workflowFormsSource).toContain('const nextActionIcon = hideProceedActionIcons ? undefined : <ChevronRight');
+    expect(workflowFormsSource).toContain('const submitActionIcon = hideProceedActionIcons ? undefined : <Send');
     [
-      /<WorkflowActionButton[\s\S]*?type="button"[\s\S]*?onClick=\{handleNextSection\}[\s\S]*?trailingIcon=\{<ChevronRight/,
-      /<WorkflowActionButton[\s\S]*?type="submit"[\s\S]*?trailingIcon=\{<Send/,
       /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
       /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
     ].forEach((pattern) => {
@@ -531,15 +669,30 @@ describe('ProducaoDentista', () => {
 
     expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleSearchLabs\(\)\})(?=[\s\S]*?trailingIcon=\{<Search)/);
     expect(productionSource).toMatch(/<Button(?=[\s\S]*?variant="secondary")(?=[\s\S]*?leadingIcon=\{<ArrowLeft)/);
-    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
-    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\})(?=[\s\S]*?trailingIcon=\{<CheckCircle2)/);
+    expect(productionSource).toContain('hideProceedActionIcons');
+    expect(productionSource).not.toMatch(/<Button(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
+    expect(productionSource).not.toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\})(?=[\s\S]*?trailingIcon=\{<CheckCircle2)/);
 
     expect(buttonStyleSource).toContain('background: #15803d;');
     expect(buttonStyleSource).toContain('min-height: 52px;');
-    expect(buttonStyleSource).toContain('min-width: 130px;');
+    expect(buttonStyleSource).toContain('min-width: 0;');
     expect(buttonStyleSource).toContain('max-width: 100%;');
     expect(buttonStyleSource).toContain('white-space: normal;');
+    expect(buttonStyleSource).toContain('[data-button-content]');
+    expect(buttonStyleSource).toContain('[data-button-label]');
+    expect(buttonStyleSource).toContain('[data-button-icon]');
+    expect(buttonStyleSource).not.toContain('> span');
     expect(buttonStyleSource).not.toContain('width: max-content;');
+    expect(productionSource).toContain('<S.DeepLinkStepActions>');
+    expect(productionStyles).toContain('export const DeepLinkStepActions = styled(StepActions)`');
+    expect(productionStyles).toContain('width: fit-content;');
+    expect(productionStyles).toContain('max-width: 100%;');
+    expect(productionStyles).toContain('min-width: 0;');
+    expect(productionStyles).toContain('[data-button-content]');
+    expect(productionStyles).toContain('[data-button-label]');
+    expect(productionStyles).not.toContain('white-space: nowrap;');
+    expect(productionStyles).toContain('flex-wrap: nowrap;');
+    expect(productionStyles).not.toContain('flex-direction: column;');
     expect(workflowFormsStyles).toContain('flex: 1 1 calc(50% - 7px);');
     expect(workflowFormsStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
     expect(workflowFormsStyles).toContain('position: fixed;');
@@ -611,13 +764,16 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByRole('heading', { name: /solicitação de produção/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/pedido/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/bp-demo-004/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/status atual/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/última atualização/i);
-    expect(screen.getByTestId('athlete-order-card')).toHaveTextContent(/etapa atual/i);
+    const orderCard = screen.getByTestId('athlete-order-card');
+    expect(orderCard).toHaveTextContent(/pedido/i);
+    expect(orderCard).toHaveTextContent(/bp-demo-004/i);
+    expect(orderCard).toHaveTextContent(/complete a revisão clínica/i);
+    expect(orderCard).not.toHaveTextContent(/status atual/i);
+    expect(orderCard).not.toHaveTextContent(/última atualização/i);
+    expect(orderCard).not.toHaveTextContent(/etapa atual/i);
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i).closest('details')).toBeNull();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
     expect(screen.queryByText(/^anexos obrigatórios$/i)).not.toBeInTheDocument();
@@ -630,10 +786,58 @@ describe('ProducaoDentista', () => {
     expect(screen.queryByText(/2 avaliações/i)).not.toBeInTheDocument();
   }, 10_000);
 
+  it('marks required fields with (*) in the production request step', async () => {
+    configureApiGet();
+
+    renderPage();
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    await clickWizardNextButton();
+
+    expect(await screen.findByLabelText(/solicitação de produção \(\*\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/selecionar escaneamento 3d intraoral \(\*\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada \(\*\)/i)).toBeInTheDocument();
+    expect(screen.getByTestId('dentist-retention-consent-label')).toHaveTextContent(/\(\*\)/);
+  });
+
+  it('shows the Biteplaner order information in the anamnesis step', async () => {
+    configureApiGet({
+      order: createOrder({
+        dentistRecommendedPurchaseConfiguration: {
+          productKey: 'biteplaner',
+          quantity: 2,
+          model: 'impacto',
+          color: 'preto',
+        },
+      }),
+      forms: [reviewedSharedIntake()],
+    });
+
+    renderPage();
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.getAllByText(/pedido biteplaner/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/linha impacto \/ preto \/ 2/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/recomendado pelo dentista na consulta/i)).toBeInTheDocument();
+  });
+
   it('hydrates the production request step from the latest production_request form saved in the database', async () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/orders?as=dentist') {
-        return Promise.resolve({ orders: [createOrder({ productionRequestDraft: null })] });
+        return Promise.resolve({
+          orders: [
+            createOrder({
+              productionRequestDraft: null,
+              dentistRecommendedPurchaseConfiguration: {
+                productKey: 'biteplaner',
+                quantity: 1,
+                model: 'impacto',
+                color: 'branco',
+              },
+            }),
+          ],
+        });
       }
 
       if (path === '/v1/orders/BP-DEMO-004/workflow-forms') {
@@ -668,6 +872,7 @@ describe('ProducaoDentista', () => {
             labNotes: 'Observações salvas para o laboratório.',
             scan3dFileName: 'scan-salvo.stl',
             prescriptionFileName: 'prescricao-salva.pdf',
+            purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
             lgpdConfirmed: true,
             selectedLabId: 'profile-lab-edu',
           },
@@ -683,6 +888,10 @@ describe('ProducaoDentista', () => {
     expect(screen.getByDisplayValue('Observações salvas para o laboratório.')).toBeInTheDocument();
     expect(screen.getByText(/scan-salvo\.stl/i)).toBeInTheDocument();
     expect(screen.getByText(/prescricao-salva\.pdf/i)).toBeInTheDocument();
+    expect(screen.getByText(/pedido biteplaner confirmado pelo cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/cor: preto/i)).toBeInTheDocument();
+    expect(screen.getByText(/quantidade: 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/o cliente alterou o pedido antes do pagamento/i)).toBeInTheDocument();
   });
 
   it('opens directly on the anamnesis summary when the anamnesis was already saved', async () => {
@@ -783,6 +992,35 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(getWizardNextButton()).toBeEnabled();
     expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+  });
+
+  it('allows the dentist to resend production after the laboratory returns an adjustment', async () => {
+    configureApiGet({
+      order: createOrder({
+        id: 'BP-DEMO-004',
+        status: 'dentist_adjustment_required',
+        statusLabel: 'Ajuste de produção',
+        stage: 'dentist_adjustment_required',
+        productionRequestDraft: {
+          anamnesisSummary: 'Resumo clínico salvo.',
+          productionRequestSummary: 'Solicitação devolvida para ajuste.',
+          labNotes: 'Revisar escaneamento solicitado pelo laboratório.',
+          scan3dFileName: 'scan.stl',
+          prescriptionFileName: 'prescricao.pdf',
+          lgpdConfirmed: true,
+          selectedLabId: 'lab-demo-001',
+        },
+      }),
+      forms: [reviewedSharedIntake()],
+    });
+
+    renderPage('/painel/dentista/producao/BP-DEMO-004');
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    expect(screen.queryByText(/pagamento do biteplaner pendente/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+    expect(getWizardNextButton()).toBeEnabled();
   });
 
   it('shows the initial evaluation step again when the submitted complement belongs to a previous dentist', async () => {
@@ -1005,6 +1243,28 @@ describe('ProducaoDentista', () => {
     expect(screen.getByText(/o cliente precisa concluir o pagamento/i)).toBeInTheDocument();
   });
 
+  it('explains the reassessment path when the client is ineligible instead of mentioning payment', async () => {
+    configureApiGet({
+      order: createOrder({
+        status: 'ineligible_reassessment',
+        statusLabel: 'Inaptidão',
+        stage: 'ineligible_reassessment',
+      }),
+    });
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+    await screen.findByText(/etapa 2 de 4/i);
+
+    expect(screen.getByText(/cliente inapto para o biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByText(/selecionar outra clínica ou reagendar uma consulta com a mesma clínica/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aguardando reagendamento do cliente/i })).toBeDisabled();
+    expect(screen.queryByText(/concluir o pagamento do biteplaner/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^solicita.*produ/i)).not.toBeInTheDocument();
+  });
+
   it('warns when the shared clinical payload is not available yet instead of showing an empty anamnesis record', async () => {
     configureApiGet({
       forms: [
@@ -1109,6 +1369,51 @@ describe('ProducaoDentista', () => {
     expect(getWizardNextButton()).toBeDisabled();
   });
 
+  it('requires purchase divergence confirmation before moving from production request to lab selection', async () => {
+    configureApiGet({
+      order: createOrder({
+        purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
+        dentistRecommendedPurchaseConfiguration: {
+          productKey: 'biteplaner',
+          quantity: 1,
+          model: 'esportes',
+          color: 'branco',
+        },
+      }),
+    });
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
+      target: { value: 'Resumo clínico completo.' },
+    });
+    await clickWizardNextButton();
+
+    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
+      target: { value: 'Solicitação preenchida.' },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+      target: { files: [new File(['scan'], 'scan.dcm', { type: 'application/dicom' })] },
+    });
+    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
+      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
+    });
+    fireEvent.click(screen.getByRole('checkbox', { name: /guarda principal do registro clínico/i }));
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+    });
+    await waitFor(() => expect(getWizardNextButton()).toBeDisabled());
+    expect(screen.getByRole('checkbox', { name: /confirmo que revisei a divergência/i })).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que revisei a divergência/i }));
+
+    await waitFor(() => expect(getWizardNextButton()).toBeEnabled());
+  });
+
   it('keeps the production request draft filled after moving to the lab step and back', async () => {
     configureApiGet();
     renderPage();
@@ -1191,6 +1496,9 @@ describe('ProducaoDentista', () => {
           },
           dentist: {
             biteplannerEligible: 'yes',
+            biteplanerModel: 'impacto',
+            biteplanerColor: 'preto',
+            biteplanerQuantity: 2,
             consultationDate: '2026-05-12',
             painlessMaxOpeningMm: 42,
             initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
@@ -1300,7 +1608,7 @@ describe('ProducaoDentista', () => {
     );
     expect(MockPdfWorker.instances).toHaveLength(0);
     expect(URL.createObjectURL).not.toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('does not show a PDF snackbar while completing the production request', async () => {
     configureApiGet();
@@ -1541,6 +1849,11 @@ describe('ProducaoDentista', () => {
 
     const eligibilityGroup = screen.getByRole('group', { name: /cliente est.*apto para uso do biteplaner/i });
     fireEvent.click(within(eligibilityGroup).getByRole('radio', { name: /não/i }));
+
+    expect(screen.queryByText(/pedido biteplaner/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^modelo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^cor/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^quantidade/i)).not.toBeInTheDocument();
 
     const inaptitudeDescription = await screen.findByRole('textbox', {
       name: /descrição da inaptidão para o cliente/i,
@@ -1830,6 +2143,37 @@ describe('ProducaoDentista', () => {
     expect(screen.getByText('1.78')).toBeInTheDocument();
     expect(screen.getByText(/musculação/i)).toBeInTheDocument();
   });
+
+  it('lets the dentist download the anamnesis PDF before attaching the signed prescription', async () => {
+    configureApiGet();
+
+    renderPage();
+
+    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
+    const summaryInput = screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i);
+    fireEvent.change(summaryInput, {
+      target: { value: 'Resumo clínico completo para impressão.' },
+    });
+    fireEvent.blur(summaryInput);
+
+    fireEvent.click(screen.getByRole('button', { name: /baixar ficha de anamnese/i }));
+    expect(MockPdfWorker.instances).toHaveLength(1);
+    expect(MockPdfWorker.instances[0]?.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order: expect.objectContaining({ id: 'BP-DEMO-004' }),
+        draft: expect.objectContaining({ anamnesisSummary: 'Resumo clínico completo para impressão.' }),
+      })
+    );
+
+    await act(async () => {
+      MockPdfWorker.instances[0]?.resolvePdf();
+    });
+
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
+    expect(screen.queryByText(/anamnese baixada/i)).not.toBeInTheDocument();
+  }, 15000);
 
   it('renders the clinical form without duplicate internal heading, release metadata or consolidated notice card', async () => {
     configureApiGet({ forms: [sharedIntake()] });

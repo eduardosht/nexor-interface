@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { SkeletonCard } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
+  createBiteplanerOrder,
   fetchOrders,
   fetchWorkflowForms,
   getAthleteNextPath,
@@ -73,14 +74,16 @@ export function CadastroUsuarioBiteplaner() {
     async function loadOrder() {
       try {
         const response = await fetchOrders('user', token);
-        const nextOrder = response.orders.find((item) => item.status === 'registration_started') ?? response.orders[0] ?? null;
+        const existingOrder =
+          response.orders.find((item) => item.status === 'registration_started') ?? response.orders[0] ?? null;
+        const nextOrder = existingOrder ?? await createBiteplanerOrder(token);
 
         if (active) {
           setOrder(nextOrder);
         }
       } catch {
         if (active) {
-          setError('Não foi possível carregar o pedido Biteplaner.');
+          setOrder(null);
         }
       } finally {
         if (active) {
@@ -383,15 +386,15 @@ export function CadastroUsuarioBiteplaner() {
               {showUnavailableOnboardingForm ? (
                 <>
                   <S.OnboardingDivider />
-                  <S.GuidanceBanner role="status" data-testid="onboarding-form-unavailable">
+                  <S.GuidanceBanner role="status" data-testid="onboarding-form-preparing">
                     <Info size={22} strokeWidth={2.4} aria-hidden="true" />
                     <div>
                       <p>
-                        <strong>Cadastro Biteplaner ainda não foi liberado.</strong>
+                        <strong>Preparando seu cadastro Biteplaner.</strong>
                       </p>
                       <p>
-                        Não encontramos o formulário de cadastro inicial vinculado ao seu pedido. Volte ao painel e
-                        tente novamente em alguns instantes.
+                        Estamos vinculando seu pedido ao formulário inicial. Atualize a página em alguns instantes se
+                        o cadastro não aparecer automaticamente.
                       </p>
                     </div>
                   </S.GuidanceBanner>

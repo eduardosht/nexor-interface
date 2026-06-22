@@ -19,18 +19,13 @@ export const Title = PortalPageTitle;
 
 export const Description = PortalPageDescription;
 
-export const OrderBanner = styled.section<{ $hideLastUpdate?: boolean }>`
-  container-type: inline-size;
+export const OrderBanner = styled.section<{ $hideLastUpdate?: boolean; $summaryOnly?: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $hideLastUpdate }) =>
-    $hideLastUpdate
-      ? 'minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(180px, 0.85fr)'
-      : 'minmax(300px, 1.35fr) minmax(190px, 0.95fr) minmax(190px, 0.9fr) minmax(180px, 0.85fr)'};
+  grid-template-columns: ${({ $summaryOnly }) => ($summaryOnly ? '1fr' : 'minmax(0, 1.2fr) minmax(260px, 0.8fr)')};
+  gap: 18px;
   align-items: center;
-  gap: 0;
-  min-width: 0;
-  min-height: 148px;
-  padding: 28px 34px;
+  min-height: ${({ $summaryOnly }) => ($summaryOnly ? '112px' : '148px')};
+  padding: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -38,6 +33,7 @@ export const OrderBanner = styled.section<{ $hideLastUpdate?: boolean }>`
   font-size: 14px;
   line-height: 1.6;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.03);
+  container-type: inline-size;
 
   @media (max-width: 860px) {
     grid-template-columns: 1fr;
@@ -56,6 +52,7 @@ export const OrderBanner = styled.section<{ $hideLastUpdate?: boolean }>`
 
   @container (max-width: 720px) {
     grid-template-columns: minmax(0, 1.35fr) minmax(118px, 0.65fr);
+    ${({ $summaryOnly }) => ($summaryOnly ? 'grid-template-columns: 1fr;' : '')}
     align-items: start;
     row-gap: 18px;
     min-height: auto;
@@ -73,7 +70,6 @@ export const OrderSummary = styled.div`
   align-items: center;
   gap: 22px;
   min-width: 0;
-  padding-right: 36px;
 
   @media (max-width: 560px) {
     grid-template-columns: auto minmax(0, 1fr);
@@ -82,11 +78,6 @@ export const OrderSummary = styled.div`
 
   @media (max-width: 1280px) {
     gap: 16px;
-    padding-right: 24px;
-  }
-
-  @media (max-width: 860px) {
-    padding-right: 0;
   }
 `;
 
@@ -95,19 +86,24 @@ export const OrderIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 84px;
-  height: 84px;
+  width: 56px;
+  height: 56px;
   border-radius: 14px;
   color: #111827;
   background: #fff4e3;
 
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+
   @media (max-width: 1280px) {
-    width: 56px;
-    height: 56px;
+    width: 40px;
+    height: 40px;
 
     svg {
-      width: 28px;
-      height: 28px;
+      width: 22px;
+      height: 22px;
     }
   }
 
@@ -124,28 +120,33 @@ export const OrderIcon = styled.span`
 
 export const OrderIconBadge = styled.span`
   position: absolute;
-  right: 8px;
-  bottom: 9px;
+  right: 3px;
+  bottom: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: 4px solid #fff4e3;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff4e3;
   border-radius: 999px;
   color: #f28c28;
   background: #ffffff;
 
+  svg {
+    width: 10px;
+    height: 10px;
+  }
+
   @media (max-width: 1280px) {
-    right: 4px;
-    bottom: 4px;
-    width: 19px;
-    height: 19px;
-    border-width: 3px;
+    right: -1px;
+    bottom: -1px;
+    width: 14px;
+    height: 14px;
+    border-width: 2px;
 
     svg {
-      width: 11px;
-      height: 11px;
+      width: 8px;
+      height: 8px;
     }
   }
 
@@ -189,116 +190,72 @@ export const OrderId = styled.strong`
   }
 `;
 
+export const OrderStatusSummary = styled.span`
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #5f6b7a;
+  font-size: 12px;
+  line-height: 1.35;
+
+  span {
+    font-weight: 700;
+  }
+
+  strong {
+    color: #0f172a;
+    font-weight: 800;
+  }
+`;
+
+export const OrderMetadata = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const OrderMetadataItem = styled.span`
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  span {
+    color: #5f6b7a;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.35;
+  }
+
+  strong {
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  small {
+    color: #5f6b7a;
+    font-size: 12px;
+    line-height: 1.3;
+  }
+`;
+
 export const OrderHelpText = styled.p`
-  max-width: 300px;
+  max-width: min(520px, 100%);
   margin: 0;
   color: #5f6b7a;
   font-size: 14px;
   line-height: 1.42;
-
-  @media (max-width: 1280px) {
-    font-size: 13px;
-  }
-`;
-
-export const OrderMeta = styled.div`
-  display: grid;
-  align-content: center;
-  gap: 20px;
-  min-width: 0;
-  min-height: 96px;
-  padding-right: 34px;
-  padding-left: 34px;
-  border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
-
-  &:last-child {
-    padding-right: 0;
-  }
-
-  @media (max-width: 860px) {
-    min-height: auto;
-    gap: 12px;
-    padding: 16px 0 0;
-    border-left: 0;
-    border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  }
-
-  @media (max-width: 1280px) {
-    gap: 10px;
-    min-height: 76px;
-    padding-right: 22px;
-    padding-left: 22px;
-  }
-
-  @media (max-width: 860px) {
-    padding-right: 0;
-    padding-left: 0;
-  }
-
-  @container (max-width: 720px) {
-    gap: 10px;
-    min-height: auto;
-    padding-right: 0;
-    padding-left: 18px;
-
-    &:nth-child(3) {
-      padding-left: 0;
-      border-left: 0;
-      border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-      padding-top: 16px;
-    }
-  }
-
-  @container (max-width: 420px) {
-    padding-left: 0;
-    border-left: 0;
-    border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-    padding-top: 16px;
-  }
-`;
-
-export const OrderMetaLabel = styled.span`
-  color: #4b5563;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.25;
-`;
-
-export const OrderMetaValue = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.35;
-
-  svg {
-    flex-shrink: 0;
-    color: #0f172a;
-  }
-
-  @media (max-width: 1280px) {
-    gap: 10px;
-    font-size: 13px;
-  }
-`;
-
-export const StatusPill = styled.span<{ $color: string }>`
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: min(260px, 100%);
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: ${({ $color }) => $color};
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.45;
-  white-space: normal;
-  overflow-wrap: anywhere;
 
   @media (max-width: 1280px) {
     font-size: 13px;

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
+import { Snackbar, SnackbarStack } from '@nexor/design-system';
 import {
   AlertTriangle,
   Box,
@@ -11,6 +12,7 @@ import {
   Clock3,
   CreditCard,
   FlaskConical,
+  HeartPulse,
   CircleHelp,
   Info,
   Stethoscope,
@@ -22,6 +24,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchOrders,
   fetchAppointments,
+  fetchClinicalFollowUps,
   fetchWorkflowForms,
   cancelPracticeLocationSelection,
   confirmAppointmentByUser,
@@ -30,17 +33,23 @@ import {
   getEffectiveAthleteOrder,
   getAthleteNextPath,
   getOrderDisplayId,
+  getOrderClinicalDentistName,
+  getOrderClinicalPracticeLocation,
   getStageLabel,
+  scheduleClinicalFollowUp,
   type DemoOrderSummary,
   type DemoAppointment,
   type DemoWorkflowForm,
+  type ClinicalFollowUpKind,
 } from '../../../features/demo/biteplanerFlow';
 import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 import type { StepTone } from './styles';
 import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
+import { ClinicalFollowUpCards } from '../components/ClinicalFollowUpCards';
+import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
 import * as S from './styles';
 
-type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
+type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up' | 'checkups';
 type VisualJourneyStepKey = 'registration' | JourneyStepKey;
 
 type JourneyStep = {
@@ -92,6 +101,12 @@ const JOURNEY_STEPS: JourneyStep[] = [
     title: 'Adaptação e acompanhamento',
     description: 'Entrega, encaixe e retornos periódicos após a produção.',
     icon: Box,
+  },
+  {
+    key: 'checkups',
+    title: 'Check-ups',
+    description: 'Retornos clínicos de 15 e 30 dias para acompanhar a adaptação.',
+    icon: HeartPulse,
   }
 ];
 
@@ -121,11 +136,7 @@ function getHeroStatusLabel(order: DemoOrderSummary) {
   return order.statusLabel || getStageLabel(order);
 }
 
-function getVisualStepTone(index: number, currentVisualStepIndex: number, order: DemoOrderSummary): StepTone {
-  if (order.status === 'completed') {
-    return 'complete';
-  }
-
+function getVisualStepTone(index: number, currentVisualStepIndex: number): StepTone {
   if (index < currentVisualStepIndex) {
     return 'complete';
   }
@@ -197,7 +208,7 @@ function getPassiveStepActionText(order: DemoOrderSummary, currentStep: VisualJo
   const stepName = currentStep?.title ?? 'jornada';
 
   if (order.status === 'in_progress') {
-    return 'A consulta inicial está em andamento. Se houver confirmação pendente, use o aviso abaixo; depois disso, a continuidade depende da validação do dentista.';
+    return 'A consulta inicial está em andamento. Se houver confirmação pendente, ela aparecerá neste card; depois disso, a continuidade depende da validação do dentista.';
   }
 
   if (order.status === 'appointment_confirmed') {
@@ -287,11 +298,27 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
     return 4;
   }
 
-  if (order.status === 'awaiting_adaptation' || order.status === 'follow_up' || order.status === 'completed') {
+  if (order.status === 'awaiting_adaptation' || order.status === 'follow_up') {
     return 5;
   }
 
+  if (order.status === 'completed') {
+    return 6;
+  }
+
   return 0;
+}
+
+function getClinicalFollowUpOverviewTone(status: string | undefined): StepTone {
+  if (status === 'completed') {
+    return 'complete';
+  }
+
+  if (status === 'available' || status === 'overdue' || status === 'scheduled') {
+    return 'current';
+  }
+
+  return 'upcoming';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -371,6 +398,44 @@ function getPaymentMethodLabel(value: string) {
   return value || 'Aguardando dados da Stripe';
 }
 
+const PAYMENT_DETAILS_STATUSES = new Set([
+  'payment_confirmed',
+  'awaiting_dentist_forms',
+  'awaiting_lab_start',
+  'lab_processing',
+  'dentist_adjustment_required',
+  'product_received_by_clinic',
+  'awaiting_adaptation',
+  'follow_up',
+  'completed',
+]);
+
+function shouldShowPaymentDetails(order: DemoOrderSummary) {
+  return PAYMENT_DETAILS_STATUSES.has(order.status);
+}
+
+function formatPurchaseOption(value: string) {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === 'impacto') {
+    return 'Linha Impacto';
+  }
+
+  if (normalized === 'esportes') {
+    return 'Linha Esportes';
+  }
+
+  if (normalized === 'preto') {
+    return 'Preto';
+  }
+
+  if (normalized === 'branco') {
+    return 'Branco';
+  }
+
+  return value || 'Não informado';
+}
+
 function getOrderPaymentDetails(order: DemoOrderSummary) {
   const record = order as unknown as Record<string, unknown>;
   const payment = isRecord(record.payment)
@@ -378,25 +443,22 @@ function getOrderPaymentDetails(order: DemoOrderSummary) {
     : isRecord(record.paymentDetails)
       ? record.paymentDetails
       : {};
-  const amountCents = getNumberPaymentField(payment, ['amountCents', 'amount_cents']) ?? 137000;
-  const discountCents = getNumberPaymentField(payment, ['discountCents', 'discount_cents']) ?? 0;
-  const method = getStringPaymentField(payment, ['method', 'paymentMethod', 'payment_method']);
-  const couponCode = getStringPaymentField(payment, ['couponCode', 'coupon_code', 'coupon']);
-  const paidAt = getStringPaymentField(payment, ['paidAt', 'paid_at']);
-  const receiptEmail =
-    getStringPaymentField(payment, ['receiptEmail', 'receipt_email']) ||
-    order.customer?.email ||
-    'e-mail cadastrado';
+  const purchaseConfiguration = order.purchaseConfiguration ?? order.dentistRecommendedPurchaseConfiguration ?? null;
+  const amountCents = getNumberPaymentField(payment, ['amountCents', 'amount_cents']);
+  const method = getStringPaymentField(payment, ['method', 'paymentMethod', 'payment_method', 'payment_method_type']);
+  const paidAt =
+    getStringPaymentField(payment, ['paidAt', 'paid_at']) ||
+    getStringPaymentField(payment, ['confirmed_at', 'created_at']);
 
   return {
-    amount: formatCurrencyFromCents(amountCents),
+    amount: amountCents !== null ? formatCurrencyFromCents(amountCents) : 'Aguardando dados da Stripe',
+    model: purchaseConfiguration ? formatPurchaseOption(purchaseConfiguration.model) : 'Não informado',
+    color: purchaseConfiguration ? formatPurchaseOption(purchaseConfiguration.color) : 'Não informado',
+    quantity: purchaseConfiguration ? String(purchaseConfiguration.quantity) : 'Não informado',
     method: getPaymentMethodLabel(method),
-    coupon: couponCode || 'Nenhum cupom aplicado',
-    discount: discountCents > 0 ? formatCurrencyFromCents(discountCents) : 'Sem desconto aplicado',
     paidAt: paidAt
       ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(paidAt))
-      : 'Confirmado pela Stripe',
-    receiptEmail,
+      : 'Aguardando dados da Stripe',
   };
 }
 
@@ -440,6 +502,23 @@ function getOrderProblemContext(order: DemoOrderSummary, workflowForms: DemoWork
   }
 
   return null;
+}
+
+function getSelectedClinicLocationLabel(order: DemoOrderSummary) {
+  const address = getOrderClinicalPracticeLocation(order)?.address;
+
+  if (!address) {
+    return 'Localização não informada';
+  }
+
+  const streetLine = [address.street, address.number].filter(Boolean).join(', ');
+  const districtLine = address.district ? ` - ${address.district}` : '';
+  const cityLine = [address.city, address.state].filter(Boolean).join(' - ');
+  const zipCode = address.zip_code ?? address.zipCode;
+
+  return [streetLine ? `${streetLine}${districtLine}` : '', cityLine, zipCode]
+    .filter(Boolean)
+    .join(', ') || 'Localização não informada';
 }
 
 function getCurrentStepNotice(
@@ -570,11 +649,15 @@ export function Jornada() {
   const [clinicAction, setClinicAction] = useState('');
   const [clinicNotice, setClinicNotice] = useState('');
   const [clinicError, setClinicError] = useState('');
+  const [followUpAction, setFollowUpAction] = useState<ClinicalFollowUpKind | null>(null);
+  const [followUpNotice, setFollowUpNotice] = useState('');
+  const [followUpError, setFollowUpError] = useState('');
   const ordersQuery = useQuery({
     queryKey: biteplanerQueryKeys.orders('user', queryOwnerId),
     queryFn: () => fetchOrders('user', token),
     enabled: Boolean(token),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
   const orders = ordersQuery.data?.orders ?? [];
@@ -596,16 +679,31 @@ export function Jornada() {
   });
   const workflowForms = workflowFormsQuery.data?.forms ?? [];
   const appointments = appointmentsQuery.data?.appointments ?? [];
-  const loading = ordersQuery.isLoading || Boolean(primaryOrder?.id && workflowFormsQuery.isLoading);
-  const error = ordersQuery.isError ? 'Não foi possível carregar a jornada compartilhada agora.' : '';
-  const workflowFormsError = workflowFormsQuery.isError ? 'Não foi possível carregar os formulários desta ordem.' : '';
-  const visibleAppointmentError = appointmentError ||
-    (appointmentsQuery.isError ? 'Não foi possível carregar a consulta agendada desta ordem.' : '');
-  const visibleClinicError = clinicError;
   const selectedFormsOrder = useMemo(
     () => getEffectiveAthleteOrder(primaryOrder, workflowForms),
     [primaryOrder, workflowForms]
   );
+  const clinicalFollowUpsQuery = useQuery({
+    queryKey: biteplanerQueryKeys.clinicalFollowUps(selectedFormsOrder?.id ?? 'pending'),
+    queryFn: () => fetchClinicalFollowUps(selectedFormsOrder!.id, token),
+    enabled: Boolean(selectedFormsOrder?.id && selectedFormsOrder.status === 'completed' && token),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const clinicalFollowUps = clinicalFollowUpsQuery.data?.followUps ?? [];
+  const loading = ordersQuery.isLoading || Boolean(primaryOrder?.id && workflowFormsQuery.isLoading);
+  const error = ordersQuery.isError && orders.length === 0 ? 'Não foi possível carregar a jornada compartilhada agora.' : '';
+  const workflowFormsError =
+    workflowFormsQuery.isError && workflowForms.length === 0 && !selectedFormsOrder
+      ? 'Não foi possível carregar os formulários desta ordem.'
+      : '';
+  const visibleAppointmentError = appointmentError ||
+    (appointmentsQuery.isError && selectedFormsOrder?.status === 'in_progress' && appointments.length === 0
+      ? 'Não foi possível carregar a consulta agendada desta ordem.'
+      : '');
+  const visibleClinicError = clinicError;
+  const visibleFollowUpError = followUpError ||
+    (clinicalFollowUpsQuery.isError ? 'Não foi possível carregar os retornos clínicos desta ordem.' : '');
   const shouldRedirectToOnboarding = selectedFormsOrder?.stage === 'new_user_onboarding';
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
@@ -634,7 +732,7 @@ export function Jornada() {
     : null;
   const paymentDetails =
     selectedFormsOrder &&
-    (selectedFormsOrder.status === 'payment_confirmed' || selectedFormsOrder.status === 'awaiting_dentist_forms')
+    shouldShowPaymentDetails(selectedFormsOrder)
       ? getOrderPaymentDetails(selectedFormsOrder)
       : null;
   const hasPendingUserAppointmentConfirmation = Boolean(
@@ -642,8 +740,13 @@ export function Jornada() {
     initialAppointment &&
     !initialAppointment.user_confirmed_at
   );
-  const selectedPracticeLocation = selectedFormsOrder?.practice_location ?? null;
+  const selectedPracticeLocation = getOrderClinicalPracticeLocation(selectedFormsOrder);
+  const selectedDentistName = getOrderClinicalDentistName(selectedFormsOrder);
+  const selectedClinicLocation = selectedFormsOrder ? getSelectedClinicLocationLabel(selectedFormsOrder) : '';
   const canCancelPracticeLocationSelection = selectedFormsOrder?.status === 'awaiting_dentist_acceptance';
+  const hasInterruptedPracticeLocationCancellation = Boolean(
+    canCancelPracticeLocationSelection && !selectedPracticeLocation
+  );
 
   async function handleCancelPracticeLocationSelection() {
     if (!selectedFormsOrder || !canCancelPracticeLocationSelection) {
@@ -698,6 +801,39 @@ export function Jornada() {
       setAppointmentError('Não foi possível confirmar a consulta realizada agora.');
     } finally {
       setAppointmentAction('');
+    }
+  }
+
+  async function handleScheduleClinicalFollowUp(kind: ClinicalFollowUpKind) {
+    if (!selectedFormsOrder) {
+      return;
+    }
+
+    setFollowUpAction(kind);
+    setFollowUpError('');
+    setFollowUpNotice('');
+
+    try {
+      const response = await scheduleClinicalFollowUp(selectedFormsOrder.id, kind, token, {
+        practiceLocationId: selectedFormsOrder.practice_location_id ?? undefined,
+      });
+      queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
+        biteplanerQueryKeys.orders('user', queryOwnerId),
+        (current) => ({
+          orders: (current?.orders ?? orders).map((order) =>
+            order.id === selectedFormsOrder.id ? response.order : order
+          ),
+        })
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.appointments(selectedFormsOrder.id) }),
+        queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.clinicalFollowUps(selectedFormsOrder.id) }),
+      ]);
+      setFollowUpNotice('Retorno clínico agendado. Após a consulta, cliente e dentista devem confirmar a realização.');
+    } catch {
+      setFollowUpError('Não foi possível agendar o retorno clínico agora.');
+    } finally {
+      setFollowUpAction(null);
     }
   }
 
@@ -767,8 +903,29 @@ export function Jornada() {
             <S.JourneyIllustration aria-hidden />
           </S.JourneyHeroCard>
 
+          {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
+            <JourneyNoticeCard
+              tone="warning"
+              icon={<AlertTriangle size={18} />}
+              title="Ação pendente do usuário"
+              description='Você precisa confirmar a realização da consulta. A ação está no card "O que fazer agora?".'
+              background="rgba(255, 251, 235, 0.72)"
+              testId="journey-pending-user-action"
+            />
+          ) : null}
+
+          {!orderProblem && selectedFormsOrder.status === 'completed' ? (
+            <ClinicalFollowUpCards
+              followUps={clinicalFollowUps}
+              schedulingKind={followUpAction}
+              onSchedule={(kind) => {
+                void handleScheduleClinicalFollowUp(kind);
+              }}
+            />
+          ) : null}
+
           <S.JourneyDashboardGrid>
-            <S.ActionCard>
+            <S.ActionCard data-testid="journey-action-card">
               <S.ActionHeader>
                 <S.ActionIcon aria-hidden>
                   <CurrentVisualStepIcon size={24} />
@@ -789,29 +946,73 @@ export function Jornada() {
                   <ChevronRight size={18} aria-hidden />
                 </S.PrimaryActionLink>
               ) : null}
+              {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
+                <>
+                  <S.Description>
+                    Confirme que a consulta agendada foi realizada para que a jornada possa seguir para a validação do
+                    dentista.
+                  </S.Description>
+                  <S.PendingActionButton
+                    type="button"
+                    disabled={appointmentAction === `${selectedFormsOrder.id}:user-confirmation`}
+                    onClick={() => {
+                      void handleUserAppointmentConfirmation();
+                    }}
+                  >
+                    <Check size={18} aria-hidden />
+                    <span>Confirmar consulta realizada</span>
+                  </S.PendingActionButton>
+                </>
+              ) : null}
             </S.ActionCard>
 
             <S.OverviewCard id="visao-geral-jornada">
               <S.CardTitle>Visão geral da jornada <S.ProgressPercent>{journeyProgress}% concluído</S.ProgressPercent></S.CardTitle>
               <S.OverviewList>
                 {VISUAL_JOURNEY_STEPS.map((step, index) => {
-                const tone =
-                    getVisualStepTone(index, currentVisualStepIndex, selectedFormsOrder);
-                const StepIcon = step.icon;
+                  const tone =
+                    getVisualStepTone(index, currentVisualStepIndex);
+                  const StepIcon = step.icon;
 
-                return (
-                  <S.OverviewItem key={step.key} $tone={tone} data-testid={`journey-step-${step.key}`}>
-                    <S.OverviewMarker $tone={tone}>
-                      {tone === 'complete' ? <Check size={12} aria-hidden /> : <StepIcon size={13} aria-hidden />}
-                    </S.OverviewMarker>
-                    <S.OverviewStepName>{step.title}</S.OverviewStepName>
-                    <S.StatusPill $tone={tone}>
-                      {tone === 'complete' ? <Check size={12} aria-hidden /> : null}
-                      {getStepStatusLabel(tone)}
-                    </S.StatusPill>
-                  </S.OverviewItem>
-                );
-              })}
+                  return (
+                    <S.OverviewItemGroup key={step.key}>
+                      <S.OverviewItem $tone={tone} data-testid={`journey-step-${step.key}`}>
+                        <S.OverviewMarker $tone={tone}>
+                          {tone === 'complete' ? <Check size={12} aria-hidden /> : <StepIcon size={13} aria-hidden />}
+                        </S.OverviewMarker>
+                        <S.OverviewStepName>{step.title}</S.OverviewStepName>
+                        <S.StatusPill $tone={tone}>
+                          {tone === 'complete' ? <Check size={12} aria-hidden /> : null}
+                          {getStepStatusLabel(tone)}
+                        </S.StatusPill>
+                      </S.OverviewItem>
+                      {step.key === 'checkups' && clinicalFollowUps.length > 0 ? (
+                        <S.OverviewSubList aria-label="Check-ups de adaptação">
+                          {clinicalFollowUps.map((followUp) => {
+                            const subTone = getClinicalFollowUpOverviewTone(followUp.status);
+
+                            return (
+                              <S.OverviewSubItem
+                                key={followUp.kind}
+                                $tone={subTone}
+                                data-testid={`journey-checkup-${followUp.kind}`}
+                              >
+                                <S.OverviewSubMarker $tone={subTone}>
+                                  {subTone === 'complete' ? <Check size={10} aria-hidden /> : followUp.sequence}
+                                </S.OverviewSubMarker>
+                                <S.OverviewStepName>{followUp.title}</S.OverviewStepName>
+                                <S.StatusPill $tone={subTone}>
+                                  {subTone === 'complete' ? <Check size={12} aria-hidden /> : null}
+                                  {getStepStatusLabel(subTone)}
+                                </S.StatusPill>
+                              </S.OverviewSubItem>
+                            );
+                          })}
+                        </S.OverviewSubList>
+                      ) : null}
+                    </S.OverviewItemGroup>
+                  );
+                })}
               </S.OverviewList>
             </S.OverviewCard>
           </S.JourneyDashboardGrid>
@@ -819,8 +1020,9 @@ export function Jornada() {
           {workflowFormsError ? <S.Banner role="alert">{workflowFormsError}</S.Banner> : null}
           {visibleAppointmentError ? <S.Banner role="alert">{visibleAppointmentError}</S.Banner> : null}
           {visibleClinicError ? <S.Banner role="alert">{visibleClinicError}</S.Banner> : null}
-          {appointmentNotice ? <S.Banner role="status">{appointmentNotice}</S.Banner> : null}
+          {visibleFollowUpError ? <S.Banner role="alert">{visibleFollowUpError}</S.Banner> : null}
           {clinicNotice ? <S.Banner role="status">{clinicNotice}</S.Banner> : null}
+          {followUpNotice ? <S.Banner role="status">{followUpNotice}</S.Banner> : null}
           <PendingFeedbackPrompt mode="user" orders={[selectedFormsOrder]} forms={workflowForms} />
           {!orderProblem && selectedPracticeLocation ? (
             <S.SelectedClinicCard data-testid="journey-selected-clinic">
@@ -830,12 +1032,54 @@ export function Jornada() {
               <S.SelectedClinicCopy>
                 <S.SelectedClinicKicker>Clínica selecionada</S.SelectedClinicKicker>
                 <S.SelectedClinicTitle>{selectedPracticeLocation.name}</S.SelectedClinicTitle>
+                <S.SelectedClinicDetails aria-label="Dados da clínica selecionada">
+                  <S.SelectedClinicDetail>
+                    <dt>Clínica</dt>
+                    <dd>{selectedPracticeLocation.name}</dd>
+                  </S.SelectedClinicDetail>
+                  <S.SelectedClinicDetail>
+                    <dt>Profissional</dt>
+                    <dd>{selectedDentistName}</dd>
+                  </S.SelectedClinicDetail>
+                  <S.SelectedClinicDetail>
+                    <dt>Localização</dt>
+                    <dd>{selectedClinicLocation}</dd>
+                  </S.SelectedClinicDetail>
+                </S.SelectedClinicDetails>
                 <S.Description>
                   Este pedido está vinculado a esta clínica para a consulta inicial. Enquanto o dentista ainda não
                   aceitou a ordem, você pode cancelar esta seleção e escolher outra clínica.
                 </S.Description>
               </S.SelectedClinicCopy>
               {canCancelPracticeLocationSelection ? (
+                <S.SelectedClinicFooter>
+                  <S.SecondaryActionButton
+                    type="button"
+                    disabled={clinicAction === `${selectedFormsOrder.id}:cancel-practice-location`}
+                    onClick={() => {
+                      void handleCancelPracticeLocationSelection();
+                    }}
+                  >
+                    {clinicAction ? 'Cancelando...' : 'Cancelar consulta'}
+                  </S.SecondaryActionButton>
+                </S.SelectedClinicFooter>
+              ) : null}
+            </S.SelectedClinicCard>
+          ) : null}
+          {!orderProblem && hasInterruptedPracticeLocationCancellation ? (
+            <S.SelectedClinicCard data-testid="journey-interrupted-clinic-selection">
+              <S.SelectedClinicIcon aria-hidden>
+                <UserRound size={22} />
+              </S.SelectedClinicIcon>
+              <S.SelectedClinicCopy>
+                <S.SelectedClinicKicker>Consulta sem clínica vinculada</S.SelectedClinicKicker>
+                <S.SelectedClinicTitle>Libere a escolha de clínica</S.SelectedClinicTitle>
+                <S.Description>
+                  A consulta anterior foi interrompida antes do aceite do dentista. Libere a ordem para escolher uma
+                  nova clínica e continuar sua jornada.
+                </S.Description>
+              </S.SelectedClinicCopy>
+              <S.SelectedClinicFooter>
                 <S.SecondaryActionButton
                   type="button"
                   disabled={clinicAction === `${selectedFormsOrder.id}:cancel-practice-location`}
@@ -843,39 +1087,43 @@ export function Jornada() {
                     void handleCancelPracticeLocationSelection();
                   }}
                 >
-                  {clinicAction ? 'Cancelando...' : 'Cancelar clínica'}
+                  {clinicAction ? 'Liberando...' : 'Liberar escolha de clínica'}
                 </S.SecondaryActionButton>
-              ) : null}
+              </S.SelectedClinicFooter>
             </S.SelectedClinicCard>
           ) : null}
-          {orderProblem ? (
+          {orderProblem && selectedFormsOrder.status === 'ineligible_reassessment' ? (
+            <JourneyNoticeCard
+              tone="warning"
+              icon={<AlertTriangle size={18} />}
+              title={orderProblem.title}
+              description={orderProblem.reason}
+              background="rgba(255, 251, 235, 0.72)"
+              testId="journey-order-problem"
+              action={
+                <S.BannerActionLink to="/painel/consulta-inicial">
+                  <span>Marcar uma nova consulta</span>
+                </S.BannerActionLink>
+              }
+            />
+          ) : orderProblem ? (
             <S.Banner role="alert" data-testid="journey-order-problem">
               <strong>{orderProblem.title}</strong>
               <span> {orderProblem.reason}</span>
-              {selectedFormsOrder.status === 'ineligible_reassessment' ? (
-                <S.BannerActionLink to="/painel/consulta-inicial">
-                  <UserRound size={16} aria-hidden />
-                  <span>Marcar uma nova consulta</span>
-                </S.BannerActionLink>
-              ) : null}
             </S.Banner>
           ) : null}
-          {!orderProblem && currentStepNotice && currentStepDisclaimer && !paymentDetails ? (
-            <S.StepDisclaimer
-              role="status"
-              data-testid="journey-step-notice"
-              $tone={currentStepDisclaimer.tone}
-            >
-              <S.StepDisclaimerIcon $tone={currentStepDisclaimer.tone}>
-                {currentStepDisclaimer.icon}
-              </S.StepDisclaimerIcon>
-              <S.StepDisclaimerContent>
-                <S.StepDisclaimerTitle $tone={currentStepDisclaimer.tone}>
-                  {currentStepDisclaimer.title}
-                </S.StepDisclaimerTitle>
-                <S.StepDisclaimerText>{currentStepNotice}</S.StepDisclaimerText>
-              </S.StepDisclaimerContent>
-            </S.StepDisclaimer>
+          {!orderProblem &&
+          currentStepNotice &&
+          currentStepDisclaimer &&
+          !paymentDetails &&
+          !hasPendingUserAppointmentConfirmation ? (
+            <JourneyNoticeCard
+              tone={currentStepDisclaimer.tone}
+              icon={currentStepDisclaimer.icon}
+              title={currentStepDisclaimer.title}
+              description={currentStepNotice}
+              testId="journey-step-notice"
+            />
           ) : null}
           {!orderProblem && paymentDetails ? (
             <S.PaymentConfirmationCard data-testid="journey-payment-confirmation">
@@ -894,6 +1142,18 @@ export function Jornada() {
               </S.PaymentConfirmationHeader>
               <S.PaymentDetailsGrid>
                 <S.PaymentDetailItem>
+                  <span>Quantidade</span>
+                  <strong>{paymentDetails.quantity}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Modelo</span>
+                  <strong>{paymentDetails.model}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
+                  <span>Cor</span>
+                  <strong>{paymentDetails.color}</strong>
+                </S.PaymentDetailItem>
+                <S.PaymentDetailItem>
                   <span>Valor pago</span>
                   <strong>{paymentDetails.amount}</strong>
                 </S.PaymentDetailItem>
@@ -902,25 +1162,13 @@ export function Jornada() {
                   <strong>{paymentDetails.method}</strong>
                 </S.PaymentDetailItem>
                 <S.PaymentDetailItem>
-                  <span>Cupom</span>
-                  <strong>{paymentDetails.coupon}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Desconto</span>
-                  <strong>{paymentDetails.discount}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
                   <span>Data do pagamento</span>
                   <strong>{paymentDetails.paidAt}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Recibo</span>
-                  <strong>{paymentDetails.receiptEmail}</strong>
                 </S.PaymentDetailItem>
               </S.PaymentDetailsGrid>
             </S.PaymentConfirmationCard>
           ) : null}
-          {!orderProblem && paymentDetails ? (
+          {!orderProblem && paymentDetails && selectedFormsOrder.status !== 'completed' ? (
             <S.NextStepCard data-testid="journey-payment-next-step">
               <S.NextStepIcon aria-hidden>
                 <CircleHelp size={24} />
@@ -934,29 +1182,21 @@ export function Jornada() {
               </S.NextStepCopy>
             </S.NextStepCard>
           ) : null}
-          {!orderProblem && selectedFormsOrder && initialAppointment && hasPendingUserAppointmentConfirmation ? (
-            <S.PendingActionCard data-testid="journey-pending-user-action">
-              <S.PendingActionCopy>
-                <S.PendingActionTitle>Ação pendente do usuário</S.PendingActionTitle>
-                <S.Description>
-                  Confirme que a consulta agendada foi realizada para que a jornada possa seguir para a validação do dentista.
-                </S.Description>
-              </S.PendingActionCopy>
-              <S.PendingActionButton
-                type="button"
-                disabled={appointmentAction === `${selectedFormsOrder.id}:user-confirmation`}
-                onClick={() => {
-                  void handleUserAppointmentConfirmation();
-                }}
-              >
-                <Check size={18} aria-hidden />
-                <span>Confirmar consulta realizada</span>
-              </S.PendingActionButton>
-            </S.PendingActionCard>
-          ) : null}
         </S.StepFlow>
       ) : null}
 
+      {appointmentNotice ? (
+        <SnackbarStack>
+          <Snackbar
+            tone="success"
+            title="Consulta confirmada"
+            message={appointmentNotice}
+            onClose={() => {
+              setAppointmentNotice('');
+            }}
+          />
+        </SnackbarStack>
+      ) : null}
     </S.Page>
   );
 }

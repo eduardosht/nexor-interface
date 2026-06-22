@@ -20,6 +20,12 @@ describe('routes', () => {
     expect(routesSource).toContain('errorElement: routeErrorElement');
   });
 
+  it('keeps administrative panel buttons at least 100px wide', () => {
+    expect(routesSource).toContain('<AdminRouteViewport>');
+    expect(routesSource).toContain('const AdminRouteViewport = styled.div`');
+    expect(routesSource).toContain('min-width: 100px;');
+  });
+
   it('exposes the Biteplaner care guide at the requested public URL', () => {
     expect(routesSource).toContain("{ path: '/conheca-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> }");
   });

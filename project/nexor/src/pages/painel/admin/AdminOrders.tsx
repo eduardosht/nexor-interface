@@ -17,6 +17,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
 import { AdminProductGate } from './AdminProductGate';
 import {
    fetchOrders,
@@ -57,6 +58,7 @@ const STATUS_OPTIONS = [
 ];
 
 const MOBILE_PAGE_SIZE = 6;
+const ADMIN_ORDER_PAGE_SIZE = 30;
 
 export function AdminOrders() {
   const { selectedProduct } = useAdminPortal();
@@ -71,6 +73,10 @@ export function AdminOrders() {
   const [mobilePage, setMobilePage] = useState(1);
   const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
   const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
+  const [hasMoreOrders, setHasMoreOrders] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const serverStatusFilter = statusFilter.length === 1 ? statusFilter[0] : undefined;
+  const debouncedSearch = useDebouncedValue(search, 300);
 
   useEffect(() => {
     if (!selectedProduct || !token) {
@@ -83,10 +89,14 @@ export function AdminOrders() {
       setLoading(true);
 
       try {
-        const response = await fetchOrders('admin', token);
+        const response = await fetchOrders('admin', token, {
+          status: serverStatusFilter,
+          limit: ADMIN_ORDER_PAGE_SIZE,
+        });
 
-        if (active) {
+        if (active && response !== undefined) {
           setOrders(response.orders);
+          setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
         }
       } finally {
         if (active) {
@@ -100,7 +110,38 @@ export function AdminOrders() {
     return () => {
       active = false;
     };
-  }, [selectedProduct, token]);
+  }, [selectedProduct, serverStatusFilter, token]);
+
+  async function loadMoreOrders() {
+    if (!selectedProduct || !token || orders.length === 0 || loadingMore) {
+      return;
+    }
+
+    const cursor = orders[orders.length - 1]?.created_at;
+
+    if (!cursor) {
+      return;
+    }
+
+    setLoadingMore(true);
+
+    try {
+      const response = await fetchOrders('admin', token, {
+        status: serverStatusFilter,
+        limit: ADMIN_ORDER_PAGE_SIZE,
+        createdBefore: cursor,
+      });
+
+      setOrders((current) => {
+        const existingIds = new Set(current.map((order) => order.id));
+        const nextOrders = response.orders.filter((order) => !existingIds.has(order.id));
+        return [...current, ...nextOrders];
+      });
+      setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const stageOptions = useMemo(
     () =>
@@ -117,16 +158,16 @@ export function AdminOrders() {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const matchesSearch = search.trim()
+      const matchesSearch = debouncedSearch.trim()
         ? `${getOrderDisplayId(order)} ${order.id} ${order.customer?.full_name ?? ''} ${order.customer?.email ?? ''}`
             .toLowerCase()
-            .includes(search.trim().toLowerCase())
+            .includes(debouncedSearch.trim().toLowerCase())
         : true;
       const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
       const matchesStage = stageFilter.length === 0 || stageFilter.includes(order.stage);
       return matchesSearch && matchesStatus && matchesStage;
     });
-  }, [orders, search, stageFilter, statusFilter]);
+  }, [debouncedSearch, orders, stageFilter, statusFilter]);
 
   const activeFilterLabels = useMemo(() => {
     const statusLabels = statusFilter
@@ -143,7 +184,7 @@ export function AdminOrders() {
 
   useEffect(() => {
     setMobilePage(1);
-  }, [search, stageFilter, statusFilter]);
+  }, [debouncedSearch, stageFilter, statusFilter]);
 
   const mobileTotalPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_PAGE_SIZE));
   const safeMobilePage = Math.min(mobilePage, mobileTotalPages);
@@ -320,7 +361,7 @@ export function AdminOrders() {
               </S.FilterChipRow>
             ) : null}
 
-            {loading ? (
+            {loading && orders.length === 0 ? (
               <SkeletonTable rows={6} columns={5} />
             ) : (
               <AdminResponsiveCollection
@@ -375,6 +416,14 @@ export function AdminOrders() {
                 }
               />
             )}
+
+            {hasMoreOrders ? (
+              <S.LoadMoreRow>
+                <Button type="button" variant="secondary" onClick={loadMoreOrders} disabled={loadingMore}>
+                  {loadingMore ? 'Carregando ordens...' : 'Carregar mais ordens'}
+                </Button>
+              </S.LoadMoreRow>
+            ) : null}
 
             <FilterSheet
               open={mobileFiltersOpen}

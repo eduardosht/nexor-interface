@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarCheck, Mail, MessageCircle, Star } from 'lucide-react';
+import { LocateFixed, Mail, MessageCircle, Search, Star } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import * as S from './styles';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { divIcon, latLngBounds } from 'leaflet';
@@ -24,6 +25,7 @@ import {
   listConsultationLocationsByCep,
 } from '../../../features/demo/consultationLocations';
 import { OrderStepHeader } from '../components/OrderStepHeader';
+import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
 
 const markerIcon = divIcon({
   className: 'consultation-map-pin',
@@ -200,9 +202,9 @@ function withDistances(
   }
 
   return locations.map((location) => ({
-      ...location,
-      distanceKm: calculateDistanceKm(cepLocation, location.coordinates),
-    }));
+    ...location,
+    distanceKm: calculateDistanceKm(cepLocation, location.coordinates),
+  }));
 }
 
 function getCustomerPayload(form: DemoWorkflowForm) {
@@ -470,9 +472,9 @@ async function mapPracticeLocationWithGeocoding(
 
   return coordinates
     ? {
-        ...mappedLocation,
-        coordinates,
-      }
+      ...mappedLocation,
+      coordinates,
+    }
     : mappedLocation;
 }
 
@@ -495,7 +497,9 @@ function RatingStars({ score, label }: { score: number; label: string }) {
 
 export function ConsultaInicial({ embedded = false, initialOrder = null, onOrderChange }: ConsultaInicialProps) {
   const { session, isMockMode } = useAuth();
+  const queryClient = useQueryClient();
   const token = getAuthToken(session);
+  const queryOwnerId = session?.user.id ?? 'anonymous';
   const dentistPartnerUrl = getDentistPartnerUrl();
   const [cep, setCep] = useState(DEFAULT_CEP);
   const [cepLocation, setCepLocation] = useState<CepLocation | null>(null);
@@ -870,6 +874,20 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
       const response = await scheduleInitialConsultation(order.id, activeDisplayedLocation.id, token);
       setOrder(response.order);
       onOrderChange?.(response.order);
+      queryClient.setQueryData<{ orders: DemoOrderSummary[] }>(
+        biteplanerQueryKeys.orders('user', queryOwnerId),
+        (current) => {
+          const currentOrders = current?.orders ?? [];
+          const hasOrder = currentOrders.some((item) => item.id === response.order.id);
+
+          return {
+            orders: hasOrder
+              ? currentOrders.map((item) => (item.id === response.order.id ? response.order : item))
+              : [response.order, ...currentOrders],
+          };
+        }
+      );
+      await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orders('user', queryOwnerId) });
       setScheduleNotice('Consulta informada com sucesso. Agora estamos aguardando o dentista aceitar a ordem via sistema.');
     } catch {
       setError('Não foi possível vincular a consulta agendada agora.');
@@ -921,11 +939,21 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               maxLength={9}
               placeholder="00000-000"
             />
-            <S.SearchButton type="button" onClick={handleSearch}>
-              Buscar clínicas
+            <S.SearchButton type="button" onClick={handleSearch} aria-label="Buscar clínicas" title="Buscar clínicas">
+              <Search size={18} aria-hidden="true" />
+              <S.MobileHiddenButtonText>Buscar clínicas</S.MobileHiddenButtonText>
             </S.SearchButton>
-            <S.SecondaryButton type="button" onClick={handleUseCurrentLocation} disabled={locatingUser}>
-              {locatingUser ? 'Localizando...' : 'Usar minha localização'}
+            <S.SecondaryButton
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={locatingUser}
+              aria-label={locatingUser ? 'Localizando sua posição' : 'Usar minha localização'}
+              title={locatingUser ? 'Localizando...' : 'Usar minha localização'}
+            >
+              <LocateFixed size={18} aria-hidden="true" />
+              <S.MobileHiddenButtonText>
+                {locatingUser ? 'Localizando...' : 'Usar minha localização'}
+              </S.MobileHiddenButtonText>
             </S.SecondaryButton>
           </S.SearchBar>
 
@@ -1103,22 +1131,21 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                   </S.GuidanceCard>
                   {canConfirmScheduledConsultation ? (
                     <S.ScheduleButton
-                    type="button"
-                    onClick={() => setShowScheduleConfirmation(true)}
-                    disabled={schedulingConsultation || !canConfirmScheduledConsultation}
-                  >
-                    <CalendarCheck size={18} aria-hidden />
-                    {canConfirmScheduledConsultation
-                      ? schedulingConsultation
-                        ? 'Vinculando...'
-                        : order?.status === 'ineligible_reassessment'
-                          ? 'Marcar nova consulta'
-                          : 'Consulta agendada'
-                      : order?.status === 'awaiting_dentist_acceptance'
-                        ? 'Aguardando aceite'
-                        : order?.status === 'registration_started'
-                          ? 'Aguardando pré-requisito'
-                        : 'Consulta vinculada'}
+                      type="button"
+                      onClick={() => setShowScheduleConfirmation(true)}
+                      disabled={schedulingConsultation || !canConfirmScheduledConsultation}
+                    >
+                      {canConfirmScheduledConsultation
+                        ? schedulingConsultation
+                          ? 'Vinculando...'
+                          : order?.status === 'ineligible_reassessment'
+                            ? 'Marcar nova consulta'
+                            : 'Consulta agendada'
+                        : order?.status === 'awaiting_dentist_acceptance'
+                          ? 'Aguardando aceite'
+                          : order?.status === 'registration_started'
+                            ? 'Aguardando pré-requisito'
+                            : 'Consulta vinculada'}
                     </S.ScheduleButton>
                   ) : null}
                   {scheduledConsultationNotice ? (
@@ -1179,6 +1206,8 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
               Dentista: {activeDisplayedLocation?.dentistName ?? activeLocation.dentistName}
               <br />
               Clínica: {activeDisplayedLocation?.name ?? activeLocation.name}
+              <br />
+              Endereço: {activeDisplayedLocation?.address ?? activeLocation.address}
             </S.GuidanceCard>
             <AdminModalActions>
               <S.CancelModalAction type="button" onClick={() => setShowScheduleConfirmation(false)}>

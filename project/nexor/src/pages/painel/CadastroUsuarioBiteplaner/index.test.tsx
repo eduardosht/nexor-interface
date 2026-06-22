@@ -341,6 +341,23 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(within(progressCard).getByText(/pesquisa de satisfa..o/i)).toBeInTheDocument();
     expect(within(progressCard).queryByRole('button', { name: /dados cl.nicos/i })).not.toBeInTheDocument();
     expect(within(progressCard).queryByRole('button', { name: /perfil financeiro e objetivos/i })).not.toBeInTheDocument();
+    expect(progressCard).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(progressCard);
+    expect(progressCard).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(progressCard);
+    expect(progressCard).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.pointerDown(progressCard, { clientY: 320 });
+    fireEvent.pointerMove(progressCard, { clientY: 260 });
+    fireEvent.pointerUp(progressCard, { clientY: 250 });
+    expect(progressCard).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.touchStart(progressCard, { touches: [{ clientY: 250 }] });
+    fireEvent.touchMove(progressCard, { touches: [{ clientY: 330 }] });
+    fireEvent.touchEnd(progressCard, { changedTouches: [{ clientY: 340 }] });
+    expect(progressCard).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.touchStart(progressCard, { touches: [{ clientY: 320 }] });
+    fireEvent.touchMove(progressCard, { touches: [{ clientY: 260 }] });
+    fireEvent.touchEnd(progressCard, { changedTouches: [{ clientY: 250 }] });
+    expect(progressCard).toHaveAttribute('aria-expanded', 'true');
     const sectionKicker = screen.getByText(/se..o 1 de 3/i);
     const progressTitle = screen.getByText(/seu progresso/i);
     expect(sectionKicker.compareDocumentPosition(progressTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -440,7 +457,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
   }, 10000);
 
-  it('shows a clear unavailable-registration message when onboarding form is absent after privacy consent', async () => {
+  it('shows a preparation state when onboarding form is absent after privacy consent', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })
       .mockResolvedValueOnce({ forms: [] });
@@ -452,10 +469,47 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.click(screen.getByLabelText(/declaro que li e entendi/i));
     fireEvent.click(await screen.findByRole('button', { name: /continuar/i }));
 
-    const unavailableMessage = await screen.findByTestId('onboarding-form-unavailable');
-    expect(unavailableMessage).toHaveTextContent(/cadastro biteplaner ainda n.*o foi liberado/i);
-    expect(unavailableMessage).toHaveTextContent(/n.o encontramos o formul.rio de cadastro inicial/i);
+    const preparingMessage = await screen.findByTestId('onboarding-form-preparing');
+    expect(preparingMessage).toHaveTextContent(/preparando seu cadastro biteplaner/i);
+    expect(preparingMessage).toHaveTextContent(/vinculando seu pedido ao formul.rio inicial/i);
+    expect(preparingMessage).not.toHaveTextContent(/cadastro biteplaner ainda n.*o foi liberado/i);
     expect(screen.queryByLabelText(/cpf/i, { selector: 'input, textarea' })).not.toBeInTheDocument();
+  });
+
+  it('creates the acquisition order before rendering onboarding when the account has no order yet', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [] })
+      .mockResolvedValueOnce({ forms: [onboardingForm()] });
+    mockApiPost.mockResolvedValueOnce(demoOrder());
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith('/v1/orders', {}, 'tok');
+    });
+
+    await acceptInitialPrivacyGateIfNeeded();
+    expect(await findTextField(/cpf/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('onboarding-form-preparing')).not.toBeInTheDocument();
+    expect(screen.queryByText(/cadastro biteplaner ainda n.*o foi liberado/i)).not.toBeInTheDocument();
+  });
+
+  it('does not show the unavailable-registration message when the order request fails', async () => {
+    mockApiGet.mockRejectedValueOnce(new Error('orders unavailable'));
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /cadastro de novos usu.*rios/i })).toBeInTheDocument();
+    expect(screen.queryByText(/n.o foi poss.vel carregar o pedido biteplaner/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/declaro que li e entendi/i));
+    fireEvent.click(await screen.findByRole('button', { name: /continuar/i }));
+
+    expect(await screen.findByTestId('onboarding-form-preparing')).toHaveTextContent(
+      /preparando seu cadastro biteplaner/i
+    );
+    expect(screen.queryByText(/cadastro biteplaner ainda n.*o foi liberado/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/n.o foi poss.vel carregar o pedido biteplaner/i)).not.toBeInTheDocument();
   });
 
   it('blocks submission when CPF is invalid', async () => {

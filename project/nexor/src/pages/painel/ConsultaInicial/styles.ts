@@ -31,7 +31,9 @@ export const SearchBar = styled.section`
   align-items: end;
 
   @media (max-width: 860px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) 44px 44px;
+    gap: 8px;
+    align-items: center;
   }
 `;
 
@@ -46,39 +48,65 @@ export const SkeletonGridList = styled.div`
 `;
 
 export const SearchButton = styled(Button)`
-  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
   max-width: 100%;
   justify-self: start;
   white-space: nowrap;
+
+  @media (max-width: 860px) {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-self: stretch;
+    border-radius: 8px;
+  }
 `;
 
 export const ScheduleButton = styled(Button)`
   ${biteplanerButtonSurfaceStyles}
   ${biteplanerButtonHoverStyles}
-  width: max-content;
+  width: auto;
   max-width: 100%;
   justify-self: start;
-
-  @media (max-width: 760px) {
-    width: 100%;
-    min-width: 0;
-    gap: 12px;
-    padding: 12px 14px;
-
-    > span {
-      gap: 12px;
-    }
-  }
 `;
 
 export const SecondaryButton = styled(Button).attrs({ variant: 'secondary' })`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  width: max-content;
+  width: auto;
   max-width: 100%;
   justify-self: start;
   white-space: nowrap;
+
+  @media (max-width: 860px) {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    justify-self: stretch;
+    border-radius: 8px;
+  }
+`;
+
+export const MobileHiddenButtonText = styled.span`
+  @media (max-width: 860px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 `;
 
 export const ClinicFilterBar = styled.section`
@@ -432,19 +460,26 @@ export const ReferralNotice = styled.p`
 `;
 
 export const ReferralActions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
   gap: 10px;
-  justify-content: flex-start;
+  justify-content: start;
+  align-items: center;
+
+  @media (max-width: 560px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
 export const ActionHref = styled.a`
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  max-width: 100%;
   min-height: 40px;
-  padding: 0 16px;
+  padding: 8px 16px;
   border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgBase};
@@ -452,27 +487,48 @@ export const ActionHref = styled.a`
   text-decoration: none;
   font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+  text-align: center;
+  white-space: normal;
+
+  span {
+    min-width: 0;
+  }
 `;
 
 export const WhatsappActionHref = styled(ActionHref)`
-  border-color: #1da851;
-  background: #25d366;
-  color: #ffffff;
-  box-shadow: 0 10px 22px rgba(37, 211, 102, 0.22);
-  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease,
+  border-color: #52b967;
+  background: #52b967;
+  color: #f8fff9;
+  box-shadow: 0 8px 18px rgba(31, 150, 72, 0.18);
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
     transform 180ms ease;
 
+  svg {
+    width: 16px;
+    height: 16px;
+    color: currentColor;
+    stroke-width: 2.4;
+  }
+
   &:hover {
-    border-color: #16843f;
-    background: #1da851;
-    box-shadow: 0 12px 26px rgba(37, 211, 102, 0.3);
+    border-color: #47a95d;
+    background: #47a95d;
+    box-shadow: 0 10px 22px rgba(31, 150, 72, 0.24);
     transform: translateY(-1px);
   }
 
   &:focus-visible {
-    outline: 3px solid rgba(37, 211, 102, 0.28);
+    outline: 3px solid rgba(82, 185, 103, 0.3);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
   }
 `;
 
@@ -491,5 +547,9 @@ export const EmailActionHref = styled(ActionHref)`
   &:focus-visible {
     outline: 3px solid rgba(7, 132, 90, 0.24);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 560px) {
+    width: 100%;
   }
 `;

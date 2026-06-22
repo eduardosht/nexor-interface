@@ -21,12 +21,12 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 const sizeStyles: Record<ButtonSize, ReturnType<typeof css>> = {
   sm: css`
     min-height: 40px;
-    padding: 9px 16px;
-    font-size: 13px;
+    padding: 6px 14px;
+    font-size: 12px;
   `,
   md: css`
     min-height: 46px;
-    padding: 12px 20px;
+    padding: 8px 16px;
     font-size: 14px;
   `,
   lg: css`
@@ -114,7 +114,7 @@ function variantStyles(tokens: BrandTokens, variant: ButtonVariant, tone: Button
         background: rgba(255, 255, 255, 0.04);
       }
     `;
-  }
+    }
 
     return css`
       background: ${tokens.colors.accentSoft};
@@ -243,25 +243,44 @@ const Content = styled.span`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  max-width: none;
+  flex: 0 1 auto;
+  max-width: 100%;
   min-width: 0;
   line-height: inherit;
-  overflow-wrap: normal;
+  overflow-wrap: inherit;
   white-space: inherit;
-  text-wrap: nowrap;
+  text-wrap: inherit;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
+`;
+
+const IconSlot = styled.span`
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
 
   svg {
     flex: 0 0 auto;
   }
 
   @media (max-width: 768px) {
-    gap: 6px;
-
     svg {
       width: 16px;
       height: 16px;
     }
   }
+`;
+
+const Label = styled.span`
+  flex: 0 1 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: inherit;
+  white-space: inherit;
+  text-wrap: inherit;
 `;
 
 export function Button({
@@ -291,10 +310,10 @@ export function Button({
       disabled={disabled || loading}
       {...rest}
     >
-      <Content>
-        {leadingIcon}
-        {loading ? 'Carregando...' : children}
-        {trailingIcon}
+      <Content data-button-content>
+        {leadingIcon ? <IconSlot data-button-icon>{leadingIcon}</IconSlot> : null}
+        <Label data-button-label>{loading ? 'Carregando...' : children}</Label>
+        {trailingIcon ? <IconSlot data-button-icon>{trailingIcon}</IconSlot> : null}
       </Content>
     </StyledButton>
   );

@@ -66,14 +66,11 @@ export function AdminModalAction({ actionTone = 'default', children, ...props }:
 
 export const AdminModalActions = styled.div`
   display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
 
   @media (max-width: 680px) {
-    > button {
-      width: 100%;
-    }
+    flex-wrap: wrap;
   }
 `;
 
@@ -307,7 +304,7 @@ const Footer = styled.div`
   }
 `;
 
-const ActionButton = styled(Button)<{ $actionTone: AdminModalActionTone }>`
+const ActionButton = styled(Button) <{ $actionTone: AdminModalActionTone }>`
   flex: 0 0 auto;
   min-width: 218px;
   min-height: 48px;

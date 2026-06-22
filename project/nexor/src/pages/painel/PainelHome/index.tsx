@@ -36,7 +36,7 @@ type BiteplanerOrder = {
   status: string;
 };
 
-const CLOSED_ORDER_STATUSES = new Set(['completed', 'cancelled']);
+const CLOSED_ORDER_STATUSES = new Set(['cancelled']);
 const EXCLUSIVE_OPERATIONAL_ROLES: ProductRoleKey[] = ['partner', 'dentist', 'lab'];
 
 const ROLE_ACTIONS: Array<{
@@ -206,7 +206,6 @@ export function PainelHome() {
         token
       );
       mergeProductRole(response.productRole);
-      await api.post('/v1/orders', {}, token);
       navigate('/painel/biteplaner/onboarding');
     } catch {
       setRoleError('Não foi possível iniciar o Biteplaner agora.');

@@ -148,6 +148,79 @@ describe('MinhaConta', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/alterações salvas/i);
   });
 
+
+  it('loads system flow email preferences in account settings', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'joao@nexor.dev',
+          fullName: 'Joao Silva',
+          roles: ['user'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [] })
+      .mockResolvedValueOnce({ deletionRequest: null })
+      .mockResolvedValueOnce({
+        preferences: {
+          profileId: 'profile-1',
+          systemFlowEmailEnabled: true,
+          updatedAt: '2026-06-20T12:00:00.000Z',
+        },
+      });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /preferências de comunicação/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/receber comunicações de fluxos do sistema por e-mail/i)).toBeChecked();
+    expect(mockApiGet).toHaveBeenCalledWith('/v1/account/communication-preferences', 'tok');
+  });
+
+  it('asks for confirmation before disabling system flow emails', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'joao@nexor.dev',
+          fullName: 'Joao Silva',
+          roles: ['user'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [] })
+      .mockResolvedValueOnce({ deletionRequest: null })
+      .mockResolvedValueOnce({
+        preferences: {
+          profileId: 'profile-1',
+          systemFlowEmailEnabled: true,
+          updatedAt: '2026-06-20T12:00:00.000Z',
+        },
+      });
+    mockApiPatch.mockResolvedValueOnce({
+      preferences: {
+        profileId: 'profile-1',
+        systemFlowEmailEnabled: false,
+        updatedAt: '2026-06-20T12:01:00.000Z',
+      },
+    });
+
+    renderPage();
+
+    const toggle = await screen.findByLabelText(/receber comunicações de fluxos do sistema por e-mail/i);
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole('dialog', { name: /desativar e-mails de fluxo/i })).toBeInTheDocument();
+    expect(mockApiPatch).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /desativar e-mails/i }));
+
+    await waitFor(() => {
+      expect(mockApiPatch).toHaveBeenCalledWith(
+        '/v1/account/communication-preferences',
+        { systemFlowEmailEnabled: false },
+        'tok'
+      );
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent(/preferências atualizadas/i);
+  });
+
   it('shows onboarding values as labels and edits a field only after clicking the pencil', async () => {
     const productRole = {
       id: 'role-dentist-1',
@@ -156,6 +229,8 @@ describe('MinhaConta', () => {
       status: 'active',
       metadata: {
         fullName: 'Dra. Eduarda',
+        cpf: '52998224725',
+        cnpj: '19131243000197',
         croNumber: 'CRO-SP 123456',
         professionalSummary: 'Atendimento esportivo.',
         practiceLocations: [
@@ -197,6 +272,8 @@ describe('MinhaConta', () => {
     });
 
     expect(await screen.findByText('Clínica Edu')).toBeInTheDocument();
+    expect(screen.getByText('529.982.247-25')).toBeInTheDocument();
+    expect(screen.getByText('19.131.243/0001-97')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Clínica Edu')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /editar nome da clínica/i }));

@@ -60,7 +60,7 @@ export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
 
   @media (max-width: 720px) {
     padding-bottom: ${({ $presentation }) =>
-    $presentation === 'flat' ? '108px' : 'calc(108px + 14px)'};
+    $presentation === 'flat' ? '40px' : '54px'};
   }
 `;
 
@@ -128,6 +128,14 @@ export const FieldShell = styled.label`
     font-size: 13px;
     font-weight: 500;
   }
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+
+    legend {
+      font-size: 12px;
+    }
+  }
 `;
 
 export const FieldAnchor = styled.div`
@@ -186,6 +194,7 @@ export const RadioQuestionSlot = styled.div`
 
     > fieldset > legend {
       min-height: auto;
+      font-size: 12px;
     }
 
     > fieldset > [role='alert'] {
@@ -268,7 +277,6 @@ export const Feedback = styled.span<{ $tone: 'success' | 'error' }>`
 export const FormActionButton = styled.button`
   ${biteplanerButtonSurfaceStyles}
   ${biteplanerButtonHoverStyles}
-  min-width: 130px;
 
   &[data-variant='secondary'] {
     border-color: #15803d;
@@ -306,16 +314,13 @@ export const FormActionButtonContent = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 22px;
-  flex: 0 1 auto;
-  inline-size: auto;
-  width: auto;
+  gap: 8px;
+  flex: 0 1 100%;
+  flex-wrap: wrap;
   max-width: 100%;
-  min-inline-size: 0;
   min-width: 0;
   line-height: inherit;
   white-space: normal;
-  text-wrap: wrap;
 
   svg {
     flex: 0 0 auto;
@@ -327,13 +332,10 @@ export const FormActionButtonContent = styled.span`
 export const FormActionButtonLabel = styled.span`
   display: inline-block;
   flex: 0 1 auto;
-  inline-size: auto;
-  width: auto;
   max-width: 100%;
-  min-inline-size: 0;
   min-width: 0;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 `;
 
 export const Actions = styled.div`
@@ -349,13 +351,12 @@ export const Actions = styled.div`
 
   @media (max-width: 760px) {
     align-items: center;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 14px;
 
     > button {
       flex: 1 1 calc(50% - 7px);
-      min-width: 130px;
-      max-width: 100%;
+      min-width: 0;
     }
 
     > ${Feedback} {
@@ -464,7 +465,7 @@ export const PendingRequiredCountBadge = styled.span`
   @media (max-width: 720px) {
     min-height: 28px;
     padding: 0 9px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   @media (max-width: 520px) {
@@ -603,7 +604,7 @@ export const PendingRequiredItemBadge = styled.span`
     justify-self: start;
     min-height: 22px;
     padding: 0 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
 `;
 
@@ -736,7 +737,7 @@ export const IntakeProgressShell = styled.div`
   }
 `;
 
-export const OnboardingProgressCard = styled.section`
+export const OnboardingProgressCard = styled.section<{ $expanded?: boolean }>`
   display: grid;
   gap: 24px;
   padding: 26px 32px;
@@ -749,32 +750,80 @@ export const OnboardingProgressCard = styled.section`
     position: fixed;
     left: 50%;
     right: auto;
-    bottom: 0;
+    bottom: max(8px, env(safe-area-inset-bottom));
     width: min(100vw, 430px);
     z-index: 86;
     transform: translateX(-50%);
     justify-items: center;
-    gap: 6px;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-    border-radius: 12px 12px 0 0;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+    gap: ${({ $expanded }) => ($expanded ? '14px' : '8px')};
+    min-height: ${({ $expanded }) => ($expanded ? '176px' : '58px')};
+    padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+    border-color: rgba(226, 232, 240, 0.96);
+    border-radius: 18px 18px 0 0;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: ${({ $expanded }) =>
+      $expanded ? '0 -18px 44px rgba(15, 23, 42, 0.16)' : '0 -10px 30px rgba(15, 23, 42, 0.12)'};
+    cursor: grab;
+    outline: none;
+    touch-action: none;
+    transition:
+      min-height 0.2s ease,
+      padding 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:focus-visible {
+      box-shadow:
+        0 -10px 30px rgba(15, 23, 42, 0.12),
+        0 0 0 3px rgba(0, 156, 74, 0.16);
+    }
   }
 `;
 
-export const ProgressCardTitle = styled.h3`
+export const OnboardingProgressHandle = styled.span`
+  display: none;
+
+  @media (max-width: 720px) {
+    display: block;
+    width: 42px;
+    height: 5px;
+    border-radius: 999px;
+    background: #cbd5e1;
+  }
+`;
+
+export const ProgressCardTitle = styled.h3<{ $expanded?: boolean }>`
+  display: grid;
+  grid-template-columns: minmax(48px, 1fr) auto minmax(48px, 1fr);
+  align-items: center;
+  gap: 20px;
+  width: 100%;
   margin: 0;
   color: #07152f;
   font-size: 18px;
   font-weight: 900;
   line-height: 1.25;
 
+  &::before,
+  &::after {
+    content: '';
+    height: 1px;
+    background: #dbe3ee;
+  }
+
   @media (max-width: 720px) {
-    font-size: 12px;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 900;
     line-height: 1.2;
+
+    &::before,
+    &::after {
+      opacity: ${({ $expanded }) => ($expanded ? 1 : 0)};
+    }
   }
 `;
 
-export const OnboardingProgressRail = styled.div`
+export const OnboardingProgressRail = styled.div<{ $expanded?: boolean }>`
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(104px, 1fr);
@@ -789,19 +838,31 @@ export const OnboardingProgressRail = styled.div`
   scrollbar-width: thin;
 
   @media (max-width: 720px) {
-    grid-auto-flow: row;
+    grid-auto-flow: column;
     grid-auto-columns: auto;
-    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: center;
     width: 100%;
     max-width: 100%;
-    gap: 6px;
-    overflow: visible;
+    gap: 0;
+    max-height: ${({ $expanded }) => ($expanded ? '104px' : '0')};
+    opacity: ${({ $expanded }) => ($expanded ? 1 : 0)};
+    overflow: hidden;
     padding-bottom: 0;
+    pointer-events: ${({ $expanded }) => ($expanded ? 'auto' : 'none')};
+    transition:
+      max-height 0.2s ease,
+      opacity 0.16s ease;
   }
+
 `;
 
-export const OnboardingProgressStep = styled.div<{ $active: boolean; $complete: boolean; $blocked: boolean }>`
+export const OnboardingProgressStep = styled.div<{
+  $active: boolean;
+  $complete: boolean;
+  $lineComplete: boolean;
+  $blocked: boolean;
+}>`
   position: relative;
   display: grid;
   justify-items: center;
@@ -824,7 +885,7 @@ export const OnboardingProgressStep = styled.div<{ $active: boolean; $complete: 
     left: -50%;
     height: 6px;
     border-radius: 999px;
-    background: ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#d7deea')};
+    background: ${({ $lineComplete }) => ($lineComplete ? '#009c4a' : '#d7deea')};
   }
 
   &:first-child::before {
@@ -835,10 +896,17 @@ export const OnboardingProgressStep = styled.div<{ $active: boolean; $complete: 
     justify-items: center;
     text-align: center;
     align-content: start;
-    gap: 3px;
+    gap: 12px;
+    min-height: 98px;
+    padding-top: 0;
 
     &::before {
-      display: none;
+      display: block;
+      top: 11px;
+      right: calc(50% + 12px);
+      left: calc(-50% + 12px);
+      height: 3px;
+      border-radius: 0;
     }
   }
 `;
@@ -859,10 +927,12 @@ export const OnboardingStepNumber = styled.span<{ $active: boolean; $complete: b
   font-weight: 900;
 
   @media (max-width: 720px) {
-    width: 22px;
-    height: 22px;
-    border-width: 1px;
-    font-size: 11px;
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+    background: ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#f8fafc')};
+    box-shadow: ${({ $active }) => ($active ? '0 6px 14px rgba(0, 156, 74, 0.2)' : '0 2px 8px rgba(15, 23, 42, 0.08)')};
+    font-size: 0.75rem;
   }
 `;
 
@@ -882,14 +952,29 @@ export const OnboardingStepText = styled.span`
 
   @media (max-width: 720px) {
     display: grid;
-    gap: 0;
-    max-width: 74px;
-    font-size: 10px;
-    line-height: 1.08;
+    align-content: start;
+    gap: 7px;
+    width: 100%;
+    max-width: 116px;
+    min-height: 52px;
+    color: ${({ theme }) => theme.colors.text};
+    font-size: 0.75rem;
+    line-height: 1.15;
+    text-transform: uppercase;
+
+    > span {
+      display: block;
+      min-height: 22px;
+    }
 
     small {
-      font-size: 9px;
-      line-height: 1.05;
+      display: block;
+      min-height: 22px;
+      color: #5f6878;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1.15;
+      text-transform: uppercase;
     }
   }
 `;
@@ -1443,6 +1528,10 @@ export const CheckboxGroup = styled.div`
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
     row-gap: 12px;
+
+    label {
+      font-size: 12px;
+    }
   }
 `;
 
@@ -1476,6 +1565,10 @@ export const CheckboxFieldShell = styled.fieldset`
   @media (max-width: 720px) {
     gap: 16px;
     padding: 20px 16px;
+
+    legend {
+      font-size: 12px;
+    }
   }
 `;
 
@@ -1484,6 +1577,11 @@ export const ConsentLabel = styled.span`
 
   strong {
     font-weight: 800;
+  }
+
+  @media (max-width: 720px) {
+    font-size: 12px;
+    line-height: 1.45;
   }
 `;
 
@@ -1659,6 +1757,10 @@ export const SurveyLabel = styled.span`
   > span {
     margin-left: 3px;
     color: inherit;
+  }
+
+  @media (max-width: 720px) {
+    font-size: 12px;
   }
 `;
 

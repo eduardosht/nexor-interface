@@ -2,13 +2,17 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  Download,
   Sparkles,
   Stethoscope,
 } from 'lucide-react';
-import type { ChangeEvent, ReactNode } from 'react';
+import { Button } from '@nexor/design-system';
+import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps, type ReactNode } from 'react';
 import {
   formatDate,
   getOrderDisplayId,
+  getOrderClinicalPracticeLocation,
+  type BiteplanerPurchaseConfiguration,
   type DemoOrderSummary,
   type DemoWorkflowForm,
   type ProductionRequestDraft,
@@ -31,6 +35,7 @@ type DentalAnamnesisRecordProps = {
   onboardingForm?: DemoWorkflowForm;
   draft: ProductionRequestDraft;
   onSummaryChange: (value: string) => void;
+  onDownloadAnamnesisPdf?: () => void;
 };
 
 type SectionConfig = {
@@ -167,6 +172,45 @@ function FieldItem({ label, value, important = false }: { label: string; value: 
       <S.DataLabel>{label}</S.DataLabel>
       {formatted === missingValue ? <S.EmptyValue>{formatted}</S.EmptyValue> : <S.DataValue>{formatted}</S.DataValue>}
     </S.DataField>
+  );
+}
+
+const BITEPLANER_MODEL_LABELS: Record<string, string> = {
+  impacto: 'Linha Impacto',
+  esportes: 'Linha Esportes',
+};
+
+const BITEPLANER_COLOR_LABELS: Record<string, string> = {
+  preto: 'Preto',
+  branco: 'Branco',
+};
+
+function formatBiteplanerModel(value: string) {
+  return BITEPLANER_MODEL_LABELS[value] ?? value;
+}
+
+function formatBiteplanerColor(value: string) {
+  return BITEPLANER_COLOR_LABELS[value] ?? value;
+}
+
+function formatPurchaseConfigurationSummary(configuration: BiteplanerPurchaseConfiguration | null | undefined) {
+  if (!configuration) {
+    return missingValue;
+  }
+
+  return `${formatBiteplanerModel(configuration.model)} / ${formatBiteplanerColor(configuration.color)} / ${configuration.quantity}`;
+}
+
+function isSamePurchaseConfiguration(
+  left: BiteplanerPurchaseConfiguration | null | undefined,
+  right: BiteplanerPurchaseConfiguration | null | undefined
+) {
+  return Boolean(
+    left &&
+    right &&
+    left.model === right.model &&
+    left.color === right.color &&
+    left.quantity === right.quantity
   );
 }
 
@@ -328,7 +372,88 @@ function buildPayloadSection(
   };
 }
 
-export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft, onSummaryChange }: DentalAnamnesisRecordProps) {
+type DebouncedTextAreaProps = Omit<ComponentProps<typeof S.TextArea>, 'onChange' | 'value'> & {
+  value: string;
+  onCommit: (value: string) => void;
+  delayMs?: number;
+};
+
+function DebouncedTextArea({ value, onCommit, onBlur, delayMs = 300, ...props }: DebouncedTextAreaProps) {
+  const [localValue, setLocalValue] = useState(value);
+  const localValueRef = useRef(localValue);
+  const committedValueRef = useRef(value);
+  const onCommitRef = useRef(onCommit);
+
+  useEffect(() => {
+    onCommitRef.current = onCommit;
+  }, [onCommit]);
+
+  useEffect(() => {
+    localValueRef.current = localValue;
+  }, [localValue]);
+
+  useEffect(() => {
+    if (value === committedValueRef.current) {
+      return;
+    }
+
+    committedValueRef.current = value;
+    setLocalValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (localValue === committedValueRef.current) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      committedValueRef.current = localValue;
+      onCommitRef.current(localValue);
+    }, delayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [delayMs, localValue]);
+
+  useEffect(
+    () => () => {
+      if (localValueRef.current !== committedValueRef.current) {
+        committedValueRef.current = localValueRef.current;
+        onCommitRef.current(localValueRef.current);
+      }
+    },
+    []
+  );
+
+  function commitLocalValue() {
+    if (localValue === committedValueRef.current) {
+      return;
+    }
+
+    committedValueRef.current = localValue;
+    onCommitRef.current(localValue);
+  }
+
+  return (
+    <S.TextArea
+      {...props}
+      value={localValue}
+      onBlur={(event) => {
+        onBlur?.(event);
+        commitLocalValue();
+      }}
+      onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setLocalValue(event.target.value)}
+    />
+  );
+}
+
+export function DentalAnamnesisRecord({
+  order,
+  intakeForm,
+  onboardingForm,
+  draft,
+  onSummaryChange,
+  onDownloadAnamnesisPdf,
+}: DentalAnamnesisRecordProps) {
   const payloadCustomer = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'customer');
   const onboardingCustomer = buildCustomerProfileFallback(
     getWorkflowFormPayloadSection(onboardingForm?.payload, 'customer_new_user_onboarding', 'root')
@@ -351,6 +476,14 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
     : order.customer?.full_name ?? 'Paciente não identificado';
   const appointmentDate = dentist.consultationDate ?? intakeForm?.dentistSubmittedAt ?? intakeForm?.submittedAt ?? order.created_at;
   const hasDentistReview = Object.keys(dentist).length > 0;
+  const purchasedConfiguration = draft.purchaseConfiguration ?? order.purchaseConfiguration ?? null;
+  const recommendedConfiguration = order.dentistRecommendedPurchaseConfiguration ?? null;
+  const visiblePurchaseConfiguration = purchasedConfiguration ?? recommendedConfiguration;
+  const purchaseConfigurationChanged =
+    purchasedConfiguration &&
+    recommendedConfiguration &&
+    !isSamePurchaseConfiguration(purchasedConfiguration, recommendedConfiguration);
+
   const summaryCompletionValues = SHARED_INITIAL_EVALUATION_INTAKE.sections
     .filter((section) => ANAMNESIS_SECTION_KEYS.has(section.key))
     .flatMap((section) =>
@@ -371,14 +504,14 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
       const extraItems =
         section.key === 'initial-data'
           ? [
-              <FieldItem key="patient-full-name" label="Nome completo do paciente" value={patientName} important />,
-              !hasFilledValue(customer.phone) && hasFilledValue(order.customer?.phone) ? (
-                <FieldItem key="order-phone" label="Telefone" value={order.customer?.phone} />
-              ) : null,
-              !hasFilledValue(customer.email) && hasFilledValue(order.customer?.email) ? (
-                <FieldItem key="order-email" label="Email" value={order.customer?.email} />
-              ) : null,
-            ].filter(Boolean)
+            <FieldItem key="patient-full-name" label="Nome completo do paciente" value={patientName} important />,
+            !hasFilledValue(customer.phone) && hasFilledValue(order.customer?.phone) ? (
+              <FieldItem key="order-phone" label="Telefone" value={order.customer?.phone} />
+            ) : null,
+            !hasFilledValue(customer.email) && hasFilledValue(order.customer?.email) ? (
+              <FieldItem key="order-email" label="Email" value={order.customer?.email} />
+            ) : null,
+          ].filter(Boolean)
           : [];
 
       return buildPayloadSection(section, customer, dentist, extraItems);
@@ -387,6 +520,54 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
 
   const sections: SectionConfig[] = [
     ...payloadSections,
+    ...(visiblePurchaseConfiguration
+      ? [
+        {
+          id: 'pedido-biteplaner',
+          title: 'Pedido biteplaner',
+          description:
+            purchasedConfiguration
+              ? 'Configuração confirmada pelo cliente na compra para seguir para produção.'
+              : 'Configuração recomendada pelo dentista durante a consulta para pré-preencher a compra do cliente.',
+          status: purchasedConfiguration ? 'Compra confirmada' : 'Recomendado',
+          content: (
+            <S.Grid>
+              <FieldItem
+                label="Modelo"
+                value={formatBiteplanerModel(visiblePurchaseConfiguration.model)}
+                important
+              />
+              <FieldItem
+                label="Cor"
+                value={formatBiteplanerColor(visiblePurchaseConfiguration.color)}
+                important
+              />
+              <FieldItem
+                label="Quantidade"
+                value={visiblePurchaseConfiguration.quantity}
+                important
+              />
+              <FieldItem
+                label="Origem"
+                value={purchasedConfiguration ? 'Confirmado pelo cliente na compra' : 'Recomendado pelo dentista na consulta'}
+              />
+              {purchasedConfiguration && recommendedConfiguration ? (
+                <FieldItem
+                  label="Comparação com a consulta"
+                  value={purchaseConfigurationChanged ? 'Cliente alterou antes do pagamento' : 'Cliente manteve o combinado'}
+                />
+              ) : null}
+              {purchasedConfiguration && recommendedConfiguration && purchaseConfigurationChanged ? (
+                <FieldItem
+                  label="Recomendado na consulta"
+                  value={formatPurchaseConfigurationSummary(recommendedConfiguration)}
+                />
+              ) : null}
+            </S.Grid>
+          ),
+        },
+      ]
+      : []),
     {
       id: 'rastreabilidade',
       title: 'Rastreabilidade e guarda',
@@ -408,16 +589,18 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
       description: 'Campo amplo para registrar anamnese final e notas essenciais ao prontuario.',
       status: 'Profissional',
       content: (
-        <S.TextArea
+        <DebouncedTextArea
           aria-label="Resumo da avaliação inicial / anamnese"
           maxLength={1200}
           placeholder="Registre apenas achados clínicos necessários para avaliação, aptidão e produção. Não inclua dados de terceiros."
           value={draft.anamnesisSummary}
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onSummaryChange(event.target.value)}
+          onCommit={onSummaryChange}
         />
       ),
     },
   ];
+  const observationSection = sections.find((section) => section.id === 'observacoes');
+  const navigableSections = sections.filter((section) => section.id !== 'observacoes');
 
   return (
     <S.Shell data-testid="dental-anamnesis-record">
@@ -428,7 +611,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
               <Stethoscope size={24} />
             </S.BrandMark>
             <S.TitleGroup>
-              <S.ClinicName>{order.practice_location?.name ?? 'Clínica Biteplaner'}</S.ClinicName>
+              <S.ClinicName>{getOrderClinicalPracticeLocation(order)?.name ?? 'Clínica Biteplaner'}</S.ClinicName>
               <S.Title>Ficha de anamnese odontológica</S.Title>
               <S.Subtitle>
                 Documento clínico digital para revisão, complemento profissional e geração do registro final da ordem
@@ -445,7 +628,6 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
               <CalendarDays size={14} />
               {formatClinicalDate(appointmentDate)}
             </S.Badge>
-            <S.Badge $tone="neutral">Auto-save visual</S.Badge>
           </S.HeaderMeta>
         </S.HeaderTop>
 
@@ -467,16 +649,8 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
               <S.PatientHint>{order.customer?.email ?? 'Email não informado'} · {order.customer?.phone ?? 'Telefone não informado'}</S.PatientHint>
             </div>
             <S.QuickItem>
-              <S.QuickLabel>Tipo</S.QuickLabel>
-              <S.QuickValue>Paciente Biteplaner</S.QuickValue>
-            </S.QuickItem>
-            <S.QuickItem>
               <S.QuickLabel>Status clínico</S.QuickLabel>
               <S.QuickValue>{hasDentistReview ? 'Revisado' : 'Aguardando revisão'}</S.QuickValue>
-            </S.QuickItem>
-            <S.QuickItem>
-              <S.QuickLabel>Ordem</S.QuickLabel>
-              <S.QuickValue>{getOrderDisplayId(order)}</S.QuickValue>
             </S.QuickItem>
           </S.PatientStrip>
         </S.StickySummary>
@@ -484,7 +658,7 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
 
       <S.Body>
         <S.SideNav aria-label="Navegacao da ficha de anamnese">
-          {sections.map((section) => (
+          {navigableSections.map((section) => (
             <S.NavItem key={section.id} href={`#anamnese-${section.id}`}>
               <Sparkles size={13} />
               {section.title}
@@ -493,22 +667,48 @@ export function DentalAnamnesisRecord({ order, intakeForm, onboardingForm, draft
         </S.SideNav>
 
         <S.Sections>
-          {sections.map((section, index) => (
-            <S.Card key={section.id} id={`anamnese-${section.id}`}>
-              <S.CardSummary>
+          {observationSection ? (
+            <S.VisibleNotesCard id={`anamnese-${observationSection.id}`}>
+              <S.VisibleNotesHeader>
                 <div>
-                  <S.SectionTitle>{index + 1}. {section.title}</S.SectionTitle>
-                  <S.SectionDescription>{section.description}</S.SectionDescription>
+                  <S.SectionTitle>{observationSection.title}</S.SectionTitle>
+                  <S.SectionDescription>{observationSection.description}</S.SectionDescription>
                 </div>
-                <S.CardSummaryMeta>
-                  <S.Badge>{section.status}</S.Badge>
-                  <S.ExpandIcon aria-hidden="true">
-                    <ChevronDown size={18} />
-                  </S.ExpandIcon>
-                </S.CardSummaryMeta>
-              </S.CardSummary>
-              <S.CardContent>{section.content}</S.CardContent>
-            </S.Card>
+                <S.Badge $tone="warning">{observationSection.status}</S.Badge>
+              </S.VisibleNotesHeader>
+              <S.CardContent>{observationSection.content}</S.CardContent>
+            </S.VisibleNotesCard>
+          ) : null}
+
+          {navigableSections.map((section, index) => (
+            <S.SectionGroup key={section.id}>
+              <S.Card id={`anamnese-${section.id}`}>
+                <S.CardSummary>
+                  <div>
+                    <S.SectionTitle>{index + 1}. {section.title}</S.SectionTitle>
+                    <S.SectionDescription>{section.description}</S.SectionDescription>
+                  </div>
+                  <S.CardSummaryMeta>
+                    <S.Badge>{section.status}</S.Badge>
+                    <S.ExpandIcon aria-hidden="true">
+                      <ChevronDown size={18} />
+                    </S.ExpandIcon>
+                  </S.CardSummaryMeta>
+                </S.CardSummary>
+                <S.CardContent>{section.content}</S.CardContent>
+              </S.Card>
+              {section.id === 'rastreabilidade' && onDownloadAnamnesisPdf ? (
+                <S.DownloadActionRow>
+                  <Button
+                    type="button"
+                    leadingIcon={<Download size={16} aria-hidden="true" />}
+                    onClick={onDownloadAnamnesisPdf}
+                  >
+                    Baixar ficha de anamnese
+                  </Button>
+                </S.DownloadActionRow>
+              ) : null}
+            </S.SectionGroup>
           ))}
         </S.Sections>
       </S.Body>

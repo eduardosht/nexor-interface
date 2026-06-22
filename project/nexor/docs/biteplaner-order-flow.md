@@ -32,6 +32,10 @@ Este documento descreve a jornada operacional da ordem Biteplaner do ponto de vi
    - `awaiting_adaptation`
    - `follow_up`
    - `completed`
+7. **Check-ups**
+   - Etapa visual final exibida apos `completed`.
+   - Check-up 01: liberado 15 dias apos a consulta de recebimento/adaptacao concluida.
+   - Check-up 02: liberado 30 dias apos o Check-up 01 ter acontecido e estar concluido no sistema.
 
 ## Regra de avanço após pagamento
 
@@ -79,12 +83,38 @@ Fluxo esperado:
 12. `follow_up`
 13. `completed`
 
-Variações relevantes:
+Depois de `completed`, a ordem principal nao volta para producao. O acompanhamento clinico passa a ser representado por consultas do tipo `follow_up`, com `purpose`/`metadata.followUpKind`:
 
-- `ineligible_reassessment`: cliente não está apto neste momento e pode solicitar nova avaliação.
-- `treatment_required`: decisão clínica indica necessidade de tratamento antes da continuidade.
-- `dentist_adjustment_required`: laboratório ou operação precisa de ajuste antes de seguir.
-- `cancelled`: jornada interrompida antes da conclusão.
+- `return_15_days`: Check-up de 15 dias.
+- `return_30_days`: Check-up de 30 dias.
+- `on_demand`: retorno avulso iniciado por fluxos futuros.
+
+O cliente agenda esses check-ups pela jornada. O sistema pode sugerir o mesmo dentista/clinica da ordem original, mas o cliente tambem pode escolher uma nova clinica licenciada quando o fluxo de selecao estiver disponivel.
+
+## Lembretes de check-up
+
+Os lembretes de check-up usam a fila genérica `platform_email_events`, documentada em `docs/biteplaner-checkup-email-reminders.md`.
+
+Regra operacional:
+
+- Quando o Check-up 01 fica disponível, o sistema cria uma notificação interna e agenda até 3 lembretes de e-mail para o cliente.
+- Quando o Check-up 01 está concluído e se passam 30 dias da data em que ele aconteceu, o Check-up 02 fica disponível e recebe a mesma política.
+- A notificação interna é criada somente na liberação do check-up.
+- Os e-mails seguem a régua D0, D+7 e D+14 se o check-up ainda não foi agendado.
+- Depois que o cliente agenda o check-up, e-mails futuros daquele retorno viram `skipped` com motivo `appointment_scheduled`.
+- Se o agendamento for cancelado, lembretes `skipped` ainda válidos podem voltar para `scheduled`, sem ultrapassar o limite de 3 lembretes.
+- Se o cliente desativar `system_flow_email_enabled`, eventos futuros ficam `skipped` com motivo `communication_preference_disabled`.
+- O admin visualiza a agenda, cancela envios futuros com motivo, reenvia falhas e executa o job manualmente, mas não altera a preferência de comunicação do cliente.
+
+Desenho do job:
+
+1. Supabase Cron chama uma Edge Function diariamente às 08:00 em `America/Sao_Paulo`.
+2. A Edge Function chama `POST /v1/internal/jobs/platform-emails/daily` no backend com `X-Internal-Job-Key`.
+3. O backend reconcilia eventos futuros, aplica preferências de comunicação, pula eventos inelegíveis e processa eventos do dia.
+4. O job respeita `PLATFORM_EMAIL_DAILY_SEND_LIMIT`.
+5. Eventos atrasados por até 3 dias ainda podem ser enviados; após isso viram `skipped` por `missed_window`.
+6. A execução usa lock em `platform_job_runs` por 30 minutos para evitar processamento simultâneo.
+7. O Resend envia o e-mail e o sistema salva `provider_message_id` quando disponível.
 
 ## Remoção de conta
 

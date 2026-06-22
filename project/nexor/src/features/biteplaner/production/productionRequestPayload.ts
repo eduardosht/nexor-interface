@@ -34,6 +34,32 @@ export function getProductionPayloadFileRef(
   return candidate as ExternalFileReference;
 }
 
+export function getProductionPayloadPurchaseConfiguration(payload: Record<string, unknown>) {
+  const value = payload.purchaseConfiguration;
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    candidate.productKey !== 'biteplaner' ||
+    typeof candidate.model !== 'string' ||
+    typeof candidate.color !== 'string' ||
+    typeof candidate.quantity !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    productKey: 'biteplaner' as const,
+    model: candidate.model,
+    color: candidate.color,
+    quantity: candidate.quantity,
+  };
+}
+
 export function mapProductionRequestPayload(payload: Record<string, unknown>): ProductionRequestDraft {
   const selectedLabId = payload.selectedLabId;
 
@@ -48,6 +74,7 @@ export function mapProductionRequestPayload(payload: Record<string, unknown>): P
     prescriptionFileRef: getProductionPayloadFileRef(payload, 'prescriptionFileRef'),
     lgpdConfirmed: getProductionPayloadBoolean(payload, 'lgpdConfirmed'),
     selectedLabId: typeof selectedLabId === 'string' && selectedLabId.trim() ? selectedLabId : null,
+    purchaseConfiguration: getProductionPayloadPurchaseConfiguration(payload),
   };
 }
 

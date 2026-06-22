@@ -18,23 +18,15 @@ export const LoadingStack = styled.div`
 
 export const ProductionCard = styled.section`
   display: grid;
-  gap: 28px;
-  padding: 38px 34px 30px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 14px;
-  background:
-    radial-gradient(circle at 88% 4%, rgba(34, 197, 94, 0.12), transparent 26%),
-    linear-gradient(180deg, rgba(248, 252, 255, 0.96) 0%, rgba(255, 255, 255, 0) 46%),
-    ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
+  gap: 24px;
+  min-width: 0;
 
   @media (max-width: 920px) {
-    gap: 22px;
-    padding: 24px;
+    gap: 20px;
   }
 
   @media (max-width: 560px) {
-    padding: 18px;
+    gap: 16px;
   }
 `;
 
@@ -42,10 +34,14 @@ export const ProductionHero = styled.header`
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 460px);
   align-items: start;
-  gap: 28px;
+  gap: 20px;
 
   @media (max-width: 980px) {
     grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 560px) {
+    gap: 14px;
   }
 `;
 
@@ -88,33 +84,29 @@ export const ProductionLead = styled.p`
 
 export const WizardShell = styled.section`
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  min-width: 0;
 `;
 
 export const WizardContent = styled.div`
   display: grid;
-  gap: 18px;
+  gap: 16px;
   padding: 0;
   background: transparent;
 
   @media (max-width: 1280px) {
     gap: 14px;
-    padding: 16px;
   }
 `;
 
 export const StepContentHeader = styled.div`
   display: grid;
-  gap: 10px;
-  padding: 26px 32px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  gap: 8px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.26);
 
   @media (max-width: 720px) {
-    padding: 20px 16px;
-    border-radius: 14px;
+    padding-bottom: 12px;
   }
 `;
 
@@ -147,7 +139,7 @@ export const StepContentDescription = styled.p`
 
 export const FormPanel = styled.section`
   display: grid;
-  gap: 20px;
+  gap: 16px;
   min-width: 0;
   padding: 0;
   background: transparent;
@@ -183,6 +175,37 @@ export const NoticeText = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
+export const PurchaseConfigurationBox = styled.div`
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(21, 128, 61, 0.22);
+  background: ${({ theme }) => theme.colors.greenGhost};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+export const PurchaseConfigurationTitle = styled.strong`
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+`;
+
+export const PurchaseConfigurationList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const PurchaseConfigurationHint = styled.span`
+  font-size: 13px;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
 export const RetentionConsentLabel = styled.span`
   font-weight: 400;
 
@@ -202,10 +225,34 @@ export const SecondaryActions = styled.div`
   display: flex;
   flex-wrap: nowrap;
   gap: 10px;
+  min-width: 0;
   ${biteplanerFormButtonStyles}
 
+  && button {
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
+
+    [data-button-content] {
+      flex: 0 1 100%;
+      flex-wrap: wrap;
+    }
+
+    [data-button-label] {
+      flex: 0 1 auto;
+      max-width: 100%;
+      min-width: 0;
+    }
+  }
+
   @media (max-width: 860px) {
+    flex: 1 1 0;
     justify-content: space-between;
+
+    && button {
+      width: 100%;
+      padding-inline: 10px;
+    }
   }
 `;
 
@@ -216,20 +263,64 @@ export const StepActions = styled.div`
   flex-wrap: nowrap;
 
   @media (max-width: 860px) {
-    flex-direction: column;
     align-items: stretch;
+    gap: 10px;
+  }
+
+  @media (max-width: 420px) {
+    gap: 8px;
+
+    ${SecondaryActions} {
+      min-width: 0;
+    }
+
+    && button {
+      font-size: 11px;
+      padding-inline: 8px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    && button svg {
+      display: none;
+    }
+  }
+`;
+
+export const DeepLinkStepActions = styled(StepActions)`
+  @media (max-width: 860px) {
+    justify-content: flex-end;
+  }
+
+  ${SecondaryActions} {
+    flex: 0 1 auto;
+  }
+
+  @media (max-width: 520px) {
+    > span {
+      display: none;
+    }
+
+    ${SecondaryActions} {
+      flex: 1 1 100%;
+    }
+
+    && button {
+      width: 100%;
+    }
   }
 `;
 
 export const SearchActionSlot = styled.div`
   display: flex;
   align-items: end;
+  min-width: 0;
   ${biteplanerFormButtonStyles}
 
   > button {
-    width: max-content;
+    width: fit-content;
     max-width: 100%;
-    white-space: nowrap;
+    min-width: 0;
   }
 `;
 
@@ -267,20 +358,28 @@ export const MapCard = styled.section`
   z-index: 0;
   display: grid;
   gap: 14px;
-  padding: 18px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+
+  @media (max-width: 560px) {
+    padding: 12px;
+  }
 `;
 
 export const SideCard = styled.section`
   display: grid;
   gap: 16px;
   align-content: start;
-  padding: 18px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
+
+  @media (max-width: 560px) {
+    padding: 12px;
+  }
 `;
 
 export const SectionTitle = styled.h2`
@@ -402,10 +501,8 @@ export const DetailValue = styled.dd`
 `;
 
 export const GuidanceCard = styled.div`
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
+  padding: 12px 0 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
   font-size: 14px;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textPrimary};

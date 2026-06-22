@@ -6,6 +6,7 @@ import {
   getAuthPayload,
   listAdminProfiles,
   listAccountNotifications,
+  markAllAccountNotificationsRead,
   markAccountNotificationRead,
   markAccountNotificationUnread,
   updateAdminProfileStatus
@@ -65,6 +66,9 @@ export function authHandlers(server: Server) {
   }));
   server.patch('/v1/account/notifications/:notificationId/read', withDemoErrors((_schema, request) =>
     markAccountNotificationRead(request.params.notificationId, { requestHeaders: request.requestHeaders })
+  ));
+  server.patch('/v1/account/notifications/read-all', withDemoErrors((_schema, request) =>
+    markAllAccountNotificationsRead({ requestHeaders: request.requestHeaders })
   ));
   server.patch('/v1/account/notifications/:notificationId/unread', withDemoErrors((_schema, request) =>
     markAccountNotificationUnread(request.params.notificationId, { requestHeaders: request.requestHeaders })

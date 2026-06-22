@@ -144,8 +144,6 @@ describe('PainelHome', () => {
     mockApiPost
       .mockResolvedValueOnce({
         productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
-      })
-      .mockResolvedValueOnce({
         order: { id: 'order-1', status: 'registration_started' },
       });
     renderPage();
@@ -159,7 +157,7 @@ describe('PainelHome', () => {
         {},
         'tok'
       );
-      expect(mockApiPost).toHaveBeenNthCalledWith(2, '/v1/orders', {}, 'tok');
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
     });
   });
@@ -168,8 +166,6 @@ describe('PainelHome', () => {
     mockApiPost
       .mockResolvedValueOnce({
         productRole: { productKey: 'biteplaner', role: 'customer', status: 'active' },
-      })
-      .mockResolvedValueOnce({
         order: { id: 'order-1', status: 'registration_started' },
       });
     renderPage(
@@ -192,7 +188,7 @@ describe('PainelHome', () => {
         {},
         'tok'
       );
-      expect(mockApiPost).toHaveBeenNthCalledWith(2, '/v1/orders', {}, 'tok');
+      expect(mockApiPost).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/onboarding');
     });
   });
@@ -210,6 +206,18 @@ describe('PainelHome', () => {
     expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
   });
 
+  it('keeps order tracking available for completed orders in check-up stage', async () => {
+    renderPage(
+      {},
+      {
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+        orders: [{ id: 'BP-CHECKUP-001', status: 'completed' }],
+      }
+    );
+
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /acompanhar sua ordem/i }).length).toBeGreaterThan(0));
+    expect(screen.queryByRole('button', { name: /adquirir biteplaner/i })).not.toBeInTheDocument();
+  });
   it('sends professional role requests to the dedicated registration page', async () => {
     renderPage();
 

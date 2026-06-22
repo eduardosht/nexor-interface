@@ -132,13 +132,7 @@ export const OnboardingHeroIcon = styled.span`
   color: #15803d;
 
   @media (max-width: 720px) {
-    width: 64px;
-    height: 64px;
-
-    svg {
-      width: 34px;
-      height: 34px;
-    }
+    display: none;
   }
 `;
 
@@ -320,6 +314,7 @@ export const OnboardingInfoCallout = styled.div`
   @media (max-width: 640px) {
     align-items: flex-start;
     padding: 16px;
+    font-size: 0.7rem;
   }
 `;
 
@@ -530,6 +525,7 @@ export const PrivacyGateLabel = styled.label`
   grid-template-columns: auto 1fr;
   gap: 22px;
   align-items: flex-start;
+  font-size: 14px;
   cursor: pointer;
 
   input {

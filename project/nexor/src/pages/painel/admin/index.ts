@@ -7,3 +7,4 @@ export { AdminProductGate } from './AdminProductGate';
 export { AdminSystemSettings } from './AdminSystemSettings';
 export { AdminUsers } from './AdminUsers';
 export * from './data';
+export { AdminCheckupEmails } from './AdminCheckupEmails';
