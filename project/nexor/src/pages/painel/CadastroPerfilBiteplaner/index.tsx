@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from '
 import { Building2, ChevronRight, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
-  Button,
+  AdminFormButton,
   CheckboxField,
   Field,
   RadioQuestionGroup,
@@ -1222,12 +1222,12 @@ export function CadastroPerfilBiteplaner() {
                 Seus dados estão protegidos e serão utilizados conforme nossa <strong>Política de Privacidade</strong>.
               </span>
             </S.ActionPrivacyNote>
-            <Button type="button" variant="secondary" onClick={() => window.history.back()}>
+            <AdminFormButton type="button" variant="secondary" onClick={() => window.history.back()}>
               Cancelar
-            </Button>
-            <Button type="submit" disabled={!isValid || submitting} trailingIcon={<ChevronRight size={16} aria-hidden="true" />}>
+            </AdminFormButton>
+            <AdminFormButton type="submit" disabled={!isValid || submitting} trailingIcon={<ChevronRight size={16} aria-hidden="true" />}>
               {submitting ? 'Enviando...' : 'Enviar solicitação'}
-            </Button>
+            </AdminFormButton>
           </S.Actions>
         </S.Form>
       </S.ProfileShell>

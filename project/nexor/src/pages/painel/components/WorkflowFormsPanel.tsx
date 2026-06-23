@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type ComponentPropsWithoutRef,
   type FormEvent,
   type KeyboardEvent,
   type PointerEvent,
@@ -16,6 +15,7 @@ import { ArrowLeft, ChevronRight, ClipboardPlus, Database, Info, PencilLine, Sen
 import { SkeletonCard } from '../../../components/Skeleton';
 import * as S from './WorkflowFormsPanel.styles';
 import {
+  AdminFormButton,
   CheckboxField,
   Field,
   RadioQuestionGroup,
@@ -171,39 +171,6 @@ const BITEPLANER_ORDER_FIELD_KEYS = new Set([
   'biteplanerColor',
   'biteplanerQuantity',
 ]);
-
-type WorkflowActionButtonProps = ComponentPropsWithoutRef<'button'> & {
-  variant?: 'primary' | 'secondary';
-  leadingIcon?: ReactNode;
-  trailingIcon?: ReactNode;
-  loading?: boolean;
-};
-
-function WorkflowActionButton({
-  variant = 'primary',
-  type = 'button',
-  leadingIcon,
-  trailingIcon,
-  loading = false,
-  disabled,
-  children,
-  ...rest
-}: WorkflowActionButtonProps) {
-  return (
-    <S.FormActionButton
-      data-variant={variant}
-      type={type}
-      disabled={disabled || loading}
-      {...rest}
-    >
-      <S.FormActionButtonContent>
-        {leadingIcon}
-        <S.FormActionButtonLabel>{loading ? 'Carregando...' : children}</S.FormActionButtonLabel>
-        {trailingIcon}
-      </S.FormActionButtonContent>
-    </S.FormActionButton>
-  );
-}
 
 const STATUS_PRESENTATION: Record<DemoWorkflowForm['status'], { label: string; color: string }> = {
   pending: { label: 'Pendente', color: '#D18A00' },
@@ -2349,15 +2316,14 @@ function FormItem({
                       </S.PrivacyConsentArea>
 
                       <S.PrivacyActions>
-                        <WorkflowActionButton
+                        <AdminFormButton
                           type="button"
                           disabled={activeSectionHasMissingRequiredFields || Boolean(payloadBlockerMessage)}
                           title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                           onClick={handleNextSection}
-                          trailingIcon={nextActionIcon}
                         >
                           Continuar
-                        </WorkflowActionButton>
+                        </AdminFormButton>
                         {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                       </S.PrivacyActions>
                       <WorkflowFormsPendingRequiredLegend
@@ -2458,17 +2424,17 @@ function FormItem({
                       <form onSubmit={handleSubmit}>
                         <S.Actions>
                           {canGoBackToPreviousSharedSection ? (
-                            <WorkflowActionButton
+                            <AdminFormButton
                               type="button"
                               variant="secondary"
                               leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                               onClick={() => goToSection(activeSharedSectionIndex - 1)}
                             >
                               Voltar etapa
-                            </WorkflowActionButton>
+                            </AdminFormButton>
                           ) : null}
                           {isLastSharedSection || section.key === submitSectionKey ? (
-                            <WorkflowActionButton
+                            <AdminFormButton
                               type="submit"
                               disabled={submitting || submitIsMissingRequiredFields || Boolean(payloadBlockerMessage)}
                               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
@@ -2479,16 +2445,16 @@ function FormItem({
                                 : actorRole === 'dentist'
                                   ? 'Salvar complemento do dentista'
                                   : 'Enviar formulário'}
-                            </WorkflowActionButton>
+                            </AdminFormButton>
                           ) : payloadBlockerMessage ? null : (
-                            <WorkflowActionButton
+                            <AdminFormButton
                               type="button"
                               disabled={activeSectionHasMissingRequiredFields}
                               title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                               onClick={handleNextSection}
                             >
                               Próxima etapa
-                            </WorkflowActionButton>
+                            </AdminFormButton>
                           )}
                           {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                         </S.Actions>
@@ -2500,33 +2466,33 @@ function FormItem({
                     ) : (
                       <S.Actions>
                         {canEditSubmittedSharedIntake && !isEditingSubmitted ? (
-                          <WorkflowActionButton
+                          <AdminFormButton
                             type="button"
                             variant="secondary"
                             leadingIcon={<PencilLine size={16} aria-hidden="true" />}
                             onClick={handleEditSubmittedSharedIntake}
                           >
                             Editar
-                          </WorkflowActionButton>
+                          </AdminFormButton>
                         ) : canGoBackToPreviousSharedSection ? (
-                          <WorkflowActionButton
+                          <AdminFormButton
                             type="button"
                             variant="secondary"
                             leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                             onClick={() => goToSection(activeSharedSectionIndex - 1)}
                           >
                             Voltar etapa
-                          </WorkflowActionButton>
+                          </AdminFormButton>
                         ) : null}
                         {!isLastSharedSection ? (
-                          <WorkflowActionButton
+                          <AdminFormButton
                             type="button"
                             disabled={activeSectionHasMissingRequiredFields}
                             title={activeSectionHasMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                             onClick={handleNextSection}
                           >
                             Próxima etapa
-                          </WorkflowActionButton>
+                          </AdminFormButton>
                         ) : null}
                       </S.Actions>
                     )}
@@ -2559,7 +2525,7 @@ function FormItem({
                   : 'Disponível para registrar esta interação da jornada.'}
               </S.Meta>
             </div>
-            <WorkflowActionButton
+            <AdminFormButton
               type="button"
               trailingIcon={nextActionIcon}
               onClick={() => {
@@ -2570,7 +2536,7 @@ function FormItem({
               aria-label={hasRequiredReviewFields ? 'Responder survey obrigatório' : 'Responder survey'}
             >
               {hasRequiredReviewFields ? 'Responder survey obrigatório' : 'Responder survey'}
-            </WorkflowActionButton>
+            </AdminFormButton>
           </S.SurveyPrompt>
           {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
           {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
@@ -2669,7 +2635,7 @@ function FormItem({
                   ))}
                   {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
                   <S.ModalActions>
-                    <WorkflowActionButton
+                    <AdminFormButton
                       type="button"
                       variant="secondary"
                       leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
@@ -2677,15 +2643,15 @@ function FormItem({
                       disabled={submitting}
                     >
                       Responder depois
-                    </WorkflowActionButton>
-                    <WorkflowActionButton
+                    </AdminFormButton>
+                    <AdminFormButton
                       type="submit"
                       disabled={submitting || submitIsMissingRequiredFields}
                       title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
                       trailingIcon={submitActionIcon}
                     >
                       {submitting ? 'Enviando...' : 'Enviar survey'}
-                    </WorkflowActionButton>
+                    </AdminFormButton>
                   </S.ModalActions>
                 </S.ModalForm>
               </S.Modal>
@@ -2721,14 +2687,14 @@ function FormItem({
             })}
           </S.Fields>
           <S.Actions>
-            <WorkflowActionButton
+            <AdminFormButton
               type="submit"
               disabled={submitting || submitIsMissingRequiredFields}
               title={submitIsMissingRequiredFields ? REQUIRED_FIELDS_TOOLTIP : undefined}
               trailingIcon={submitActionIcon}
             >
               {submitting ? 'Enviando...' : 'Enviar formulário'}
-            </WorkflowActionButton>
+            </AdminFormButton>
             {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
             {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
           </S.Actions>

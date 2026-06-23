@@ -57,6 +57,10 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
   font-weight: 500;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`

@@ -18,8 +18,7 @@ export const Section = styled.section`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    padding-top: 80px;
-    padding-bottom: 80px;
+    padding: 40px 0;
     gap: 32px;
   }
 `;
@@ -48,8 +47,6 @@ export const ContactLinks = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: 40px;
-  padding-top: 32px;
   border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
 `;
 

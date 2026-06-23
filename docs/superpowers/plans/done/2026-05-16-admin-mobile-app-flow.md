@@ -712,7 +712,7 @@ it('contains responsive CSS that removes the desktop sidebar from mobile flow', 
 
   expect(source).toContain('@media (max-width: 768px)');
   expect(source).toContain('display: none');
-  expect(source).toContain('padding-bottom: calc(76px + env(safe-area-inset-bottom))');
+  expect(source).toContain('padding-bottom: calc(32px + env(safe-area-inset-bottom))');
 });
 ```
 
@@ -981,7 +981,7 @@ export const ContentInner = styled(motion.main)`
   /* keep existing declarations */
 
   @media (max-width: 768px) {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 `;
 ```
@@ -1449,7 +1449,7 @@ export const MobileSettingsWrap = styled.section`
 
   @media (max-width: 768px) {
     display: block;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 `;
 ```
@@ -1705,7 +1705,7 @@ export const MobileSettingsWrap = styled.section`
 
   @media (max-width: 768px) {
     display: block;
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 `;
 ```

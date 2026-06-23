@@ -644,11 +644,13 @@ export function getEffectiveAthleteOrder(
   order: DemoOrderSummary | null,
   forms: DemoWorkflowForm[] = []
 ): DemoOrderSummary | null {
+  const hasCompletedCustomerOnboarding = forms.some(isCustomerOnboardingComplete);
+  const hasReleasedCustomerIntake = hasCustomerPreConsultationIntakeReleased(forms);
+
   if (
     order?.status === 'registration_started' &&
-    order.stage !== 'pre_requisite_pending' &&
-    !forms.some(isCustomerOnboardingComplete) &&
-    !hasCustomerPreConsultationIntakeReleased(forms)
+    !hasCompletedCustomerOnboarding &&
+    !hasReleasedCustomerIntake
   ) {
     return {
       ...order,
@@ -666,6 +668,18 @@ export function getEffectiveAthleteOrder(
       status: 'awaiting_scheduling',
       statusLabel: 'Aguardando consulta inicial',
       stage: 'awaiting_initial_consultation',
+    };
+  }
+
+  if (
+    order?.status === 'registration_started' &&
+    order.stage === 'new_user_onboarding' &&
+    (hasCompletedCustomerOnboarding || hasReleasedCustomerIntake)
+  ) {
+    return {
+      ...order,
+      statusLabel: 'Pre-requisito pendente',
+      stage: 'pre_requisite_pending',
     };
   }
 

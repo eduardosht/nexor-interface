@@ -645,33 +645,55 @@ describe('ProducaoDentista', () => {
       'utf8'
     );
     const productionSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/index.tsx'), 'utf8');
+    const dentalAnamnesisSource = readFileSync(
+      join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.tsx'),
+      'utf8'
+    );
     const productionStyles = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/styles.ts'), 'utf8');
+    const profileSource = readFileSync(join(process.cwd(), 'src/pages/painel/CadastroPerfilBiteplaner/index.tsx'), 'utf8');
     const profileStyles = readFileSync(join(process.cwd(), 'src/pages/painel/CadastroPerfilBiteplaner/styles.ts'), 'utf8');
     const hubStyles = readFileSync(join(process.cwd(), 'src/pages/painel/BiteplanerHub/styles.ts'), 'utf8');
     const buttonStyleSource = readFileSync(join(process.cwd(), 'src/pages/painel/styles/biteplanerFormButton.ts'), 'utf8');
+    const adminFormButtonSource = readFileSync(
+      join(process.cwd(), '../packages/design-system/src/components/AdminFormButton.tsx'),
+      'utf8'
+    );
     const dentistLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminDentistLicensing.tsx'), 'utf8');
     const partnerLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminPartnerLicensing.tsx'), 'utf8');
     const labLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminLabLicensing.tsx'), 'utf8');
 
-    expect(workflowFormsSource).toContain('function WorkflowActionButton');
-    expect(workflowFormsSource).toContain('<S.FormActionButton');
-    expect(workflowFormsSource).toContain('<S.FormActionButtonContent>');
-    expect(workflowFormsSource).toContain('<S.FormActionButtonLabel>');
+    expect(workflowFormsSource).toContain('AdminFormButton,');
+    expect(workflowFormsSource).toContain('<AdminFormButton');
+    expect(workflowFormsSource).not.toContain('WorkflowActionButton');
+    expect(workflowFormsSource).not.toContain('AdminFormButton as');
+    expect(workflowFormsSource).not.toContain('function WorkflowActionButton');
+    expect(workflowFormsSource).not.toContain('<S.FormActionButton');
+    expect(workflowFormsSource).not.toContain('<S.FormActionButtonContent>');
+    expect(workflowFormsSource).not.toContain('<S.FormActionButtonLabel>');
     expect(workflowFormsSource).toContain('hideProceedActionIcons');
     expect(workflowFormsSource).toContain('const nextActionIcon = hideProceedActionIcons ? undefined : <ChevronRight');
     expect(workflowFormsSource).toContain('const submitActionIcon = hideProceedActionIcons ? undefined : <Send');
+    expect(workflowFormsSource).toMatch(
+      /<S\.PrivacyActions>[\s\S]*?<AdminFormButton(?:(?!trailingIcon)[\s\S])*?>[\s\S]*?Continuar[\s\S]*?<\/AdminFormButton>/
+    );
     [
-      /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
-      /<WorkflowActionButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
+      /<AdminFormButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<ArrowLeft/,
+      /<AdminFormButton[\s\S]*?variant="secondary"[\s\S]*?leadingIcon=\{<PencilLine/,
     ].forEach((pattern) => {
       expect(workflowFormsSource).toMatch(pattern);
     });
 
-    expect(productionSource).toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleSearchLabs\(\)\})(?=[\s\S]*?trailingIcon=\{<Search)/);
-    expect(productionSource).toMatch(/<Button(?=[\s\S]*?variant="secondary")(?=[\s\S]*?leadingIcon=\{<ArrowLeft)/);
+    expect(profileSource).toContain('AdminFormButton');
+    expect(profileSource).not.toContain('<Button');
+    expect(productionSource).toContain('AdminFormButton');
+    expect(productionSource).not.toContain('<Button');
+    expect(dentalAnamnesisSource).toContain('AdminFormButton');
+    expect(dentalAnamnesisSource).not.toContain('<Button');
+    expect(productionSource).toMatch(/<AdminFormButton(?=[\s\S]*?onClick=\{\(\) => void handleSearchLabs\(\)\})(?=[\s\S]*?trailingIcon=\{<Search)/);
+    expect(productionSource).toMatch(/<AdminFormButton(?=[\s\S]*?variant="secondary")(?=[\s\S]*?leadingIcon=\{<ArrowLeft)/);
     expect(productionSource).toContain('hideProceedActionIcons');
-    expect(productionSource).not.toMatch(/<Button(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
-    expect(productionSource).not.toMatch(/<Button(?=[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\})(?=[\s\S]*?trailingIcon=\{<CheckCircle2)/);
+    expect(productionSource).not.toMatch(/<AdminFormButton(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
+    expect(productionSource).not.toMatch(/<AdminFormButton(?=[\s\S]*?onClick=\{\(\) => void handleComplete\(\)\})(?=[\s\S]*?trailingIcon=\{<CheckCircle2)/);
 
     expect(buttonStyleSource).toContain('background: #15803d;');
     expect(buttonStyleSource).toContain('min-height: 52px;');
@@ -683,6 +705,13 @@ describe('ProducaoDentista', () => {
     expect(buttonStyleSource).toContain('[data-button-icon]');
     expect(buttonStyleSource).not.toContain('> span');
     expect(buttonStyleSource).not.toContain('width: max-content;');
+    expect(adminFormButtonSource).toContain('export function AdminFormButton');
+    expect(adminFormButtonSource).toContain("import { Button, type ButtonProps } from './Button';");
+    expect(adminFormButtonSource).toContain('const ButtonRoot = styled(Button)`');
+    expect(adminFormButtonSource).toContain('min-height: 52px;');
+    expect(adminFormButtonSource).toContain('padding: 10px 18px;');
+    expect(adminFormButtonSource).toContain('data-button-content');
+    expect(adminFormButtonSource).toContain('data-button-label');
     expect(productionSource).toContain('<S.DeepLinkStepActions>');
     expect(productionStyles).toContain('export const DeepLinkStepActions = styled(StepActions)`');
     expect(productionStyles).toContain('width: fit-content;');
@@ -697,7 +726,11 @@ describe('ProducaoDentista', () => {
     expect(workflowFormsStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
     expect(workflowFormsStyles).toContain('position: fixed;');
     expect(workflowFormsStyles).toContain('bottom: max(8px, env(safe-area-inset-bottom));');
-    [workflowFormsStyles, productionStyles, profileStyles, hubStyles].forEach((source) => {
+    expect(workflowFormsStyles).toContain('export const PrivacyActions = styled(Actions)``;');
+    expect(workflowFormsStyles).not.toContain('biteplanerFormButtonStyles');
+    expect(productionStyles).not.toContain('biteplanerFormButtonStyles');
+    expect(profileStyles).not.toContain('biteplanerFormButtonStyles');
+    [hubStyles].forEach((source) => {
       expect(source).toContain('biteplanerFormButtonStyles');
     });
 

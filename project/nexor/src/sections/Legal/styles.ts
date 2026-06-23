@@ -13,8 +13,7 @@ export const Section = styled.section`
   padding: 80px 0;
 
   @media (max-width: 768px) {
-    padding-top: 64px;
-    padding-bottom: 64px;
+    padding: 40px 0;
   }
 `;
 
@@ -71,6 +70,10 @@ export const Card = styled(Link)`
   &:hover {
     border-color: ${({ theme }) => theme.colors.borderDefault};
     background: ${({ theme }) => theme.colors.bgElevated ?? theme.colors.bgInset};
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
   }
 `;
 

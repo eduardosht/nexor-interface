@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Navigate } from 'react-router-dom';
 import { Snackbar, SnackbarStack } from '@nexor/design-system';
 import {
   AlertTriangle,
@@ -149,6 +148,18 @@ function getVisualStepTone(index: number, currentVisualStepIndex: number): StepT
 }
 
 function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneyStep | null) {
+  if (order.stage === 'new_user_onboarding') {
+    return {
+      text: 'Sua jornada Biteplaner foi criada. Comece pelo cadastro inicial para liberar as próximas etapas.',
+      actionTitle: 'O que fazer agora?',
+      actionText: 'Esta etapa depende de você. Preencha o cadastro inicial para avançar para o pré-requisito.',
+      estimate: '3 minutos',
+      buttonLabel: 'Iniciar cadastro',
+      whyTitle: 'Por que preciso preencher o cadastro?',
+      whyText: 'O cadastro inicial reúne as informações básicas necessárias para preparar sua jornada Biteplaner.',
+    };
+  }
+
   if (order.status === 'registration_started') {
     return {
       text: 'Você criou sua jornada com sucesso. Continue preenchendo as informações iniciais para avançar para a próxima etapa.',
@@ -704,10 +715,13 @@ export function Jornada() {
   const visibleClinicError = clinicError;
   const visibleFollowUpError = followUpError ||
     (clinicalFollowUpsQuery.isError ? 'Não foi possível carregar os retornos clínicos desta ordem.' : '');
-  const shouldRedirectToOnboarding = selectedFormsOrder?.stage === 'new_user_onboarding';
   const currentStepIndex = selectedFormsOrder ? getCurrentStepIndex(selectedFormsOrder) : -1;
   const currentStep = currentStepIndex >= 0 ? JOURNEY_STEPS[currentStepIndex] : null;
-  const currentVisualStepIndex = selectedFormsOrder ? Math.max(0, currentStepIndex + 1) : -1;
+  const currentVisualStepIndex = selectedFormsOrder
+    ? selectedFormsOrder.stage === 'new_user_onboarding'
+      ? 0
+      : Math.max(0, currentStepIndex + 1)
+    : -1;
   const currentVisualStep =
     currentVisualStepIndex >= 0 ? VISUAL_JOURNEY_STEPS[currentVisualStepIndex] ?? null : null;
   const journeyProgress = selectedFormsOrder
@@ -835,10 +849,6 @@ export function Jornada() {
     } finally {
       setFollowUpAction(null);
     }
-  }
-
-  if (!loading && shouldRedirectToOnboarding) {
-    return <Navigate to="/painel/biteplaner/onboarding" replace />;
   }
 
   return (

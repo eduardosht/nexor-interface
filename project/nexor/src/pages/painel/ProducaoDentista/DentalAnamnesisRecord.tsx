@@ -6,7 +6,7 @@ import {
   Sparkles,
   Stethoscope,
 } from 'lucide-react';
-import { Button } from '@nexor/design-system';
+import { AdminFormButton } from '@nexor/design-system';
 import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps, type ReactNode } from 'react';
 import {
   formatDate,
@@ -699,13 +699,13 @@ export function DentalAnamnesisRecord({
               </S.Card>
               {section.id === 'rastreabilidade' && onDownloadAnamnesisPdf ? (
                 <S.DownloadActionRow>
-                  <Button
+                  <AdminFormButton
                     type="button"
                     leadingIcon={<Download size={16} aria-hidden="true" />}
                     onClick={onDownloadAnamnesisPdf}
                   >
                     Baixar ficha de anamnese
-                  </Button>
+                  </AdminFormButton>
                 </S.DownloadActionRow>
               ) : null}
             </S.SectionGroup>

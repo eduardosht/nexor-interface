@@ -150,6 +150,7 @@ export function PreRequisito() {
     !formsLoading &&
     !formsError &&
     intakeForms.length === 0 &&
+    !completedOnboarding &&
     onboardingForms.some((form) => !isCustomerOnboardingComplete(form))
   );
   const isAwaitingPreRequisiteRelease = Boolean(

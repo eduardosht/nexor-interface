@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { DesignSystemProvider } from '../provider';
 import { RadioQuestionGroup } from './RadioQuestionGroup';
@@ -104,5 +106,13 @@ describe('RadioQuestionGroup', () => {
     expect(legend).not.toBeNull();
     expect(legend).toHaveTextContent('Resposta');
     expect(alert).toHaveStyle({ display: 'block' });
+  });
+
+  it('keeps radio question text at 12px on small devices', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/RadioQuestionGroup.tsx'), 'utf8');
+
+    const mobileFontSizeRules = source.match(/@media \(max-width: 640px\)\s*{\s*font-size: 12px;\s*}/g);
+
+    expect(mobileFontSizeRules).toHaveLength(3);
   });
 });

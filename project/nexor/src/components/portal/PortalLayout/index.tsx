@@ -1,12 +1,13 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
 import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
 import { hasAdministrativeRole } from '../../../features/auth/adminRoles';
 import { accountQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
+import { getNotificationAction } from '../../../features/account/notificationActions';
 import * as S from './styles';
 import { usePortalUiStore } from './portalUiStore';
 
@@ -26,14 +27,18 @@ interface MockNotification {
   datetime: string;
   message: string;
   read: boolean;
+  type?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 interface AccountNotificationResponse {
   id: string;
   title: string;
   message: string;
+  type?: string | null;
   read: boolean;
   readAt?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
@@ -41,6 +46,8 @@ interface AccountNotificationsResponse {
   notifications: AccountNotificationResponse[];
   unreadCount: number;
 }
+
+type NotificationsFilter = 'unread' | 'all';
 
 const MOCK_NOTIFICATIONS: MockNotification[] = [
   {
@@ -84,7 +91,9 @@ function mapAccountNotification(notification: AccountNotificationResponse): Mock
     title: notification.title,
     datetime: formatNotificationDate(notification.createdAt),
     message: notification.message,
-    read: notification.read
+    read: notification.read,
+    type: notification.type,
+    metadata: notification.metadata ?? null,
   };
 }
 
@@ -149,6 +158,7 @@ function mapAccountNotification(notification: AccountNotificationResponse): Mock
 const NAV_ITEMS = [
   { to: '/painel/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/conta', label: 'Minha Conta', Icon: User },
+  { to: '/painel/notificacoes', label: 'Notificações', Icon: Bell },
 ];
 
 const ADMIN_NAV_ITEMS = [
@@ -270,6 +280,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const hydrateSidebarCollapsed = usePortalUiStore((state) => state.hydrateSidebarCollapsed);
   const toggleSidebarCollapsed = usePortalUiStore((state) => state.toggleSidebarCollapsed);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsFilter, setNotificationsFilter] = useState<NotificationsFilter>('unread');
   const [selectedNotification, setSelectedNotification] = useState<MockNotification | null>(null);
   const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
 
@@ -322,6 +333,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     () => notifications.filter((notification) => !notification.read),
     [notifications]
   );
+  const visibleNotifications = notificationsFilter === 'unread' ? unreadNotifications : notifications.slice(0, 10);
   const hasUnreadNotifications = notifications.some((notification) => !notification.read);
   const markNotificationRead = useMutation({
     mutationFn: (notification: MockNotification) =>
@@ -779,35 +791,100 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                         disabled={!hasUnreadNotifications || markAllNotificationsRead.isPending}
                         onClick={handleMarkAllNotificationsRead}
                       >
-                        {markAllNotificationsRead.isPending ? 'Marcando...' : 'Marcar tudo como lido'}
+                        <Check size={14} aria-hidden />
+                        {markAllNotificationsRead.isPending ? 'Marcando...' : 'Marcar todas como lidas'}
                       </S.MarkAllNotificationsReadButton>
-                      <S.NotificationsPanelMeta>{notifications.length} itens</S.NotificationsPanelMeta>
                     </S.NotificationsPanelHeaderActions>
                   </S.NotificationsPanelHeader>
+                  <S.NotificationsTabs role="tablist" aria-label="Filtrar notificações">
+                    <S.NotificationsTab
+                      type="button"
+                      role="tab"
+                      aria-selected={notificationsFilter === 'unread'}
+                      $active={notificationsFilter === 'unread'}
+                      onClick={() => setNotificationsFilter('unread')}
+                    >
+                      Não lidas
+                      <S.NotificationsTabBadge $active={notificationsFilter === 'unread'}>
+                        {unreadNotifications.length}
+                      </S.NotificationsTabBadge>
+                    </S.NotificationsTab>
+                    <S.NotificationsTab
+                      type="button"
+                      role="tab"
+                      aria-selected={notificationsFilter === 'all'}
+                      $active={notificationsFilter === 'all'}
+                      onClick={() => setNotificationsFilter('all')}
+                    >
+                      Todas
+                      <S.NotificationsTabBadge $active={notificationsFilter === 'all'}>
+                        {notifications.length}
+                      </S.NotificationsTabBadge>
+                    </S.NotificationsTab>
+                  </S.NotificationsTabs>
                   <S.NotificationsList>
-                    {notifications.length === 0 ? (
-                      <S.NotificationsEmpty>Nenhuma notificação encontrada.</S.NotificationsEmpty>
+                    {visibleNotifications.length === 0 ? (
+                      <S.NotificationsEmpty>
+                        {notificationsFilter === 'unread'
+                          ? 'Nenhuma notificação não lida.'
+                          : 'Nenhuma notificação encontrada.'}
+                      </S.NotificationsEmpty>
                     ) : (
-                      notifications.map((notification) => (
+                      visibleNotifications.map((notification) => {
+                        const notificationAction = getNotificationAction(notification);
+
+                        return (
                         <S.NotificationItem
                           key={notification.id}
-                          type="button"
                           $unread={!notification.read}
-                          aria-label={`Abrir notificação ${notification.title}`}
-                          onClick={() => handleNotificationClick(notification)}
                         >
-                          <S.NotificationItemHeader>
-                            <S.NotificationTitle>{notification.title}</S.NotificationTitle>
+                          <S.NotificationOpenButton
+                            type="button"
+                            aria-label={`Abrir notificação ${notification.title}`}
+                            onClick={() => handleNotificationClick(notification)}
+                          >
+                            <S.NotificationIconBox $unread={!notification.read}>
+                              <ClipboardList size={17} aria-hidden />
+                            </S.NotificationIconBox>
+                            <S.NotificationContent>
+                              <S.NotificationTitle>{notification.title}</S.NotificationTitle>
+                              <S.NotificationPreview>{notification.message}</S.NotificationPreview>
+                              <S.NotificationDate>{notification.datetime}</S.NotificationDate>
+                            </S.NotificationContent>
+                          </S.NotificationOpenButton>
+                          <S.NotificationItemMeta>
                             <S.NotificationStatus $unread={!notification.read}>
                               {notification.read ? 'Lida' : 'Não lida'}
                             </S.NotificationStatus>
-                          </S.NotificationItemHeader>
-                          <S.NotificationDate>{notification.datetime}</S.NotificationDate>
-                          <S.NotificationPreview>{notification.message}</S.NotificationPreview>
+                            <ChevronRight size={18} aria-hidden />
+                            {notificationAction ? (
+                              <S.NotificationActionButton
+                                type="button"
+                                onClick={() => {
+                                  setNotificationsOpen(false);
+                                  void navigate(notificationAction.path);
+                                }}
+                              >
+                                {notificationAction.label}
+                              </S.NotificationActionButton>
+                            ) : null}
+                          </S.NotificationItemMeta>
                         </S.NotificationItem>
-                      ))
+                        );
+                      })
                     )}
                   </S.NotificationsList>
+                  <S.NotificationsFooterButton
+                    type="button"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      void navigate('/painel/notificacoes');
+                    }}
+                  >
+                    <Bell size={15} aria-hidden />
+                    Ver todas as notificações
+                    <ChevronRight size={18} aria-hidden />
+                  </S.NotificationsFooterButton>
                 </S.NotificationsPanel>
               ) : null}
             </S.NotificationArea>

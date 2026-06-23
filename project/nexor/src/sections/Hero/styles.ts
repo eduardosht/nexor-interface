@@ -40,8 +40,8 @@ export const Section = styled.div`
   z-index: 2;
 
   @media (max-width: 768px) {
-    padding-top: 120px;
-    padding-bottom: 60px;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 `;
 

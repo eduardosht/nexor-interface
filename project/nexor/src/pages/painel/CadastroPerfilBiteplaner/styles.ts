@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { biteplanerFormButtonStyles } from '../styles/biteplanerFormButton';
 
 export const Page = styled.div`
   width: min(100%, 1120px);
@@ -457,7 +456,6 @@ export const Actions = styled.div`
   gap: 18px;
   padding-top: 18px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
-  ${biteplanerFormButtonStyles}
 
   > :first-child {
     order: 1;

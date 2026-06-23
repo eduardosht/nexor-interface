@@ -1,11 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import {
-  biteplanerButtonHoverStyles,
-  biteplanerButtonSurfaceStyles,
-  biteplanerFormButtonStyles,
-} from '../styles/biteplanerFormButton';
-import {
   PortalCardTitle,
   PortalSectionDescription,
   PortalSectionTitle,
@@ -56,11 +51,6 @@ export const FormCard = styled.article<{ $presentation: 'card' | 'flat' }>`
   @media (max-width: 1280px) {
     gap: 12px;
     padding: ${({ $presentation }) => ($presentation === 'flat' ? '0' : '14px')};
-  }
-
-  @media (max-width: 720px) {
-    padding-bottom: ${({ $presentation }) =>
-    $presentation === 'flat' ? '40px' : '54px'};
   }
 `;
 
@@ -172,6 +162,7 @@ export const RadioQuestionSlot = styled.div`
     margin: 0;
     padding: 0;
     line-height: 1.35;
+    display: block;
   }
 
   > fieldset > div {
@@ -274,70 +265,6 @@ export const Feedback = styled.span<{ $tone: 'success' | 'error' }>`
   font-weight: 700;
 `;
 
-export const FormActionButton = styled.button`
-  ${biteplanerButtonSurfaceStyles}
-  ${biteplanerButtonHoverStyles}
-
-  &[data-variant='secondary'] {
-    border-color: #15803d;
-    background: transparent;
-    color: #15803d;
-    box-shadow: none;
-  }
-
-  &[data-variant='secondary']:not(:disabled):hover {
-    border-color: #166534;
-    background: rgba(21, 128, 61, 0.08);
-    color: #166534;
-    box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
-  }
-
-  &[data-variant='secondary']:not(:disabled):active {
-    background: rgba(21, 128, 61, 0.14);
-    color: #14532d;
-    box-shadow: none;
-  }
-
-  @media (max-width: 760px) {
-    gap: 12px;
-    min-height: 38px;
-    padding: 8px 12px;
-    font-size: 12px;
-
-    > span {
-      gap: 8px;
-    }
-  }
-`;
-
-export const FormActionButtonContent = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: 0 1 100%;
-  flex-wrap: wrap;
-  max-width: 100%;
-  min-width: 0;
-  line-height: inherit;
-  white-space: normal;
-
-  svg {
-    flex: 0 0 auto;
-    width: 16px;
-    height: 16px;
-  }
-`;
-
-export const FormActionButtonLabel = styled.span`
-  display: inline-block;
-  flex: 0 1 auto;
-  max-width: 100%;
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: break-word;
-`;
-
 export const Actions = styled.div`
   display: flex;
   align-items: center;
@@ -347,7 +274,6 @@ export const Actions = styled.div`
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid rgba(148, 163, 184, 0.2);
-  ${biteplanerFormButtonStyles}
 
   @media (max-width: 760px) {
     align-items: center;
@@ -762,7 +688,7 @@ export const OnboardingProgressCard = styled.section<{ $expanded?: boolean }>`
     border-radius: 18px 18px 0 0;
     background: rgba(255, 255, 255, 0.98);
     box-shadow: ${({ $expanded }) =>
-      $expanded ? '0 -18px 44px rgba(15, 23, 42, 0.16)' : '0 -10px 30px rgba(15, 23, 42, 0.12)'};
+    $expanded ? '0 -18px 44px rgba(15, 23, 42, 0.16)' : '0 -10px 30px rgba(15, 23, 42, 0.12)'};
     cursor: grab;
     outline: none;
     touch-action: none;
@@ -812,9 +738,9 @@ export const ProgressCardTitle = styled.h3<{ $expanded?: boolean }>`
 
   @media (max-width: 720px) {
     gap: 12px;
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     font-weight: 900;
-    line-height: 1.2;
+    line-height: 1.15;
 
     &::before,
     &::after {
@@ -932,7 +858,7 @@ export const OnboardingStepNumber = styled.span<{ $active: boolean; $complete: b
     border-width: 2px;
     background: ${({ $active, $complete }) => ($active || $complete ? '#009c4a' : '#f8fafc')};
     box-shadow: ${({ $active }) => ($active ? '0 6px 14px rgba(0, 156, 74, 0.2)' : '0 2px 8px rgba(15, 23, 42, 0.08)')};
-    font-size: 0.75rem;
+    font-size: 0.68rem;
   }
 `;
 
@@ -958,7 +884,7 @@ export const OnboardingStepText = styled.span`
     max-width: 116px;
     min-height: 52px;
     color: ${({ theme }) => theme.colors.text};
-    font-size: 0.75rem;
+    font-size: 0.68rem;
     line-height: 1.15;
     text-transform: uppercase;
 
@@ -971,7 +897,7 @@ export const OnboardingStepText = styled.span`
       display: block;
       min-height: 22px;
       color: #5f6878;
-      font-size: 0.75rem;
+      font-size: 0.68rem;
       font-weight: 500;
       line-height: 1.15;
       text-transform: uppercase;
@@ -1407,25 +1333,7 @@ export const PrivacyInfoBox = styled.div`
   }
 `;
 
-export const PrivacyActions = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 18px;
-  padding-top: 18px;
-  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  ${biteplanerFormButtonStyles}
-
-  @media (max-width: 760px) {
-    align-items: center;
-    justify-content: flex-end;
-
-    > button {
-      flex: 0 0 max-content;
-    }
-  }
-`;
+export const PrivacyActions = styled(Actions)``;
 
 export const ReadOnlyGrid = styled.div`
   display: grid;
@@ -1568,6 +1476,7 @@ export const CheckboxFieldShell = styled.fieldset`
 
     legend {
       font-size: 12px;
+      margin-bottom: 8px;
     }
   }
 `;
@@ -1841,5 +1750,4 @@ export const ModalActions = styled.div`
   justify-content: flex-end;
   gap: 10px;
   padding-top: 6px;
-  ${biteplanerFormButtonStyles}
 `;

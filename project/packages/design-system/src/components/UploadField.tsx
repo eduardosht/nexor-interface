@@ -82,6 +82,10 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 14px;
   font-weight: 600;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const Dropzone = styled.button<{ $tokens: BrandTokens; $dragActive: boolean }>`

@@ -326,6 +326,7 @@ export const Alert = styled.div`
   background: #fff0f0;
   color: #9f1d1d;
   border: 1px solid #f2c8c8;
+  font-size: 14px;
 `;
 
 export const Success = styled.div`

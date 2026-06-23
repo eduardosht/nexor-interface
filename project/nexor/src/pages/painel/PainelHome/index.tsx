@@ -4,12 +4,11 @@ import {
   ArrowRight,
   Briefcase,
   CalendarDays,
-  ChartNoAxesCombined,
   ClipboardList,
   Clock3,
   FlaskConical,
   Info,
-  ShoppingBag,
+  ShieldCheck,
   ShoppingCart,
   UserRound,
 } from 'lucide-react';
@@ -19,7 +18,7 @@ import { api } from '../../../lib/api';
 import { DEMO_PERSONA_LABELS } from '../../../features/demo/persona';
 import { parseEnv } from '../../../config/env';
 import biteplanerComingSoonProduct from '../../../assets/biteplaner-coming-soon-product.png';
-import biteplanerMoldera from '../../../assets/biteplaner-transparent-2.png';
+import biteplanerAdministrationBackground from '../../../assets/backgrounds/background-biteplaner-administration-dash.png';
 import * as S from './styles';
 
 type ProductRoleKey = 'customer' | 'partner' | 'dentist' | 'lab';
@@ -34,6 +33,7 @@ type ProductRole = {
 type BiteplanerOrder = {
   id: string;
   status: string;
+  stage?: string | null;
 };
 
 const CLOSED_ORDER_STATUSES = new Set(['cancelled']);
@@ -46,12 +46,6 @@ const ROLE_ACTIONS: Array<{
   buttonLabel: string;
   requestPath?: string;
 }> = [
-    {
-      role: 'customer',
-      title: 'Adquirir Biteplaner',
-      description: 'Inicie a compra e libere todos os recursos da plataforma.',
-      buttonLabel: 'Iniciar compra',
-    },
     {
       role: 'partner',
       title: 'Solicitar parceria',
@@ -96,10 +90,6 @@ function getRoleStatusLabel(status?: ProductRoleStatus) {
 }
 
 function getActionIcon(role: ProductRoleKey) {
-  if (role === 'customer') {
-    return <ShoppingBag size={28} strokeWidth={2} />;
-  }
-
   if (role === 'partner') {
     return <Briefcase size={28} strokeWidth={2} />;
   }
@@ -127,6 +117,14 @@ function getOperationalRoleLabel(role: ProductRoleKey) {
   return 'cliente';
 }
 
+function isTrackableBiteplanerOrder(order: BiteplanerOrder) {
+  return !CLOSED_ORDER_STATUSES.has(order.status) && order.status !== 'registration_started';
+}
+
+function isNewUserOnboardingOrder(order: BiteplanerOrder) {
+  return !CLOSED_ORDER_STATUSES.has(order.status) && order.status === 'registration_started';
+}
+
 export function PainelHome() {
   const navigate = useNavigate();
   const { demoPersona, isMockMode, session } = useAuth();
@@ -141,7 +139,8 @@ export function PainelHome() {
     () => new Map(productRoles.map((role) => [role.role, role])),
     [productRoles]
   );
-  const hasActiveOrder = orders.some((order) => !CLOSED_ORDER_STATUSES.has(order.status));
+  const hasActiveOrder = orders.some(isTrackableBiteplanerOrder);
+  const hasNewUserOnboardingOrder = orders.some(isNewUserOnboardingOrder);
   const shouldTrackOrder = hasActiveOrder;
   const activeOrPendingOperationalRole = EXCLUSIVE_OPERATIONAL_ROLES.find((role) => {
     const status = rolesByKey.get(role)?.status;
@@ -218,6 +217,10 @@ export function PainelHome() {
     navigate('/painel/biteplaner/jornada');
   }
 
+  function openNewUserOnboarding() {
+    navigate('/painel/biteplaner/onboarding');
+  }
+
   return (
     <S.Page>
       {disableBiteplaner ? (
@@ -254,7 +257,7 @@ export function PainelHome() {
           <S.HeroSignature>TECNOLOGIA • PERFORMANCE • PROTEÇÃO</S.HeroSignature>
         </S.ComingSoonHero>
       ) : (
-        <S.ProductHero $backgroundImage={biteplanerMoldera} data-testid="biteplaner-product-banner">
+        <S.ProductHero $backgroundImage={biteplanerAdministrationBackground} data-testid="biteplaner-product-banner">
           <S.ProductHeroContent>
             <S.ProductTitle>Biteplaner</S.ProductTitle>
             <S.ProductDescription>
@@ -291,6 +294,11 @@ export function PainelHome() {
                   return;
                 }
 
+                if (hasNewUserOnboardingOrder) {
+                  openNewUserOnboarding();
+                  return;
+                }
+
                 void activateCustomer();
               }}
             >
@@ -299,19 +307,15 @@ export function PainelHome() {
               ) : (
                 <ShoppingCart size={22} strokeWidth={2.2} />
               )}
-              {shouldTrackOrder ? 'Acompanhar sua ordem' : 'Adquirir Biteplaner'}
+              {shouldTrackOrder ? 'Acompanhar sua ordem' : 'Adquira seu Biteplaner'}
               <ArrowRight size={22} strokeWidth={2.2} />
             </S.HeroButton>
-            <S.BpSecondaryLinks>
-              <S.BpLink to="/painel/biteplaner/jornada">
-                <ChartNoAxesCombined size={18} strokeWidth={2} />
-                Ver jornada
-              </S.BpLink>
-              <S.BpLink to="/biteplaner">
-                <Info size={18} strokeWidth={2} />
-                Ver detalhes
-              </S.BpLink>
-            </S.BpSecondaryLinks>
+            <S.HeroTrustLine aria-label="Compra segura, suporte especializado e atualizações inclusas">
+              <ShieldCheck size={20} strokeWidth={2.2} aria-hidden="true" />
+              <span>Compra segura</span>
+              <S.HeroTrustSeparator aria-hidden="true" />
+              <span>Suporte especializado</span>
+            </S.HeroTrustLine>
           </S.ProductHeroContent>
         </S.ProductHero>
       )}
@@ -333,21 +337,21 @@ export function PainelHome() {
 
       <S.QuickActionsSection>
         <S.QuickActionsHeader>
-          <S.SectionTitle>Ações rápidas</S.SectionTitle>
-          <S.SectionSubtitle>Atalhos para otimizar sua rotina no Biteplaner.</S.SectionSubtitle>
+          <S.SectionTitle>Licenciamentos</S.SectionTitle>
+          <S.SectionSubtitle>
+            Inicie os licenciamentos das categorias de laboratório, dentista ou parceiro.
+          </S.SectionSubtitle>
         </S.QuickActionsHeader>
         {loadingRoles ? (
-          <SkeletonGrid cards={4} minCardWidth="260px" />
+          <SkeletonGrid cards={3} minCardWidth="260px" />
         ) : (
           <S.RoleActionsGrid aria-label="Perfis Biteplaner">
             {ROLE_ACTIONS.map((action) => {
               const currentRole = rolesByKey.get(action.role);
               const isPending = currentRole?.status === 'pending';
               const isActive = currentRole?.status === 'active';
-              const isCustomer = action.role === 'customer';
-              const isCustomerTrackingAction = isCustomer && shouldTrackOrder;
               const isOperationalRoleBlocked =
-                !isCustomer && activeOrPendingOperationalRole !== undefined && activeOrPendingOperationalRole !== action.role;
+                activeOrPendingOperationalRole !== undefined && activeOrPendingOperationalRole !== action.role;
               const operationalBlockerLabel = activeOrPendingOperationalRole
                 ? getOperationalRoleLabel(activeOrPendingOperationalRole)
                 : '';
@@ -356,26 +360,18 @@ export function PainelHome() {
                 submittingRole ||
                 isPending ||
                 isOperationalRoleBlocked ||
-                (!isCustomer && isActive && !isCustomerTrackingAction);
+                isActive;
               const actionTitle = isPending
                 ? `Cadastro de ${getOperationalRoleLabel(action.role)} em análise`
-                : isPending
-                  ? `Sua solicitação de ${getOperationalRoleLabel(action.role)} está em análise pela equipe Nexor.`
-                  : isCustomerTrackingAction
-                  ? 'Acompanhar sua ordem'
-                  : action.title;
+                : action.title;
               const actionDescription = isOperationalRoleBlocked
                 ? `Sua conta já possui solicitação ou perfil de ${operationalBlockerLabel} no Biteplaner.`
-                : isCustomerTrackingAction
-                  ? 'Continue pelo acompanhamento da sua jornada Biteplaner.'
-                  : action.description;
+                : action.description;
               const actionButtonLabel = isOperationalRoleBlocked
                 ? 'Indisponível'
-                : isCustomerTrackingAction
-                  ? 'Acompanhar ordem'
-                  : action.buttonLabel;
+                : action.buttonLabel;
               const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
-              const shouldShowActionButton = !isPending && !(isActive && !isCustomer);
+              const shouldShowActionButton = !isPending && !isActive;
 
               return (
                 <S.RoleActionCard
@@ -384,7 +380,7 @@ export function PainelHome() {
                   aria-disabled={isOperationalRoleBlocked}
                 >
                   <S.RoleCardIcon aria-hidden="true">
-                    {isCustomerTrackingAction ? <ClipboardList size={28} strokeWidth={2} /> : getActionIcon(action.role)}
+                    {getActionIcon(action.role)}
                   </S.RoleCardIcon>
                   <S.RoleStatusPill $tone={isActive ? 'success' : isPending ? 'warning' : 'neutral'}>
                     {statusLabel}
@@ -398,16 +394,6 @@ export function PainelHome() {
                       aria-label={actionTitle}
                       disabled={disabled}
                       onClick={() => {
-                        if (isCustomerTrackingAction) {
-                          trackOrder();
-                          return;
-                        }
-
-                        if (isCustomer) {
-                          void activateCustomer();
-                          return;
-                        }
-
                         if (action.requestPath) {
                           navigate(action.requestPath);
                         }

@@ -30,6 +30,11 @@ describe('routes', () => {
     expect(routesSource).toContain("{ path: '/conheca-biteplaner', element: <LazyRoute><ConhecaOBiteplaner /></LazyRoute> }");
   });
 
+  it('exposes a protected notifications page in the user panel', () => {
+    expect(routesSource).toContain("const Notificacoes = lazy(() => import('../pages/painel/Notificacoes')");
+    expect(routesSource).toContain("{ path: '/painel/notificacoes', element: <PainelRoute><Notificacoes /></PainelRoute> }");
+  });
+
   it('rewrites the demo admin route before Apache treats the asset folder as a directory', () => {
     const demoAdmRewriteIndex = htaccessSource.indexOf('RewriteRule ^demo-adm/?$ /index.html [L]');
     const directorySkipIndex = htaccessSource.indexOf('RewriteCond %{REQUEST_FILENAME} !-d');

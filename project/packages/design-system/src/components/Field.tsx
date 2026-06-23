@@ -50,6 +50,10 @@ const Label = styled.label<{ $tokens: BrandTokens }>`
     color: inherit;
     font-weight: 850;
   }
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const RequiredMark = styled.span<{ $tokens: BrandTokens }>`

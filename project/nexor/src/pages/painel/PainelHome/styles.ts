@@ -249,48 +249,15 @@ export const ProductHero = styled.section<{ $backgroundImage: string }>`
   min-height: clamp(390px, 34vw, 470px);
   overflow: hidden;
   border-radius: 8px;
-  border: 1px solid rgba(12, 75, 47, 0.5);
-  background:
-    linear-gradient(90deg, rgba(1, 37, 29, 0.96) 0%, rgba(1, 37, 29, 0.82) 46%, rgba(1, 37, 29, 0.16) 72%, rgba(1, 37, 29, 0) 100%),
-    url(${({ $backgroundImage }) => $backgroundImage}) right 100px center / min(32vw, 400px) auto no-repeat,
-    radial-gradient(circle at 78% 45%, rgba(34, 197, 94, 0.32), transparent 30%),
-    linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
+  background: url(${({ $backgroundImage }) => $backgroundImage}) center / cover no-repeat;
   color: #ffffff;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
 
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      linear-gradient(90deg, rgba(1, 37, 29, 0) 0%, rgba(56, 189, 124, 0.14) 56%, rgba(56, 189, 124, 0.42) 82%, rgba(1, 37, 29, 0) 100%);
-    mask-image: linear-gradient(180deg, transparent 8%, #000 45%, transparent 86%);
-    opacity: 0.55;
-  }
-
-  @media (max-width: 980px) {
-    background:
-      linear-gradient(90deg, rgba(1, 37, 29, 0.98) 0%, rgba(1, 37, 29, 0.9) 58%, rgba(1, 37, 29, 0.48) 100%),
-      url(${({ $backgroundImage }) => $backgroundImage}) right 12px center / min(42vw, 300px) auto no-repeat,
-      radial-gradient(circle at 78% 45%, rgba(34, 197, 94, 0.24), transparent 30%),
-      linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
-  }
-
   @media (max-width: 640px) {
     min-height: auto;
     align-items: start;
-    background:
-      linear-gradient(135deg, rgba(4, 45, 34, 0.98) 0%, rgba(6, 70, 47, 0.94) 100%),
-      radial-gradient(circle at 84% 84%, rgba(34, 197, 94, 0.18), transparent 34%),
-      linear-gradient(135deg, #042d22 0%, #06462f 52%, #01251d 100%);
-
-    &::after {
-      opacity: 0.28;
-      mask-image: linear-gradient(180deg, transparent 4%, #000 54%, transparent 94%);
-    }
   }
 `;
 
@@ -355,6 +322,7 @@ export const ProductStat = styled.div`
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
   display: grid;
   gap: 7px;
 
@@ -542,6 +510,40 @@ export const HeroButton = styled.button`
   }
 `;
 
+export const HeroTrustLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: min(100%, 520px);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.3;
+
+  svg {
+    color: #4ade80;
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 640px) {
+    gap: 6px;
+    font-size: 12px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+`;
+
+export const HeroTrustSeparator = styled.span`
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #4ade80;
+  opacity: 0.9;
+`;
+
 export const BpSecondaryLinks = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -602,7 +604,7 @@ export const SectionSubtitle = styled.p`
 
 export const RoleActionsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(14px, 1.6vw, 20px);
 
   @media (max-width: 1180px) {

@@ -347,7 +347,7 @@ export const NavSection = styled.div`
   overflow-x: hidden;
 `;
 
-export const StyledNavLink = styled(NavLink)<{ $collapsed: boolean }>`
+export const StyledNavLink = styled(NavLink) <{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   gap: 10px;
@@ -423,7 +423,7 @@ export const NavSectionDivider = styled.div`
   margin: 6px 12px;
 `;
 
-export const SubNavLink = styled(NavLink)<{ $collapsed: boolean }>`
+export const SubNavLink = styled(NavLink) <{ $collapsed: boolean }>`
   display: flex;
   align-items: center;
   gap: 10px;
@@ -735,9 +735,9 @@ export const NotifBtn = styled.button<{ $hasUnread?: boolean }>`
   position: relative;
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme, $hasUnread }) => ($hasUnread ? theme.colors.textPrimary : theme.colors.borderDefault)};
-  background: ${({ theme, $hasUnread }) => ($hasUnread ? theme.colors.bgInset : 'none')};
+  border-radius: 12px;
+  border: 1px solid #acacac;
+  background: ${({ theme, $hasUnread }) => ($hasUnread ? theme.colors.bgElevated : 'none')};
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -748,13 +748,12 @@ export const NotifBtn = styled.button<{ $hasUnread?: boolean }>`
   &::after {
     content: '';
     position: absolute;
-    top: 7px;
-    right: 7px;
+    top: 4px;
+    right: 4px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: ${({ $hasUnread }) => ($hasUnread ? '#DC2626' : 'transparent')};
-    box-shadow: ${({ $hasUnread }) => ($hasUnread ? '0 0 0 2px #ffffff' : 'none')};
+    background: #15803D;
   }
 
   &:hover {
@@ -765,35 +764,85 @@ export const NotifBtn = styled.button<{ $hasUnread?: boolean }>`
 
 export const NotificationsPanel = styled.div`
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   right: 0;
   z-index: 80;
-  width: min(360px, calc(100vw - 32px));
+  width: min(520px, calc(100vw - 24px));
   max-height: min(520px, calc(100vh - 92px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
+  border-radius: 14px;
   background: ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 18px 48px rgba(23, 23, 23, 0.16);
+  box-shadow: 0 18px 54px rgba(23, 23, 23, 0.14);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    right: 18px;
+    width: 14px;
+    height: 14px;
+    background: ${({ theme }) => theme.colors.bgElevated};
+    border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    transform: rotate(45deg);
+  }
+
+  @media (max-width: 760px) {
+    position: fixed;
+    top: 56px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-height: calc(100dvh - 76px);
+    border-radius: 12px;
+
+    &::before {
+      right: 18px;
+    }
+  }
 `;
 
 export const NotificationsPanelHeader = styled.div`
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  padding: 18px 22px 14px;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 16px 12px;
+  }
 `;
 
 export const NotificationsPanelTitle = styled.strong`
-  font-size: 12px;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  line-height: 1.15;
+`;
+
+export const NotificationsCountBadge = styled.span`
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.colors.green};
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 10px 22px ${({ theme }) => theme.colors.green}38;
 `;
 
 export const NotificationsPanelMeta = styled.span`
@@ -813,14 +862,18 @@ export const MarkAllNotificationsReadButton = styled.button`
   border: 0;
   padding: 0;
   background: transparent;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 12px;
-  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
 
   &:hover:not(:disabled),
   &:focus-visible:not(:disabled) {
-    text-decoration: underline;
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 
   &:disabled {
@@ -830,31 +883,101 @@ export const MarkAllNotificationsReadButton = styled.button`
   }
 `;
 
+export const NotificationsTabs = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 0 22px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+
+  @media (max-width: 640px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0 12px;
+  }
+`;
+
+export const NotificationsTab = styled.button<{ $active: boolean }>`
+  min-height: 40px;
+  border: 0;
+  border-bottom: 3px solid ${({ theme, $active }) => ($active ? theme.colors.green : 'transparent')};
+  padding: 0 12px;
+  background: transparent;
+  color: ${({ theme, $active }) => ($active ? theme.colors.green : theme.colors.textSecondary)};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.green};
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 4px;
+    gap: 6px;
+    font-size: 12px;
+  }
+`;
+
+export const NotificationsTabBadge = styled.span<{ $active: boolean }>`
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme, $active }) => ($active ? theme.colors.green : theme.colors.bgInset)};
+  color: ${({ $active }) => ($active ? '#ffffff' : '#525252')};
+  font-size: 11px;
+  font-weight: 800;
+
+  @media (max-width: 640px) {
+    min-width: 24px;
+    height: 20px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+`;
+
 export const NotificationsList = styled.div`
   display: grid;
+  grid-auto-rows: max-content;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
 `;
 
 export const NotificationsEmpty = styled.p`
   margin: 0;
-  padding: 22px 16px;
+  padding: 22px 18px;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   text-align: center;
 `;
 
-export const NotificationItem = styled.button<{ $unread: boolean }>`
+export const NotificationItem = styled.article<{ $unread: boolean }>`
   width: 100%;
   display: grid;
-  gap: 5px;
-  padding: 14px 16px;
-  border: none;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  background: ${({ theme, $unread }) => ($unread ? theme.colors.bgInset : theme.colors.bgElevated)};
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 88px;
+  padding: 14px 22px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme, $unread }) => ($unread ? `${theme.colors.green}05` : theme.colors.bgElevated)};
   color: ${({ theme }) => theme.colors.textPrimary};
   text-align: left;
-  cursor: pointer;
 
   &:hover {
     background: ${({ theme }) => theme.colors.bgInset};
@@ -863,6 +986,58 @@ export const NotificationItem = styled.button<{ $unread: boolean }>`
   &:last-child {
     border-bottom: none;
   }
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 8px;
+    min-height: 86px;
+    padding: 12px 16px;
+  }
+`;
+
+export const NotificationOpenButton = styled.button`
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    min-height: 58px;
+  }
+`;
+
+export const NotificationIconBox = styled.span<{ $unread: boolean }>`
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme, $unread }) => ($unread ? `${theme.colors.green}0f` : theme.colors.bgInset)};
+  color: ${({ theme, $unread }) => ($unread ? theme.colors.green : theme.colors.textSecondary)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 640px) {
+    width: 38px;
+    height: 38px;
+  }
+`;
+
+export const NotificationContent = styled.span`
+  min-width: 0;
+  display: grid;
+  gap: 5px;
 `;
 
 export const NotificationItemHeader = styled.div`
@@ -874,41 +1049,127 @@ export const NotificationItemHeader = styled.div`
 
 export const NotificationTitle = styled.strong`
   min-width: 0;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  @media (max-width: 640px) {
+    font-size: 13px;
+    line-height: 1.25;
+  }
 `;
 
 export const NotificationStatus = styled.span<{ $unread: boolean }>`
   flex-shrink: 0;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid ${({ theme, $unread }) => ($unread ? theme.colors.textPrimary : theme.colors.borderDefault)};
-  color: ${({ theme, $unread }) => ($unread ? theme.colors.textPrimary : theme.colors.textSecondary)};
-  background: ${({ theme, $unread }) => ($unread ? theme.colors.bgElevated : 'transparent')};
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: ${({ theme, $unread }) => ($unread ? theme.colors.green : theme.colors.textSecondary)};
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    width: ${({ $unread }) => ($unread ? '8px' : '12px')};
+    height: ${({ $unread }) => ($unread ? '8px' : '12px')};
+    border-radius: 50%;
+    border: ${({ theme, $unread }) => ($unread ? '0' : `2px solid ${theme.colors.textSecondary}`)};
+    background: ${({ theme, $unread }) => ($unread ? theme.colors.green : 'transparent')};
+  }
 `;
 
 export const NotificationDate = styled.span`
-  font-size: 11px;
+  font-size: 12px;
   color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 640px) {
+    font-size: 13px;
+    line-height: 1.35;
+  }
 `;
 
 export const NotificationPreview = styled.p`
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+
+  @media (max-width: 640px) {
+    font-size: 13px;
+  }
+`;
+
+export const NotificationItemMeta = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+
+  @media (max-width: 640px) {
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    font-size: 13px;
+  }
+`;
+
+export const NotificationActionButton = styled.button`
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid ${({ theme }) => theme.colors.green};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.green};
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 120ms ease, background 120ms ease;
+
+  &:hover {
+    opacity: 0.88;
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
+
+export const NotificationsFooterButton = styled.button`
+  min-height: 48px;
+  border: 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  padding: 0 22px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.bgInset};
+  }
+
+  @media (max-width: 640px) {
+    min-height: 48px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
 `;
 
 export const NotificationModalBox = styled(ModalBox)`
@@ -1006,8 +1267,8 @@ export const ContentInner = styled(motion.main)`
     --portal-panel-card-padding: 12px;
     --portal-panel-gap: 8px;
     --portal-panel-icon-size: 32px;
-    padding: 16px 12px calc(76px + env(safe-area-inset-bottom));
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding: 16px 12px calc(32px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
 
     && :where(h1, h2, h3, h4, h5, h6) {
       font-size: min(16px, 1em);
@@ -1044,8 +1305,8 @@ export const ContentInner = styled(motion.main)`
   }
 
   @media (max-width: 640px) {
-    padding: 18px 12px calc(76px + env(safe-area-inset-bottom));
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding: 18px 12px calc(32px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 `;
 

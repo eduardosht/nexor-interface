@@ -8,6 +8,11 @@ export {
 } from './provider';
 export { getBrandTokens, brandTokens, type BrandTokens, type DesignSystemBrand } from './tokens';
 export { Button, type ButtonProps, type ButtonSize, type ButtonTone, type ButtonVariant } from './components/Button';
+export {
+  AdminFormButton,
+  type AdminFormButtonProps,
+  type AdminFormButtonVariant,
+} from './components/AdminFormButton';
 export { Field, type FieldProps } from './components/Field';
 export { CheckboxField, type CheckboxFieldProps } from './components/CheckboxField';
 export {

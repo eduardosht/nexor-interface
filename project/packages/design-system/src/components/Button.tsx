@@ -281,6 +281,8 @@ const Label = styled.span`
   overflow-wrap: inherit;
   white-space: inherit;
   text-wrap: inherit;
+  display: flex;
+  gap: 8px;
 `;
 
 export function Button({

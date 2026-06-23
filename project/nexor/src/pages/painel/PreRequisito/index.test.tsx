@@ -248,6 +248,23 @@ describe('PreRequisito', () => {
     expect(screen.queryByText(/agradecemos sua disponibilidade/i)).not.toBeInTheDocument();
   });
 
+  it('does not send the user back to onboarding when a submitted onboarding exists alongside a pending one', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [demoOrder()] })
+      .mockResolvedValueOnce({
+        forms: [
+          customerOnboarding('submitted'),
+          { ...customerOnboarding('pending'), id: 'BP-WF-001-ONBOARDING-PENDING' },
+        ],
+      });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
+    expect(await screen.findByText(/estamos liberando o pre-requisito biteplaner/i)).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('renders the clinical form from the DOCX with the same stepped intake experience without duplicate privacy consent', async () => {
     mockApiGet
       .mockResolvedValueOnce({ orders: [demoOrder()] })

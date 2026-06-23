@@ -68,7 +68,7 @@ function renderLayout(path = '/painel/home', authOverrides: Record<string, unkno
       <ThemeProvider theme={lightTheme}>
         <TestQueryClientProvider>
           <PortalLayout>
-          <div>conteúdo</div>
+            <div>conteúdo</div>
           </PortalLayout>
         </TestQueryClientProvider>
       </ThemeProvider>
@@ -175,7 +175,7 @@ describe('PortalLayout navigation', () => {
   });
 
   it('keeps form content mounted when notifications resolve', async () => {
-    let resolveNotifications: (value: { notifications: never[]; unreadCount: number }) => void = () => {};
+    let resolveNotifications: (value: { notifications: never[]; unreadCount: number }) => void = () => { };
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/account/notifications') {
         return new Promise((resolve) => {
@@ -261,6 +261,23 @@ describe('PortalLayout navigation', () => {
     expect(within(drawer).getByRole('link', { name: /config. negócio/i })).toHaveAttribute('href', '/painel/admin/configuracoes/negocio');
     expect(within(drawer).getByRole('link', { name: /config. sistema/i })).toHaveAttribute('href', '/painel/admin/configuracoes/sistema');
     expect(within(drawer).getByRole('button', { name: /^sair$/i })).toBeInTheDocument();
+  });
+
+  it('shows the notifications menu item below Minha Conta for regular users', () => {
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+      },
+      demoPersona: 'athlete',
+    });
+
+    const minhaConta = screen.getByRole('link', { name: /minha conta/i });
+    const notificacoes = screen.getByRole('link', { name: /^notificações$/i });
+
+    expect(notificacoes).toHaveAttribute('href', '/painel/notificacoes');
+    expect(minhaConta.compareDocumentPosition(notificacoes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('keeps the portal menu accessible on mobile for non-admin users', () => {
@@ -403,10 +420,116 @@ describe('PortalLayout navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: /notificações/i }));
 
     expect(screen.getByRole('dialog', { name: /notificações/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /não lidas/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('button', { name: /abrir notificação nova atualização operacional/i })).toBeInTheDocument();
-    expect(screen.getByText(/não lida/i)).toBeInTheDocument();
+    expect(screen.getByText(/^não lida$/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /todas/i }));
+
     expect(screen.getByText(/^lida$/i)).toBeInTheDocument();
     expect(screen.getByText(/12\/05\/2026, 09:30/i)).toBeInTheDocument();
+  });
+
+  it('limits the Todas tab in the notifications popover to ten items', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/notifications') {
+        return Promise.resolve({
+          notifications: Array.from({ length: 12 }, (_, index) => ({
+            id: `notification-${index + 1}`,
+            title: `Notificação ${index + 1}`,
+            message: `Mensagem ${index + 1}.`,
+            read: index > 1,
+            createdAt: `2026-05-${String(12 - index).padStart(2, '0')}T09:30:00.000Z`,
+          })),
+          unreadCount: 2,
+        });
+      }
+
+      return Promise.resolve({ modes: [] });
+    });
+
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(await screen.findByRole('tab', { name: /todas/i }));
+
+    expect(screen.getByRole('button', { name: /abrir notificação notificação 10/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /abrir notificação notificação 11/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps notification popover rows from collapsing on mobile', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+
+    expect(stylesSource).toContain('min-height: 86px;');
+    expect(stylesSource).not.toContain('min-height: 0;\n    padding: 14px 16px;');
+  });
+
+  it('navigates to the full notifications page from the popover footer', () => {
+    renderLayout('/painel/home');
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(screen.getByRole('button', { name: /ver todas as notificações/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/notificacoes');
+  });
+
+  it('shows contextual action buttons for customer, dentist and lab notifications', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/notifications') {
+        return Promise.resolve({
+          notifications: [
+            {
+              id: 'customer-action',
+              title: 'Ação necessária no pedido',
+              message: 'Cliente precisa avançar na jornada.',
+              type: 'biteplaner_action_required',
+              metadata: { actionFor: 'customer' },
+              read: false,
+              createdAt: '2026-05-12T09:30:00.000Z',
+            },
+            {
+              id: 'dentist-action',
+              title: 'Ação necessária do dentista',
+              message: 'Dentista precisa revisar a ordem.',
+              type: 'biteplaner_action_required',
+              metadata: { actionFor: 'dentist' },
+              read: false,
+              createdAt: '2026-05-12T09:20:00.000Z',
+            },
+            {
+              id: 'lab-action',
+              title: 'Ação necessária do laboratório',
+              message: 'Laboratório precisa revisar a ordem.',
+              type: 'biteplaner_action_required',
+              metadata: { actionFor: 'lab' },
+              read: false,
+              createdAt: '2026-05-12T09:10:00.000Z',
+            },
+          ],
+          unreadCount: 3,
+        });
+      }
+
+      return Promise.resolve({ modes: [] });
+    });
+
+    renderLayout('/painel/home');
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+
+    fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do laboratório/i }));
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
   });
 
   it('shows an empty state when no notifications are available', async () => {
@@ -429,8 +552,9 @@ describe('PortalLayout navigation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /notificações/i }));
 
-    expect(screen.getByText('Nenhuma notificação encontrada.')).toBeInTheDocument();
-    expect(screen.getByText(/0 itens/i)).toBeInTheDocument();
+    expect(screen.getByText('Nenhuma notificação não lida.')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /não lidas\s*0/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /todas\s*0/i })).toBeInTheDocument();
   });
 
   it('opens a notification modal with the full message', () => {
@@ -508,7 +632,7 @@ describe('PortalLayout navigation', () => {
     fireEvent.click(screen.getByLabelText('Notificações'));
     expect(await screen.findByRole('button', { name: /primeira notificação/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /marcar tudo como lido/i }));
+    fireEvent.click(screen.getByRole('button', { name: /marcar todas como lidas/i }));
 
     await waitFor(() =>
       expect(mockApiPatch).toHaveBeenCalledWith('/v1/account/notifications/read-all', {}, 'tok')
@@ -750,7 +874,7 @@ describe('PortalLayout navigation', () => {
 
     expect(source).toContain('@media (max-width: 768px)');
     expect(source).toContain('display: none');
-    expect(source).toContain('padding-bottom: calc(76px + env(safe-area-inset-bottom))');
+    expect(source).toContain('padding-bottom: calc(32px + env(safe-area-inset-bottom))');
   });
 
   it('defines compact dashboard density for notebook and mobile viewports', () => {

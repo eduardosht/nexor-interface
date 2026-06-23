@@ -54,6 +54,10 @@ const Legend = styled.legend<{ $tokens: BrandTokens }>`
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const LegendStack = styled.span<{ $tokens: BrandTokens; $inline: boolean; $variant: RadioQuestionVariant }>`
@@ -66,6 +70,10 @@ const LegendStack = styled.span<{ $tokens: BrandTokens; $inline: boolean; $varia
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const LegendLabel = styled.span`
@@ -230,6 +238,10 @@ const OptionTitle = styled.span<{ $tokens: BrandTokens }>`
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const OptionDescription = styled.span<{ $tokens: BrandTokens }>`

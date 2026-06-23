@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { biteplanerFormButtonStyles } from '../styles/biteplanerFormButton';
 
 export const Banner = styled.div`
   padding: 16px 18px;
@@ -226,7 +225,6 @@ export const SecondaryActions = styled.div`
   flex-wrap: nowrap;
   gap: 10px;
   min-width: 0;
-  ${biteplanerFormButtonStyles}
 
   && button {
     width: fit-content;
@@ -315,7 +313,6 @@ export const SearchActionSlot = styled.div`
   display: flex;
   align-items: end;
   min-width: 0;
-  ${biteplanerFormButtonStyles}
 
   > button {
     width: fit-content;

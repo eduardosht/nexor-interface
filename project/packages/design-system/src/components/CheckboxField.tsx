@@ -103,6 +103,10 @@ const LabelText = styled.span<{ $tokens: BrandTokens }>`
   font-size: 14px;
   font-weight: 500;
   line-height: 1.45;
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const Badge = styled.span<{ $tokens: BrandTokens; $tone: 'required' | 'optional' }>`

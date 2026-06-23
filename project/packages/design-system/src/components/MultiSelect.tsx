@@ -56,6 +56,10 @@ const LabelEl = styled.label<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   margin-bottom: 6px;
   font-family: ${({ $tokens }) => $tokens.fonts.body};
+
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
 `;
 
 const Trigger = styled.div<{ $tokens: BrandTokens; $open: boolean }>`

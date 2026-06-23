@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, ClipboardCheck, Search, Star } from 'lucide-react';
 import {
-  Button,
+  AdminFormButton,
   Field,
   Snackbar,
   SnackbarStack,
@@ -1460,18 +1460,18 @@ export function ProducaoDentista() {
                       />
                       <S.SearchActionsGroup>
                         <S.SearchActionSlot>
-                          <Button
+                          <AdminFormButton
                             type="button"
                             onClick={() => void handleSearchLabs()}
                             trailingIcon={<Search size={16} aria-hidden="true" />}
                           >
                             Buscar laboratórios
-                          </Button>
+                          </AdminFormButton>
                         </S.SearchActionSlot>
                         <S.SearchActionSlot>
-                          <Button type="button" variant="secondary" onClick={handleUseCurrentLocation}>
+                          <AdminFormButton type="button" variant="secondary" onClick={handleUseCurrentLocation}>
                             {locatingLabCep ? 'Localizando...' : 'Usar minha localização'}
-                          </Button>
+                          </AdminFormButton>
                         </S.SearchActionSlot>
                       </S.SearchActionsGroup>
                     </FieldsGrid>
@@ -1602,26 +1602,26 @@ export function ProducaoDentista() {
                     <span />
                     <S.SecondaryActions>
                       {!dentistReviewCompleted ? (
-                        <Button
+                        <AdminFormButton
                           type="button"
                           onClick={handleOpenDentistReview}
                         >
                           Completar revisão clínica
-                        </Button>
+                        </AdminFormButton>
                       ) : (
-                        <Button
+                        <AdminFormButton
                           type="button"
                           onClick={handleAnamnesisDeepLinkNext}
                         >
                           Continuar para solicitação de produção
-                        </Button>
+                        </AdminFormButton>
                       )}
                     </S.SecondaryActions>
                   </S.DeepLinkStepActions>
                 ) : currentStep === 0 && !dentistReviewCompleted ? null : (
                   <S.StepActions>
                     <S.SecondaryActions>
-                      <Button
+                      <AdminFormButton
                         type="button"
                         variant="secondary"
                         disabled={currentStep === 0}
@@ -1629,30 +1629,30 @@ export function ProducaoDentista() {
                         leadingIcon={<ArrowLeft size={16} aria-hidden="true" />}
                       >
                         Voltar
-                      </Button>
+                      </AdminFormButton>
                     </S.SecondaryActions>
 
                     <S.SecondaryActions>
                       {shouldHoldAtAnamnesisSummary ? (
-                        <Button type="button" disabled>
+                        <AdminFormButton type="button" disabled>
                           {anamnesisHoldNotice.actionLabel}
-                        </Button>
+                        </AdminFormButton>
                       ) : currentStep < STEP_DEFINITIONS.length - 1 ? (
-                        <Button
+                        <AdminFormButton
                           type="button"
                           disabled={!currentStepCompleted}
                           onClick={handleNextStep}
                         >
                           Próximo
-                        </Button>
+                        </AdminFormButton>
                       ) : (
-                        <Button
+                        <AdminFormButton
                           type="button"
                           disabled={!canComplete || completing}
                           onClick={() => void handleComplete()}
                         >
                           {completing ? 'Finalizando...' : 'Finalizar'}
-                        </Button>
+                        </AdminFormButton>
                       )}
                     </S.SecondaryActions>
                   </S.StepActions>

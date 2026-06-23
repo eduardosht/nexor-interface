@@ -536,7 +536,7 @@ describe('Jornada', () => {
     );
   });
 
-  it('redirects new-user-onboarding orders to the Biteplaner onboarding page', async () => {
+  it('keeps new-user-onboarding orders on the registration step until the form is submitted', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -554,8 +554,126 @@ describe('Jornada', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('current-path')).toHaveTextContent('/painel/biteplaner/onboarding'));
-    expect(screen.queryByTestId('athlete-journey-steps')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
+    expect(screen.getByTestId('current-path')).not.toHaveTextContent('/painel/biteplaner/onboarding');
+    expect(screen.getByTestId('journey-step-registration')).toHaveTextContent(/atual/i);
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/pendente/i);
+    expect(screen.getByRole('link', { name: /iniciar cadastro/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/onboarding'
+    );
+  });
+
+  it('keeps registration as current when onboarding is pending even if the backend stage says prerequisite', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-TESTE4-001',
+              status: 'registration_started',
+              statusLabel: 'Pre-requisito pendente',
+              stage: 'pre_requisite_pending',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'tete4', email: 'tete4@nexor.dev', phone: null },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-TESTE4-001/workflow-forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'BP-WF-TESTE4-ONBOARDING',
+              orderId: 'BP-TESTE4-001',
+              templateKey: 'customer_new_user_onboarding',
+              stepKey: 'new_user_onboarding',
+              status: 'pending',
+              roleState: { customer: 'pending', dentist: 'locked' },
+              canViewPayload: true,
+              summary: null,
+              releasedAt: '2026-05-01T10:05:00.000Z',
+              submittedAt: null,
+              payload: {},
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-TESTE4-001/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('journey-step-registration')).toHaveTextContent(/atual/i));
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/pendente/i);
+    expect(screen.getByRole('link', { name: /iniciar cadastro/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/onboarding'
+    );
+  });
+
+  it('keeps a submitted onboarding order in the prerequisite step even when the backend stage is still new-user onboarding', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/orders?as=user') {
+        return Promise.resolve({
+          orders: [
+            {
+              id: 'BP-TESTE4-001',
+              status: 'registration_started',
+              statusLabel: 'Cadastro inicial pendente',
+              stage: 'new_user_onboarding',
+              created_at: '2026-05-01T10:00:00.000Z',
+              customer: { full_name: 'teste4', email: 'teste4@nexor.dev', phone: null },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-TESTE4-001/workflow-forms') {
+        return Promise.resolve({
+          forms: [
+            {
+              id: 'BP-WF-TESTE4-ONBOARDING',
+              orderId: 'BP-TESTE4-001',
+              templateKey: 'customer_new_user_onboarding',
+              stepKey: 'new_user_onboarding',
+              status: 'submitted',
+              roleState: { customer: 'submitted', dentist: 'locked' },
+              customerSubmittedAt: '2026-05-01T10:20:00.000Z',
+              dentistReviewStartedAt: null,
+              dentistSubmittedAt: null,
+              canViewPayload: true,
+              summary: null,
+              releasedAt: '2026-05-01T10:05:00.000Z',
+              submittedAt: '2026-05-01T10:20:00.000Z',
+              payload: { fullName: 'teste4' },
+            },
+          ],
+        });
+      }
+
+      if (path === '/v1/orders/BP-TESTE4-001/appointments') {
+        return Promise.resolve({ appointments: [] });
+      }
+
+      return Promise.resolve({});
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getByTestId('athlete-journey-steps')).toBeInTheDocument());
+    expect(screen.getByTestId('current-path')).not.toHaveTextContent('/painel/biteplaner/onboarding');
+    await waitFor(() => expect(screen.getByTestId('journey-step-registration')).toHaveTextContent(/conclu.do/i));
+    expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/atual/i);
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /iniciar pr/i })).toHaveAttribute('href', '/painel/pre-requisito')
+    );
   });
 
   it('does not redirect registration orders to onboarding while workflow forms are still loading', async () => {

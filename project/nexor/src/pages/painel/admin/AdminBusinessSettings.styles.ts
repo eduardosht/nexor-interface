@@ -26,6 +26,6 @@ export const MobileSettingsWrap = styled.section`
   }
 
   @media (max-width: 768px) {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 `;

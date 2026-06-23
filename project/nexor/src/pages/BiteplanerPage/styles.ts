@@ -251,8 +251,7 @@ export const SplitSection = styled.section`
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    padding-top: 82px;
-    padding-bottom: 76px;
+    padding: 40px 0;
     gap: 38px;
   }
 `;
@@ -271,6 +270,10 @@ export const RealRoutineSection = styled.section`
     radial-gradient(circle, rgba(22, 122, 72, 0.14) 0 1px, transparent 1.2px) calc(100% - 300px) 24px / 12px 12px,
     #fbfcfb;
 
+  @media (max-width: 720px) {
+    padding: 40px 0;
+  }
+  
   &::before,
   &::after {
     content: '';
@@ -282,6 +285,10 @@ export const RealRoutineSection = styled.section`
     border: 1px solid rgba(22, 122, 72, 0.14);
     border-radius: 50%;
     pointer-events: none;
+
+      @media (max-width: 720px) {
+        display: none
+      }
   }
 
   &::after {
@@ -289,6 +296,10 @@ export const RealRoutineSection = styled.section`
     top: 178px;
     width: 350px;
     height: 350px;
+
+    @media (max-width: 720px) {
+      display: none
+    }
   }
 `;
 
@@ -465,7 +476,7 @@ export const ProcessOuter = styled.div`
 
     &::before {
       background-image: ${imageSet(publicOptimizedImages.biteplaner.process.mobile)};
-      background-position: 56% top;
+      background-position: 60% top;
     }
 
     &::after {
@@ -554,7 +565,7 @@ export const JourneyGrid = styled.div`
   }
 
   @media (max-width: 760px) {
-    grid-template-columns: 68px 76px minmax(0, 1fr);
+    grid-template-columns: 0 76px minmax(0, 1fr);
     margin-top: 42px;
   }
 `;
@@ -615,7 +626,7 @@ export const StepHeader = styled.div`
   }
 
   @media (max-width: 760px) {
-    padding-top: 0;
+    display: none;
   }
 `;
 
@@ -853,8 +864,7 @@ export const ComparisonSection = styled.section`
     linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
 
   @media (max-width: 900px) {
-    padding-top: 62px;
-    padding-bottom: 62px;
+    padding: 40px 0;
     gap: 26px;
   }
 `;
@@ -1207,7 +1217,7 @@ export const MobileComparisonCriterion = styled.div`
     padding: 0 0 12px;
 
     h3 {
-      font-size: clamp(15px, 3.75vw, 17px);
+      font-size: clamp(14px, 3.75vw, 17px);
       line-height: 1.18;
     }
   }
@@ -1374,8 +1384,7 @@ export const TrustOuter = styled.div`
   }
 
   @media (max-width: 900px) {
-    padding-top: 64px;
-    padding-bottom: 60px;
+    padding: 40px 0;
 
     &::before {
       top: -96px;
@@ -1731,8 +1740,7 @@ export const CommentsSection = styled.section`
   }
 
   @media (max-width: 900px) {
-    padding-top: 68px;
-    padding-bottom: 62px;
+    padding: 40px 0;
   }
 `;
 
