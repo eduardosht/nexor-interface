@@ -10,36 +10,36 @@ const GUIDE_LINKS = [
 
 const CARE_ITEMS = [
   {
-    title: 'Lugar de protetor bucal é em boca',
-    body: 'Evite ficar brincando ou mastigando o protetor. Além de reduzir a vida útil, o traumatismo pode acontecer justamente nesses curtos momentos sem proteção.',
+    title: 'Lugar de biteplaner é em boca',
+    body: 'Evite ficar brincando ou mastigando o dispositivo. Além de reduzir a vida útil, o traumatismo pode acontecer justamente nesses curtos momentos sem proteção.',
   },
   {
     title: 'Não lavar em água quente',
-    body: 'Água quente, chuveiro de vestiário e tentativas de esterilização podem deformar o protetor.',
+    body: 'Água quente, chuveiro de vestiário e tentativas de esterilização podem deformar o dispositivo.',
   },
   {
-    title: 'Não deixe o protetor sob o sol',
+    title: 'Não deixe o dispositivo sob o sol',
     body: 'Evite painel do carro, banco de reservas, grama ou exposição junto ao capacete.',
   },
   {
-    title: 'Guarde sempre seu protetor na caixinha',
-    body: 'Não deixe o protetor solto na mochila, dentro da meia ou em locais onde ele possa amassar e deformar.',
+    title: 'Guarde sempre seu dispositivo na caixinha',
+    body: 'Não deixe o dispositivo solto na mochila, dentro da meia ou em locais onde ele possa amassar e deformar.',
   },
   {
     title: 'Higienize com água limpa e escova',
     body: 'Evite cremes dentais abrasivos, que podem desgastar a superfície do dispositivo.',
   },
   {
-    title: 'Nunca compartilhe seu protetor',
-    body: 'O uso do protetor bucal é individual e não deve ser dividido com outros atletas.',
+    title: 'Nunca compartilhe seu dispositivo',
+    body: 'O uso do biteplaner é individual e não deve ser dividido com outros atletas.',
   },
 ];
 
 const USE_NOTES = [
-  'O protetor bucal esportivo não deve ser utilizado para dormir.',
-  'Placas noturnas não devem ser usadas como protetores esportivos, e protetores esportivos não substituem placas noturnas.',
-  'Durante jogo ou treino, evite guardar o protetor na meia, calção ou top para depois colocá-lo novamente na boca.',
-  'Mantenha o protetor em local seguro quando estiver fora da boca.',
+  'O biteplaner esportivo não deve ser utilizado para dormir.',
+  'Placas noturnas não devem ser usadas como o dispositivo biteplaner, e o biteplaner não substituem placas noturnas.',
+  'Durante jogo ou treino, evite guardar o dispositivo na meia, calção ou top para depois colocá-lo novamente na boca.',
+  'Mantenha o dispositivo em local seguro quando estiver fora da boca.',
 ];
 
 const QUICK_REFERENCE = [
@@ -49,7 +49,7 @@ const QUICK_REFERENCE = [
   },
   {
     situation: 'Durante treinos e jogos',
-    orientation: 'Use o protetor na boca e guarde na caixa quando precisar remover.',
+    orientation: 'Use o dispositivo na boca e guarde na caixa quando precisar remover.',
   },
   {
     situation: 'Transporte',
@@ -67,9 +67,9 @@ export function ConhecaOBiteplaner() {
       <S.Header>
         <S.HeaderInner>
           <S.Kicker>Guia de cuidado e uso</S.Kicker>
-          <S.Title>Cuidados com o protetor bucal esportivo</S.Title>
+          <S.Title>Cuidados com o biteplaner esportivo</S.Title>
           <S.Lead>
-            Orientações objetivas para preservar a forma, a higiene e a função do seu protetor durante treinos e
+            Orientações objetivas para preservar a forma, a higiene e a função do seu dispositivo durante treinos e
             competições.
           </S.Lead>
         </S.HeaderInner>
@@ -91,7 +91,7 @@ export function ConhecaOBiteplaner() {
           <S.Section id="visao-geral">
             <S.SectionTitle>Visão geral</S.SectionTitle>
             <S.Paragraph>
-              O protetor bucal esportivo foi produzido para uso individual em atividade esportiva. Ele deve permanecer
+              O biteplaner esportivo foi produzido para uso individual em atividade esportiva. Ele deve permanecer
               em boas condições de encaixe, higiene e armazenamento para continuar cumprindo sua função.
             </S.Paragraph>
           </S.Section>
@@ -138,11 +138,10 @@ export function ConhecaOBiteplaner() {
           </S.Section>
 
           <S.Section id="substituicao">
-            <S.SectionTitle>Protetor bucal não é eterno</S.SectionTitle>
+            <S.SectionTitle>Biteplaner não é eterno</S.SectionTitle>
             <S.Paragraph>
-              Seguir as orientações prolonga a vida útil do protetor, mas a substituição pode ser necessária com o
-              tempo. O cirurgião-dentista deve avaliar o momento adequado de troca. Pequenas bolhas podem aparecer e
-              são naturais da última etapa de produção, essencial para a absorção de impactos.
+              Seguir as orientações prolonga a vida útil do dispositivo, mas a substituição pode ser necessária com o
+              tempo. O cirurgião-dentista deve avaliar o momento adequado de troca.
             </S.Paragraph>
           </S.Section>
         </S.Article>
