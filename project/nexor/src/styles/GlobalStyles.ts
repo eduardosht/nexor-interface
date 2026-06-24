@@ -16,13 +16,6 @@ export const GlobalStyles = createGlobalStyle`
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     transition: background 200ms ease-in-out, color 200ms ease-in-out;
-  }
-
-  @media (max-width: 768px) {
-    body {
-      padding-bottom: var(--public-mobile-nav-height);
-    }
-  }
 
   h1, h2, h3, h4, h5, h6 { margin-bottom: 16px; }
 
