@@ -132,6 +132,8 @@ describe('Notificacoes', () => {
 
     expect(stylesSource).toContain('position: sticky;');
     expect(stylesSource).toContain('bottom: 0;');
+    expect(stylesSource).toContain('margin: 0 -12px;');
+    expect(stylesSource).not.toContain('calc(-76px - env(safe-area-inset-bottom))');
     expect(stylesSource).toContain('padding: 10px 12px calc(10px + env(safe-area-inset-bottom));');
   });
 });

@@ -190,7 +190,7 @@ export const Pagination = styled.nav`
     bottom: 0;
     z-index: 5;
     justify-content: space-between;
-    margin: 0 -12px calc(-76px - env(safe-area-inset-bottom));
+    margin: 0 -12px;
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
     border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
     background: ${({ theme }) => theme.colors.bgElevated};

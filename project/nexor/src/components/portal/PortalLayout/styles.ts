@@ -279,6 +279,7 @@ export const Shell = styled.div`
   min-width: 0;
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgBase};
 `;
@@ -286,6 +287,7 @@ export const Shell = styled.div`
 export const Sidebar = styled.nav<{ $collapsed: boolean }>`
   width: ${({ $collapsed }) => ($collapsed ? '64px' : '220px')};
   height: 100vh;
+  height: 100dvh;
   background: ${({ theme }) => theme.colors.bgElevated};
   border-right: 1px solid ${({ theme }) => theme.colors.borderDefault};
   display: flex;

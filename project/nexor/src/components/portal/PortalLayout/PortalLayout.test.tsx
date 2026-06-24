@@ -877,6 +877,23 @@ describe('PortalLayout navigation', () => {
     expect(source).toContain('padding-bottom: calc(32px + env(safe-area-inset-bottom))');
   });
 
+  it('uses dynamic viewport height so the mobile topbar stays visible after scrolling', () => {
+    const source = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+    const shellSource = source.slice(
+      source.indexOf('export const Shell'),
+      source.indexOf('export const Sidebar')
+    );
+    const sidebarSource = source.slice(
+      source.indexOf('export const Sidebar'),
+      source.indexOf('export const SidebarTop')
+    );
+
+    expect(shellSource).toContain('height: 100vh;');
+    expect(shellSource).toContain('height: 100dvh;');
+    expect(sidebarSource).toContain('height: 100vh;');
+    expect(sidebarSource).toContain('height: 100dvh;');
+  });
+
   it('defines compact dashboard density for notebook and mobile viewports', () => {
     const source = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
 
