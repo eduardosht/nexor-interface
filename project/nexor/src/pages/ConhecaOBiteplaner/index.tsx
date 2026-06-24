@@ -10,7 +10,7 @@ const GUIDE_LINKS = [
 
 const CARE_ITEMS = [
   {
-    title: 'Lugar de biteplaner é em boca',
+    title: 'Lugar do dispositivo é em boca',
     body: 'Evite ficar brincando ou mastigando o dispositivo. Além de reduzir a vida útil, o traumatismo pode acontecer justamente nesses curtos momentos sem proteção.',
   },
   {
@@ -31,13 +31,13 @@ const CARE_ITEMS = [
   },
   {
     title: 'Nunca compartilhe seu dispositivo',
-    body: 'O uso do biteplaner é individual e não deve ser dividido com outros atletas.',
+    body: 'O uso do Biteplaner é individual e não deve ser dividido com outros atletas.',
   },
 ];
 
 const USE_NOTES = [
-  'O biteplaner esportivo não deve ser utilizado para dormir.',
-  'Placas noturnas não devem ser usadas como o dispositivo biteplaner, e o biteplaner não substituem placas noturnas.',
+  'O Biteplaner não deve ser utilizado para dormir.',
+  'Placas noturnas não devem ser usadas como o dispositivo Biteplaner, e o Biteplaner não substituem placas noturnas.',
   'Durante jogo ou treino, evite guardar o dispositivo na meia, calção ou top para depois colocá-lo novamente na boca.',
   'Mantenha o dispositivo em local seguro quando estiver fora da boca.',
 ];
@@ -67,7 +67,7 @@ export function ConhecaOBiteplaner() {
       <S.Header>
         <S.HeaderInner>
           <S.Kicker>Guia de cuidado e uso</S.Kicker>
-          <S.Title>Cuidados com o biteplaner esportivo</S.Title>
+          <S.Title>Cuidados com o Biteplaner</S.Title>
           <S.Lead>
             Orientações objetivas para preservar a forma, a higiene e a função do seu dispositivo durante treinos e
             competições.
@@ -91,7 +91,7 @@ export function ConhecaOBiteplaner() {
           <S.Section id="visao-geral">
             <S.SectionTitle>Visão geral</S.SectionTitle>
             <S.Paragraph>
-              O biteplaner esportivo foi produzido para uso individual em atividade esportiva. Ele deve permanecer
+              O Biteplaner foi produzido para uso individual em atividade esportiva. Ele deve permanecer
               em boas condições de encaixe, higiene e armazenamento para continuar cumprindo sua função.
             </S.Paragraph>
           </S.Section>
