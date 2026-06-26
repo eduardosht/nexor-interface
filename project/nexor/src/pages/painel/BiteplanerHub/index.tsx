@@ -80,14 +80,12 @@ import {
   getAuthToken,
   getEffectiveAthleteOrder,
   getOrderDisplayId,
-  getOrderClinicalDentistName,
   getOrderStatusPresentation,
   getStageLabel,
   PERSONA_MODE,
   registerClinicalDecision,
   updateAppointment,
   type AccessMode,
-  type BiteplanerPurchaseConfiguration,
   type DemoAppointment,
   type DemoOrderSummary,
   type DemoTimelineEvent,
@@ -1009,46 +1007,6 @@ function formatAttachmentSize(sizeBytes?: number | null) {
   return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(sizeBytes / (1024 * 1024))} MB`;
 }
 
-function formatBiteplanerModel(model: string) {
-  const normalized = model.trim().toLowerCase();
-
-  if (normalized === 'impacto') {
-    return 'Linha Impact';
-  }
-
-  if (normalized === 'esportes') {
-    return 'Linha Strength';
-  }
-
-  return model.trim() || 'Não informado';
-}
-
-function formatBiteplanerColor(color: string) {
-  const normalized = color.trim().toLowerCase();
-
-  if (normalized === 'preto') {
-    return 'Preto';
-  }
-
-  if (normalized === 'branco') {
-    return 'Branco';
-  }
-
-  return color.trim() || 'Não informado';
-}
-
-function formatBiteplanerPurchaseConfiguration(configuration: BiteplanerPurchaseConfiguration | null | undefined) {
-  if (!configuration) {
-    return 'Não informado';
-  }
-
-  return [
-    `Modelo: ${formatBiteplanerModel(configuration.model)}`,
-    `Cor: ${formatBiteplanerColor(configuration.color)}`,
-    `Quantidade: ${configuration.quantity}`,
-  ].join(' | ');
-}
-
 function getLatestLabAdjustmentEvent(events: DemoTimelineEvent[]) {
   return sortTimelineEventsByLatestFirst(events).find((event) => event.toStatus === 'dentist_adjustment_required') ?? null;
 }
@@ -1077,10 +1035,6 @@ function findLicensedLabByProductionRequest(
   }
 
   return labs.find((lab) => lab.profileId === labId || lab.id === labId) ?? null;
-}
-
-function formatOrderDentist(order: DemoOrderSummary) {
-  return getOrderClinicalDentistName(order);
 }
 
 function normalizeBrazilianPhone(phone?: string | null) {

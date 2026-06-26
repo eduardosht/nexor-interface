@@ -5,7 +5,6 @@ import {
   getOrderDisplayId,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
-import { getOrderStatusPresentation } from '../../../features/biteplaner/orders/orderPresenter';
 
 export type OrderStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
 
@@ -36,21 +35,6 @@ export function OrderInfoCard({
   showMetadata = true,
 }: OrderInfoCardProps) {
   const orderLabel = getOrderDisplayId(order);
-  const status = getOrderStatusPresentation(order);
-  const updatedAt = order.created_at;
-  const updatedAtDate = updatedAt
-    ? new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo' }).format(new Date(updatedAt))
-    : null;
-  const updatedAtTime = updatedAt
-    ? new Intl.DateTimeFormat('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo'
-    }).format(new Date(updatedAt))
-    : null;
-  const stageLabel = order.stage === 'awaiting_initial_consultation'
-    ? 'Consulta inicial'
-    : status.label;
 
   return (
     <S.OrderBanner data-testid={testId} $hideLastUpdate={!showLastUpdate} $summaryOnly={!showMetadata}>

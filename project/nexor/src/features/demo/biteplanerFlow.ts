@@ -73,6 +73,7 @@ export type DemoOrderSummary = {
   statusLabel?: string;
   stage: string;
   created_at: string;
+  updated_at?: string | null;
   customer_profile_id?: string | null;
   user_profile_id?: string | null;
   practice_location_id?: string | null;

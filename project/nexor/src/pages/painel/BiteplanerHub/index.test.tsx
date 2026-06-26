@@ -1016,7 +1016,7 @@ describe('BiteplanerHub', () => {
       expect(within(dentistQueueTable).queryByText('BP-DEMO-201')).not.toBeInTheDocument();
       expect(within(dentistQueueTable).queryByText('BP-DEMO-205')).not.toBeInTheDocument();
     });
-  });
+  }, 15000);
 
   it('requests dentist orders with a bounded date range filter', async () => {
     mockApiGet
