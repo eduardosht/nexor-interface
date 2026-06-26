@@ -57,9 +57,9 @@ import {
   isAffirmativeWorkflowValue,
 } from './workflowFormFieldDictionary';
 import {
-  WorkflowFormsPendingRequiredLegend,
-  type PendingRequiredField,
-} from './WorkflowFormsPendingRequiredLegend';
+  FormValidations,
+  type FormValidationItem,
+} from './FormValidations';
 import { canHydrateWorkflowFormPayload } from './WorkflowFormsPanel.access';
 
 type IntakeFieldDefinition = {
@@ -96,6 +96,7 @@ type WorkflowFormsPanelProps = {
   beforeFormsContent?: ReactNode;
   formsLocked?: boolean;
   payloadExtras?: Record<string, unknown>;
+  queryScope?: string;
 };
 
 type RenderFieldControlContext = {
@@ -208,6 +209,10 @@ function getCompactSectionTitle(title: string) {
   }
 
   return title;
+}
+
+function getProgressSectionTitle(title: string) {
+  return getCompactSectionTitle(title).replace(/\s+PARA\s+SEU\s+CUIDADO$/i, '');
 }
 
 function getOnboardingDisplaySections(sections: VisibleSharedSection[]): DisplaySharedSection[] {
@@ -447,6 +452,18 @@ function stableStringify(value: unknown): string {
 
 function getDefaultValuesSignature(defaultValues: Record<string, string>) {
   return stableStringify(defaultValues);
+}
+
+function getScopedWorkflowFormsQueryKey(orderId: string, queryScope?: string) {
+  const baseKey = biteplanerQueryKeys.workflowForms(orderId);
+
+  return queryScope ? [...baseKey, 'actor', queryScope] as const : baseKey;
+}
+
+function getScopedWorkflowFormQueryKey(orderId: string, workflowFormId: string, queryScope?: string) {
+  const baseKey = biteplanerQueryKeys.workflowForm(orderId, workflowFormId);
+
+  return queryScope ? [...baseKey, 'actor', queryScope] as const : baseKey;
 }
 
 function isScoreField(
@@ -1614,6 +1631,9 @@ function FormItem({
     ? getFirstMissingSectionIndex() >= 0
     : fields.some((field) => hasMissingRequiredValue(field, payload));
   const pendingRequiredFields = getPendingRequiredFields();
+  const activeValidationFields = getActiveValidationFields();
+  const formBlockingFields = pendingRequiredFields.length > 0 ? pendingRequiredFields : activeValidationFields;
+  const formBlockingFieldsAreInvalid = pendingRequiredFields.length === 0 && activeValidationFields.length > 0;
   const nextActionIcon = hideProceedActionIcons ? undefined : <ChevronRight size={16} aria-hidden="true" />;
   const submitActionIcon = hideProceedActionIcons ? undefined : <Send size={16} aria-hidden="true" />;
 
@@ -1755,7 +1775,7 @@ function FormItem({
     return nextErrors;
   }
 
-  function getPendingRequiredFields(): PendingRequiredField[] {
+  function getPendingRequiredFields(): FormValidationItem[] {
     if (isSharedIntake) {
       if (!activeSharedSection) {
         return [];
@@ -1779,6 +1799,21 @@ function FormItem({
       }));
   }
 
+  function getActiveValidationFields(): FormValidationItem[] {
+    const sourceFields = isSharedIntake && activeSharedSection
+      ? getEditableFieldsForSection(activeSharedSection)
+      : fields.filter((field) => isFieldVisibleForPayload(field, payload));
+
+    return sourceFields
+      .map((field) => ({
+        key: field.key,
+        label: field.label,
+        sectionIndex: isSharedIntake ? activeSharedSectionIndex : -1,
+        message: fieldErrors[field.key] ?? '',
+      }))
+      .filter((field) => Boolean(field.message));
+  }
+
   function focusPendingField(fieldKey: string) {
     window.setTimeout(() => {
       const fieldElement = formCardRef.current?.querySelector<HTMLElement>(`[data-workflow-field-key="${fieldKey}"]`);
@@ -1795,7 +1830,7 @@ function FormItem({
     }, 80);
   }
 
-  function handlePendingFieldClick(field: PendingRequiredField) {
+  function handlePendingFieldClick(field: FormValidationItem) {
     if (field.sectionIndex >= 0 && field.sectionIndex !== activeSharedSectionIndex) {
       setActiveSectionIndex(field.sectionIndex);
     }
@@ -2114,7 +2149,7 @@ function FormItem({
         <S.OnboardingProgressRail $expanded={onboardingProgressExpanded}>
           {navigationSharedSections.map((section, index) => {
             const displayIndex = displaySharedSections.findIndex((item) => item.key === section.key);
-            const compactTitle = getCompactSectionTitle(section.title);
+            const compactTitle = getProgressSectionTitle(section.title);
             const [firstLine, ...restLines] = compactTitle.split(/\s+E\s+|\s+PARA\s+/i);
 
             return (
@@ -2274,7 +2309,7 @@ function FormItem({
                     <S.PrivacyGate>
                       <S.PrivacyIntro>
                         <div>
-                          <S.SectionHeading>Pré-requisito clínico Biteplaner</S.SectionHeading>
+                          <S.SectionHeading>Pré-consulta clínica Biteplaner</S.SectionHeading>
                           <S.PrivacyIntroText>
                             A NEXOR desenvolve pesquisas científicas e dispositivos técnicos personalizados para auxiliar atletas a treinarem com mais conforto, segurança, performance, consistência, saúde e longevidade.
                           </S.PrivacyIntroText>
@@ -2326,9 +2361,25 @@ function FormItem({
                         </AdminFormButton>
                         {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                       </S.PrivacyActions>
-                      <WorkflowFormsPendingRequiredLegend
-                        items={pendingRequiredFields}
-                        onFieldClick={handlePendingFieldClick}
+                      <FormValidations
+                        items={formBlockingFields}
+                        onItemClick={handlePendingFieldClick}
+                        title={formBlockingFieldsAreInvalid ? 'Campos com validação pendente' : undefined}
+                        description={
+                          formBlockingFieldsAreInvalid
+                            ? 'Corrija os campos abaixo para continuar.'
+                            : undefined
+                        }
+                        footer={
+                          formBlockingFieldsAreInvalid
+                            ? 'Essas validações são obrigatórias para liberar o envio.'
+                            : undefined
+                        }
+                        ariaLabel={
+                          formBlockingFieldsAreInvalid
+                            ? 'Campos preenchidos incorretamente'
+                            : undefined
+                        }
                       />
                     </S.PrivacyGate>
                   </S.AnimatedStep>
@@ -2458,9 +2509,25 @@ function FormItem({
                           )}
                           {stepError ? <S.Feedback $tone="error" role="alert">{stepError}</S.Feedback> : null}
                         </S.Actions>
-                        <WorkflowFormsPendingRequiredLegend
-                          items={pendingRequiredFields}
-                          onFieldClick={handlePendingFieldClick}
+                        <FormValidations
+                          items={formBlockingFields}
+                          onItemClick={handlePendingFieldClick}
+                          title={formBlockingFieldsAreInvalid ? 'Campos com validação pendente' : undefined}
+                          description={
+                            formBlockingFieldsAreInvalid
+                              ? 'Corrija os campos abaixo para continuar.'
+                              : undefined
+                          }
+                          footer={
+                            formBlockingFieldsAreInvalid
+                              ? 'Essas validações são obrigatórias para liberar o envio.'
+                              : undefined
+                          }
+                          ariaLabel={
+                            formBlockingFieldsAreInvalid
+                              ? 'Campos preenchidos incorretamente'
+                              : undefined
+                          }
                         />
                       </form>
                     ) : (
@@ -2698,9 +2765,25 @@ function FormItem({
             {feedback ? <S.Feedback $tone="success">{feedback}</S.Feedback> : null}
             {error ? <S.Feedback $tone="error" role="alert">{error}</S.Feedback> : null}
           </S.Actions>
-          <WorkflowFormsPendingRequiredLegend
-            items={pendingRequiredFields}
-            onFieldClick={handlePendingFieldClick}
+          <FormValidations
+            items={formBlockingFields}
+            onItemClick={handlePendingFieldClick}
+            title={formBlockingFieldsAreInvalid ? 'Campos com validação pendente' : undefined}
+            description={
+              formBlockingFieldsAreInvalid
+                ? 'Corrija os campos abaixo para continuar.'
+                : undefined
+            }
+            footer={
+              formBlockingFieldsAreInvalid
+                ? 'Essas validações são obrigatórias para liberar o envio.'
+                : undefined
+            }
+            ariaLabel={
+              formBlockingFieldsAreInvalid
+                ? 'Campos preenchidos incorretamente'
+                : undefined
+            }
           />
         </form>
       ) : (
@@ -3172,6 +3255,7 @@ export function WorkflowFormsPanel({
   beforeFormsContent,
   formsLocked = false,
   payloadExtras,
+  queryScope,
 }: WorkflowFormsPanelProps) {
   const queryClient = useQueryClient();
   const [loadedForms, setLoadedForms] = useState<DemoWorkflowForm[]>([]);
@@ -3208,7 +3292,7 @@ export function WorkflowFormsPanel({
     async function loadForms() {
       try {
         const response = await queryClient.fetchQuery({
-          queryKey: biteplanerQueryKeys.workflowForms(currentOrderId),
+          queryKey: getScopedWorkflowFormsQueryKey(currentOrderId, queryScope),
           queryFn: () => fetchWorkflowForms(currentOrderId, token),
           staleTime: 5 * 60_000,
         });
@@ -3232,7 +3316,7 @@ export function WorkflowFormsPanel({
     return () => {
       active = false;
     };
-  }, [forms, orderId, queryClient, Boolean(token)]);
+  }, [forms, orderId, queryClient, queryScope, Boolean(token)]);
 
   useEffect(() => {
     if (!orderId || !token) {
@@ -3261,7 +3345,7 @@ export function WorkflowFormsPanel({
         const hydratedForms = await Promise.all(
           formsMissingPayload.map((form) =>
             queryClient.fetchQuery({
-              queryKey: biteplanerQueryKeys.workflowForm(currentOrderId, form.id),
+              queryKey: getScopedWorkflowFormQueryKey(currentOrderId, form.id, queryScope),
               queryFn: () => fetchWorkflowForm(currentOrderId, form.id, token),
               staleTime: 10 * 60_000,
             })
@@ -3309,7 +3393,7 @@ export function WorkflowFormsPanel({
     return () => {
       active = false;
     };
-  }, [formsSource, orderId, queryClient, templateFilter, Boolean(token)]);
+  }, [formsSource, orderId, queryClient, queryScope, templateFilter, Boolean(token)]);
 
   const visibleForms = useMemo(
     () => formsSource.filter((form) => isActiveWorkflowForm(form) && (!templateFilter || templateFilter.includes(form.templateKey))),

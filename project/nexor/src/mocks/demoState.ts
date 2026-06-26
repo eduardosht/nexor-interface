@@ -206,8 +206,6 @@ type DemoOrder = {
     labNotes: string;
     scan3dFileName: string;
     scan3dFileRef?: Record<string, unknown> | null;
-    prescriptionFileName: string;
-    prescriptionFileRef?: Record<string, unknown> | null;
     lgpdConfirmed: boolean;
     selectedLabId: string | null;
     purchaseConfiguration?: {
@@ -228,6 +226,11 @@ type DemoOrder = {
     quantity: number;
     model: string;
     color: string;
+  } | null;
+  paymentRequest?: {
+    status: 'pending_admin_message' | 'message_sent';
+    confirmedAt?: string | null;
+    messageSentAt?: string | null;
   } | null;
   preLabChecklistDraft: {
     anamnesisSummary: string;
@@ -429,6 +432,8 @@ type OrderStatusAction =
       };
     }
   | { type: 'create-checkout-session'; model: string; color: string; quantity: number }
+  | { type: 'confirm-purchase-request'; model: string; color: string; quantity: number }
+  | { type: 'mark-payment-message-sent' }
   | { type: 'confirm-payment' }
   | { type: 'select-practice-location'; practiceLocationId: string }
   | { type: 'schedule-initial-consultation'; practiceLocationId: string }
@@ -444,8 +449,6 @@ type OrderStatusAction =
       labNotes: string;
       scan3dFileName: string;
       scan3dFileRef?: Record<string, unknown> | null;
-      prescriptionFileName: string;
-      prescriptionFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
       selectedLabId: string | null;
       purchaseConfiguration?: {
@@ -463,8 +466,6 @@ type OrderStatusAction =
       labNotes: string;
       scan3dFileName: string;
       scan3dFileRef?: Record<string, unknown> | null;
-      prescriptionFileName: string;
-      prescriptionFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
       selectedLabId: string | null;
       purchaseConfiguration?: {
@@ -673,7 +674,7 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
   {
     persona: 'athletePrerequisite',
     orderId: 'BP-DEMO-001',
-    fullName: 'Cliente Pre-requisito',
+    fullName: 'Cliente Pré-consulta',
     email: 'cliente.prerequisito@nexor.dev'
   },
   {
@@ -685,7 +686,7 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
   {
     persona: 'athletePreConsultation',
     orderId: 'BP-DEMO-003',
-    fullName: 'Cliente Pre-consulta Clinica',
+    fullName: 'Cliente Pré-consulta Clínica',
     email: 'cliente.preconsulta@nexor.dev'
   },
   {
@@ -1313,7 +1314,7 @@ const seedState = (): DemoState => ({
       customerEmail: 'atleta.demo@nexor.dev',
       customerPhone: '11999990001',
       funnelStage: 'account_created',
-      statusLabel: 'Pre-requisito pendente',
+      statusLabel: 'Pré-consulta pendente',
       created_at: '2026-05-01T10:10:00.000Z'
     },
     {
@@ -1347,7 +1348,7 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-DEMO-001',
       status: 'registration_started',
-      statusLabel: 'Pre-requisito pendente',
+      statusLabel: 'Pré-consulta pendente',
       stage: 'pre_requisite_pending',
       created_at: '2026-05-01T10:00:00.000Z',
       customer_profile_id: 'demo-profile-athlete',
@@ -1488,7 +1489,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: '',
         labNotes: '',
         scan3dFileName: '',
-        prescriptionFileName: '',
         lgpdConfirmed: false,
         selectedLabId: null
       },
@@ -1612,7 +1612,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: 'Solicitação de produção validada para o caso.',
         labNotes: 'Ajuste fino de mordida para atleta de combate.',
         scan3dFileName: 'marina-arcada-v2.stl',
-        prescriptionFileName: 'prescricao-marina-demo.pdf',
         lgpdConfirmed: true,
         selectedLabId: 'lab-demo-001'
       },
@@ -1664,7 +1663,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: 'Caso concluído e enviado com sucesso.',
         labNotes: 'Sem observações finais.',
         scan3dFileName: 'joao-arcada-final.stl',
-        prescriptionFileName: 'prescricao-joao-demo.pdf',
         lgpdConfirmed: true,
         selectedLabId: 'lab-demo-001'
       },
@@ -1716,7 +1714,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: 'Caso finalizado e em acompanhamento.',
         labNotes: 'Paciente em fase de adaptação funcional.',
         scan3dFileName: 'joao-arcada-final.stl',
-        prescriptionFileName: 'prescricao-joao-demo.pdf',
         lgpdConfirmed: true,
         selectedLabId: 'lab-demo-001'
       },
@@ -1958,7 +1955,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: 'Protetor superior para treino de contato.',
         labNotes: '',
         scan3dFileName: '',
-        prescriptionFileName: '',
         lgpdConfirmed: false,
         selectedLabId: null
       },
@@ -2005,7 +2001,6 @@ const seedState = (): DemoState => ({
         productionRequestSummary: 'Protetor personalizado para boxe amador, arcada superior.',
         labNotes: 'Priorizar conforto posterior e conferir estabilidade em impacto lateral.',
         scan3dFileName: 'camila-boxe-arcada-superior.stl',
-        prescriptionFileName: 'prescricao-camila-boxe.pdf',
         lgpdConfirmed: true,
         selectedLabId: 'lab-demo-001'
       },
@@ -2489,7 +2484,7 @@ const seedState = (): DemoState => ({
       orderId: 'BP-DEMO-002',
       fromStatus: 'registration_started',
       toStatus: 'awaiting_scheduling',
-      reason: 'Pre-requisito concluído e dentista já selecionado.',
+      reason: 'Pré-consulta concluída e dentista já selecionado.',
       createdAt: '2026-05-01T11:00:00.000Z'
     },
     {
@@ -3142,10 +3137,6 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
       pendingItems.push('Escaneamento 3D intraoral pendente');
     }
 
-    if (!(order.productionRequestDraft?.prescriptionFileName ?? '').trim()) {
-      pendingItems.push('Prescrição médica assinada e carimbada pendente');
-    }
-
     if (!order.flags.retentionAcknowledged) {
       pendingItems.push('Ciencia de responsabilidade e LGPD pendente');
     }
@@ -3203,6 +3194,7 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
     preLabChecklistDraft: canReadClinicalDraft ? clone(order.preLabChecklistDraft) : null,
     dentistRecommendedPurchaseConfiguration: clone(order.dentistRecommendedPurchaseConfiguration ?? null),
     purchaseConfiguration: clone(order.purchaseConfiguration ?? null),
+    paymentRequest: clone(order.paymentRequest ?? null),
     operationalReadiness: {
       preLabReady: pendingItems.length === 0,
       pendingItems,
@@ -4307,6 +4299,8 @@ export interface OrderListFilters {
   status?: string | undefined;
   limit?: number | undefined;
   createdBefore?: string | undefined;
+  initDate?: string | undefined;
+  finalDate?: string | undefined;
 }
 
 export function listOrders(
@@ -4323,6 +4317,8 @@ export function listOrders(
       .filter((order) => canPersonaReadOrder(order, activePersona))
       .filter((order) => filters.status === undefined || order.status === filters.status)
       .filter((order) => filters.createdBefore === undefined || order.created_at < filters.createdBefore)
+      .filter((order) => filters.initDate === undefined || order.created_at >= filters.initDate)
+      .filter((order) => filters.finalDate === undefined || order.created_at <= filters.finalDate)
       .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
       .slice(0, limit)
       .map((order) => sanitizeOrder(order, activePersona))
@@ -4861,7 +4857,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
             'awaiting_scheduling',
             'Aguardando consulta inicial',
             'awaiting_initial_consultation',
-            'Pre-requisito preenchido na jornada demo.'
+            'Pré-consulta preenchida na jornada demo.'
           );
         }
 
@@ -5017,7 +5013,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         422,
         'biteplaner_consent_required',
-        'Consentimentos obrigatórios do Biteplaner são necessários para concluir o pre-requisito.'
+        'Consentimentos obrigatórios do Biteplaner são necessários para concluir a pré-consulta.'
       );
     }
 
@@ -5037,7 +5033,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         422,
         'prerequisite_impediment',
-        'Pre-requisito com impedimento não pode avançar automaticamente.'
+        'Pré-consulta com impedimento não pode avançar automaticamente.'
       );
     }
 
@@ -5057,7 +5053,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       'awaiting_scheduling',
       'Aguardando consulta inicial',
       'awaiting_initial_consultation',
-      'Pre-requisito concluído na jornada demo.'
+      'Pré-consulta concluída na jornada demo.'
     );
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
@@ -5214,6 +5210,53 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
+  if (action.type === 'confirm-purchase-request') {
+    const order = getOrderOrThrow(orderId);
+    const quantity = Number.isFinite(action.quantity) ? Math.max(1, Math.min(10, Math.trunc(action.quantity))) : 1;
+    const model = action.model.trim();
+    const color = action.color.trim();
+
+    order.purchaseConfiguration = {
+      productKey: 'biteplaner',
+      quantity,
+      model: model || 'impacto',
+      color: color || 'preto',
+    };
+    order.paymentRequest = {
+      status: 'pending_admin_message',
+      confirmedAt: new Date().toISOString(),
+      messageSentAt: null,
+    };
+    order.nextActions = ['mark-payment-message-sent', 'confirm-payment'];
+
+    pushTimeline(
+      orderId,
+      order.status,
+      `Cliente confirmou a compra do Biteplaner modelo ${order.purchaseConfiguration.model}, cor ${order.purchaseConfiguration.color} e quantidade ${quantity}.`
+    );
+
+    return sanitizeOrder(order, resolveActiveDemoPersona(context));
+  }
+
+  if (action.type === 'mark-payment-message-sent') {
+    const order = getOrderOrThrow(orderId);
+
+    order.paymentRequest = {
+      ...(order.paymentRequest ?? { confirmedAt: null }),
+      status: 'message_sent',
+      messageSentAt: new Date().toISOString(),
+    };
+    order.nextActions = ['confirm-payment'];
+
+    pushTimeline(
+      orderId,
+      order.status,
+      'Admin marcou a mensagem manual com link de pagamento como enviada ao cliente.'
+    );
+
+    return sanitizeOrder(order, resolveActiveDemoPersona(context));
+  }
+
   if (action.type === 'confirm-payment') {
     const order = getOrderOrThrow(orderId);
     order.flags.paymentConfirmed = true;
@@ -5238,8 +5281,6 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       labNotes: action.labNotes.trim(),
       scan3dFileName: action.scan3dFileName.trim(),
       scan3dFileRef: action.scan3dFileRef ?? null,
-      prescriptionFileName: action.prescriptionFileName.trim(),
-      prescriptionFileRef: action.prescriptionFileRef ?? null,
       lgpdConfirmed: action.lgpdConfirmed,
       selectedLabId: action.selectedLabId?.trim() ? action.selectedLabId : null,
       purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
@@ -5259,7 +5300,6 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     const anamnesisSummary = action.anamnesisSummary.trim();
     const productionRequestSummary = action.productionRequestSummary.trim();
     const scan3dFileName = action.scan3dFileName.trim();
-    const prescriptionFileName = action.prescriptionFileName.trim();
     const selectedLabId = action.selectedLabId?.trim() ? action.selectedLabId : null;
 
     if (!anamnesisSummary) {
@@ -5279,14 +5319,6 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
         422,
         'missing_scan_3d',
         'Anexe o escaneamento 3D intraoral antes de concluir.'
-      );
-    }
-
-    if (!prescriptionFileName) {
-      throw new DemoStateError(
-        422,
-        'missing_prescription_file',
-        'Anexe a prescrição médica assinada e carimbada antes de concluir.'
       );
     }
 
@@ -5313,8 +5345,6 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       labNotes: action.labNotes.trim(),
       scan3dFileName,
       scan3dFileRef: action.scan3dFileRef ?? null,
-      prescriptionFileName,
-      prescriptionFileRef: action.prescriptionFileRef ?? null,
       lgpdConfirmed: true,
       selectedLabId,
       purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
@@ -5332,7 +5362,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     pushTimeline(
       orderId,
       order.status,
-      `Dentista concluiu a solicitação de produção, anexou ${scan3dFileName} e ${prescriptionFileName} e selecionou o laboratório ${selectedLabId}.`
+      `Dentista concluiu a solicitação de produção, anexou ${scan3dFileName} e selecionou o laboratório ${selectedLabId}.`
     );
 
     updateOrderStatus(

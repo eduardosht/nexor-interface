@@ -469,7 +469,7 @@ const demoAdmStyles = `
     color: #145c3d;
     background: #e8f7ee;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
   }
 
@@ -525,7 +525,7 @@ const demoAdmStyles = `
     color: #fff;
     background: #15803d;
     font: inherit;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
   }
 
@@ -573,7 +573,7 @@ const demoAdmStyles = `
     color: #145c3d;
     background: #e8f7ee;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     text-transform: uppercase;
   }
 
@@ -853,7 +853,7 @@ const demoAdmStyles = `
     color: #102033;
     background: #ffffff;
     font: inherit;
-    font-weight: 800;
+    font-weight: 700;
     cursor: pointer;
   }
 

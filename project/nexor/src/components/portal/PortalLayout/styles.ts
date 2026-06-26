@@ -43,7 +43,7 @@ export const ModalBox = styled.div`
 export const ModalTitle = styled.h2`
   margin: 0 0 4px;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: #171717;
 `;
@@ -405,6 +405,16 @@ export const NavLabel = styled.span<{ $collapsed: boolean }>`
   pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
 `;
 
+export const NavUnreadDot = styled.span`
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #15803D;
+  box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.bgElevated};
+  flex-shrink: 0;
+`;
+
 export const NavSectionLabel = styled.div<{ $collapsed: boolean }>`
   padding: 12px 16px 4px;
   font-size: 10px;
@@ -467,7 +477,7 @@ export const MvpBadge = styled.span`
   background: #fef2f2;
   color: #b91c1c;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.06em;
   line-height: 1.4;
 `;
@@ -666,6 +676,16 @@ export const MobileDrawerLink = styled(NavLink)`
   svg { flex-shrink: 0; }
 `;
 
+export const MobileDrawerUnreadDot = styled.span`
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #15803D;
+  box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.bgElevated};
+  flex-shrink: 0;
+`;
+
 export const MobileDrawerFooter = styled.div`
   padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
@@ -749,6 +769,7 @@ export const NotifBtn = styled.button<{ $hasUnread?: boolean }>`
 
   &::after {
     content: '';
+    display: ${({ $hasUnread }) => ($hasUnread ? 'block' : 'none')};
     position: absolute;
     top: 4px;
     right: 4px;
@@ -827,7 +848,7 @@ export const NotificationsPanelTitle = styled.strong`
   align-items: center;
   gap: 10px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   line-height: 1.15;
 `;
@@ -843,7 +864,7 @@ export const NotificationsCountBadge = styled.span`
   background: ${({ theme }) => theme.colors.green};
   color: #ffffff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: 0 10px 22px ${({ theme }) => theme.colors.green}38;
 `;
 
@@ -912,7 +933,7 @@ export const NotificationsTab = styled.button<{ $active: boolean }>`
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
 
@@ -941,7 +962,7 @@ export const NotificationsTabBadge = styled.span<{ $active: boolean }>`
   background: ${({ theme, $active }) => ($active ? theme.colors.green : theme.colors.bgInset)};
   color: ${({ $active }) => ($active ? '#ffffff' : '#525252')};
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 
   @media (max-width: 640px) {
     min-width: 24px;
@@ -1052,7 +1073,7 @@ export const NotificationItemHeader = styled.div`
 export const NotificationTitle = styled.strong`
   min-width: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1312,54 +1333,3 @@ export const ContentInner = styled(motion.main)`
   }
 `;
 
-export const MobileBottomNav = styled.nav`
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  min-height: calc(64px + env(safe-area-inset-bottom));
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 -10px 30px rgba(23, 23, 23, 0.08);
-
-  @media (min-width: 769px) {
-    display: none;
-  }
-`;
-
-export const MobileBottomNavLink = styled(NavLink)`
-  min-width: 0;
-  flex: 1;
-  min-height: 52px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border-radius: 8px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 9px;
-  font-weight: 650;
-  line-height: 1.2;
-  text-align: center;
-  text-decoration: none;
-
-  &.active {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background: ${({ theme }) => theme.colors.bgInset};
-  }
-
-  svg { flex-shrink: 0; }
-
-  span {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;

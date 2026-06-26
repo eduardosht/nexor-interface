@@ -171,7 +171,7 @@ export const SelectedClinicDetail = styled.div`
     margin: 0;
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
@@ -320,14 +320,14 @@ export const PaymentDetailItem = styled.div`
   span {
     color: ${({ theme }) => theme.colors.textSecondary};
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.3;
   }
 
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 16px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
@@ -498,7 +498,7 @@ export const StatusPill = styled.span<{ $tone: StepTone }>`
   color: ${({ $tone }) =>
     $tone === 'complete' ? '#15803d' : $tone === 'current' ? '#a16207' : '#667085'};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 
@@ -666,7 +666,7 @@ export const SecondaryActionAnchor = styled.a`
   background: rgba(255, 255, 255, 0.86);
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
   text-decoration: none;
 
@@ -895,7 +895,7 @@ export const ProgressStepMarker = styled.span<{ $tone: StepTone }>`
 export const ProgressStepLabel = styled.span`
   color: currentColor;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   text-align: center;
 `;
@@ -1156,7 +1156,7 @@ export const OverviewStepName = styled.span`
   min-width: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
 
   @media (max-width: 560px) {
@@ -1350,7 +1350,7 @@ export const StepBadge = styled.span<{ $tone: StepTone }>`
   background: #ffffff;
   color: ${({ $tone }) => ($tone === 'upcoming' ? '#647083' : '#101828')};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 
   @media (max-width: 640px) {
@@ -1422,7 +1422,7 @@ export const StepText = styled.div`
 export const StepName = styled.h3`
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.18;
   color: #101828;
 
@@ -1452,7 +1452,7 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   background: ${({ $tone }) => ($tone === 'complete' ? 'rgba(21, 128, 61, 0.1)' : '#f0f0f1')};
   color: ${({ $tone }) => ($tone === 'complete' ? '#2f6f45' : '#666d7a')};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 
   @media (max-width: 760px) {
@@ -1465,7 +1465,7 @@ export const StepStatus = styled.span<{ $tone: StepTone }>`
   }
 `;
 
-export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
+export const StepStatusLink = styled(Link) <{ $tone: StepTone }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1479,7 +1479,7 @@ export const StepStatusLink = styled(Link)<{ $tone: StepTone }>`
   background: rgba(21, 128, 61, 0.1);
   color: #2f6f45;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
 
@@ -1672,7 +1672,7 @@ export const ContactHeaderIcon = styled.span`
 
 export const ContactEmail = styled.strong`
   color: #dc2626;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const ContactForm = styled.div`
@@ -1777,7 +1777,7 @@ export const ContactSubmitLink = styled.a`
   color: #ffffff;
   text-decoration: none;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: 0 12px 24px rgba(23, 23, 23, 0.18);
 `;
 

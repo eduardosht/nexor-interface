@@ -17,12 +17,16 @@ export type AdminDataTableProps<T> = {
   data: T[];
   columns: AdminDataTableColumn<T>[];
   keyExtractor: (row: T, index: number) => string;
+  renderMobileCard?: (row: T) => ReactNode;
+  mobileTestId?: string;
   searchLabel?: string;
   searchPlaceholder?: string;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   emptyMessage?: string;
   pageSize?: number;
+  initialSortKey?: string;
+  initialSortDirection?: 'asc' | 'desc';
   testId?: string;
   actions?: ReactNode;
 };
@@ -31,18 +35,22 @@ export function AdminDataTable<T>({
   data,
   columns,
   keyExtractor,
+  renderMobileCard,
+  mobileTestId = 'admin-data-table-mobile',
   searchLabel = 'Buscar',
   searchPlaceholder = 'Buscar...',
   searchValue = '',
   onSearchChange,
   emptyMessage = 'Nenhum registro encontrado.',
   pageSize = 10,
+  initialSortKey,
+  initialSortDirection = 'asc',
   testId,
   actions,
 }: AdminDataTableProps<T>) {
   const { tokens } = useDesignSystem();
-  const [sortKey, setSortKey] = useState<string>(columns[0]?.key ?? '');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortKey, setSortKey] = useState<string>(initialSortKey ?? columns[0]?.key ?? '');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(initialSortDirection);
   const [page, setPage] = useState(1);
 
   const sortedData = useMemo(() => {
@@ -68,6 +76,8 @@ export function AdminDataTable<T>({
   const visibleRows = sortedData.slice(pageStart, pageStart + pageSize);
   const rangeStart = sortedData.length === 0 ? 0 : pageStart + 1;
   const rangeEnd = Math.min(pageStart + pageSize, sortedData.length);
+  const hasVisibleRows = visibleRows.length > 0;
+  const shouldRenderUnifiedEmpty = !hasVisibleRows && Boolean(renderMobileCard);
 
   function toggleSort(nextKey: string) {
     setPage(1);
@@ -113,7 +123,7 @@ export function AdminDataTable<T>({
         </Toolbar>
       ) : null}
 
-      <TableWrap $tokens={tokens} data-testid={testId}>
+      <TableWrap $hasMobileCards={Boolean(renderMobileCard)} data-testid={testId}>
         <Table $tokens={tokens}>
           <thead>
             <tr>
@@ -131,7 +141,7 @@ export function AdminDataTable<T>({
             </tr>
           </thead>
           <tbody>
-            {visibleRows.length === 0 ? (
+            {!hasVisibleRows && !shouldRenderUnifiedEmpty ? (
               <tr>
                 <EmptyCell $tokens={tokens} colSpan={columns.length}>{emptyMessage}</EmptyCell>
               </tr>
@@ -148,14 +158,28 @@ export function AdminDataTable<T>({
         </Table>
       </TableWrap>
 
-      <AdminPagination
-        page={safePage}
-        totalPages={totalPages}
-        totalItems={sortedData.length}
-        rangeStart={rangeStart}
-        rangeEnd={rangeEnd}
-        onPageChange={setPage}
-      />
+      {renderMobileCard ? (
+        <MobileList data-testid={mobileTestId}>
+          {hasVisibleRows ? (
+            visibleRows.map((row, index) => (
+              <MobileCardSlot key={keyExtractor(row, pageStart + index)}>{renderMobileCard(row)}</MobileCardSlot>
+            ))
+          ) : null}
+        </MobileList>
+      ) : null}
+
+      {shouldRenderUnifiedEmpty ? <UnifiedEmpty $tokens={tokens}>{emptyMessage}</UnifiedEmpty> : null}
+
+      {sortedData.length > 0 ? (
+        <AdminPagination
+          page={safePage}
+          totalPages={totalPages}
+          totalItems={sortedData.length}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          onPageChange={setPage}
+        />
+      ) : null}
     </Panel>
   );
 }
@@ -191,7 +215,7 @@ const SearchGroup = styled.div`
 const SearchLabel = styled.label<{ $tokens: BrandTokens }>`
   font-size: 14px;
   line-height: 1.3;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ $tokens }) => $tokens.colors.text};
 `;
 
@@ -226,17 +250,19 @@ const Actions = styled.div`
   min-width: 0;
 `;
 
-const TableWrap = styled.div<{ $tokens: BrandTokens }>`
+const TableWrap = styled.div<{ $hasMobileCards: boolean }>`
   width: 100%;
   min-width: 0;
   overflow-x: auto;
-  border: 1px solid ${({ $tokens }) => $tokens.colors.border};
-  border-radius: 12px;
+
+  @media (max-width: 768px) {
+    display: ${({ $hasMobileCards }) => ($hasMobileCards ? 'none' : 'block')};
+  }
 `;
 
 const Table = styled.table<{ $tokens: BrandTokens }>`
   width: 100%;
-  min-width: 980px;
+  min-width: 900px;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -247,29 +273,44 @@ const Table = styled.table<{ $tokens: BrandTokens }>`
 
   th,
   td {
-    padding: 12px 16px;
+    padding: 10px 14px;
+    text-align: left;
     vertical-align: middle;
   }
 
   th {
-    height: 44px;
+    height: 42px;
     box-sizing: border-box;
-    border-bottom: 1px solid ${({ $tokens }) => $tokens.colors.border};
-    color: ${({ $tokens }) => $tokens.colors.textMuted};
+    color: ${({ $tokens }) => $tokens.colors.text};
     font-size: 12px;
-    font-weight: 800;
-    text-transform: uppercase;
+    line-height: 1.2;
+    font-weight: 700;
+    text-transform: none;
   }
 
   td {
-    height: 58px;
+    height: 54px;
     box-sizing: border-box;
+    border-bottom: 1px solid ${({ $tokens }) => $tokens.colors.border};
     color: ${({ $tokens }) => $tokens.colors.text};
     font-size: 14px;
   }
 
-  tbody tr + tr td {
-    border-top: 1px solid ${({ $tokens }) => $tokens.colors.border};
+  th:first-child {
+    border-radius: 10px 0 0 10px;
+  }
+
+  th:last-child {
+    border-radius: 0 10px 10px 0;
+  }
+
+  tbody tr {
+    background: ${({ $tokens }) => $tokens.colors.surface};
+    transition: background 160ms ease;
+  }
+
+  tbody tr:hover {
+    background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
   }
 `;
 
@@ -288,12 +329,42 @@ const SortButton = styled.button`
   align-items: center;
   gap: 8px;
   cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid rgba(21, 128, 61, 0.24);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 `;
 
 const EmptyCell = styled.td<{ $tokens: BrandTokens }>`
   height: 120px;
   text-align: center !important;
   color: ${({ $tokens }) => $tokens.colors.textMuted};
+`;
+
+const MobileList = styled.div`
+  display: none;
+
+  @media (max-width: 768px) {
+    display: grid;
+    gap: 10px;
+  }
+`;
+
+const MobileCardSlot = styled.div`
+  min-width: 0;
+`;
+
+const UnifiedEmpty = styled.div<{ $tokens: BrandTokens }>`
+  margin-top: 14px;
+  padding: 14px 12px;
+  border: 1px solid ${({ $tokens }) => $tokens.colors.border};
+  border-radius: ${({ $tokens }) => $tokens.radius.lg};
+  color: ${({ $tokens }) => $tokens.colors.textMuted};
+  background: ${({ $tokens }) => $tokens.colors.surfaceSubtle};
+  font-size: 13px;
+  line-height: 1.45;
 `;
 
 function SearchIcon(props: { 'aria-hidden'?: boolean }) {

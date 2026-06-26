@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { CheckboxField, Field, UploadField, type UploadFieldFile } from '@nexor/design-system';
 import type { BiteplanerPurchaseConfiguration, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
-import { uploadProductionRequestFile } from '../../../features/demo/externalUploadGateway';
+import {
+  PRODUCTION_UPLOAD_POLICIES,
+  uploadProductionRequestFile,
+  validateProductionRequestFile,
+  type ExternalUploadPurpose,
+} from '../../../features/demo/externalUploadGateway';
 import { FieldsGrid } from '../admin/styles';
 import * as S from './styles';
 
@@ -109,6 +114,7 @@ export function ProductionRequestFields({
   dentistRecommendedPurchaseConfiguration,
   onChange,
 }: ProductionRequestFieldsProps) {
+  const [uploadErrors, setUploadErrors] = useState<Partial<Record<ExternalUploadPurpose, UploadFieldFile>>>({});
   const purchaseConfiguration = draft.purchaseConfiguration;
   const productionRequestSummaryField = useDebouncedDraftText(draft.productionRequestSummary, (value) =>
     onChange({ productionRequestSummary: value })
@@ -118,6 +124,38 @@ export function ProductionRequestFields({
     purchaseConfiguration &&
     dentistRecommendedPurchaseConfiguration &&
     !isSamePurchaseConfiguration(purchaseConfiguration, dentistRecommendedPurchaseConfiguration);
+
+  function handleProductionFileChange(purpose: ExternalUploadPurpose, files: File[]) {
+    const file = files[0];
+    const nameKey = 'scan3dFileName';
+    const refKey = 'scan3dFileRef';
+
+    if (!file) {
+      setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
+      onChange({ [nameKey]: '', [refKey]: null });
+      return;
+    }
+
+    const validation = validateProductionRequestFile(file, purpose);
+
+    if (!validation.valid) {
+      setUploadErrors((current) => ({
+        ...current,
+        [purpose]: {
+          id: `error-${purpose}-${file.name}-${file.lastModified}`,
+          name: file.name,
+          status: 'error',
+          errorMessage: validation.message,
+        },
+      }));
+      onChange({ [nameKey]: '', [refKey]: null });
+      return;
+    }
+
+    const fileRef = uploadProductionRequestFile(file, purpose);
+    setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
+    onChange({ [nameKey]: file.name, [refKey]: fileRef });
+  }
 
   return (
     <>
@@ -153,7 +191,7 @@ export function ProductionRequestFields({
           label="Solicitação de produção"
           required
           maxLength={1200}
-          placeholder="Descreva a prescrição, parâmetros clínicos estritamente necessários e o direcionamento da produção."
+          placeholder="Descreva somente instruções operacionais necessárias à fabricação do Biteplaner."
           value={productionRequestSummaryField.value}
           onBlur={productionRequestSummaryField.onBlur}
           onChange={productionRequestSummaryField.onChange}
@@ -172,39 +210,18 @@ export function ProductionRequestFields({
       <S.AttachmentGrid>
         <UploadField
           label="Escaneamento 3D intraoral (*)"
-          hint="Obrigatório anexar 1 arquivo de escaneamento 3D intraoral."
-          files={fileListFromName(draft.scan3dFileName, draft.scan3dFileRef?.id)}
-          onFilesChange={(files) => {
-            const file = files[0];
-
-            if (!file) {
-              onChange({ scan3dFileName: '', scan3dFileRef: null });
-              return;
-            }
-
-            const fileRef = uploadProductionRequestFile(file, 'scan3d');
-            onChange({ scan3dFileName: file.name, scan3dFileRef: fileRef });
+          accept={PRODUCTION_UPLOAD_POLICIES.scan3d.accept}
+          hint="Obrigatório anexar 1 arquivo de escaneamento 3D intraoral. Formatos aceitos: STL, PLY, OBJ, DICOM, ZIP ou PDF, até 100 MB."
+          files={
+            uploadErrors.scan3d
+              ? [uploadErrors.scan3d]
+              : fileListFromName(draft.scan3dFileName, draft.scan3dFileRef?.id)
+          }
+          onFilesChange={(files) => handleProductionFileChange('scan3d', files)}
+          onRemoveFile={() => {
+            setUploadErrors((current) => ({ ...current, scan3d: undefined }));
+            onChange({ scan3dFileName: '', scan3dFileRef: null });
           }}
-          onRemoveFile={() => onChange({ scan3dFileName: '', scan3dFileRef: null })}
-        />
-
-        <UploadField
-          label="Prescrição médica assinada e carimbada (*)"
-          accept=".pdf,.png,.jpg,.jpeg"
-          hint="Obrigatório anexar 1 arquivo de prescrição médica do dentista para o Biteplaner."
-          files={fileListFromName(draft.prescriptionFileName, draft.prescriptionFileRef?.id)}
-          onFilesChange={(files) => {
-            const file = files[0];
-
-            if (!file) {
-              onChange({ prescriptionFileName: '', prescriptionFileRef: null });
-              return;
-            }
-
-            const fileRef = uploadProductionRequestFile(file, 'prescription');
-            onChange({ prescriptionFileName: file.name, prescriptionFileRef: fileRef });
-          }}
-          onRemoveFile={() => onChange({ prescriptionFileName: '', prescriptionFileRef: null })}
         />
       </S.AttachmentGrid>
 

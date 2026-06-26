@@ -146,16 +146,28 @@ describe('PainelHome', () => {
     expect(screen.getByTestId('biteplaner-coming-soon-hero')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /licenciamentos/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /adquira seu biteplaner/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: /solicitar parceria/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /solicitar cadastro de coach\/academia/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^solicitar parceria$/i })).not.toBeInTheDocument();
   });
 
   it('shows the three Biteplaner licensing actions for an account without product roles', async () => {
     renderPage();
 
     expect(screen.queryByRole('button', { name: /adquira seu biteplaner/i })).not.toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: /solicitar parceria/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /solicitar cadastro de coach\/academia/i })).toBeInTheDocument();
+    expect(screen.getByText(/cadastre coach ou academia para indicar atletas/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar cadastro de dentista/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar cadastro de laboratório/i })).toBeInTheDocument();
+  });
+
+  it('highlights available licensing badges in green', async () => {
+    renderPage();
+
+    const partnerAction = await screen.findByRole('button', { name: /solicitar cadastro de coach\/academia/i });
+    const availableBadge = within(partnerAction.closest('article') as HTMLElement).getByText('Disponível');
+
+    expect(getComputedStyle(availableBadge).backgroundColor).toBe('rgba(22, 163, 74, 0.1)');
+    expect(getComputedStyle(availableBadge).color).toBe('rgb(21, 128, 61)');
   });
 
   it('keeps licensing cards in three desktop columns', () => {
@@ -300,7 +312,7 @@ describe('PainelHome', () => {
   it('sends partner and laboratory requests to dedicated registration pages', async () => {
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /solicitar parceria/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /solicitar cadastro de coach\/academia/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/cadastro/parceiro');
 
     fireEvent.click(screen.getByRole('button', { name: /solicitar cadastro de laboratório/i }));
@@ -319,17 +331,17 @@ describe('PainelHome', () => {
       }
     );
 
-    expect(await screen.findByRole('button', { name: /solicitar parceria/i })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: /solicitar cadastro de coach\/academia/i })).toBeDisabled();
     const pendingDentistCard = screen.getByText(/cadastro de dentista em an.lise/i).closest('article');
     expect(pendingDentistCard).toBeInTheDocument();
     expect(within(pendingDentistCard as HTMLElement).queryByText(/^solicitar cadastro$/i)).not.toBeInTheDocument();
     expect(within(pendingDentistCard as HTMLElement).queryByRole('button')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /solicitar cadastro de laborat/i })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /solicitar parceria/i }).closest('article')).toHaveAttribute(
+    expect(screen.getByRole('button', { name: /solicitar cadastro de coach\/academia/i }).closest('article')).toHaveAttribute(
       'aria-disabled',
       'true'
     );
-    expect(screen.getByRole('button', { name: /solicitar parceria/i }).closest('article')).toHaveStyle({
+    expect(screen.getByRole('button', { name: /solicitar cadastro de coach\/academia/i }).closest('article')).toHaveStyle({
       opacity: '0.58',
     });
     expect(screen.getAllByText(/indispon/i).length).toBeGreaterThanOrEqual(2);
@@ -358,6 +370,31 @@ describe('PainelHome', () => {
     expect(labCard).toBeInTheDocument();
     expect(within(labCard as HTMLElement).getByText(/ativo/i)).toBeInTheDocument();
     expect(within(labCard as HTMLElement).queryByRole('button', { name: /solicitar cadastro/i })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['partner', /solicitar cadastro de coach\/academia/i, '/painel/biteplaner?mode=partner'],
+    ['dentist', /solicitar cadastro de dentista/i, '/painel/biteplaner?mode=dentist'],
+    ['lab', /solicitar cadastro de laborat.rio/i, '/painel/biteplaner?mode=lab'],
+  ])('shows a dashboard button for an active %s licensing card', async (role, titleMatcher, expectedPath) => {
+    renderPage(
+      {},
+      {
+        productRoles: [
+          { productKey: 'biteplaner', role, status: 'active' },
+        ],
+        orders: [],
+      }
+    );
+
+    const activeCard = (await screen.findByText(titleMatcher)).closest('article');
+
+    expect(activeCard).toBeInTheDocument();
+    const dashboardButton = within(activeCard as HTMLElement).getByRole('button', { name: /ir para dashboard/i });
+
+    fireEvent.click(dashboardButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith(expectedPath);
   });
 
   it('shows active demo profile banner when using mock persona', async () => {

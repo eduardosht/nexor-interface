@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -31,9 +32,13 @@
       font-size: 16px;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+    }
 
     body {
       margin: 0;
@@ -44,9 +49,14 @@
         linear-gradient(180deg, var(--bg), oklch(97% 0.006 240));
     }
 
-    button, input { font: inherit; }
+    button,
+    input {
+      font: inherit;
+    }
 
-    button { cursor: pointer; }
+    button {
+      cursor: pointer;
+    }
 
     .page-shell {
       display: grid;
@@ -77,7 +87,7 @@
     .brand-mark {
       font-size: 31px;
       line-height: 1;
-      font-weight: 800;
+      font-weight: 700;
       letter-spacing: 0.08em;
       color: oklch(22% 0.065 255);
     }
@@ -150,7 +160,7 @@
       color: var(--subtle);
       font-size: 18px;
       line-height: 1;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .timeline-button[aria-current="true"] .step-dot {
@@ -163,11 +173,13 @@
       display: block;
       margin-bottom: 4px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--subtle);
     }
 
-    .timeline-button[aria-current="true"] .step-number { color: var(--green); }
+    .timeline-button[aria-current="true"] .step-number {
+      color: var(--green);
+    }
 
     .step-title {
       display: block;
@@ -186,7 +198,9 @@
       box-shadow: 0 10px 30px oklch(22% 0.052 255 / 0.05);
     }
 
-    .support-card strong { font-size: 14px; }
+    .support-card strong {
+      font-size: 14px;
+    }
 
     .support-card p {
       margin: 0;
@@ -218,7 +232,7 @@
       border-radius: 999px;
       color: oklch(99% 0.006 160);
       background: var(--green);
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .main {
@@ -306,7 +320,7 @@
       color: var(--green-ink);
       background: var(--green-soft);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.02em;
     }
@@ -358,14 +372,16 @@
       background: var(--panel);
       font-size: 17px;
       line-height: 1;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .section {
       padding: 20px;
     }
 
-    .section + .section { border-top: 1px solid var(--line); }
+    .section+.section {
+      border-top: 1px solid var(--line);
+    }
 
     .section-head {
       display: flex;
@@ -382,7 +398,8 @@
       letter-spacing: 0;
     }
 
-    .section-head p, .note {
+    .section-head p,
+    .note {
       margin: 0;
       color: var(--muted);
       line-height: 1.45;
@@ -503,7 +520,9 @@
       background: linear-gradient(135deg, var(--panel), oklch(97.6% 0.018 154));
     }
 
-    .info-card strong { font-size: 15px; }
+    .info-card strong {
+      font-size: 15px;
+    }
 
     .info-card p {
       margin: 0;
@@ -527,8 +546,13 @@
       background: var(--blue-soft);
     }
 
-    .flow-card.process { background: var(--amber-soft); }
-    .flow-card.result { background: var(--green-soft); }
+    .flow-card.process {
+      background: var(--amber-soft);
+    }
+
+    .flow-card.result {
+      background: var(--green-soft);
+    }
 
     .flow-card h4 {
       margin: 0 0 10px;
@@ -536,8 +560,13 @@
       font-size: 15px;
     }
 
-    .flow-card.process h4 { color: oklch(43% 0.105 72); }
-    .flow-card.result h4 { color: var(--green-ink); }
+    .flow-card.process h4 {
+      color: oklch(43% 0.105 72);
+    }
+
+    .flow-card.result h4 {
+      color: var(--green-ink);
+    }
 
     .flow-card ul {
       margin: 0;
@@ -567,7 +596,8 @@
       font-size: 13px;
     }
 
-    th, td {
+    th,
+    td {
       padding: 11px 12px;
       border-bottom: 1px solid var(--line);
       text-align: left;
@@ -578,19 +608,25 @@
       color: var(--muted);
       background: oklch(97.8% 0.01 240);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
-    tr:last-child td { border-bottom: 0; }
+    tr:last-child td {
+      border-bottom: 0;
+    }
 
-    td:first-child { font-weight: 700; }
+    td:first-child {
+      font-weight: 700;
+    }
 
     .overview-panel {
       display: none;
       padding: 22px;
     }
 
-    .overview-panel.is-visible { display: block; }
+    .overview-panel.is-visible {
+      display: block;
+    }
 
     .overview-map {
       display: grid;
@@ -667,7 +703,7 @@
       border-radius: 6px;
       color: var(--ink);
       background: var(--panel);
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .nav-button.primary {
@@ -692,7 +728,9 @@
       background: oklch(18% 0.035 255 / 0.82);
     }
 
-    .image-modal[aria-hidden="false"] { display: grid; }
+    .image-modal[aria-hidden="false"] {
+      display: grid;
+    }
 
     .survey-modal {
       position: fixed;
@@ -704,7 +742,9 @@
       background: oklch(18% 0.035 255 / 0.72);
     }
 
-    .survey-modal[aria-hidden="false"] { display: block; }
+    .survey-modal[aria-hidden="false"] {
+      display: block;
+    }
 
     .survey-modal-panel {
       width: min(1180px, 100%);
@@ -914,7 +954,9 @@
       padding: 0 0 14px;
     }
 
-    .modal-bar strong { font-size: 16px; }
+    .modal-bar strong {
+      font-size: 16px;
+    }
 
     .modal-close {
       min-height: 38px;
@@ -923,7 +965,7 @@
       border-radius: 6px;
       color: oklch(98% 0.008 160);
       background: transparent;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .modal-image-scroll {
@@ -955,7 +997,9 @@
         gap: 10px;
       }
 
-      .timeline::before { display: none; }
+      .timeline::before {
+        display: none;
+      }
 
       .timeline-button {
         grid-template-columns: 42px 1fr;
@@ -970,14 +1014,22 @@
         font-size: 16px;
       }
 
-      .support-card { display: none; }
+      .support-card {
+        display: none;
+      }
 
       .stage-hero {
         grid-template-columns: 1fr;
       }
 
-      .callout-grid, .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .overview-map { grid-template-columns: repeat(3, minmax(180px, 1fr)); }
+      .callout-grid,
+      .cards-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .overview-map {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+      }
 
       .survey-intro-grid {
         grid-template-columns: 1fr;
@@ -1003,10 +1055,17 @@
         grid-template-columns: 1fr;
       }
 
-      .overview-button { min-width: 0; }
+      .overview-button {
+        min-width: 0;
+      }
 
-      h1 { font-size: 28px; }
-      h2 { font-size: 23px; }
+      h1 {
+        font-size: 28px;
+      }
+
+      h2 {
+        font-size: 23px;
+      }
 
       .timeline {
         grid-template-columns: 1fr;
@@ -1016,7 +1075,10 @@
         grid-template-columns: 48px 1fr;
       }
 
-      .stage-hero, .section { padding: 16px; }
+      .stage-hero,
+      .section {
+        padding: 16px;
+      }
 
       .section-head {
         display: grid;
@@ -1028,7 +1090,10 @@
         align-items: start;
       }
 
-      .callout-grid, .cards-grid { grid-template-columns: 1fr; }
+      .callout-grid,
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
 
       .survey-modal {
         padding: 10px;
@@ -1053,6 +1118,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="page-shell">
     <aside class="sidebar" aria-label="Etapas da jornada">
@@ -1067,7 +1133,8 @@
       <button class="support-card feedback-map-button" type="button" data-feedback-toggle>
         <div class="help-badge">★</div>
         <strong>Surveys de feedback</strong>
-        <p>Veja quais pedidos de avaliação aparecem no sistema, quando são liberados e por que ajudam a qualificar a rede.</p>
+        <p>Veja quais pedidos de avaliação aparecem no sistema, quando são liberados e por que ajudam a qualificar a
+          rede.</p>
       </button>
     </aside>
 
@@ -1075,7 +1142,8 @@
       <header class="topbar">
         <div>
           <h1>Jornada do Cliente</h1>
-          <p class="lead">Entenda cada etapa que o atleta percorre na Nexor, desde a indicação inicial até a adaptação e o acompanhamento clínico do Biteplaner.</p>
+          <p class="lead">Entenda cada etapa que o atleta percorre na Nexor, desde a indicação inicial até a adaptação e
+            o acompanhamento clínico do Biteplaner.</p>
         </div>
         <button class="overview-button" type="button" data-overview-toggle>
           <span class="icon">↔</span>
@@ -1088,7 +1156,8 @@
         <div class="section-head">
           <div>
             <h3>Mapa visual da jornada</h3>
-            <p>Do convite ao acompanhamento, cada nó indica o responsável principal e a dependência que move a ordem.</p>
+            <p>Do convite ao acompanhamento, cada nó indica o responsável principal e a dependência que move a ordem.
+            </p>
           </div>
         </div>
         <div class="overview-map" data-overview-map></div>
@@ -1099,11 +1168,13 @@
           <div class="video-copy">
             <span class="badge">Vídeo completo</span>
             <h3 id="full-flow-video-title">Execução E2E da jornada Biteplaner</h3>
-            <p>Gravação única do fluxo completo usando Supabase local real: cadastro, parceiro, admin, cliente, dentista, laboratório, compra, produção e surveys de feedback.</p>
+            <p>Gravação única do fluxo completo usando Supabase local real: cadastro, parceiro, admin, cliente,
+              dentista, laboratório, compra, produção e surveys de feedback.</p>
           </div>
         </div>
         <div class="video-frame">
-          <video controls preload="metadata" poster="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png">
+          <video controls preload="metadata"
+            poster="assets/apresentacao-painel-admin/09b-cliente-pre-requisito-secao-2.png">
             <source src="assets/apresentacao-painel-admin/video/biteplaner-fluxo-completo-e2e.webm" type="video/webm">
             Seu navegador não suporta reprodução de vídeo WebM.
           </video>
@@ -1220,13 +1291,15 @@
     </div>
   </div>
 
-  <div class="survey-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Surveys de feedback Biteplaner" data-feedback-modal>
+  <div class="survey-modal" aria-hidden="true" role="dialog" aria-modal="true"
+    aria-label="Surveys de feedback Biteplaner" data-feedback-modal>
     <div class="survey-modal-panel">
       <div class="survey-modal-head">
         <div>
           <span class="badge">Feedback opcional</span>
           <h3>Pedidos de avaliação no ecossistema Biteplaner</h3>
-          <p class="note">Os surveys aparecem como convite sutil entre etapas, sem bloquear formulários obrigatórios. O usuário pode responder na hora ou deixar para depois.</p>
+          <p class="note">Os surveys aparecem como convite sutil entre etapas, sem bloquear formulários obrigatórios. O
+            usuário pode responder na hora ou deixar para depois.</p>
         </div>
         <button class="modal-close" type="button" data-feedback-close>Fechar</button>
       </div>
@@ -1235,15 +1308,18 @@
         <div class="survey-intro-grid">
           <article class="survey-intro-card">
             <strong>Como aparece</strong>
-            <p>Um card discreto ou item em “Surveys pendentes” chama para “Avaliar agora”/“Responder”, mantendo a avaliação opcional.</p>
+            <p>Um card discreto ou item em “Surveys pendentes” chama para “Avaliar agora”/“Responder”, mantendo a
+              avaliação opcional.</p>
           </article>
           <article class="survey-intro-card">
             <strong>Regra de prioridade</strong>
-            <p>Apenas um convite deve ganhar destaque por vez, priorizando a avaliação pendente mais relevante e recente para o perfil atual.</p>
+            <p>Apenas um convite deve ganhar destaque por vez, priorizando a avaliação pendente mais relevante e recente
+              para o perfil atual.</p>
           </article>
           <article class="survey-intro-card">
             <strong>Motivo do fluxo</strong>
-            <p>Coletar feedback estruturado qualifica parceiros, dentistas e laboratórios sem aumentar a fricção dos cadastros e formulários clínicos.</p>
+            <p>Coletar feedback estruturado qualifica parceiros, dentistas e laboratórios sem aumentar a fricção dos
+              cadastros e formulários clínicos.</p>
           </article>
         </div>
 
@@ -1253,24 +1329,29 @@
               <strong>Central de surveys pendentes</strong>
               <span>Home das avaliações do cliente, com pedidos abertos e histórico consolidado.</span>
             </div>
-            <button class="ghost-button" type="button" data-feedback-open-image="32-feedback-prompt-cliente.png" data-feedback-open-title="Central de surveys pendentes">Abrir print completo</button>
+            <button class="ghost-button" type="button" data-feedback-open-image="32-feedback-prompt-cliente.png"
+              data-feedback-open-title="Central de surveys pendentes">Abrir print completo</button>
           </div>
           <div class="survey-shot-body">
             <div class="survey-shot-frame">
-              <img src="assets/apresentacao-painel-admin/32-feedback-prompt-cliente.png" alt="Central de surveys pendentes no painel de avaliações">
+              <img src="assets/apresentacao-painel-admin/32-feedback-prompt-cliente.png"
+                alt="Central de surveys pendentes no painel de avaliações">
             </div>
             <div class="survey-shot-details">
               <div class="survey-detail">
                 <b>Quando aparece</b>
-                <span>Depois que existem surveys pendentes para o perfil logado, dentro de “Avaliações” e como destino do convite sutil em páginas de transição.</span>
+                <span>Depois que existem surveys pendentes para o perfil logado, dentro de “Avaliações” e como destino
+                  do convite sutil em páginas de transição.</span>
               </div>
               <div class="survey-detail">
                 <b>Para quem</b>
-                <span>Cliente, dentista ou laboratório, sempre filtrado pelo modo de acesso e pelas permissões daquele usuário.</span>
+                <span>Cliente, dentista ou laboratório, sempre filtrado pelo modo de acesso e pelas permissões daquele
+                  usuário.</span>
               </div>
               <div class="survey-detail">
                 <b>Por que aparece</b>
-                <span>Dar um ponto único para responder agora ou depois, sem transformar feedback em etapa obrigatória.</span>
+                <span>Dar um ponto único para responder agora ou depois, sem transformar feedback em etapa
+                  obrigatória.</span>
               </div>
             </div>
           </div>
@@ -1282,24 +1363,30 @@
               <strong>Cliente avaliando parceiro indicador</strong>
               <span>Feedback sobre gentileza, acompanhamento, orientação técnica e instalações quando aplicável.</span>
             </div>
-            <button class="ghost-button" type="button" data-feedback-open-image="33-feedback-survey-cliente-parceiro.png" data-feedback-open-title="Cliente avaliando parceiro indicador">Abrir print completo</button>
+            <button class="ghost-button" type="button"
+              data-feedback-open-image="33-feedback-survey-cliente-parceiro.png"
+              data-feedback-open-title="Cliente avaliando parceiro indicador">Abrir print completo</button>
           </div>
           <div class="survey-shot-body">
             <div class="survey-shot-frame">
-              <img src="assets/apresentacao-painel-admin/33-feedback-survey-cliente-parceiro.png" alt="Formulário Cliente avaliando parceiro indicador">
+              <img src="assets/apresentacao-painel-admin/33-feedback-survey-cliente-parceiro.png"
+                alt="Formulário Cliente avaliando parceiro indicador">
             </div>
             <div class="survey-shot-details">
               <div class="survey-detail">
                 <b>Quando aparece</b>
-                <span>Após cadastro ou criação da ordem por link de recomendação do parceiro, no primeiro retorno ao hub ou à página de avaliações.</span>
+                <span>Após cadastro ou criação da ordem por link de recomendação do parceiro, no primeiro retorno ao hub
+                  ou à página de avaliações.</span>
               </div>
               <div class="survey-detail">
                 <b>Para quem</b>
-                <span>Cliente indicado por parceiro, sem aparecer para admin ou perfis que não respondem esse survey.</span>
+                <span>Cliente indicado por parceiro, sem aparecer para admin ou perfis que não respondem esse
+                  survey.</span>
               </div>
               <div class="survey-detail">
                 <b>Por que aparece</b>
-                <span>Medir a qualidade da indicação, acompanhamento e orientação inicial sem interromper onboarding, consentimentos ou compra.</span>
+                <span>Medir a qualidade da indicação, acompanhamento e orientação inicial sem interromper onboarding,
+                  consentimentos ou compra.</span>
               </div>
             </div>
           </div>
@@ -1309,18 +1396,23 @@
           <div class="survey-shot-head">
             <div>
               <strong>Cliente avaliando dentista</strong>
-              <span>Feedback pós-atendimento sobre prazo, pontualidade, instalações, gentileza e orientação de uso.</span>
+              <span>Feedback pós-atendimento sobre prazo, pontualidade, instalações, gentileza e orientação de
+                uso.</span>
             </div>
-            <button class="ghost-button" type="button" data-feedback-open-image="34-feedback-survey-cliente-dentista.png" data-feedback-open-title="Cliente avaliando dentista">Abrir print completo</button>
+            <button class="ghost-button" type="button"
+              data-feedback-open-image="34-feedback-survey-cliente-dentista.png"
+              data-feedback-open-title="Cliente avaliando dentista">Abrir print completo</button>
           </div>
           <div class="survey-shot-body">
             <div class="survey-shot-frame">
-              <img src="assets/apresentacao-painel-admin/34-feedback-survey-cliente-dentista.png" alt="Formulário Cliente avaliando dentista">
+              <img src="assets/apresentacao-painel-admin/34-feedback-survey-cliente-dentista.png"
+                alt="Formulário Cliente avaliando dentista">
             </div>
             <div class="survey-shot-details">
               <div class="survey-detail">
                 <b>Quando aparece</b>
-                <span>Após consulta de adaptação ou entrega do dispositivo, quando o cliente já tem base para avaliar atendimento e orientação.</span>
+                <span>Após consulta de adaptação ou entrega do dispositivo, quando o cliente já tem base para avaliar
+                  atendimento e orientação.</span>
               </div>
               <div class="survey-detail">
                 <b>Para quem</b>
@@ -1328,7 +1420,8 @@
               </div>
               <div class="survey-detail">
                 <b>Por que aparece</b>
-                <span>Qualificar a experiência clínica e detectar pontos de melhoria sem competir com tarefas obrigatórias da jornada.</span>
+                <span>Qualificar a experiência clínica e detectar pontos de melhoria sem competir com tarefas
+                  obrigatórias da jornada.</span>
               </div>
             </div>
           </div>
@@ -1338,18 +1431,23 @@
           <div class="survey-shot-head">
             <div>
               <strong>Dentista avaliando laboratório</strong>
-              <span>Feedback técnico sobre prazo de entrega, qualidade do dispositivo bruto e facilidade de contato.</span>
+              <span>Feedback técnico sobre prazo de entrega, qualidade do dispositivo bruto e facilidade de
+                contato.</span>
             </div>
-            <button class="ghost-button" type="button" data-feedback-open-image="35-feedback-survey-dentista-laboratorio.png" data-feedback-open-title="Dentista avaliando laboratório">Abrir print completo</button>
+            <button class="ghost-button" type="button"
+              data-feedback-open-image="35-feedback-survey-dentista-laboratorio.png"
+              data-feedback-open-title="Dentista avaliando laboratório">Abrir print completo</button>
           </div>
           <div class="survey-shot-body">
             <div class="survey-shot-frame">
-              <img src="assets/apresentacao-painel-admin/35-feedback-survey-dentista-laboratorio.png" alt="Formulário Dentista avaliando laboratório">
+              <img src="assets/apresentacao-painel-admin/35-feedback-survey-dentista-laboratorio.png"
+                alt="Formulário Dentista avaliando laboratório">
             </div>
             <div class="survey-shot-details">
               <div class="survey-detail">
                 <b>Quando aparece</b>
-                <span>Depois que a produção laboratorial é concluída e o dentista recebe ou valida o dispositivo bruto.</span>
+                <span>Depois que a produção laboratorial é concluída e o dentista recebe ou valida o dispositivo
+                  bruto.</span>
               </div>
               <div class="survey-detail">
                 <b>Para quem</b>
@@ -1369,16 +1467,20 @@
               <strong>Laboratório avaliando dentista</strong>
               <span>Feedback sobre qualidade do arquivo de escaneamento 3D e facilidade de contato.</span>
             </div>
-            <button class="ghost-button" type="button" data-feedback-open-image="36-feedback-survey-laboratorio-dentista.png" data-feedback-open-title="Laboratório avaliando dentista">Abrir print completo</button>
+            <button class="ghost-button" type="button"
+              data-feedback-open-image="36-feedback-survey-laboratorio-dentista.png"
+              data-feedback-open-title="Laboratório avaliando dentista">Abrir print completo</button>
           </div>
           <div class="survey-shot-body">
             <div class="survey-shot-frame">
-              <img src="assets/apresentacao-painel-admin/36-feedback-survey-laboratorio-dentista.png" alt="Formulário Laboratório avaliando dentista">
+              <img src="assets/apresentacao-painel-admin/36-feedback-survey-laboratorio-dentista.png"
+                alt="Formulário Laboratório avaliando dentista">
             </div>
             <div class="survey-shot-details">
               <div class="survey-detail">
                 <b>Quando aparece</b>
-                <span>Quando o laboratório recebe ou inicia produção e já consegue avaliar arquivo 3D intraoral e contato com o dentista.</span>
+                <span>Quando o laboratório recebe ou inicia produção e já consegue avaliar arquivo 3D intraoral e
+                  contato com o dentista.</span>
               </div>
               <div class="survey-detail">
                 <b>Para quem</b>
@@ -1386,14 +1488,17 @@
               </div>
               <div class="survey-detail">
                 <b>Por que aparece</b>
-                <span>Identificar gargalos de envio técnico antes que eles prejudiquem prazo, retrabalho ou qualidade do dispositivo.</span>
+                <span>Identificar gargalos de envio técnico antes que eles prejudiquem prazo, retrabalho ou qualidade do
+                  dispositivo.</span>
               </div>
             </div>
           </div>
         </article>
 
         <div class="survey-disabled">
-          <strong>Futuro/desativado:</strong> o survey “Cliente avaliando influencer” fica fora desta entrega até existir campanha ou indicação por influencer. Ele usa a mesma infraestrutura de workflow forms, mas não deve aparecer no MVP ativo.
+          <strong>Futuro/desativado:</strong> o survey “Cliente avaliando influencer” fica fora desta entrega até
+          existir campanha ou indicação por influencer. Ele usa a mesma infraestrutura de workflow forms, mas não deve
+          aparecer no MVP ativo.
         </div>
       </div>
     </div>
@@ -1937,4 +2042,5 @@
     renderStage();
   </script>
 </body>
+
 </html>

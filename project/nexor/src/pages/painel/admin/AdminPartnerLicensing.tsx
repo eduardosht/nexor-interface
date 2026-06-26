@@ -3,11 +3,7 @@ import {
   AdminDataTable,
   AdminMetricGrid,
   AdminModal,
-  AdminModalAction,
-  AdminModalActions,
   AdminModalDetailCard,
-  AdminModalDetailContent,
-  AdminModalDetailGrid,
   AdminModalDetailIcon,
   AdminModalDetailLabel,
   AdminModalDetailValue,
@@ -21,7 +17,7 @@ import {
   type AdminDataTableColumn,
   type AdminMetric,
 } from '@nexor/design-system';
-import { Eye, FileText, HeartPulse, MapPin, UserRoundCheck } from 'lucide-react';
+import { Eye, FileText, HeartPulse, Mail, MapPin, UserRoundCheck } from 'lucide-react';
 import styled from 'styled-components';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -329,81 +325,119 @@ export function AdminPartnerLicensing() {
         open={Boolean(selectedRequest)}
         title="Dados enviados pelo parceiro"
         ariaLabel="Dados enviados pelo parceiro"
+        mobilePlacement="center"
         icon={<UserRoundCheck size={32} />}
         subtitle={
           selectedRequest ? (
-            <>
-              {selectedRequest.partnerName}
+            <ModalSubtitleInline>
+              <span>{selectedRequest.partnerName}</span>
               <InlineDot aria-hidden />
-              {formatDocumentType(selectedRequest.documentType)} {selectedRequest.documentNumber}
-            </>
+              <span>{formatDocumentType(selectedRequest.documentType)} {selectedRequest.documentNumber}</span>
+            </ModalSubtitleInline>
           ) : null
         }
         onClose={() => setSelectedRequest(null)}
         footer={
           selectedRequest ? (
-            <AdminModalActions>
-              <AdminModalAction
+            <CompactModalActions>
+              <CompactModalButton
                 type="button"
-                actionTone="attention"
+                variant="secondary"
                 disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
                 onClick={handleReject}
               >
                 {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
-              </AdminModalAction>
-              <AdminModalAction
+              </CompactModalButton>
+              <CompactModalButton
                 type="button"
                 disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                $tone="success"
                 onClick={handleApprove}
               >
                 {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
-              </AdminModalAction>
-            </AdminModalActions>
+              </CompactModalButton>
+            </CompactModalActions>
           ) : null
         }
       >
         {selectedRequest ? (
           <>
-            <AdminModalDetailGrid>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <FileText size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Tipo de parceiro</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{formatPartnerType(selectedRequest.partnerType)}</AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <HeartPulse size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Status do fluxo</AdminModalDetailLabel>
-                  <AdminStatusPill color={getStatusColor(selectedRequest.status)} label={statusLabel[selectedRequest.status] ?? selectedRequest.status} />
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-            </AdminModalDetailGrid>
+            <CompactModalPairGrid>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>Tipo de parceiro</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>{formatPartnerType(selectedRequest.partnerType)}</CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>Documento</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {formatDocumentType(selectedRequest.documentType)} {selectedRequest.documentNumber}
+                  </CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <Mail size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>E-mail</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>{getPartnerEmail(selectedRequest) || 'Não informado'}</CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <HeartPulse size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>Status do fluxo</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <StatusPill $color={getStatusColor(selectedRequest.status)}>
+                    <StatusDot $color={getStatusColor(selectedRequest.status)} />
+                    {statusLabel[selectedRequest.status] ?? selectedRequest.status}
+                  </StatusPill>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+            </CompactModalPairGrid>
 
-            <AdminModalDetailCard>
-              <AdminModalDetailIcon aria-hidden>
-                <MapPin size={26} />
-              </AdminModalDetailIcon>
-              <AdminModalDetailContent>
-                <AdminModalDetailLabel>{getPartnerContextLabel(selectedRequest)}</AdminModalDetailLabel>
-                <AdminModalDetailValue>{getPartnerContextValue(selectedRequest)}</AdminModalDetailValue>
-              </AdminModalDetailContent>
-            </AdminModalDetailCard>
+            <PartnerContextDisclosure>
+              <PartnerContextSummary>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <MapPin size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>{getPartnerContextLabel(selectedRequest)}</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <PartnerContextSummaryHint>Ver detalhes</PartnerContextSummaryHint>
+              </PartnerContextSummary>
+              <CompactModalCardBody>
+                <CompactModalDetailValue>{getPartnerContextValue(selectedRequest)}</CompactModalDetailValue>
+              </CompactModalCardBody>
+            </PartnerContextDisclosure>
 
-            <AdminModalTextAreaGroup>
-              <AdminModalTextAreaLabel htmlFor="partner-reject-reason">Motivo da recusa</AdminModalTextAreaLabel>
-              <AdminModalTextArea
+            <CompactModalTextAreaGroup>
+              <CompactModalTextAreaLabel htmlFor="partner-reject-reason">Motivo da recusa</CompactModalTextAreaLabel>
+              <CompactModalTextArea
                 id="partner-reject-reason"
                 placeholder="Obrigatório apenas para recusar."
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
               />
-            </AdminModalTextAreaGroup>
+            </CompactModalTextAreaGroup>
           </>
         ) : null}
       </AdminModal>
@@ -457,10 +491,199 @@ const ViewButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' 
   }
 `;
 
+const CompactModalPairGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+
+  @media (max-width: 360px) {
+    gap: 5px;
+  }
+`;
+
+const CompactModalDetailCard = styled(AdminModalDetailCard)`
+  min-height: 0;
+  display: grid;
+  padding: 7px;
+  gap: 5px;
+  border-radius: 8px;
+
+  @media (max-width: 420px) {
+    padding: 6px;
+    gap: 5px;
+  }
+`;
+
+const CompactModalCardHeader = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const CompactModalCardBody = styled.div`
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+`;
+
+const CompactModalDetailIcon = styled(AdminModalDetailIcon)`
+  width: 24px;
+  height: 24px;
+
+  @media (max-width: 420px) {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 340px) {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const CompactModalDetailLabel = styled(AdminModalDetailLabel)`
+  font-size: 12px;
+  line-height: 1.2;
+
+  @media (min-width: 421px) {
+    font-size: 13px;
+  }
+`;
+
+const CompactModalDetailValue = styled(AdminModalDetailValue)`
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+
+  @media (min-width: 421px) {
+    font-size: 11px;
+  }
+`;
+
+const CompactModalTextAreaGroup = styled(AdminModalTextAreaGroup)`
+  gap: 6px;
+`;
+
+const CompactModalTextAreaLabel = styled(AdminModalTextAreaLabel)`
+  font-size: 14px;
+`;
+
+const CompactModalTextArea = styled(AdminModalTextArea)`
+  min-height: 58px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  resize: none;
+`;
+
+const CompactModalActions = styled.div`
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+`;
+
+const CompactModalButton = styled(Button) <{ $tone?: 'success' }>`
+  flex: 0 1 calc(50% - 5px);
+  min-width: 0;
+  min-height: 38px;
+  padding-inline: 10px;
+  white-space: normal;
+  background: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.green : undefined)};
+  border-color: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.green : undefined)};
+  color: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.bgElevated : undefined)};
+
+  [data-button-content],
+  [data-button-label] {
+    min-width: 0;
+    white-space: normal;
+    text-wrap: balance;
+  }
+`;
+
+const PartnerContextDisclosure = styled.details`
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  &[open] {
+    display: grid;
+    gap: 5px;
+  }
+
+  @media (max-width: 420px) {
+    padding: 6px;
+  }
+`;
+
+const PartnerContextSummary = styled.summary`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const PartnerContextSummaryHint = styled.span`
+  flex: 0 0 auto;
+  color: ${({ theme }) => theme.colors.green};
+  font-size: 10px;
+  font-weight: 700;
+`;
+
+const ModalSubtitleInline = styled.span`
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
 const InlineDot = styled.span`
   width: 6px;
   height: 6px;
   flex: 0 0 auto;
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.green};
+`;
+
+const StatusPill = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: ${({ $color }) => $color};
+  background: ${({ $color }) => `${$color}12`};
+  font-size: 12px;
+  line-height: 1.2;
+`;
+
+const StatusDot = styled.span<{ $color: string }>`
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: ${({ $color }) => $color};
 `;

@@ -29,7 +29,13 @@ function renderPage() {
     session: { access_token: 'tok', user: { id: '1', email: 'admin@nexor.dev' } },
   });
   mockUseAdminPortal.mockReturnValue({
-    selectedProduct: { id: 'biteplaner', name: 'Biteplaner', label: 'Biteplaner', description: '', status: 'available' },
+    selectedProduct: {
+      id: 'biteplaner',
+      name: 'Biteplaner',
+      label: 'Biteplaner',
+      description: '',
+      status: 'available',
+    },
   });
 
   return render(
@@ -50,7 +56,7 @@ describe('AdminUsers', () => {
     mockUseAdminPortal.mockReset();
   });
 
-  it('renders users in the mobile list and opens profile filters in a mobile sheet', async () => {
+  it('renders platform roles separately from Biteplaner product roles in the mobile list', async () => {
     mockApiGet.mockResolvedValue({
       profiles: [
         {
@@ -59,7 +65,32 @@ describe('AdminUsers', () => {
           fullName: 'Maria Cliente',
           phone: '(11) 99999-9999',
           status: 'active',
-          roles: ['customer'],
+          roles: ['admin'],
+          platformRoles: ['admin'],
+          productRoles: [
+            {
+              id: 'product-role-customer-1',
+              productKey: 'biteplaner',
+              role: 'customer',
+              status: 'active',
+              sourceType: 'self_service',
+              metadata: {},
+              approvedAt: null,
+              createdAt: '2026-06-10T10:00:00.000Z',
+              updatedAt: '2026-06-10T10:00:00.000Z',
+            },
+            {
+              id: 'product-role-dentist-1',
+              productKey: 'biteplaner',
+              role: 'dentist',
+              status: 'pending',
+              sourceType: 'self_service',
+              metadata: {},
+              approvedAt: null,
+              createdAt: '2026-06-10T10:00:00.000Z',
+              updatedAt: '2026-06-10T10:00:00.000Z',
+            },
+          ],
           createdAt: '2026-06-10T10:00:00.000Z',
           updatedAt: '2026-06-11T10:00:00.000Z',
         },
@@ -73,7 +104,12 @@ describe('AdminUsers', () => {
     const mobileList = screen.getByTestId('admin-users-mobile-list');
     expect(mobileList).toBeInTheDocument();
     expect(within(mobileList).getByText(/maria cliente/i)).toBeInTheDocument();
-    expect(within(mobileList).getByRole('button', { name: /editar usuário maria cliente/i, hidden: true })).toBeInTheDocument();
+    expect(within(mobileList).getByText(/admin/i)).toBeInTheDocument();
+    expect(within(mobileList).getByText(/cliente ativo/i)).toBeInTheDocument();
+    expect(within(mobileList).getByText(/dentista pendente/i)).toBeInTheDocument();
+    expect(
+      within(mobileList).getByRole('button', { name: /editar usuário maria cliente/i, hidden: true })
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /abrir filtros de usuários/i, hidden: true }));
 

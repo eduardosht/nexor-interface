@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
+import { Download, ExternalLink, Mail, Pencil, Trash2 } from 'lucide-react';
 import {
   Field as DesignSystemField,
   Snackbar,
@@ -72,6 +72,21 @@ type AccountDeletionResponse = {
 
 type CurrentAccountDeletionResponse = {
   deletionRequest: AccountDeletionResponse | null;
+};
+
+type AccountConsentsResponse = {
+  latestAccountConsents?: {
+    terms?: boolean;
+    privacy?: boolean;
+    marketing?: boolean;
+  };
+  latestCookieConsent?: {
+    version: number;
+    necessary: boolean;
+    preferences: boolean;
+    analytics: boolean;
+    acceptedAt: string | null;
+  } | null;
 };
 
 type PracticeLocationMetadata = {
@@ -325,6 +340,9 @@ export function MinhaConta() {
   const [deletionSubmitting, setDeletionSubmitting] = useState(false);
   const [deletionRequest, setDeletionRequest] = useState<AccountDeletionResponse | null>(null);
   const [deletionActionSubmitting, setDeletionActionSubmitting] = useState(false);
+  const [privacyExportSubmitting, setPrivacyExportSubmitting] = useState(false);
+  const [privacyConsents, setPrivacyConsents] = useState<AccountConsentsResponse | null>(null);
+  const [marketingRevocationSubmitting, setMarketingRevocationSubmitting] = useState(false);
   const [communicationPreferences, setCommunicationPreferences] = useState<CommunicationPreferences | null>(null);
   const [communicationPreferencesSaving, setCommunicationPreferencesSaving] = useState(false);
   const [disableCommunicationModalOpen, setDisableCommunicationModalOpen] = useState(false);
@@ -338,6 +356,8 @@ export function MinhaConta() {
   const acquiredProducts = useMemo(() => getMockAcquiredProducts(email), [email]);
   const deletionStatus = deletionRequest?.request?.status;
   const systemFlowEmailEnabled = communicationPreferences?.systemFlowEmailEnabled ?? true;
+  const marketingConsentActive = privacyConsents?.latestAccountConsents?.marketing === true;
+  const analyticsConsentActive = privacyConsents?.latestCookieConsent?.analytics === true;
 
   function getOnboardingEditKey(role: ProductRole, field: string) {
     return `${role.id ?? `${role.productKey}:${role.role}`}:${field}`;
@@ -473,31 +493,12 @@ export function MinhaConta() {
           {renderLockedOnboardingField('E-mail', getString(metadata.contactEmail))}
         </S.CardRow>
         <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'documentType',
-            'Tipo de documento',
-            getString(metadata.documentType).toUpperCase(),
-            <S.FieldSelect
-              value={getString(metadata.documentType) || 'cnpj'}
-              onChange={(event) => updateRoleMetadata(role.id, 'documentType', event.target.value)}
-            >
-              <option value="cpf">CPF</option>
-              <option value="cnpj">CNPJ</option>
-            </S.FieldSelect>
-          )}
-          {renderOnboardingField(
-            role,
-            'documentNumber',
+          {renderLockedOnboardingField('Tipo de documento', getString(metadata.documentType).toUpperCase())}
+          {renderLockedOnboardingField(
             'Documento',
             getString(metadata.documentType) === 'cpf'
               ? formatCpf(getString(metadata.documentNumber))
-              : formatCnpj(getString(metadata.documentNumber)),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.documentNumber)}
-              onChange={(event) => updateRoleMetadata(role.id, 'documentNumber', event.target.value)}
-            />
+              : formatCnpj(getString(metadata.documentNumber))
           )}
           {renderOnboardingField(
             role,
@@ -590,28 +591,8 @@ export function MinhaConta() {
               onChange={(event) => updateRoleMetadata(role.id, 'labName', event.target.value)}
             />
           )}
-          {renderOnboardingField(
-            role,
-            'cnpj',
-            'CNPJ',
-            formatCnpj(getString(metadata.cnpj)),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.cnpj)}
-              onChange={(event) => updateRoleMetadata(role.id, 'cnpj', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'cpf',
-            'CPF',
-            formatCpf(getString(metadata.cpf)),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.cpf)}
-              onChange={(event) => updateRoleMetadata(role.id, 'cpf', event.target.value)}
-            />
-          )}
+          {renderLockedOnboardingField('CNPJ', formatCnpj(getString(metadata.cnpj)))}
+          {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
         </S.CardRow>
         {renderOnboardingField(
           role,
@@ -740,28 +721,8 @@ export function MinhaConta() {
               onChange={(event) => updateDentistMetadata(role.id, 'croNumber', event.target.value)}
             />
           )}
-          {renderOnboardingField(
-            role,
-            'cpf',
-            'CPF',
-            formatCpf(getString(metadata.cpf)),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.cpf)}
-              onChange={(event) => updateDentistMetadata(role.id, 'cpf', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'cnpj',
-            'CNPJ',
-            formatCnpj(getString(metadata.cnpj)),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.cnpj)}
-              onChange={(event) => updateDentistMetadata(role.id, 'cnpj', event.target.value)}
-            />
-          )}
+          {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
+          {renderLockedOnboardingField('CNPJ', formatCnpj(getString(metadata.cnpj)))}
         </S.CardRow>
         {renderOnboardingField(
           role,
@@ -879,11 +840,12 @@ export function MinhaConta() {
     async function load() {
       setLoadingProfile(true);
       try {
-        const [resp, productRolesResp, deletionResp, communicationPreferencesResp] = await Promise.all([
+        const [resp, productRolesResp, deletionResp, communicationPreferencesResp, accountConsentsResp] = await Promise.all([
           api.get<MeResponse>('/v1/auth/me', session!.access_token),
           api.get<ProductRolesResponse>('/v1/account/product-roles', session!.access_token),
           api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', session!.access_token),
           fetchCommunicationPreferences(session!.access_token),
+          api.get<AccountConsentsResponse>('/v1/account/consents', session!.access_token),
         ]);
         if (!active) {
           return;
@@ -900,6 +862,7 @@ export function MinhaConta() {
         setProductRoles(productRolesResp?.productRoles ?? []);
         setDeletionRequest(deletionResp?.deletionRequest ?? null);
         setCommunicationPreferences(communicationPreferencesResp?.preferences ?? null);
+        setPrivacyConsents(accountConsentsResp ?? null);
       } catch {
         /* silently skip — name stays empty */
       } finally {
@@ -1051,6 +1014,77 @@ export function MinhaConta() {
     }
 
     setDisableCommunicationModalOpen(true);
+  }
+
+  async function handleRevokeMarketingConsent() {
+    if (!session?.access_token || marketingRevocationSubmitting || !marketingConsentActive) {
+      return;
+    }
+
+    setMarketingRevocationSubmitting(true);
+    setSnackbar(null);
+
+    try {
+      await api.post('/v1/account/consents/revoke', { types: ['marketing'] }, session.access_token);
+      setPrivacyConsents((current) => ({
+        ...current,
+        latestAccountConsents: {
+          ...(current?.latestAccountConsents ?? {}),
+          marketing: false,
+        },
+      }));
+      setSnackbar({
+        tone: 'success',
+        title: 'Marketing revogado',
+        message: 'Seu consentimento para comunicações de marketing foi revogado.',
+      });
+    } catch {
+      setSnackbar({
+        tone: 'error',
+        title: 'Falha ao revogar',
+        message: 'Não foi possível revogar o consentimento agora. Tente novamente ou acione o canal LGPD.',
+      });
+    } finally {
+      setMarketingRevocationSubmitting(false);
+    }
+  }
+
+  async function handlePrivacyExport() {
+    if (!session?.access_token) {
+      return;
+    }
+
+    setPrivacyExportSubmitting(true);
+    setSnackbar(null);
+
+    try {
+      const payload = await api.get<unknown>('/v1/account/privacy-export', session.access_token);
+      const exportedAt = new Date().toISOString().replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `nexor-privacy-export-${exportedAt}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      setSnackbar({
+        tone: 'success',
+        title: 'Exportação gerada',
+        message: 'O arquivo JSON com os dados da sua conta foi preparado neste navegador.',
+      });
+    } catch {
+      setSnackbar({
+        tone: 'error',
+        title: 'Falha ao exportar dados',
+        message: 'Não foi possível gerar a exportação agora. Tente novamente ou envie uma solicitação pelo canal LGPD.',
+      });
+    } finally {
+      setPrivacyExportSubmitting(false);
+    }
   }
 
   async function handleSave(e: FormEvent) {
@@ -1317,6 +1351,78 @@ export function MinhaConta() {
           </S.Card>
         </S.Section>
       </S.TopGrid>
+
+      {!isAdmin ? (
+        <S.Section
+          variants={fadeSection}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.05 } as never}
+        >
+          <S.SectionTitle>Privacidade e LGPD</S.SectionTitle>
+          <S.PrivacyPanel>
+            <S.PrivacyHeader>
+              <div>
+                <S.SecurityTitle>Seus dados e direitos em um só lugar</S.SecurityTitle>
+                <S.SecurityText>
+                  Exporte seus dados, revise preferências, consulte políticas ou solicite correção, revogação e análise de exclusão pelo canal LGPD.
+                </S.SecurityText>
+              </div>
+              <S.PrivacyBadge>Auditoria ativa</S.PrivacyBadge>
+            </S.PrivacyHeader>
+            <S.PrivacyActionGrid>
+              <S.PrivacyActionButton
+                type="button"
+                disabled={privacyExportSubmitting}
+                onClick={() => void handlePrivacyExport()}
+              >
+                <Download size={16} aria-hidden />
+                {privacyExportSubmitting ? 'Gerando exportação...' : 'Exportar meus dados'}
+              </S.PrivacyActionButton>
+              <S.PrivacyActionLink to="/privacidade">
+                <ExternalLink size={16} aria-hidden />
+                Política de Privacidade
+              </S.PrivacyActionLink>
+              <S.PrivacyActionLink to="/cookies">
+                <ExternalLink size={16} aria-hidden />
+                Política de Cookies
+              </S.PrivacyActionLink>
+              <S.PrivacyActionAnchor href={`mailto:contato@nexoradvance.com.br?subject=LGPD%20-%20Solicita%C3%A7%C3%A3o%20da%20conta%20${encodeURIComponent(email)}`}>
+                <Mail size={16} aria-hidden />
+                Falar com o canal LGPD
+              </S.PrivacyActionAnchor>
+              <S.PrivacyActionButton type="button" onClick={() => setDeletionModalOpen(true)}>
+                <Trash2 size={16} aria-hidden />
+                Solicitar exclusão
+              </S.PrivacyActionButton>
+            </S.PrivacyActionGrid>
+            <S.PrivacyConsentSummary aria-label="Resumo de consentimentos LGPD">
+              <S.PrivacyConsentItem>
+                <S.PrivacyConsentLabel>Marketing</S.PrivacyConsentLabel>
+                <S.PrivacyConsentStatus>{marketingConsentActive ? 'Marketing ativo' : 'Marketing revogado'}</S.PrivacyConsentStatus>
+                <S.PrivacyInlineButton
+                  type="button"
+                  disabled={!marketingConsentActive || marketingRevocationSubmitting}
+                  onClick={() => void handleRevokeMarketingConsent()}
+                >
+                  {marketingRevocationSubmitting ? 'Revogando...' : 'Revogar marketing'}
+                </S.PrivacyInlineButton>
+              </S.PrivacyConsentItem>
+              <S.PrivacyConsentItem>
+                <S.PrivacyConsentLabel>Analytics</S.PrivacyConsentLabel>
+                <S.PrivacyConsentStatus>{analyticsConsentActive ? 'Analytics ativo' : 'Analytics inativo'}</S.PrivacyConsentStatus>
+                <S.PrivacyConsentHint>Preferências de cookies podem ser alteradas pela política de cookies.</S.PrivacyConsentHint>
+              </S.PrivacyConsentItem>
+            </S.PrivacyConsentSummary>
+            <S.PrivacyRightsList aria-label="Direitos LGPD disponíveis">
+              <li>Acesso e exportação dos dados da conta.</li>
+              <li>Correção de dados cadastrais e atualização de preferências.</li>
+              <li>Revogação de comunicações não essenciais.</li>
+              <li>Solicitação de exclusão com análise de ordens e obrigações legais.</li>
+            </S.PrivacyRightsList>
+          </S.PrivacyPanel>
+        </S.Section>
+      ) : null}
 
       <S.Section
         variants={fadeSection}

@@ -30,7 +30,7 @@ export const SectionLabel = styled.p`
 
 export const Title = styled.h2`
   font-size: clamp(3rem, 3.5vw, 5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-align: center;

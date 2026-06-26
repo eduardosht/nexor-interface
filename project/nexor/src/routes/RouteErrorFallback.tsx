@@ -111,7 +111,7 @@ const FallbackCard = styled.section`
 const Eyebrow = styled.p`
   margin: 0 0 10px;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -146,7 +146,7 @@ const PrimaryButton = styled.button`
   background: ${({ theme }) => theme.colors.textPrimary};
   color: #ffffff;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 `;
 
@@ -160,6 +160,6 @@ const SecondaryLink = styled.a`
   padding: 0 18px;
   background: #ffffff;
   color: ${({ theme }) => theme.colors.text};
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
 `;

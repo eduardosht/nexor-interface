@@ -16,6 +16,8 @@ export interface OrderListParams {
   status?: string | undefined;
   limit?: number | undefined;
   createdBefore?: string | undefined;
+  initDate?: string | undefined;
+  finalDate?: string | undefined;
 }
 
 const buildOrdersPath = (mode: AccessMode, params: OrderListParams = {}) => {
@@ -35,6 +37,14 @@ const buildOrdersPath = (mode: AccessMode, params: OrderListParams = {}) => {
 
   if (params.createdBefore !== undefined) {
     query.set('createdBefore', params.createdBefore);
+  }
+
+  if (params.initDate !== undefined) {
+    query.set('initDate', params.initDate);
+  }
+
+  if (params.finalDate !== undefined) {
+    query.set('finalDate', params.finalDate);
   }
 
   const queryString = query.toString();

@@ -29,7 +29,7 @@ export const SuccessTitle = styled.h1`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: clamp(1.25rem, 2vw, 1.75rem);
   line-height: 1.08;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SuccessKicker = styled.strong`
@@ -225,7 +225,7 @@ export const SuccessOrderMeta = styled.div`
 export const SuccessMetaLabel = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SuccessMetaValue = styled.div`
@@ -254,7 +254,7 @@ export const SuccessStatusPill = styled.span`
   background: ${({ theme }) => theme.colors.greenGhost};
   color: ${({ theme }) => theme.colors.green};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 
   &::before {
     content: '';
@@ -273,7 +273,7 @@ export const SummaryCard = styled(Card)`
 export const CardTitle = styled.h2`
   margin: 0;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -335,11 +335,11 @@ export const StepNumber = styled.span<{ $state: StepState }>`
   border-radius: 999px;
   border: 1px solid
     ${({ $state, theme }) =>
-      $state === 'confirmed'
-        ? 'rgba(21, 128, 61, 0.34)'
-        : $state === 'active'
-          ? 'rgba(209, 138, 0, 0.42)'
-          : theme.colors.borderDefault};
+    $state === 'confirmed'
+      ? 'rgba(21, 128, 61, 0.34)'
+      : $state === 'active'
+        ? 'rgba(209, 138, 0, 0.42)'
+        : theme.colors.borderDefault};
   background: ${({ $state, theme }) =>
     $state === 'confirmed' ? theme.colors.greenGhost : $state === 'active' ? 'rgba(209, 138, 0, 0.1)' : theme.colors.bgInset};
   color: ${({ $state, theme }) =>
@@ -371,7 +371,7 @@ export const StepStatus = styled.span<{ $state: StepState }>`
   color: ${({ $state, theme }) =>
     $state === 'confirmed' ? theme.colors.green : $state === 'active' ? '#9a6500' : '#4b5563'};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SummaryRow = styled.div`
@@ -426,8 +426,15 @@ export const ConfigurationField = styled.label`
 
 export const Total = styled.strong`
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.green};
+`;
+
+export const UnitSuffix = styled.span`
+  margin-left: 4px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: 650;
 `;
 
 export const CheckoutButton = styled(Button)`
@@ -509,6 +516,11 @@ export const PaymentApprovedBox = styled.div`
     color: ${({ theme }) => theme.colors.green};
     font-size: 14px;
   }
+`;
+
+export const PurchaseSentBox = styled(PaymentApprovedBox)`
+  width: 100%;
+  color: ${({ theme }) => theme.colors.green};
 `;
 
 export const DetailsLink = styled(Link)`

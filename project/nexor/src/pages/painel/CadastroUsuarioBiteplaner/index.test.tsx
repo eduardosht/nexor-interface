@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
@@ -412,7 +414,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     );
     expect(await screen.findByText(/agradecemos sua disponibilidade e confian.*a/i)).toBeInTheDocument();
     expect(screen.getByText(/preparando sua pr.*xima etapa/i)).toBeInTheDocument();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-consulta', { replace: true }));
   }, 20000);
 
   it('redirects without rendering the onboarding form when it was already submitted', async () => {
@@ -433,7 +435,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(await screen.findByText(/cadastro j.* enviado/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /enviar formul.*rio/i })).not.toBeInTheDocument();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-consulta', { replace: true }));
   });
 
   it('sends submitted onboarding users to the prerequisite page while the intake is being prepared', async () => {
@@ -454,7 +456,7 @@ describe('CadastroUsuarioBiteplaner', () => {
     renderPage();
 
     expect(await screen.findByText(/cadastro j.* enviado/i)).toBeInTheDocument();
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-requisito', { replace: true }));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/painel/pre-consulta', { replace: true }));
   }, 10000);
 
   it('shows a preparation state when onboarding form is absent after privacy consent', async () => {
@@ -913,5 +915,19 @@ describe('CadastroUsuarioBiteplaner', () => {
     expect(screen.getByLabelText(/complemento/i)).toHaveValue('lado ímpar');
     expect(screen.getByLabelText(/^cidade \(\*\)$/i)).toHaveValue('São Paulo');
     expect(getTextField(/^estado \(\*\)$/i)).toHaveValue('SP');
+  });
+
+  it('keeps mobile bottom spacing for the fixed progress bar', () => {
+    const pageSource = readFileSync(resolve(__dirname, 'index.tsx'), 'utf8');
+    const stylesSource = readFileSync(resolve(__dirname, '../PreRequisito/styles.ts'), 'utf8');
+    const onboardingPageStyles = stylesSource.slice(
+      stylesSource.indexOf('export const OnboardingPage'),
+      stylesSource.indexOf('export const Banner')
+    );
+
+    expect(pageSource).toContain('<S.OnboardingPage>');
+    expect(pageSource).toContain('</S.OnboardingPage>');
+    expect(onboardingPageStyles).toContain('@media (max-width: 720px)');
+    expect(onboardingPageStyles).toContain('padding-bottom: calc(128px + env(safe-area-inset-bottom));');
   });
 });

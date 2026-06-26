@@ -84,35 +84,14 @@ export const PanelMeta = styled.span`
   font-size: 12px;
 `;
 
-export const TableWrap = styled.div`
-  overflow-x: auto;
-`;
+export const CustomerCell = styled.div`
+  display: grid;
+  gap: 2px;
 
-export const Table = styled.table`
-  width: 100%;
-  min-width: 860px;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: 12px 10px;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-    text-align: left;
-    vertical-align: top;
-    font-size: 13px;
-  }
-
-  th {
+  span {
     color: ${({ theme }) => theme.colors.textSecondary};
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  td span {
-    display: block;
-    margin-top: 2px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    overflow-wrap: anywhere;
   }
 `;
 
@@ -122,7 +101,7 @@ export const StatusPill = styled.span<{ $tone: 'neutral' | 'success' | 'warning'
   min-height: 24px;
   padding: 0 8px;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ $tone }) => ($tone === 'success' ? '#15803d' : $tone === 'danger' ? '#b91c1c' : $tone === 'warning' ? '#b45309' : '#475569')};
   background: ${({ $tone }) => ($tone === 'success' ? '#dcfce7' : $tone === 'danger' ? '#fee2e2' : $tone === 'warning' ? '#fef3c7' : '#f1f5f9')};
 `;
@@ -146,6 +125,28 @@ export const ActionGroup = styled.div`
   button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+`;
+
+export const MobileSecondaryActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    min-height: 36px;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    border-radius: 8px;
+    background: ${({ theme }) => theme.colors.bgElevated};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    padding: 0 12px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  button:disabled {
+    opacity: 0.5;
   }
 `;
 

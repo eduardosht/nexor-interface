@@ -4,6 +4,9 @@ import {
   completeProductionRequest,
   createCheckoutSession,
   confirmPayment,
+  confirmPurchaseRequest,
+  fetchOrders,
+  markPaymentMessageSent,
   registerClinicalDecision,
   reconcileCheckoutSession,
   scheduleInitialConsultation,
@@ -13,10 +16,12 @@ import {
 
 vi.mock('../../lib/api', () => ({
   api: {
+    get: vi.fn(),
     post: vi.fn(),
   },
 }));
 
+const apiGet = vi.mocked(api.get);
 const apiPost = vi.mocked(api.post);
 
 const order: DemoOrderSummary = {
@@ -28,7 +33,23 @@ const order: DemoOrderSummary = {
 
 describe('biteplanerFlow backend route adapters', () => {
   beforeEach(() => {
+    apiGet.mockReset();
     apiPost.mockReset();
+  });
+
+  it('serializes order date range filters through the backend list route', async () => {
+    apiGet.mockResolvedValue({ orders: [] });
+
+    await fetchOrders('dentist', 'token', {
+      initDate: '2026-02-01T00:00:00.000Z',
+      finalDate: '2026-05-31T23:59:59.999Z',
+      limit: 30,
+    });
+
+    expect(apiGet).toHaveBeenCalledWith(
+      '/v1/orders?as=dentist&limit=30&initDate=2026-02-01T00%3A00%3A00.000Z&finalDate=2026-05-31T23%3A59%3A59.999Z',
+      'token'
+    );
   });
 
   it('confirms payment through the backend admin payment confirmation route', async () => {
@@ -53,6 +74,34 @@ describe('biteplanerFlow backend route adapters', () => {
     expect(apiPost).toHaveBeenCalledWith(
       '/v1/orders/order-1/checkout-session',
       { model: 'impacto', color: 'preto', quantity: 2 },
+      'token'
+    );
+  });
+
+  it('confirms a purchase request without creating a Stripe checkout session', async () => {
+    apiPost.mockResolvedValue({ order: { ...order, status: 'awaiting_payment' } });
+
+    await expect(confirmPurchaseRequest(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
+      order: { ...order, status: 'awaiting_payment' },
+    });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/purchase-confirmation',
+      { model: 'impacto', color: 'preto', quantity: 2 },
+      'token'
+    );
+  });
+
+  it('marks the manual payment message as sent through the admin route', async () => {
+    apiPost.mockResolvedValue({ order: { ...order, paymentRequest: { status: 'message_sent' } } });
+
+    await expect(markPaymentMessageSent(order.id, 'token')).resolves.toEqual({
+      order: { ...order, paymentRequest: { status: 'message_sent' } },
+    });
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/admin/orders/order-1/payment-message-sent',
+      {},
       'token'
     );
   });
@@ -104,7 +153,6 @@ describe('biteplanerFlow backend route adapters', () => {
       productionRequestSummary: 'Solicitação preenchida.',
       labNotes: 'Observação operacional.',
       scan3dFileName: 'scan.stl',
-      prescriptionFileName: 'prescricao.pdf',
       lgpdConfirmed: true,
       selectedLabId: 'lab-1',
     };

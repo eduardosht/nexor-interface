@@ -6,18 +6,14 @@ import {
   approvePartnerRequest,
   createProductRole,
   getAccessOptions,
-  getDentistLicensing,
   getEnrollment,
-  getLabLicensing,
   getProductRoles,
   listDentistLicenseRequests,
   listLabLicenseRequests,
   listPartnerRequests,
   rejectDentistLicenseRequest,
   rejectLabLicenseRequest,
-  rejectPartnerRequest,
-  updateDentistLicensing,
-  updateLabLicensing
+  rejectPartnerRequest
 } from '../demoState';
 import { DEMO_LAB_LOCATIONS } from '../../features/demo/labLocations';
 
@@ -38,7 +34,7 @@ export function productHandlers(server: Server) {
 
     return {
       enrollments: enrollment
-        ? [
+        ?[
             {
               productKey: 'biteplaner',
               ...enrollment
@@ -153,31 +149,6 @@ export function productHandlers(server: Server) {
     return new Response(200, {}, rejectLabLicenseRequest(request.params.productRoleId, payload.reason ?? 'Recusado pela Nexor.'));
   });
 
-  server.get('/v1/account/biteplaner/dentist-licensing', (_schema, request) => {
-    return new Response(200, {}, getDentistLicensing({ requestHeaders: request.requestHeaders }));
-  });
-
-  server.post('/v1/account/biteplaner/dentist-licensing/payment-confirmed', (_schema, request) => {
-    return new Response(200, {}, updateDentistLicensing({ requestHeaders: request.requestHeaders }, 'payment'));
-  });
-
-  server.post('/v1/account/biteplaner/dentist-licensing/contracts/:type/sign', (_schema, request) => {
-    return new Response(200, {}, updateDentistLicensing({ requestHeaders: request.requestHeaders }, request.params.type));
-  });
-
-  server.post('/v1/account/biteplaner/dentist-licensing/course/progress', (_schema, request) => {
-    const payload = JSON.parse(request.requestBody || '{}') as Record<string, unknown>;
-    return new Response(200, {}, updateDentistLicensing({ requestHeaders: request.requestHeaders }, 'course', payload));
-  });
-
-  server.post('/v1/account/biteplaner/dentist-licensing/test/submit', (_schema, request) => {
-    return new Response(200, {}, updateDentistLicensing({ requestHeaders: request.requestHeaders }, 'test'));
-  });
-
-  server.get('/v1/account/biteplaner/lab-licensing', (_schema, request) => {
-    return new Response(200, {}, getLabLicensing({ requestHeaders: request.requestHeaders }));
-  });
-
   server.get('/v1/account/biteplaner/licensed-labs', () => {
     return new Response(200, {}, {
       labs: DEMO_LAB_LOCATIONS.map((lab) => ({
@@ -195,22 +166,5 @@ export function productHandlers(server: Server) {
         coordinates: lab.coordinates,
       })),
     });
-  });
-
-  server.post('/v1/account/biteplaner/lab-licensing/payment-confirmed', (_schema, request) => {
-    return new Response(200, {}, updateLabLicensing({ requestHeaders: request.requestHeaders }, 'payment'));
-  });
-
-  server.post('/v1/account/biteplaner/lab-licensing/contracts/:type/sign', (_schema, request) => {
-    return new Response(200, {}, updateLabLicensing({ requestHeaders: request.requestHeaders }, request.params.type));
-  });
-
-  server.post('/v1/account/biteplaner/lab-licensing/course/progress', (_schema, request) => {
-    const payload = JSON.parse(request.requestBody || '{}') as Record<string, unknown>;
-    return new Response(200, {}, updateLabLicensing({ requestHeaders: request.requestHeaders }, 'course', payload));
-  });
-
-  server.post('/v1/account/biteplaner/lab-licensing/test/submit', (_schema, request) => {
-    return new Response(200, {}, updateLabLicensing({ requestHeaders: request.requestHeaders }, 'test'));
   });
 }

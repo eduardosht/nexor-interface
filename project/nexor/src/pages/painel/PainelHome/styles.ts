@@ -281,7 +281,7 @@ export const ProductTitle = styled.h1`
   color: #ffffff;
   font-size: clamp(2.3rem, 4vw, 3.55rem);
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 
   @media (max-width: 640px) {
@@ -336,7 +336,7 @@ export const ProductStat = styled.div`
 export const BpRowLabel = styled.span`
   font-size: 12px;
   color: rgba(255, 255, 255, 0.72);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 
@@ -436,7 +436,7 @@ export const BpStatusBadge = styled.span`
   gap: 8px;
   color: #ffffff;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
 
   &::before {
     content: '';
@@ -460,7 +460,7 @@ export const BpStatusBadge = styled.span`
 
 export const BpPrice = styled.span`
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   color: #ffffff;
 
   @media (max-width: 640px) {
@@ -482,7 +482,7 @@ export const HeroButton = styled.button`
   align-items: center;
   gap: 14px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 18px 36px rgba(22, 163, 74, 0.28);
 
@@ -711,7 +711,7 @@ export const RoleActionMeta = styled.span`
   }
 `;
 
-export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neutral' }>`
+export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'available' | 'neutral' }>`
   position: absolute;
   top: clamp(20px, 2.1vw, 26px);
   right: clamp(20px, 2.1vw, 26px);
@@ -724,13 +724,22 @@ export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'neu
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: ${({ $tone }) => ($tone === 'success' ? '#116b37' : $tone === 'warning' ? '#8a5b00' : '#666b75')};
+  color: ${({ $tone }) =>
+    $tone === 'success'
+      ? '#116b37'
+      : $tone === 'available'
+        ? '#15803d'
+        : $tone === 'warning'
+          ? '#8a5b00'
+          : '#666b75'};
   background: ${({ $tone }) =>
     $tone === 'success'
       ? 'rgba(17, 107, 55, 0.1)'
-      : $tone === 'warning'
-        ? 'rgba(245, 158, 11, 0.12)'
-        : 'linear-gradient(180deg, #f0f1f3, #e3e5e8)'};
+      : $tone === 'available'
+        ? 'rgba(22, 163, 74, 0.1)'
+        : $tone === 'warning'
+          ? 'rgba(245, 158, 11, 0.12)'
+          : 'linear-gradient(180deg, #f0f1f3, #e3e5e8)'};
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 
   @media (max-width: 640px) {
@@ -761,7 +770,7 @@ export const RoleActionButton = styled.button`
   justify-content: space-between;
   gap: 16px;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   text-align: left;
   white-space: nowrap;

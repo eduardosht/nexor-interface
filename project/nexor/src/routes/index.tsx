@@ -35,6 +35,7 @@ const Jornada = lazy(() => import('../pages/painel/Jornada').then(({ Jornada }) 
 const ProducaoDentista = lazy(() => import('../pages/painel/ProducaoDentista').then(({ ProducaoDentista }) => ({ default: ProducaoDentista })));
 const AdminHome = lazy(() => import('../pages/painel/admin/AdminHome').then(({ AdminHome }) => ({ default: AdminHome })));
 const AdminOrders = lazy(() => import('../pages/painel/admin/AdminOrders').then(({ AdminOrders }) => ({ default: AdminOrders })));
+const AdminPayments = lazy(() => import('../pages/painel/admin/AdminPayments').then(({ AdminPayments }) => ({ default: AdminPayments })));
 const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBiteplaner').then(({ RelatoriosBiteplaner }) => ({ default: RelatoriosBiteplaner })));
 const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
 const AdminLabLicensing = lazy(() => import('../pages/painel/admin/AdminLabLicensing').then(({ AdminLabLicensing }) => ({ default: AdminLabLicensing })));
@@ -82,11 +83,7 @@ function AdminPainelRoute({ children }: { children: ReactNode }) {
 }
 
 const AdminRouteViewport = styled.div`
-  min-width: 0;
-
-  button {
-    min-width: 100px;
-  }
+  min-width: 100px;
 `;
 
 function AccountRedirect() {
@@ -154,17 +151,19 @@ export const router = createBrowserRouter([
   { path: '/painel/biteplaner/cadastro/:role', element: <PainelRoute><CadastroPerfilBiteplaner /></PainelRoute> },
   { path: '/painel/conta', element: <PainelRoute><MinhaConta /></PainelRoute> },
   { path: '/painel/notificacoes', element: <PainelRoute><Notificacoes /></PainelRoute> },
-  { path: '/painel/pre-requisito', element: <PainelRoute><PreRequisito /></PainelRoute> },
+  { path: '/painel/pre-requisito', element: <Navigate to="/painel/pre-consulta" replace /> },
+  { path: '/painel/pre-consulta', element: <PainelRoute><PreRequisito /></PainelRoute> },
   { path: '/painel/consulta-inicial', element: <PainelRoute><ConsultaInicial /></PainelRoute> },
   { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
+  { path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
   { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
-  { path: '/painel/biteplaner/licenciamento', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },
   { path: '/painel/biteplaner/avaliacoes', element: <PainelRoute><Avaliacoes /></PainelRoute> },
   { path: '/painel/biteplaner/jornada', element: <PainelRoute><Jornada /></PainelRoute> },
   { path: '/painel/dentista/producao/:orderId', element: <PainelRoute><ProducaoDentista /></PainelRoute> },
   { path: '/painel/admin/home', element: <AdminPainelRoute><AdminHome /></AdminPainelRoute> },
   { path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> },
+  { path: '/painel/admin/pagamentos', element: <AdminPainelRoute><AdminPayments /></AdminPainelRoute> },
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
   { path: '/painel/admin/parceiros', element: <AdminPainelRoute><AdminPartnerLicensing /></AdminPainelRoute> },
   { path: '/painel/admin/remocoes-conta', element: <AdminPainelRoute><AdminAccountDeletions /></AdminPainelRoute> },

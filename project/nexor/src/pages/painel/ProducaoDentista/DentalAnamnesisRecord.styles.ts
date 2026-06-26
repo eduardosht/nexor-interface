@@ -98,7 +98,7 @@ export const TitleGroup = styled.div`
 export const ClinicName = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 `;
@@ -107,7 +107,7 @@ export const Title = styled.h3`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 
   @media (max-width: 1280px) {
@@ -343,6 +343,18 @@ export const VisibleNotesHeader = styled.div`
   }
 `;
 
+export const VisibleNotesText = styled.p`
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #ead7a5;
+  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+`;
+
 export const Card = styled.details`
   display: grid;
   gap: 14px;
@@ -416,7 +428,7 @@ export const SectionTitle = styled.h4`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SectionDescription = styled.p`

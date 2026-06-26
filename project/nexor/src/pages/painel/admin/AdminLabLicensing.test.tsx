@@ -109,4 +109,75 @@ describe('AdminLabLicensing', () => {
       )
     );
   });
+
+  it('does not show review actions for approved or rejected laboratory requests', async () => {
+    mockApiGet.mockResolvedValueOnce({
+      requests: [
+        {
+          id: 'lab-role-approved',
+          profileId: 'profile-lab-approved',
+          labName: 'Lab Aprovado',
+          cnpj: '19.131.243/0001-97',
+          professionalSummary: 'Produção laboratorial Biteplaner.',
+          status: 'active',
+          workflowStatus: 'approved_pending_payment',
+          submittedAt: '2026-05-11T10:00:00.000Z',
+          locations: [],
+        },
+        {
+          id: 'lab-role-rejected',
+          profileId: 'profile-lab-rejected',
+          labName: 'Lab Recusado',
+          cnpj: '23.456.789/0001-10',
+          professionalSummary: 'Produção recusada.',
+          status: 'rejected',
+          workflowStatus: 'admin_rejected',
+          submittedAt: '2026-05-12T10:00:00.000Z',
+          locations: [],
+        },
+        {
+          id: 'lab-role-pending',
+          profileId: 'profile-lab-pending',
+          labName: 'Lab Pendente',
+          cnpj: '34.567.890/0001-20',
+          professionalSummary: 'Produção pendente.',
+          status: 'pending',
+          workflowStatus: 'admin_review_pending',
+          submittedAt: '2026-05-10T10:00:00.000Z',
+          locations: [],
+        },
+      ],
+    });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(screen.getAllByText(/lab aprovado/i).length).toBeGreaterThan(0),
+    );
+    expect(
+      screen.queryByRole('button', {
+        name: /visualizar solicitação de lab aprovado/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /abrir dados do laboratório lab aprovado/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /visualizar solicitação de lab recusado/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {
+        name: /abrir dados do laboratório lab recusado/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /visualizar solicitação de lab pendente/i,
+      }),
+    ).toBeInTheDocument();
+  });
 });

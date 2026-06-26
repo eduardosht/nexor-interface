@@ -98,10 +98,12 @@ describe('AdminCheckupEmails', () => {
     expect(await screen.findByRole('heading', { name: /e-mails de check-up/i })).toBeInTheDocument();
     expect(screen.getByText('Agendados')).toBeInTheDocument();
     expect(screen.getByText('Falhas')).toBeInTheDocument();
-    expect(await screen.findByText('cliente3@gmail.com')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getAllByText('cliente3@gmail.com').length).toBeGreaterThan(0);
+    });
 
     fireEvent.click(screen.getByRole('button', { name: /executar job agora/i }));
-    expect(screen.getByRole('dialog', { name: /executar job diario/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /executar job diário/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /executar agora/i }));
 

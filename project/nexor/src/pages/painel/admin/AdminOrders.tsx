@@ -42,7 +42,7 @@ import {
 
 
 const STATUS_OPTIONS = [
-  { value: 'registration_started', label: 'Pré-requisito pendente' },
+  { value: 'registration_started', label: 'Pré-consulta pendente' },
   { value: 'awaiting_scheduling', label: 'Aguardando consulta inicial' },
   { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
   { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },

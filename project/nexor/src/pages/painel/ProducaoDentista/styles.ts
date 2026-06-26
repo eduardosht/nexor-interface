@@ -163,7 +163,7 @@ export const NoticeBox = styled.div`
 
 export const NoticeTitle = styled.strong`
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -186,7 +186,7 @@ export const PurchaseConfigurationBox = styled.div`
 
 export const PurchaseConfigurationTitle = styled.strong`
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
 `;
 
@@ -209,7 +209,7 @@ export const RetentionConsentLabel = styled.span`
   font-weight: 400;
 
   strong {
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -382,7 +382,7 @@ export const SideCard = styled.section`
 export const SectionTitle = styled.h2`
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -394,16 +394,13 @@ export const Description = styled.p`
 `;
 
 export const AttachmentGrid = styled.div`
+  width: 100%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 
   @media (max-width: 1280px) {
     gap: 10px;
-  }
-
-  @media (max-width: 780px) {
-    grid-template-columns: 1fr;
   }
 `;
 

@@ -73,7 +73,7 @@ const SearchGroup = styled.div`
 const Label = styled.label`
   color: ${({ theme }) => adminColor(theme, 'textSecondary', 'textMuted', '#525252')};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 const Input = styled.input`
@@ -121,5 +121,5 @@ const CountBadge = styled.span`
   background: #15803d;
   color: #ffffff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;

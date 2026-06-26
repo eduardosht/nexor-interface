@@ -88,6 +88,25 @@ const DEMO_TABS = [
 
 type DemoTabKey = (typeof DEMO_TABS)[number]['key'];
 
+const FRIENDLY_SERVER_ERROR_MESSAGE =
+  'Não foi possível acessar sua conta agora. Aguarde alguns instantes e tente novamente.';
+
+function resolveLoginErrorMessage(message: string) {
+  const normalized = message.trim().toLowerCase();
+
+  if (
+    normalized === 'unexpected server error.' ||
+    normalized === 'unexpected server error' ||
+    normalized.includes('server error') ||
+    normalized.includes('internal server error') ||
+    /\b500\b/.test(normalized)
+  ) {
+    return FRIENDLY_SERVER_ERROR_MESSAGE;
+  }
+
+  return message;
+}
+
 export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -106,7 +125,7 @@ export function Login() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeDemoTab, setActiveDemoTab] = useState<DemoTabKey>('cliente');
-  const visibleError = error || authError;
+  const visibleError = error || (authError ? resolveLoginErrorMessage(authError) : '');
 
   useEffect(() => {
     const ref = searchParams.get('ref');

@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
-  ArrowRight,
   BarChart3,
   Bell,
   Check,
@@ -17,7 +16,6 @@ import {
   ListChecks,
   Mail,
   MessageCircle,
-  PartyPopper,
   QrCode,
   RefreshCw,
   Stethoscope,
@@ -28,11 +26,14 @@ import {
 } from 'lucide-react';
 import { SkeletonPage } from '../../../components/Skeleton';
 import {
+  AdminDataTable,
   DataTable,
   Field,
+  MultiSelect,
   Snackbar,
   SnackbarStack,
   StatusIndicator,
+  type AdminDataTableColumn,
   type DataTableColumn,
 } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
@@ -55,16 +56,7 @@ import {
   fetchPartnerOverview,
 } from '../../../features/biteplaner/partners/partner.api';
 import {
-  confirmDentistLicensingPayment,
   fetchAccessOptions,
-  fetchDentistLicensing,
-  fetchLabLicensing,
-  signDentistLicensingContract,
-  signLabLicensingContract,
-  submitDentistLicensingTest,
-  submitLabLicensingTest,
-  updateDentistLicensingCourseProgress,
-  updateLabLicensingCourseProgress,
 } from '../../../features/biteplaner/licensing/licensing.api';
 import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
 import {
@@ -74,8 +66,6 @@ import { MODE_COPY, MODE_TAB_ICONS } from '../../../features/biteplaner/hub/hubM
 import type { LicensedLabSelectionApiRecord } from '../../../features/biteplaner/labs/labs.types';
 import type {
   AccessOption,
-  DentistLicensingResponse,
-  DentistLicensingWorkflow,
 } from '../../../features/biteplaner/licensing/licensing.types';
 import type { PartnerOverviewResponse } from '../../../features/biteplaner/partners/partner.types';
 import {
@@ -93,7 +83,6 @@ import {
   getOrderClinicalDentistName,
   getOrderStatusPresentation,
   getStageLabel,
-  markAccountNotificationRead,
   PERSONA_MODE,
   registerClinicalDecision,
   updateAppointment,
@@ -162,6 +151,10 @@ import { PendingFeedbackPrompt } from '../components/PendingFeedbackPrompt';
 
 
 type PartnerDashboardPeriod = 'week' | 'month' | 'year' | 'all';
+type OperationalOrderDateRange = {
+  initDate: string;
+  finalDate: string;
+};
 
 const PARTNER_DASHBOARD_PERIODS: Array<{ key: PartnerDashboardPeriod; label: string }> = [
   { key: 'week', label: 'Semana' },
@@ -171,6 +164,83 @@ const PARTNER_DASHBOARD_PERIODS: Array<{ key: PartnerDashboardPeriod; label: str
 ];
 
 const FIRST_ACCESS_MODE_PRIORITY: AccessMode[] = ['lab', 'dentist', 'partner', 'user'];
+
+function formatDateInputValue(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function formatOperationalUpdatedAt(value?: string | null) {
+  if (!value) {
+    return '-';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '-';
+  }
+
+  const parts = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+
+  return `${getPart('day')}/${getPart('month')}/${getPart('year')} ${getPart('hour')}:${getPart('minute')}`;
+}
+
+function buildDefaultOperationalOrderDateRange(): OperationalOrderDateRange {
+  const finalDate = new Date();
+  const initDate = new Date(finalDate);
+  initDate.setUTCMonth(initDate.getUTCMonth() - 4);
+
+  return {
+    initDate: formatDateInputValue(initDate),
+    finalDate: formatDateInputValue(finalDate),
+  };
+}
+
+function getDateRangeMonthsLimitDate(initDateValue: string) {
+  const limitDate = new Date(`${initDateValue}T00:00:00.000Z`);
+  limitDate.setUTCMonth(limitDate.getUTCMonth() + 4);
+  limitDate.setUTCHours(23, 59, 59, 999);
+  return limitDate;
+}
+
+function isOperationalOrderDateRangeValid(range: OperationalOrderDateRange) {
+  const initDate = new Date(`${range.initDate}T00:00:00.000Z`);
+  const finalDate = new Date(`${range.finalDate}T23:59:59.999Z`);
+
+  if (Number.isNaN(initDate.getTime()) || Number.isNaN(finalDate.getTime())) {
+    return false;
+  }
+
+  if (finalDate.getTime() < initDate.getTime()) {
+    return false;
+  }
+
+  return finalDate.getTime() <= getDateRangeMonthsLimitDate(range.initDate).getTime();
+}
+
+function serializeOperationalOrderDateRange(range: OperationalOrderDateRange) {
+  return {
+    initDate: `${range.initDate}T00:00:00.000Z`,
+    finalDate: `${range.finalDate}T23:59:59.999Z`,
+  };
+}
+
+function isAccessMode(value: string | null): value is AccessMode {
+  return value === 'user' || value === 'partner' || value === 'dentist' || value === 'lab' || value === 'admin';
+}
+
+function canUseAccessMode(access: { modes: AccessOption[] }, mode: AccessMode) {
+  return access.modes.some((option) => option.key === mode && option.allowed);
+}
 
 export function getFirstAccessMode(access: { defaultMode: AccessMode; modes: AccessOption[] }): AccessMode {
   return (
@@ -282,7 +352,7 @@ const TIMELINE_STATUS_LABELS: Record<string, string> = {
 const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   order_created: 'Pedido criado para iniciar a jornada Biteplaner.',
   customer_pre_consultation_intake_submitted:
-    'Cliente concluiu o pre-requisito e liberou a escolha do local de atendimento.',
+    'Cliente concluiu a pré-consulta e liberou a escolha do local de atendimento.',
   scheduling_released: 'Pagamento confirmado e etapa de escolha do local de atendimento liberada.',
   practice_location_selected_by_customer:
     'Cliente informou que combinou a consulta fora da plataforma; a ordem agora aguarda aceite do dentista.',
@@ -314,7 +384,7 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
 
 const TIMELINE_TRANSITION_DESCRIPTIONS: Record<string, string> = {
   'registration_started->awaiting_scheduling':
-    'Pre-requisito concluído; cliente pode escolher o local da consulta inicial.',
+    'Pré-consulta concluída; cliente pode escolher o local da consulta inicial.',
   'payment_confirmed->awaiting_scheduling':
     'Ordem liberada para escolha do local de atendimento.',
   'awaiting_scheduling->awaiting_dentist_acceptance':
@@ -531,11 +601,6 @@ function getOperationalRoleStatusTone(status?: string | null): 'success' | 'warn
   }
 
   return 'neutral';
-}
-
-function buildCertificateHref(workflow: DentistLicensingWorkflow | null) {
-  const issuedAt = workflow?.certificateIssuedAt ? formatDate(workflow.certificateIssuedAt) : 'data não informada';
-  return `data:text/plain;charset=utf-8,${encodeURIComponent(`Certificado Biteplaner\nStatus: Licenciado\nEmitido em: ${issuedAt}`)}`;
 }
 
 function getOneYearAgo(referenceDate = new Date()) {
@@ -822,39 +887,6 @@ function downloadPartnerReport(partnerOverview: PartnerOverviewResponse | null) 
   URL.revokeObjectURL(url);
 }
 
-function getCourseStudyText(contentId: string, mode: AccessMode | null = 'dentist') {
-  if (mode === 'lab') {
-    const labStudyTexts: Record<string, string> = {
-      fundamentos:
-        'Neste modulo, o laboratório revisa os fundamentos operacionais do Biteplaner: leitura da solicitação recebida, limites de produção, critérios de rastreabilidade e responsabilidades antes de iniciar qualquer etapa produtiva. O objetivo e padronizar o recebimento das ordens e reduzir retrabalho entre dentista, laboratório e Nexor.',
-      operacao:
-        'Este modulo organiza o fluxo de produção e documentação mínima. O laboratório deve confirmar recebimento, registrar início da produção, sinalizar ajustes quando necessário, manter identificação da ordem e respeitar o escopo de dados compartilhados pela plataforma. O checklist garante que cada produção tenha materiais, prazos e comunicações registrados.',
-      qualidade:
-        'Este modulo apresenta controle de qualidade, rastreabilidade e boas práticas laboratoriais. Antes de concluir a produção, o laboratório deve revisar integridade, acabamento, compatibilidade com a solicitação e registro do ciclo. Quando houver divergencia, a devolucao para ajuste deve ser objetiva, auditavel e limitada ao que for necessário para a resolucao.'
-    };
-
-    return labStudyTexts[contentId] ??
-      'Material de estudo do licenciamento laboratorial Biteplaner com orientações de produção, rastreabilidade e qualidade para padronizar a atuação no MVP.';
-  }
-
-  const studyTexts: Record<string, string> = {
-    fundamentos:
-      'Neste modulo, o dentista revisa os fundamentos clínicos do Biteplaner: indicacoes para atletas, critérios de elegibilidade odontológica, limites do dispositivo, sinais de alerta e responsabilidade profissional durante a avaliação. O objetivo e padronizar a leitura inicial do caso antes de qualquer decisão de produção. O protocolo recomenda registrar histórico relevante, hábitos orais, queixas de dor, modalidade esportiva e expectativa de uso. Tambem reforca que o Biteplaner não substitui tratamento odontológico necessário, nem deve ser indicado quando houver impedimento clínico ativo sem acompanhamento.',
-    operacao:
-      'Este modulo organiza o fluxo operacional e a documentação mínima para que a ordem avance com rastreabilidade. O dentista deve confirmar atendimento, revisar a avaliação inicial, registrar decisão clínica, preparar a solicitação de produção e anexar arquivos obrigatórios quando aplicável. O checklist orienta o uso de dados essenciais, evita textos livres desnecessários e reforca a separação entre histórico clínico sob guarda profissional e dados operacionais usados pela plataforma. A qualidade do registro reduz retrabalho com laboratório e melhora a experiência do atleta.',
-    qualidade:
-      'Este modulo apresenta boas práticas de acompanhamento, controle de qualidade e comunicação com o atleta. O dentista deve orientar adaptação, higiene, sinais de desconforto e necessidade de retorno. A cada acompanhamento, recomenda-se registrar aderência, ajustes realizados, integridade do dispositivo e percepção do usuário. O foco é manter um padrão replicavel entre profissionais licenciados, com conduta clara quando houver dor, quebra, perda de encaixe ou suspeita de que o produto deixou de ser adequado ao caso.'
-  };
-
-  return studyTexts[contentId] ??
-    'Material de estudo do licenciamento Biteplaner com orientações operacionais, critérios de qualidade e pontos de atenção para padronizar a atuação do dentista no MVP.';
-}
-
-function buildCoursePdfHref(title: string, contentId: string, mode: AccessMode | null = 'dentist') {
-  const body = `Biteplaner - Material PDF\n\n${title}\n\n${getCourseStudyText(contentId, mode)}`;
-  return `data:application/pdf;charset=utf-8,${encodeURIComponent(body)}`;
-}
-
 type AppointmentMap = Record<string, DemoAppointment[]>;
 type TimelineMap = Record<string, DemoTimelineEvent[]>;
 type WorkflowFormMap = Record<string, DemoWorkflowForm[]>;
@@ -981,11 +1013,11 @@ function formatBiteplanerModel(model: string) {
   const normalized = model.trim().toLowerCase();
 
   if (normalized === 'impacto') {
-    return 'Linha Impacto';
+    return 'Linha Impact';
   }
 
   if (normalized === 'esportes') {
-    return 'Linha Esportes';
+    return 'Linha Strength';
   }
 
   return model.trim() || 'Não informado';
@@ -1276,7 +1308,13 @@ export function BiteplanerHub() {
   const [selectedInviteLink, setSelectedInviteLink] = useState<PartnerOverviewResponse['inviteLinks'][number] | null>(null);
   const [selectedTimelineOrderId, setSelectedTimelineOrderId] = useState<string | null>(null);
   const [dentistStatusFilters, setDentistStatusFilters] = useState<string[]>([]);
+  const [dentistDateRange, setDentistDateRange] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [dentistDateDraft, setDentistDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [dentistDateRangeError, setDentistDateRangeError] = useState('');
   const [labStatusFilters, setLabStatusFilters] = useState<string[]>([]);
+  const [labDateRange, setLabDateRange] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [labDateDraft, setLabDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [labDateRangeError, setLabDateRangeError] = useState('');
   const [pendingOrderAction, setPendingOrderAction] = useState<QueueActionConfig | null>(null);
   const [selectedAdjustmentOrderId, setSelectedAdjustmentOrderId] = useState<string | null>(null);
   const [selectedAdaptationOrderId, setSelectedAdaptationOrderId] = useState<string | null>(null);
@@ -1287,28 +1325,25 @@ export function BiteplanerHub() {
   const [selectedProductionRequestDraft, setSelectedProductionRequestDraft] = useState<ProductionRequestDraft | null>(null);
   const [productionRequestLoading, setProductionRequestLoading] = useState(false);
   const [productionRequestError, setProductionRequestError] = useState('');
-  const [dentistLicensing, setDentistLicensing] = useState<DentistLicensingResponse | null>(null);
-  const [dentistLicensingLoading, setDentistLicensingLoading] = useState(false);
-  const [showLicensingApprovalModal, setShowLicensingApprovalModal] = useState(false);
-  const [licensingApprovalNotificationId, setLicensingApprovalNotificationId] = useState<string | null>(null);
-  const [selectedCourseContentId, setSelectedCourseContentId] = useState<string | null>(null);
-  const [licensingContractRead, setLicensingContractRead] = useState(false);
   const [partnerDashboardPeriod, setPartnerDashboardPeriod] = useState<PartnerDashboardPeriod>('month');
-  const isLicensingRoute = location.pathname.endsWith('/licenciamento');
 
   const requestedMode = searchParams.get('mode');
   const fallbackMode = demoPersona ? PERSONA_MODE[demoPersona] : null;
   const selectedMode = useMemo<AccessMode | null>(() => {
-    if (requestedMode === 'user' || requestedMode === 'partner' || requestedMode === 'dentist' || requestedMode === 'lab' || requestedMode === 'admin') {
-      return requestedMode;
-    }
-
     if (access) {
+      if (isAccessMode(requestedMode) && canUseAccessMode(access, requestedMode)) {
+        return requestedMode;
+      }
+
       return getFirstAccessMode(access);
     }
 
-    return fallbackMode;
-  }, [access, fallbackMode, requestedMode]);
+    if (requestedMode) {
+      return null;
+    }
+
+    return token ? null : fallbackMode;
+  }, [access, fallbackMode, requestedMode, token]);
   const dentistOrders = useMemo(
     () =>
       selectedMode === 'dentist'
@@ -1328,7 +1363,18 @@ export function BiteplanerHub() {
       };
     }
 
-    const ordersResponse = await fetchOrders(activeMode, token);
+    const orderDateRange =
+      activeMode === 'dentist'
+        ? dentistDateRange
+        : activeMode === 'lab'
+          ? labDateRange
+          : null;
+
+    const ordersResponse = await fetchOrders(
+      activeMode,
+      token,
+      orderDateRange ? serializeOperationalOrderDateRange(orderDateRange) : undefined
+    );
 
     async function fetchOrderRelations(targetOrders: DemoOrderSummary[]) {
       const [appointmentEntries, timelineEntries, workflowFormEntries] = await Promise.all([
@@ -1385,7 +1431,7 @@ export function BiteplanerHub() {
 
       if (dueOrders.length > 0) {
         await Promise.all(dueOrders.map((order) => completeAdaptation(order.id, token)));
-        const refreshedOrdersResponse = await fetchOrders(activeMode, token);
+        const refreshedOrdersResponse = await fetchOrders(activeMode, token, serializeOperationalOrderDateRange(dentistDateRange));
         const refreshedRelations = await fetchOrderRelations(refreshedOrdersResponse.orders);
 
         return {
@@ -1431,8 +1477,13 @@ export function BiteplanerHub() {
 
         setAccess(response);
 
-        if (!requestedMode) {
-          setSearchParams({ mode: getFirstAccessMode(response) });
+        const nextMode =
+          isAccessMode(requestedMode) && canUseAccessMode(response, requestedMode)
+            ? requestedMode
+            : getFirstAccessMode(response);
+
+        if (requestedMode !== nextMode) {
+          setSearchParams({ mode: nextMode }, { replace: true });
         }
       } catch {
         if (active) {
@@ -1491,66 +1542,7 @@ export function BiteplanerHub() {
     return () => {
       active = false;
     };
-    }, [selectedMode, token]);
-
-  useEffect(() => {
-    if (!token || (selectedMode !== 'dentist' && selectedMode !== 'lab')) {
-      setDentistLicensing(null);
-      setDentistLicensingLoading(false);
-      return;
-    }
-
-    if (selectedMode === 'lab' && demoPersona === 'lab') {
-      setDentistLicensing(null);
-      setDentistLicensingLoading(false);
-      return;
-    }
-
-    if (loading) {
-      setDentistLicensing(null);
-      setDentistLicensingLoading(true);
-      return;
-    }
-
-    let active = true;
-
-    async function loadDentistLicensing() {
-      setDentistLicensingLoading(true);
-      try {
-        const response = selectedMode === 'lab'
-          ? await fetchLabLicensing(token)
-          : await fetchDentistLicensing(token);
-
-        if (!active) {
-          return;
-        }
-
-        setDentistLicensing(response);
-
-        const approvalNotification = response.notifications.find((notification) =>
-          /cadastro aprovado/i.test(notification.title) && notification.read !== true
-        );
-        if (approvalNotification) {
-          setLicensingApprovalNotificationId(approvalNotification.id);
-          setShowLicensingApprovalModal(true);
-        }
-      } catch {
-        if (active) {
-          setDentistLicensing(null);
-        }
-      } finally {
-        if (active) {
-          setDentistLicensingLoading(false);
-        }
-      }
-    }
-
-    void loadDentistLicensing();
-
-    return () => {
-      active = false;
-    };
-  }, [loading, selectedMode, token]);
+    }, [selectedMode, token, dentistDateRange, labDateRange]);
 
   useEffect(() => {
     const productionRequestOrderId = selectedDocumentationOrderId ?? selectedAdjustmentOrderId;
@@ -1664,41 +1656,6 @@ export function BiteplanerHub() {
     setWorkflowFormsByOrder(workspace.workflowForms);
   }
 
-  async function refreshDentistLicensing() {
-    if (!token || (selectedMode !== 'dentist' && selectedMode !== 'lab')) {
-      return;
-    }
-
-    const response = selectedMode === 'lab' ? await fetchLabLicensing(token) : await fetchDentistLicensing(token);
-    setDentistLicensing(response);
-  }
-
-  async function dismissLicensingApprovalModal() {
-    const notificationId = licensingApprovalNotificationId;
-    setShowLicensingApprovalModal(false);
-    setLicensingApprovalNotificationId(null);
-
-    if (!notificationId) {
-      return;
-    }
-
-    try {
-      await markAccountNotificationRead(notificationId, token);
-      setDentistLicensing((current) =>
-        current
-          ? {
-              ...current,
-              notifications: current.notifications.map((notification) =>
-                notification.id === notificationId ? { ...notification, read: true } : notification
-              ),
-            }
-          : current
-      );
-    } catch {
-      // If the read-state update fails, keep the modal dismissed in the current session.
-    }
-  }
-
   async function hydrateAdaptationCustomerPhone(order: DemoOrderSummary) {
     if (getOrderCustomerPhone(order) || adaptationCustomerPhones[order.id]) {
       return;
@@ -1722,22 +1679,6 @@ export function BiteplanerHub() {
       }
     } catch {
       // The modal remains usable even when historical intake contact data is unavailable.
-    }
-  }
-
-  async function runLicensingAction(actionKey: string, callback: () => Promise<unknown>, successMessage: string) {
-    setActiveAction(actionKey);
-    setError('');
-    setNotice('');
-
-    try {
-      await callback();
-      await refreshDentistLicensing();
-      setNotice(successMessage);
-    } catch {
-      setError('Não foi possível atualizar o licenciamento agora.');
-    } finally {
-      setActiveAction('');
     }
   }
 
@@ -1817,8 +1758,8 @@ export function BiteplanerHub() {
       ? 'concluir o cadastro Biteplaner'
       : athleteNextPath === '/painel/consulta-inicial'
         ? 'escolher a clínica da consulta inicial'
-      : athleteNextPath === '/painel/compra'
-        ? 'confirmar a compra mock'
+      : athleteNextPath === '/painel/confirmacao-compra'
+        ? 'confirmar a compra'
         : 'acompanhar a jornada completa'
     : 'aguardar o próximo caso';
 
@@ -1961,34 +1902,19 @@ export function BiteplanerHub() {
     }
   ];
 
-  const dentistWorkflow = dentistLicensing?.workflow ?? null;
-  const labOperationalFallback = selectedMode === 'lab' && demoPersona === 'lab' && dentistWorkflow === null;
-  const dentistIsLicensed =
-    dentistWorkflow?.status === 'licensed' ||
-    isLegacyLicensedLabStatus(selectedMode, dentistWorkflow?.status) ||
-    labOperationalFallback;
   const isLicensingActorMode = selectedMode === 'dentist' || selectedMode === 'lab';
   const currentModeAccessAllowed = Boolean(access?.modes.some((mode) => mode.key === selectedMode && mode.allowed));
   const operationalAccessApproved = isLicensingActorMode && currentModeAccessAllowed;
-  const canOperateLicensingActor = dentistIsLicensed || operationalAccessApproved;
   const licenseeNoun = getLicenseeNoun(selectedMode);
   const licenseePlural = getLicenseePlural(selectedMode);
-  const dentistWorkspaceLoading = isLicensingActorMode && (loading || dentistLicensingLoading);
-  const showDentistLicensingPanel =
-    isLicensingActorMode && !dentistWorkspaceLoading && isLicensingRoute && dentistWorkflow !== null && !dentistIsLicensed;
-  const showDentistLicensedPanel = isLicensingActorMode && !dentistWorkspaceLoading && isLicensingRoute && dentistIsLicensed;
-  const showDentistLockedPanel = isLicensingActorMode && !dentistWorkspaceLoading && !isLicensingRoute && !canOperateLicensingActor;
+  const dentistWorkspaceLoading = isLicensingActorMode && loading;
+  const showDentistLockedPanel = isLicensingActorMode && !dentistWorkspaceLoading && !operationalAccessApproved;
   const showOperationalPanel =
-    isLicensingActorMode && !dentistWorkspaceLoading && !isLicensingRoute && canOperateLicensingActor;
-  const showDentistLicensingTabs = !(isLicensingActorMode && isLicensingRoute);
-  const showOnlyDentistPayment = false;
-  const showDentistCourseFlow = Boolean(dentistWorkflow) && !showOnlyDentistPayment;
-  const showFinalLicensingContract = dentistWorkflow?.status === 'licensing_contract_pending' && dentistWorkflow.testPassed;
-  const showDistratoAction = dentistWorkflow?.status === 'distrato_pending';
-  const dentistStatusLabel = getDentistLicensingStatusLabel(selectedMode, dentistWorkflow?.status);
-  const dentistStatusTone = getDentistLicensingStatusTone(selectedMode, dentistWorkflow?.status);
+    isLicensingActorMode && !dentistWorkspaceLoading && operationalAccessApproved;
+  const dentistStatusLabel = operationalAccessApproved ? 'Licenciado' : 'Cadastro pendente';
+  const dentistStatusTone = operationalAccessApproved ? 'success' : 'warning';
   const currentAccessMode = access?.modes.find((mode) => mode.key === selectedMode);
-  const workspaceStatusLabel = selectedMode === 'user' ? 'Jornada ativa' : 'Status licenciamento';
+  const workspaceStatusLabel = selectedMode === 'user' ? 'Jornada ativa' : 'Status';
   const workspaceStatusValue =
     selectedMode === 'user'
       ? athleteOrder?.id ?? 'BP-DEMO-005'
@@ -2005,34 +1931,6 @@ export function BiteplanerHub() {
     () => Object.values(workflowFormsByOrder).flat(),
     [workflowFormsByOrder]
   );
-  const dentistCertificateHref = buildCertificateHref(dentistWorkflow);
-  const courseContents = dentistLicensing?.course ?? [];
-  const courseProgress =
-    dentistWorkflow?.metadata && typeof dentistWorkflow.metadata.courseProgress === 'object' && dentistWorkflow.metadata.courseProgress !== null
-      ? (dentistWorkflow.metadata.courseProgress as Record<string, unknown>)
-      : {};
-  const completedCourseCount = courseContents.filter((content) => courseProgress[content.id] === true).length;
-  const courseTotalCount = courseContents.length;
-  const allCourseContentsCompleted = courseTotalCount > 0 && completedCourseCount === courseTotalCount;
-  const canTakeDentistLicensingTest =
-    showDentistCourseFlow &&
-    allCourseContentsCompleted &&
-    !dentistWorkflow?.testPassed &&
-    (dentistWorkflow?.testAttempts ?? 0) < 3 &&
-    !showDistratoAction;
-  const selectedCourseContent =
-    courseContents.find((content) => content.id === selectedCourseContentId) ?? courseContents[0] ?? null;
-
-  useEffect(() => {
-    if (!courseContents.length) {
-      setSelectedCourseContentId(null);
-      return;
-    }
-
-    setSelectedCourseContentId((current) =>
-      current && courseContents.some((content) => content.id === current) ? current : courseContents[0].id
-    );
-  }, [courseContents]);
 
   const partnerColumns: DataTableColumn<PartnerOverviewResponse['leads'][number]>[] = [
     { key: 'customer', label: 'Indicado', render: (row) => row.customerName },
@@ -2173,18 +2071,58 @@ export function BiteplanerHub() {
     return <S.StagePill>{getStageLabel(order)}</S.StagePill>;
   }
 
+  function handleDentistQueueAction(row: DemoOrderSummary, action: QueueActionConfig) {
+    if (action.id.endsWith(':production-wizard')) {
+      navigate(`/painel/dentista/producao/${row.id}`);
+      return;
+    }
+
+    if (action.id.endsWith(':adjustment-details')) {
+      setSelectedAdjustmentOrderId(row.id);
+      return;
+    }
+
+    if (action.id.endsWith(':schedule-adaptation')) {
+      const appointment = getLatestAdaptationAppointmentFromList(appointments[row.id]);
+      setSelectedAdaptationOrderId(row.id);
+      setAdaptationScheduledAt(toDateTimeLocalValue(appointment?.scheduled_at));
+      void hydrateAdaptationCustomerPhone(row);
+      return;
+    }
+
+    setPendingOrderAction(action);
+  }
+
   function getPreConsultationReviewAction(order: DemoOrderSummary): QueueActionConfig {
     const orderLabel = getOrderLabel(order);
 
     return {
       id: `${order.id}:production-wizard`,
-      title: 'Complementar pre-consulta',
-      ariaLabel: `Complementar pre-consulta da ordem ${orderLabel}`,
+      title: 'Complementar pré-consulta',
+      ariaLabel: `Complementar pré-consulta da ordem ${orderLabel}`,
       testId: 'dentist-order-action-open-pre-consultation-review',
       icon: <Stethoscope size={15} aria-hidden />,
       tone: 'neutral',
-      confirmTitle: 'Complementar pre-consulta',
+      confirmTitle: 'Complementar pré-consulta',
       confirmDescription: `Abra a avaliacao inicial compartilhada da ordem ${orderLabel} para complementar os dados clinicos e gerar a anamnese.`,
+      actionKey: `${order.id}:production-wizard`,
+      successMessage: '',
+      execute: async () => undefined
+    };
+  }
+
+  function getClinicalRecordReviewAction(order: DemoOrderSummary): QueueActionConfig {
+    const orderLabel = getOrderLabel(order);
+
+    return {
+      id: `${order.id}:production-wizard`,
+      title: 'Visualizar ficha clínica',
+      ariaLabel: `Visualizar ficha clínica da ordem ${orderLabel}`,
+      testId: 'dentist-order-action-open-clinical-record',
+      icon: <FileText size={15} aria-hidden />,
+      tone: 'neutral',
+      confirmTitle: 'Visualizar ficha clínica',
+      confirmDescription: `Abra a ficha clínica da ordem ${orderLabel} para revisar a anamnese e baixar o PDF enquanto o pagamento do cliente está pendente.`,
       actionKey: `${order.id}:production-wizard`,
       successMessage: '',
       execute: async () => undefined
@@ -2242,6 +2180,10 @@ export function BiteplanerHub() {
 
     if (order.status === 'appointment_confirmed') {
       return [getPreConsultationReviewAction(order)];
+    }
+
+    if (order.status === 'awaiting_payment') {
+      return [getClinicalRecordReviewAction(order)];
     }
 
     if (order.status === 'treatment_required') {
@@ -2494,30 +2436,40 @@ export function BiteplanerHub() {
     [labStatusFilters, orders]
   );
 
-  const dentistColumns: DataTableColumn<DemoOrderSummary>[] = [
-    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row) },
+  const dentistColumns: AdminDataTableColumn<DemoOrderSummary>[] = [
+    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row), sortValue: (row) => getOrderLabel(row) },
+    {
+      key: 'updated-at',
+      label: 'Última atualização',
+      width: '14%',
+      render: (row) => formatOperationalUpdatedAt(row.updated_at ?? row.created_at),
+      sortValue: (row) => row.updated_at ?? row.created_at
+    },
     {
       key: 'customer',
       label: 'Paciente',
-      width: '16%',
-      render: (row) => row.customer?.full_name ?? 'Paciente demo'
+      width: '14%',
+      render: (row) => row.customer?.full_name ?? 'Paciente demo',
+      sortValue: (row) => row.customer?.full_name ?? 'Paciente demo'
     },
     {
       key: 'stage',
       label: 'Etapa',
       width: '16%',
-      render: (row) => renderStagePill(row)
+      render: (row) => renderStagePill(row),
+      sortValue: (row) => getStageLabel(row)
     },
     {
       key: 'status',
       label: 'Status',
       width: '18%',
-      render: (row) => renderOrderStatus(row)
+      render: (row) => renderOrderStatus(row),
+      sortValue: (row) => getOrderStatusPresentation(row).label
     },
     {
       key: 'latest-event',
-      label: 'Última atualização',
-      width: '14%',
+      label: 'Detalhes',
+      width: '10%',
       render: (row) =>
         timeline[row.id]?.length ? (
           <S.TableIconButton
@@ -2558,25 +2510,7 @@ export function BiteplanerHub() {
                 title={action.title}
                 disabled={activeAction === action.actionKey}
                 onClick={() => {
-                  if (action.id.endsWith(':production-wizard')) {
-                    navigate(`/painel/dentista/producao/${row.id}`);
-                    return;
-                  }
-
-                  if (action.id.endsWith(':adjustment-details')) {
-                    setSelectedAdjustmentOrderId(row.id);
-                    return;
-                  }
-
-                  if (action.id.endsWith(':schedule-adaptation')) {
-                    const appointment = getLatestAdaptationAppointmentFromList(appointments[row.id]);
-                    setSelectedAdaptationOrderId(row.id);
-                    setAdaptationScheduledAt(toDateTimeLocalValue(appointment?.scheduled_at));
-                    void hydrateAdaptationCustomerPhone(row);
-                    return;
-                  }
-
-                  setPendingOrderAction(action);
+                  handleDentistQueueAction(row, action);
                 }}
               >
                 {action.icon}
@@ -2588,35 +2522,32 @@ export function BiteplanerHub() {
     }
   ];
 
-  const labColumns: DataTableColumn<DemoOrderSummary>[] = [
-    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row) },
+  const labColumns: AdminDataTableColumn<DemoOrderSummary>[] = [
+    { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row), sortValue: (row) => getOrderLabel(row) },
     {
-      key: 'customer',
-      label: 'Paciente',
+      key: 'updated-at',
+      label: 'Última atualização',
       width: '16%',
-      render: (row) => row.customer?.full_name ?? 'Paciente demo'
-    },
-    {
-      key: 'dentist',
-      label: 'Dentista',
-      width: '16%',
-      render: (row) => formatOrderDentist(row)
+      render: (row) => formatOperationalUpdatedAt(row.updated_at ?? row.created_at),
+      sortValue: (row) => row.updated_at ?? row.created_at
     },
     {
       key: 'stage',
       label: 'Etapa',
       width: '16%',
-      render: (row) => renderStagePill(row)
+      render: (row) => renderStagePill(row),
+      sortValue: (row) => getStageLabel(row)
     },
     {
       key: 'status',
       label: 'Status',
       width: '16%',
-      render: (row) => renderOrderStatus(row)
+      render: (row) => renderOrderStatus(row),
+      sortValue: (row) => getOrderStatusPresentation(row).label
     },
     {
       key: 'latest-event',
-      label: 'Última atualização',
+      label: 'Detalhes',
       width: '10%',
       render: (row) =>
         timeline[row.id]?.length ? (
@@ -2677,6 +2608,200 @@ export function BiteplanerHub() {
     }
   ];
 
+  function renderStatusFilterActions(
+    label: string,
+    options: Array<{ value: string; label: string }>,
+    values: string[],
+    onChange: (values: string[]) => void
+  ) {
+    return (
+      <S.TableFilterActions>
+        <S.TableFilterLabel>{label}</S.TableFilterLabel>
+        <S.TableFilterControl>
+          <MultiSelect
+            options={options}
+            value={values}
+            onChange={onChange}
+          />
+        </S.TableFilterControl>
+      </S.TableFilterActions>
+    );
+  }
+
+  function handleApplyOperationalDateRange(
+    draft: OperationalOrderDateRange,
+    setRangeError: (message: string) => void,
+    setRange: (range: OperationalOrderDateRange) => void
+  ) {
+    if (!isOperationalOrderDateRangeValid(draft)) {
+      setRangeError('Selecione um período de até 4 meses.');
+      return;
+    }
+
+    setRangeError('');
+    setRange(draft);
+  }
+
+  function renderDateRangeFilter(
+    draft: OperationalOrderDateRange,
+    onDraftChange: Dispatch<SetStateAction<OperationalOrderDateRange>>,
+    error: string,
+    onApply: () => void
+  ) {
+    return (
+      <S.TableFilterActions>
+        <S.TableFilterLabel>Filtrar datas</S.TableFilterLabel>
+        <S.DateRangeControls>
+          <S.DateRangeField>
+            <span>Data inicial</span>
+            <input
+              type="date"
+              aria-label="Data inicial"
+              value={draft.initDate}
+              onChange={(event) => {
+                onDraftChange((current) => ({ ...current, initDate: event.target.value }));
+              }}
+            />
+          </S.DateRangeField>
+          <S.DateRangeField>
+            <span>Data final</span>
+            <input
+              type="date"
+              aria-label="Data final"
+              value={draft.finalDate}
+              onChange={(event) => {
+                onDraftChange((current) => ({ ...current, finalDate: event.target.value }));
+              }}
+            />
+          </S.DateRangeField>
+          <S.DateRangeApplyButton type="button" onClick={onApply}>
+            Aplicar período
+          </S.DateRangeApplyButton>
+        </S.DateRangeControls>
+        {error ? <S.DateRangeError role="alert">{error}</S.DateRangeError> : null}
+      </S.TableFilterActions>
+    );
+  }
+
+  function renderDentistTableActions() {
+    return (
+      <S.TableToolbarActions>
+        {renderStatusFilterActions(
+          'Filtrar status',
+          dentistStatusOptions,
+          dentistStatusFilters,
+          setDentistStatusFilters
+        )}
+        {renderDateRangeFilter(dentistDateDraft, setDentistDateDraft, dentistDateRangeError, () =>
+          handleApplyOperationalDateRange(dentistDateDraft, setDentistDateRangeError, setDentistDateRange)
+        )}
+      </S.TableToolbarActions>
+    );
+  }
+
+  function renderLabTableActions() {
+    return (
+      <S.TableToolbarActions>
+        {renderStatusFilterActions(
+          'Filtrar status',
+          labStatusOptions,
+          labStatusFilters,
+          setLabStatusFilters
+        )}
+        {renderDateRangeFilter(labDateDraft, setLabDateDraft, labDateRangeError, () =>
+          handleApplyOperationalDateRange(labDateDraft, setLabDateRangeError, setLabDateRange)
+        )}
+      </S.TableToolbarActions>
+    );
+  }
+
+  function renderDentistQueueMobileCard(row: DemoOrderSummary) {
+    const actions = getDentistActionConfigs(row);
+
+    return (
+      <S.QueueMobileCard>
+        <S.QueueMobileHeader>
+          <strong>{getOrderLabel(row)}</strong>
+          {renderOrderStatus(row)}
+        </S.QueueMobileHeader>
+        <S.QueueMobileDetail>
+          <span>Paciente</span>
+          <strong>{row.customer?.full_name ?? 'Paciente demo'}</strong>
+        </S.QueueMobileDetail>
+        <S.QueueMobileDetail>
+          <span>Etapa</span>
+          {renderStagePill(row)}
+        </S.QueueMobileDetail>
+        {actions.length > 0 ? (
+          <S.QueueMobileActions aria-label={`Ações da ordem ${getOrderLabel(row)}`}>
+            {actions.map((action) => (
+              <S.QueueMobileActionButton
+                key={action.id}
+                type="button"
+                $tone={action.tone ?? 'neutral'}
+                data-testid={`${action.testId}-mobile-${row.id}`}
+                aria-label={action.ariaLabel}
+                title={action.title}
+                disabled={activeAction === action.actionKey}
+                onClick={() => {
+                  handleDentistQueueAction(row, action);
+                }}
+              >
+                {action.icon}
+                <span>{action.title}</span>
+              </S.QueueMobileActionButton>
+            ))}
+          </S.QueueMobileActions>
+        ) : null}
+      </S.QueueMobileCard>
+    );
+  }
+
+  function renderLabQueueMobileCard(row: DemoOrderSummary) {
+    const actions = getLabActionConfigs(row).filter(
+      (action) => !action.id.endsWith(':start') && !action.id.endsWith(':return')
+    );
+
+    return (
+      <S.QueueMobileCard>
+        <S.QueueMobileHeader>
+          <strong>{getOrderLabel(row)}</strong>
+          {renderOrderStatus(row)}
+        </S.QueueMobileHeader>
+        <S.QueueMobileDetail>
+          <span>Etapa</span>
+          {renderStagePill(row)}
+        </S.QueueMobileDetail>
+        {actions.length > 0 ? (
+          <S.QueueMobileActions aria-label={`Ações da ordem ${getOrderLabel(row)}`}>
+            {actions.map((action) => (
+              <S.QueueMobileActionButton
+                key={action.id}
+                type="button"
+                $tone={action.tone ?? 'neutral'}
+                data-testid={`${action.testId}-mobile-${row.id}`}
+                aria-label={action.ariaLabel}
+                title={action.title}
+                disabled={activeAction === action.actionKey}
+                onClick={() => {
+                  if (action.id.endsWith(':documentation')) {
+                    setSelectedDocumentationOrderId(row.id);
+                    return;
+                  }
+
+                  setPendingOrderAction(action);
+                }}
+              >
+                {action.icon}
+                <span>{action.title}</span>
+              </S.QueueMobileActionButton>
+            ))}
+          </S.QueueMobileActions>
+        ) : null}
+      </S.QueueMobileCard>
+    );
+  }
+
   const inviteLinkUrl = selectedInviteLink ? buildPartnerInviteLink(selectedInviteLink.token) : '';
   const selectedTimelineOrder = selectedTimelineOrderId ? orders.find((order) => order.id === selectedTimelineOrderId) ?? null : null;
   const selectedTimelineEvents = selectedTimelineOrderId
@@ -2712,9 +2837,6 @@ export function BiteplanerHub() {
     : '';
   const productionScanFileName = productionRequestDraft
     ? getAttachmentFileName(productionRequestDraft.scan3dFileName, productionRequestDraft.scan3dFileRef)
-    : '';
-  const productionPrescriptionFileName = productionRequestDraft
-    ? getAttachmentFileName(productionRequestDraft.prescriptionFileName, productionRequestDraft.prescriptionFileRef)
     : '';
   const productionPurchaseConfiguration =
     productionRequestDraft?.purchaseConfiguration ?? selectedDocumentationOrder?.purchaseConfiguration ?? null;
@@ -2827,7 +2949,7 @@ export function BiteplanerHub() {
         <PendingFeedbackPrompt mode={selectedMode} orders={orders} forms={allWorkflowForms} />
       ) : null}
 
-      {access && showDentistLicensingTabs ? (
+      {access ? (
         <S.RoleTabs aria-label="Alternar modo de acesso Biteplaner">
           {access.modes.filter((mode) => mode.allowed).map((mode) => {
             const Icon = MODE_TAB_ICONS[mode.key] ?? User;
@@ -3032,7 +3154,6 @@ export function BiteplanerHub() {
                   </S.PartnerActionIcon>
                   <strong>Abrir Indicar</strong>
                   <S.PartnerActionText>Gere links, QR codes e acompanhe suas indicações.</S.PartnerActionText>
-                  <ArrowRight size={22} aria-hidden />
                 </S.PartnerActionCardPrimary>
                 <S.PartnerActionCard to="/painel/biteplaner/avaliacoes?mode=partner">
                   <S.PartnerActionIcon>
@@ -3040,7 +3161,6 @@ export function BiteplanerHub() {
                   </S.PartnerActionIcon>
                   <strong>Ver avaliações</strong>
                   <S.PartnerActionText>Veja o desempenho das suas indicações e conversões.</S.PartnerActionText>
-                  <ArrowRight size={22} aria-hidden />
                 </S.PartnerActionCard>
                 <S.PartnerActionButton type="button" onClick={() => downloadPartnerReport(partnerOverview)}>
                   <S.PartnerActionIcon>
@@ -3050,7 +3170,6 @@ export function BiteplanerHub() {
                   <S.PartnerActionText>
                     Exporte em Excel os links gerados no último ano, com status e pedidos ativos ou finalizados.
                   </S.PartnerActionText>
-                  <Download size={22} aria-hidden />
                 </S.PartnerActionButton>
               </S.PartnerActionCards>
             </S.PartnerOperationPanel>
@@ -3179,263 +3298,6 @@ export function BiteplanerHub() {
         </>
       ) : null}
 
-      {!loading && showDentistLicensingPanel ? (
-        <>
-          <S.StatsGrid>
-            <S.StatCard>
-              <S.StatLabel>Status</S.StatLabel>
-              <S.StatValue>{dentistStatusLabel}</S.StatValue>
-              <S.StatHint>Etapa atual do licenciamento.</S.StatHint>
-            </S.StatCard>
-            {showDentistCourseFlow ? (
-              <>
-                <S.StatCard>
-                  <S.StatLabel>Curso</S.StatLabel>
-                  <S.StatValue>{completedCourseCount}/{courseTotalCount}</S.StatValue>
-                  <S.StatHint>Vídeos concluídos.</S.StatHint>
-                </S.StatCard>
-                <S.StatCard>
-                  <S.StatLabel>Prova</S.StatLabel>
-                  <S.StatValue>{dentistWorkflow.testAttempts}/3</S.StatValue>
-                  <S.StatHint>Tentativas usadas.</S.StatHint>
-                </S.StatCard>
-              </>
-            ) : null}
-          </S.StatsGrid>
-
-          <S.Panel>
-            <S.PanelHeader>
-              <S.PanelTitle>Licenciamento Biteplaner</S.PanelTitle>
-              <S.PanelText>
-                {showOnlyDentistPayment
-                  ? 'Seu cadastro foi aprovado pela Nexor. Para continuar o licenciamento, realize o pagamento.'
-                  : showFinalLicensingContract
-                    ? 'Prova aprovada. Leia o contrato de licenciamento e confirme o aceite para finalizar.'
-                    : showDistratoAction
-                      ? 'As tentativas de prova foram encerradas. O próximo passo é registrar o distrato de intenção de licenciamento.'
-                      : 'Pagamento confirmado. Conclua o curso de licenciamento para liberar a prova.'}
-              </S.PanelText>
-            </S.PanelHeader>
-
-            {showOnlyDentistPayment ? (
-              <S.SectionStack>
-                <S.SectionHeading>
-                  <S.SectionTitle>Pagamento</S.SectionTitle>
-                  <S.SectionDescription>
-                    O pagamento e simulado neste MVP. Após confirmar, o conteúdo de licenciamento será liberado.
-                  </S.SectionDescription>
-                </S.SectionHeading>
-                <S.ActionButton
-                  type="button"
-                  disabled={activeAction === 'dentist-license:payment' || dentistWorkflow.paymentStatus === 'confirmed'}
-                  onClick={() => {
-                    void runLicensingAction(
-                      'dentist-license:payment',
-                      () => confirmDentistLicensingPayment(token),
-                      'Pagamento do licenciamento confirmado.'
-                    );
-                  }}
-                >
-                  Confirmar pagamento
-                </S.ActionButton>
-              </S.SectionStack>
-            ) : null}
-
-            {showDentistCourseFlow && !showFinalLicensingContract && !showDistratoAction ? (
-              <S.SectionStack>
-                <S.SectionHeading>
-                  <S.SectionTitle>Cursó de licenciamento</S.SectionTitle>
-                  <S.SectionDescription>Assista aos vídeos e marque cada conteúdo como concluído antes de fazer a prova.</S.SectionDescription>
-                </S.SectionHeading>
-
-                <S.CourseLayout>
-                  <S.CourseTabs aria-label="Vídeos do curso de licenciamento">
-                    {courseContents.map((content, index) => (
-                      <S.CourseTabButton
-                        key={content.id}
-                        type="button"
-                        $active={selectedCourseContent?.id === content.id}
-                        onClick={() => setSelectedCourseContentId(content.id)}
-                      >
-                        <span>Vídeo {index + 1}</span>
-                        <strong>{content.title}</strong>
-                        {courseProgress[content.id] === true ? (
-                          <S.CourseCompletionMark>
-                            <Check size={13} aria-hidden />
-                            Concluído
-                          </S.CourseCompletionMark>
-                        ) : null}
-                      </S.CourseTabButton>
-                    ))}
-                  </S.CourseTabs>
-
-                  {selectedCourseContent ? (
-                    <S.CourseContentPanel>
-                      <S.VideoFrame>
-                        <FileText size={28} aria-hidden />
-                        <strong>{selectedCourseContent.videoTitle}</strong>
-                        <span>Conteúdo de vídeo demonstrativo para o MVP.</span>
-                      </S.VideoFrame>
-                      <S.CourseTextBlock>
-                        <S.SectionTitle>{selectedCourseContent.title}</S.SectionTitle>
-                        <S.OrderText>
-                          Material de apoio: {selectedCourseContent.documentTitle}. Revise o protocolo, os pontos de
-                          documentação e os critérios de qualidade antes de avançar para a prova.
-                        </S.OrderText>
-                        <S.StudyMaterialBox tabIndex={0} aria-label={`Texto de estudo: ${selectedCourseContent.title}`}>
-                          <S.OrderText>{getCourseStudyText(selectedCourseContent.id, selectedMode)}</S.OrderText>
-                        </S.StudyMaterialBox>
-                        <S.ActionHref
-                          href={buildCoursePdfHref(selectedCourseContent.title, selectedCourseContent.id, selectedMode)}
-                          download={`${selectedCourseContent.id}-biteplaner.pdf`}
-                        >
-                          <Download size={14} aria-hidden />
-                          Baixar PDF
-                        </S.ActionHref>
-                        <S.ActionButton
-                          type="button"
-                          disabled={activeAction === `dentist-license:course:${selectedCourseContent.id}`}
-                          onClick={() => {
-                            void runLicensingAction(
-                              `dentist-license:course:${selectedCourseContent.id}`,
-                              () => selectedMode === 'lab'
-                                ? updateLabLicensingCourseProgress(selectedCourseContent.id, true, token)
-                                : updateDentistLicensingCourseProgress(selectedCourseContent.id, true, token),
-                              `${selectedCourseContent.title} marcado como concluído.`
-                            );
-                          }}
-                        >
-                          {courseProgress[selectedCourseContent.id] === true ? 'Concluído' : 'Marcar como concluído'}
-                        </S.ActionButton>
-                      </S.CourseTextBlock>
-                    </S.CourseContentPanel>
-                  ) : null}
-                </S.CourseLayout>
-
-                {canTakeDentistLicensingTest ? (
-                  <S.ActionRow>
-                    <S.PrimaryButton
-                      type="button"
-                      disabled={activeAction === 'dentist-license:test'}
-                      onClick={() => {
-                        void runLicensingAction(
-                          'dentist-license:test',
-                          () => selectedMode === 'lab'
-                            ? submitLabLicensingTest(['correta', 'correta', 'correta'], token)
-                            : submitDentistLicensingTest(['correta', 'correta', 'correta'], token),
-                          'Prova enviada e aprovada.'
-                        );
-                      }}
-                    >
-                      Fazer teste
-                    </S.PrimaryButton>
-                  </S.ActionRow>
-                ) : null}
-              </S.SectionStack>
-            ) : null}
-
-            {showFinalLicensingContract ? (
-              <S.SectionStack>
-                <S.SectionHeading>
-                  <S.SectionTitle>Contrato de licenciamento</S.SectionTitle>
-                  <S.SectionDescription>
-                    Revise o contrato final. A assinatura conclui o licenciamento e emite o certificado Biteplaner.
-                  </S.SectionDescription>
-                </S.SectionHeading>
-                <S.ContractBox>
-                  <S.OrderText>
-                    Este contrato registra a autorização para atuar como dentista licenciado Biteplaner, observando os
-                    protocolos clínicos, operacionais e de qualidade apresentados no curso.
-                  </S.OrderText>
-                  <S.CheckboxLabel>
-                    <input
-                      type="checkbox"
-                      checked={licensingContractRead}
-                      onChange={(event) => setLicensingContractRead(event.target.checked)}
-                    />
-                    Li e estou de acordo com o Contrato de Licenciamento Biteplaner.
-                  </S.CheckboxLabel>
-                </S.ContractBox>
-                <S.PrimaryButton
-                  type="button"
-                  disabled={activeAction === 'dentist-license:contract' || !licensingContractRead}
-                  onClick={() => {
-                    void runLicensingAction(
-                      'dentist-license:contract',
-                    () => selectedMode === 'lab'
-                      ? signLabLicensingContract('licensing', token)
-                      : signDentistLicensingContract('licensing', token),
-                      'Contrato de licenciamento assinado. Certificado Biteplaner emitido.'
-                    );
-                  }}
-                >
-                  Assinar contrato final
-                </S.PrimaryButton>
-              </S.SectionStack>
-            ) : null}
-
-            {showDistratoAction ? (
-              <S.SectionStack>
-                <S.SectionHeading>
-                  <S.SectionTitle>Distrato de intenção de licenciamento</S.SectionTitle>
-                  <S.SectionDescription>
-                    O distrato aparece somente quando as tentativas de prova foram encerradas sem aprovação.
-                  </S.SectionDescription>
-                </S.SectionHeading>
-                <S.ActionButton
-                  type="button"
-                  disabled={activeAction === 'dentist-license:distrato'}
-                  onClick={() => {
-                    void runLicensingAction(
-                      'dentist-license:distrato',
-                      () => selectedMode === 'lab'
-                        ? signLabLicensingContract('distrato', token)
-                        : signDentistLicensingContract('distrato', token),
-                      'Distrato de intenção de licenciamento assinado.'
-                    );
-                  }}
-                >
-                  Assinar distrato
-                </S.ActionButton>
-              </S.SectionStack>
-            ) : null}
-          </S.Panel>
-        </>
-      ) : null}
-
-      {!loading && showDentistLicensedPanel ? (
-        <S.Panel>
-          <S.CelebrationHeader>
-            <S.CelebrationIcon aria-hidden="true">
-              <PartyPopper size={28} />
-            </S.CelebrationIcon>
-            <div>
-              <S.PanelTitle>Licenciamento concluído</S.PanelTitle>
-              <S.PanelText>
-                Parabéns! Seu licenciamento Biteplaner foi concluído com sucesso. O contrato final foi assinado e seu certificado está disponível para download.
-              </S.PanelText>
-            </div>
-          </S.CelebrationHeader>
-          <S.ActionRow>
-            <S.ActionHref href={dentistCertificateHref} download="certificado-biteplaner.txt">
-              <Download size={14} aria-hidden />
-              Baixar certificado
-            </S.ActionHref>
-          </S.ActionRow>
-        </S.Panel>
-      ) : null}
-
-      {!dentistWorkspaceLoading && isLicensingActorMode && isLicensingRoute && !dentistWorkflow ? (
-        <S.Panel>
-          <S.PanelHeader>
-            <S.PanelTitle>Licenciamento Biteplaner</S.PanelTitle>
-            <S.PanelText>
-              Nenhum processo de licenciamento foi encontrado para este {licenseeNoun}.
-            </S.PanelText>
-          </S.PanelHeader>
-        </S.Panel>
-      ) : null}
-
       {!loading && showDentistLockedPanel ? (
         <S.Panel>
           <S.LockedNotice role="status">
@@ -3444,13 +3306,6 @@ export function BiteplanerHub() {
             </S.LockedIcon>
             <S.PanelTitle>Conteúdo liberado apenas para {licenseePlural} aprovados</S.PanelTitle>
           </S.LockedNotice>
-          {dentistWorkflow && dentistWorkflow.status !== 'admin_rejected' && dentistWorkflow.status !== 'distrato_signed' ? (
-            <S.ActionRow>
-              <S.PrimaryLink to={`/painel/biteplaner/licenciamento?mode=${selectedMode}`}>
-                Ir para licenciamento
-              </S.PrimaryLink>
-            </S.ActionRow>
-          ) : null}
         </S.Panel>
       ) : null}
 
@@ -3499,27 +3354,29 @@ export function BiteplanerHub() {
 
             {selectedMode === 'dentist' ? (
               <S.OperationalTableShell data-testid="dentist-queue-table">
-                <DataTable
+                <AdminDataTable
                   data={filteredDentistOrders}
                   columns={dentistColumns}
                   keyExtractor={(row) => row.id}
-                  filterOptions={dentistStatusOptions}
-                  filterValues={dentistStatusFilters}
-                  onFilterValuesChange={setDentistStatusFilters}
+                  renderMobileCard={renderDentistQueueMobileCard}
+                  mobileTestId="dentist-queue-table-mobile"
+                  actions={renderDentistTableActions()}
                   pageSize={4}
+                  initialSortKey="order"
                   emptyMessage="Nenhum pedido do dentista corresponde aos filtros atuais."
                 />
               </S.OperationalTableShell>
             ) : (
               <S.OperationalTableShell data-testid="lab-queue-table">
-                <DataTable
+                <AdminDataTable
                   data={filteredLabOrders}
                   columns={labColumns}
                   keyExtractor={(row) => row.id}
-                  filterOptions={labStatusOptions}
-                  filterValues={labStatusFilters}
-                  onFilterValuesChange={setLabStatusFilters}
+                  renderMobileCard={renderLabQueueMobileCard}
+                  mobileTestId="lab-queue-table-mobile"
+                  actions={renderLabTableActions()}
                   pageSize={4}
+                  initialSortKey="order"
                   emptyMessage="Nenhuma ordem do laboratório nesta etapa da demo."
                 />
               </S.OperationalTableShell>
@@ -3727,50 +3584,6 @@ export function BiteplanerHub() {
         />
       ) : null}
 
-      {showLicensingApprovalModal ? (
-        <S.ModalOverlay
-          role="dialog"
-          aria-modal="true"
-          aria-label="Cadastro aprovado"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              void dismissLicensingApprovalModal();
-            }
-          }}
-        >
-          <S.ModalBox>
-            <S.ModalHeader>
-              <div>
-                <S.ModalTitle>Cadastro aprovado</S.ModalTitle>
-                <S.ModalSubtitle>
-                  A Nexor aprovou seu cadastro de {licenseeNoun} Biteplaner. Seu acesso já está liberado para operar
-                  no fluxo do produto.
-                </S.ModalSubtitle>
-              </div>
-              <S.ModalCloseButton
-                type="button"
-                aria-label="Fechar aprovação do cadastro"
-                onClick={() => {
-                  void dismissLicensingApprovalModal();
-                }}
-              >
-                <X size={16} aria-hidden />
-              </S.ModalCloseButton>
-            </S.ModalHeader>
-            <S.ModalActions>
-              <S.PrimaryButton
-                type="button"
-                onClick={() => {
-                  void dismissLicensingApprovalModal();
-                }}
-              >
-                Entendi
-              </S.PrimaryButton>
-            </S.ModalActions>
-          </S.ModalBox>
-        </S.ModalOverlay>
-      ) : null}
-
       {selectedInviteLink ? (
         <S.ModalOverlay
           role="dialog"
@@ -3913,7 +3726,7 @@ export function BiteplanerHub() {
               <div>
                 <S.ModalTitle>Formulário de Solicitação de Produção</S.ModalTitle>
                 <S.ModalSubtitle>
-                  Ordem {getOrderLabel(selectedDocumentationOrder)} - {selectedDocumentationOrder.customer?.full_name ?? 'Paciente demo'}.
+                  Ordem {getOrderLabel(selectedDocumentationOrder)}.
                 </S.ModalSubtitle>
               </div>
               <S.ModalCloseButton
@@ -3931,37 +3744,23 @@ export function BiteplanerHub() {
               <S.EmptyState>Carregando dados enviados pelo dentista...</S.EmptyState>
             ) : productionRequestDraft ? (
               <S.DocumentationContent>
-                <S.DocumentationPurchaseSection data-testid="lab-documentation-purchase-section">
-                  <S.DocumentationLabel>Pedido Biteplaner</S.DocumentationLabel>
-                  <S.DocumentationValue>
-                    {formatBiteplanerPurchaseConfiguration(productionPurchaseConfiguration)}
-                  </S.DocumentationValue>
-                </S.DocumentationPurchaseSection>
                 <S.DocumentationGrid>
-                  <S.DocumentationItem>
-                    <S.DocumentationLabel>Dentista solicitante</S.DocumentationLabel>
-                    <S.DocumentationValue>
-                      {formatOrderDentist(selectedDocumentationOrder)}
-                      {selectedDocumentationOrder.dentist?.full_name && selectedDocumentationOrder.dentist?.email
-                        ? ` - ${selectedDocumentationOrder.dentist.email}`
-                        : ''}
-                    </S.DocumentationValue>
-                  </S.DocumentationItem>
-                  <S.DocumentationItem>
-                    <S.DocumentationLabel>Paciente</S.DocumentationLabel>
-                    <S.DocumentationValue>
-                      {selectedDocumentationOrder.customer?.full_name || 'Não informado'}
-                      {selectedDocumentationOrder.customer?.email ? ` - ${selectedDocumentationOrder.customer.email}` : ''}
-                    </S.DocumentationValue>
-                  </S.DocumentationItem>
-                  <S.DocumentationItem>
-                    <S.DocumentationLabel>Solicitação de produção</S.DocumentationLabel>
-                    <S.DocumentationValue>{productionRequestDraft.productionRequestSummary || 'Não informado'}</S.DocumentationValue>
-                  </S.DocumentationItem>
-                  <S.DocumentationItem>
-                    <S.DocumentationLabel>Orientações ao laboratório</S.DocumentationLabel>
-                    <S.DocumentationValue>{productionRequestDraft.labNotes || 'Não informado'}</S.DocumentationValue>
-                  </S.DocumentationItem>
+                  {productionPurchaseConfiguration ? (
+                    <>
+                      <S.DocumentationItem>
+                        <S.DocumentationLabel>Modelo</S.DocumentationLabel>
+                        <S.DocumentationValue>{productionPurchaseConfiguration.model}</S.DocumentationValue>
+                      </S.DocumentationItem>
+                      <S.DocumentationItem>
+                        <S.DocumentationLabel>Cor</S.DocumentationLabel>
+                        <S.DocumentationValue>{productionPurchaseConfiguration.color}</S.DocumentationValue>
+                      </S.DocumentationItem>
+                      <S.DocumentationItem>
+                        <S.DocumentationLabel>Quantidade</S.DocumentationLabel>
+                        <S.DocumentationValue>{productionPurchaseConfiguration.quantity}</S.DocumentationValue>
+                      </S.DocumentationItem>
+                    </>
+                  ) : null}
                   <S.DocumentationItem>
                     <S.DocumentationLabel>Escaneamento 3D</S.DocumentationLabel>
                     {productionScanFileName ? (
@@ -3982,26 +3781,10 @@ export function BiteplanerHub() {
                       </S.DocumentationValue>
                     ) : null}
                   </S.DocumentationItem>
-                  <S.DocumentationItem>
-                    <S.DocumentationLabel>Prescrição</S.DocumentationLabel>
-                    {productionPrescriptionFileName ? (
-                      <S.DocumentationDownloadLink
-                        href={buildProductionAttachmentHref(productionPrescriptionFileName)}
-                        download={productionPrescriptionFileName}
-                        aria-label={`Baixar Prescrição ${productionPrescriptionFileName}`}
-                      >
-                        <Download size={14} aria-hidden />
-                        Baixar arquivo
-                      </S.DocumentationDownloadLink>
-                    ) : (
-                      <S.DocumentationValue>Não anexada</S.DocumentationValue>
-                    )}
-                    {productionPrescriptionFileName ? (
-                      <S.DocumentationValue>
-                        Tamanho: {formatAttachmentSize(productionRequestDraft.prescriptionFileRef?.sizeBytes)}
-                      </S.DocumentationValue>
-                    ) : null}
-                  </S.DocumentationItem>
+                  <S.DocumentationFullWidthItem>
+                    <S.DocumentationLabel>Observações para o laboratório</S.DocumentationLabel>
+                    <S.DocumentationValue>{productionRequestDraft.labNotes || 'Não informado'}</S.DocumentationValue>
+                  </S.DocumentationFullWidthItem>
                 </S.DocumentationGrid>
               </S.DocumentationContent>
             ) : productionRequestError ? (

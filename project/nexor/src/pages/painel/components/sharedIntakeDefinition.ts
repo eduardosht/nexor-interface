@@ -54,8 +54,8 @@ const consentOption = [
 ];
 
 const biteplanerModelOptions = [
-  { value: 'impacto', label: 'Linha Impacto' },
-  { value: 'esportes', label: 'Linha Esportes' },
+  { value: 'impacto', label: 'Linha Impact' },
+  { value: 'esportes', label: 'Linha Strength' },
 ];
 
 const biteplanerColorOptions = [
@@ -1309,6 +1309,17 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
           ownerRole: 'dentist',
           visibleTo: dentistVisible,
           editableWhen: 'dentist_review',
+        },
+        {
+          key: 'professionalObservations',
+          label: 'Observações profissionais',
+          required: false,
+          type: 'textarea',
+          ownerRole: 'dentist',
+          visibleTo: dentistVisible,
+          editableWhen: 'dentist_review',
+          helpText:
+            'Registre os achados e observações profissionais necessários para compor a ficha de anamnese. Evite dados de terceiros ou informações excessivas.',
         },
         {
           key: 'openingMidlineDeviation',

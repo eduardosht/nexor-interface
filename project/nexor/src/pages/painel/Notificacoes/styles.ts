@@ -80,9 +80,20 @@ export const NotificationItem = styled.article<{ $unread: boolean }>`
   padding: 16px 18px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
   background: ${({ theme, $unread }) => ($unread ? `${theme.colors.green}05` : theme.colors.bgElevated)};
+  cursor: pointer;
+  transition: background 160ms ease;
 
   &:last-child {
     border-bottom: 0;
+  }
+
+  &:hover {
+    background: ${({ theme, $unread }) => ($unread ? `${theme.colors.green}0a` : theme.colors.bgInset)};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.green};
+    outline-offset: -2px;
   }
 
   @media (max-width: 640px) {
@@ -132,7 +143,7 @@ export const NotificationTitle = styled.strong`
   min-width: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   overflow-wrap: anywhere;
 `;
@@ -224,4 +235,77 @@ export const PageIndicator = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
   font-weight: 700;
+`;
+
+export const ModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.38);
+`;
+
+export const NotificationModal = styled.section`
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+`;
+
+export const ModalHeader = styled.header`
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+`;
+
+export const ModalTitle = styled.h2`
+  min-width: 0;
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 20px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+`;
+
+export const ModalCloseButton = styled.button`
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+export const ModalDate = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 700;
+`;
+
+export const ModalMessage = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 `;

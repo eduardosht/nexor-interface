@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button, Select } from '@nexor/design-system';
+import {
+  AdminDataTable,
+  AdminMobileActionButton,
+  AdminMobileRecordCard,
+  Button,
+  Select,
+  type AdminDataTableColumn,
+} from '@nexor/design-system';
 import { useAdminPortal } from '../../../features/admin/portal';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -47,7 +54,7 @@ const statusTone: Record<PlatformEmailStatus, 'neutral' | 'success' | 'warning' 
 };
 
 function formatDateTime(value: string | null | undefined) {
-  if (!value) return 'Nao informado';
+  if (!value) return 'Não informado';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(date);
@@ -98,7 +105,7 @@ export function AdminCheckupEmails() {
       setEmails(emailResponse.emails);
       setRuns(runResponse.runs);
     } catch {
-      setError('Nao foi possivel carregar a agenda de e-mails.');
+      setError('Não foi possível carregar a agenda de e-mails.');
     } finally {
       setLoading(false);
     }
@@ -127,7 +134,7 @@ export function AdminCheckupEmails() {
       setPreview(response.preview);
       setPreviewEvent(event);
     } catch {
-      setError('Nao foi possivel gerar a previa do e-mail.');
+      setError('Não foi possível gerar a prévia do e-mail.');
     } finally {
       setActionId('');
     }
@@ -142,7 +149,7 @@ export function AdminCheckupEmails() {
       setNotice('E-mail reagendado para nova tentativa.');
       await loadData();
     } catch {
-      setError('Nao foi possivel reagendar o e-mail.');
+      setError('Não foi possível reagendar o e-mail.');
     } finally {
       setActionId('');
     }
@@ -159,7 +166,7 @@ export function AdminCheckupEmails() {
       setCancelReason('');
       await loadData();
     } catch {
-      setError('Nao foi possivel cancelar o e-mail.');
+      setError('Não foi possível cancelar o e-mail.');
     } finally {
       setActionId('');
     }
@@ -171,22 +178,76 @@ export function AdminCheckupEmails() {
     setError('');
     try {
       const summary = await runPlatformEmailDailyJob(token);
-      setNotice(summary.alreadyRunning ? 'Job ja estava em execucao.' : 'Job executado: ' + summary.sent + ' enviados, ' + summary.failed + ' falhas.');
+      setNotice(summary.alreadyRunning ? 'Job já estava em execução.' : 'Job executado: ' + summary.sent + ' enviados, ' + summary.failed + ' falhas.');
       setRunModalOpen(false);
       await loadData();
     } catch {
-      setError('Nao foi possivel executar o job manualmente.');
+      setError('Não foi possível executar o job manualmente.');
     } finally {
       setRunningJob(false);
     }
   }
+
+  const columns = useMemo<AdminDataTableColumn<PlatformEmailEvent>[]>(
+    () => [
+      {
+        key: 'customer',
+        label: 'Cliente',
+        sortValue: (email) => getCustomerName(email),
+        render: (email) => (
+          <S.CustomerCell>
+            <strong>{getCustomerName(email)}</strong>
+            <span>{email.recipient_email}</span>
+          </S.CustomerCell>
+        ),
+      },
+      {
+        key: 'checkup',
+        label: 'Check-up',
+        sortValue: (email) => getFollowUpLabel(email.follow_up_kind),
+        render: (email) => `${getFollowUpLabel(email.follow_up_kind)} #${email.reminder_sequence ?? '-'}`,
+      },
+      {
+        key: 'scheduled',
+        label: 'Envio previsto',
+        sortValue: (email) => email.scheduled_for ?? '',
+        render: (email) => formatDateTime(email.scheduled_for),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        sortValue: (email) => statusLabel[email.status],
+        render: (email) => <S.StatusPill $tone={statusTone[email.status]}>{statusLabel[email.status]}</S.StatusPill>,
+      },
+      {
+        key: 'attempts',
+        label: 'Tentativas',
+        width: '10%',
+        sortValue: (email) => email.attempt_count,
+        render: (email) => email.attempt_count,
+      },
+      {
+        key: 'actions',
+        label: 'Ações',
+        width: '18%',
+        render: (email) => (
+          <S.ActionGroup>
+            <button type="button" onClick={() => void handlePreview(email)} disabled={actionId === email.id}>Prévia</button>
+            {email.status === 'scheduled' ? <button type="button" onClick={() => setCancelEvent(email)}>Cancelar</button> : null}
+            {email.status === 'failed' ? <button type="button" onClick={() => void handleRetry(email)} disabled={actionId === email.id}>Retry</button> : null}
+          </S.ActionGroup>
+        ),
+      },
+    ],
+    [actionId]
+  );
 
   return (
     <PageStack>
       <PageHeader>
         <PageTitle>E-mails de check-up</PageTitle>
         <PageSubtitle>
-          Acompanhe a agenda de lembretes automaticos, tentativas de envio e execucoes do job diario.
+          Acompanhe a agenda de lembretes automáticos, tentativas de envio e execuções do job diário.
         </PageSubtitle>
       </PageHeader>
 
@@ -217,31 +278,38 @@ export function AdminCheckupEmails() {
               <S.PanelTitle>Agenda de envio</S.PanelTitle>
               <S.PanelMeta>{loading ? 'Carregando...' : emails.length + ' e-mails'}</S.PanelMeta>
             </S.PanelHeader>
-            <S.TableWrap>
-              <S.Table>
-                <thead>
-                  <tr><th>Cliente</th><th>Check-up</th><th>Envio previsto</th><th>Status</th><th>Tentativas</th><th>Acoes</th></tr>
-                </thead>
-                <tbody>
-                  {emails.map((email) => (
-                    <tr key={email.id}>
-                      <td><strong>{getCustomerName(email)}</strong><span>{email.recipient_email}</span></td>
-                      <td>{getFollowUpLabel(email.follow_up_kind)} #{email.reminder_sequence ?? '-'}</td>
-                      <td>{formatDateTime(email.scheduled_for)}</td>
-                      <td><S.StatusPill $tone={statusTone[email.status]}>{statusLabel[email.status]}</S.StatusPill></td>
-                      <td>{email.attempt_count}</td>
-                      <td>
-                        <S.ActionGroup>
-                          <button type="button" onClick={() => void handlePreview(email)} disabled={actionId === email.id}>Previa</button>
-                          {email.status === 'scheduled' ? <button type="button" onClick={() => setCancelEvent(email)}>Cancelar</button> : null}
-                          {email.status === 'failed' ? <button type="button" onClick={() => void handleRetry(email)} disabled={actionId === email.id}>Retry</button> : null}
-                        </S.ActionGroup>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </S.Table>
-            </S.TableWrap>
+            <AdminDataTable
+              data={emails}
+              columns={columns}
+              keyExtractor={(email) => email.id}
+              emptyMessage="Nenhum e-mail encontrado para o filtro aplicado."
+              pageSize={10}
+              testId="admin-checkup-emails-table"
+              mobileTestId="admin-checkup-emails-mobile-list"
+              renderMobileCard={(email) => (
+                <AdminMobileRecordCard
+                  title={getCustomerName(email)}
+                  subtitle={email.recipient_email}
+                  status={<S.StatusPill $tone={statusTone[email.status]}>{statusLabel[email.status]}</S.StatusPill>}
+                  metadata={[
+                    { label: 'Check-up', value: `${getFollowUpLabel(email.follow_up_kind)} #${email.reminder_sequence ?? '-'}` },
+                    { label: 'Envio', value: formatDateTime(email.scheduled_for) },
+                    { label: 'Tentativas', value: email.attempt_count },
+                  ]}
+                  primaryAction={
+                    <AdminMobileActionButton type="button" onClick={() => void handlePreview(email)} disabled={actionId === email.id}>
+                      Prévia
+                    </AdminMobileActionButton>
+                  }
+                  secondaryActions={
+                    <S.MobileSecondaryActions>
+                      {email.status === 'scheduled' ? <button type="button" onClick={() => setCancelEvent(email)}>Cancelar</button> : null}
+                      {email.status === 'failed' ? <button type="button" onClick={() => void handleRetry(email)} disabled={actionId === email.id}>Retry</button> : null}
+                    </S.MobileSecondaryActions>
+                  }
+                />
+              )}
+            />
           </S.Panel>
 
           <S.Panel>
@@ -256,11 +324,11 @@ export function AdminCheckupEmails() {
       ) : null}
 
       {runModalOpen ? (
-        <S.ModalOverlay role="presentation"><S.Modal role="dialog" aria-modal="true" aria-labelledby="run-email-job-title"><S.ModalTitle id="run-email-job-title">Executar job diario?</S.ModalTitle><p>O backend vai processar os e-mails elegiveis respeitando limite diario e preferencias dos clientes.</p><S.ModalActions><Button variant="secondary" onClick={() => setRunModalOpen(false)} disabled={runningJob}>Cancelar</Button><Button onClick={() => void handleRunJob()} disabled={runningJob}>{runningJob ? 'Executando...' : 'Executar agora'}</Button></S.ModalActions></S.Modal></S.ModalOverlay>
+        <S.ModalOverlay role="presentation"><S.Modal role="dialog" aria-modal="true" aria-labelledby="run-email-job-title"><S.ModalTitle id="run-email-job-title">Executar job diário?</S.ModalTitle><p>O backend vai processar os e-mails elegíveis respeitando limite diário e preferências dos clientes.</p><S.ModalActions><Button variant="secondary" onClick={() => setRunModalOpen(false)} disabled={runningJob}>Cancelar</Button><Button onClick={() => void handleRunJob()} disabled={runningJob}>{runningJob ? 'Executando...' : 'Executar agora'}</Button></S.ModalActions></S.Modal></S.ModalOverlay>
       ) : null}
 
       {preview && previewEvent ? (
-        <S.ModalOverlay role="presentation"><S.Modal role="dialog" aria-modal="true" aria-labelledby="email-preview-title"><S.ModalTitle id="email-preview-title">Previa do e-mail</S.ModalTitle><S.PreviewMeta>{previewEvent.recipient_email}</S.PreviewMeta><S.PreviewSubject>{preview.subject}</S.PreviewSubject><S.PreviewText>{preview.text}</S.PreviewText><S.ModalActions><Button onClick={() => { setPreview(null); setPreviewEvent(null); }}>Fechar</Button></S.ModalActions></S.Modal></S.ModalOverlay>
+        <S.ModalOverlay role="presentation"><S.Modal role="dialog" aria-modal="true" aria-labelledby="email-preview-title"><S.ModalTitle id="email-preview-title">Prévia do e-mail</S.ModalTitle><S.PreviewMeta>{previewEvent.recipient_email}</S.PreviewMeta><S.PreviewSubject>{preview.subject}</S.PreviewSubject><S.PreviewText>{preview.text}</S.PreviewText><S.ModalActions><Button onClick={() => { setPreview(null); setPreviewEvent(null); }}>Fechar</Button></S.ModalActions></S.Modal></S.ModalOverlay>
       ) : null}
 
       {cancelEvent ? (

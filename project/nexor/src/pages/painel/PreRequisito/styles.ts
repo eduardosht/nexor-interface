@@ -7,6 +7,18 @@ export const Page = styled.div`
   gap: 26px;
 `;
 
+export const PreRequisitoPage = styled(Page)`
+  @media (max-width: 720px) {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom));
+  }
+`;
+
+export const OnboardingPage = styled(Page)`
+  @media (max-width: 720px) {
+    padding-bottom: calc(128px + env(safe-area-inset-bottom));
+  }
+`;
+
 export const Banner = styled.div`
   padding: 16px 18px;
   border-radius: 12px;
@@ -54,7 +66,7 @@ export const ProcessingContent = styled.p`
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   span {
@@ -66,7 +78,7 @@ export const ProcessingContent = styled.p`
 
 export const ProcessingLink = styled(Link)`
   color: ${({ theme }) => theme.colors.green};
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
 `;
@@ -104,7 +116,7 @@ export const InfoIcon = styled.span`
 
 export const RequiredStar = styled.span`
   color: inherit;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const OnboardingHeroTitle = styled.span`
@@ -282,7 +294,7 @@ export const PrerequisiteMetaValue = styled.span`
   min-width: 0;
   color: #07152f;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   overflow-wrap: anywhere;
 `;
@@ -681,7 +693,7 @@ export const OnboardingCompletionTitle = styled.h2`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const OnboardingCompletionText = styled.p`
@@ -766,14 +778,14 @@ export const StepBadge = styled.span`
   background: ${({ theme }) => theme.colors.textPrimary};
   color: ${({ theme }) => theme.colors.bgElevated};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SectionTitle = styled.h2`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const QuestionBlock = styled.div`

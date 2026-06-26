@@ -62,39 +62,41 @@ export function PartnerDashboardChart({
         </S.PartnerPeriodControl>
       </S.PartnerChartHeader>
       <S.PartnerBarChart aria-label="Gráfico de barras do resumo das indicações">
-        <ResponsiveContainer width="100%" height={292}>
-          <BarChart data={rows} margin={{ top: 24, right: 8, left: -18, bottom: 6 }}>
-            <CartesianGrid stroke="#E5E7EB" strokeDasharray="4 6" vertical={false} />
-            <XAxis
-              dataKey="shortLabel"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#525252', fontSize: 12, fontWeight: 700 }}
-            />
-            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 11 }} />
-            <Tooltip
-              cursor={{ fill: 'rgba(23, 23, 23, 0.04)' }}
-              formatter={(value, _name, item) => [
-                Number(value).toLocaleString('pt-BR'),
-                item.payload?.label ?? 'Total',
-              ]}
-              labelFormatter={() => `Período: ${periodLabel}`}
-              contentStyle={{
-                border: '1px solid #E0E0E0',
-                borderRadius: 8,
-                boxShadow: '0 18px 42px rgba(23, 23, 23, 0.08)',
-                color: '#171717',
-                fontSize: 12,
-              }}
-            />
-            <Bar dataKey="value" radius={[8, 8, 4, 4]} barSize={58} isAnimationActive>
-              <LabelList dataKey="value" position="top" fill="#171717" fontSize={13} fontWeight={800} />
-              {rows.map((row) => (
-                <Cell key={row.key} fill={row.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <S.PartnerBarCanvas>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 24, right: 8, left: -18, bottom: 6 }}>
+              <CartesianGrid stroke="#E5E7EB" strokeDasharray="4 6" vertical={false} />
+              <XAxis
+                dataKey="shortLabel"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#525252', fontSize: 12, fontWeight: 700 }}
+              />
+              <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#737373', fontSize: 11 }} />
+              <Tooltip
+                cursor={{ fill: 'rgba(23, 23, 23, 0.04)' }}
+                formatter={(value, _name, item) => [
+                  Number(value).toLocaleString('pt-BR'),
+                  item.payload?.label ?? 'Total',
+                ]}
+                labelFormatter={() => `Período: ${periodLabel}`}
+                contentStyle={{
+                  border: '1px solid #E0E0E0',
+                  borderRadius: 8,
+                  boxShadow: '0 18px 42px rgba(23, 23, 23, 0.08)',
+                  color: '#171717',
+                  fontSize: 12,
+                }}
+              />
+              <Bar dataKey="value" radius={[8, 8, 4, 4]} barSize={58} isAnimationActive>
+                <LabelList dataKey="value" position="top" fill="#171717" fontSize={13} fontWeight={800} />
+                {rows.map((row) => (
+                  <Cell key={row.key} fill={row.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </S.PartnerBarCanvas>
         <S.PartnerChartLegend>
           {rows.map((row) => (
             <S.PartnerChartLegendItem key={row.key}>

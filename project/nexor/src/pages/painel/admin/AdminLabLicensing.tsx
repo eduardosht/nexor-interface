@@ -3,11 +3,7 @@ import {
   AdminDataTable,
   AdminMetricGrid,
   AdminModal,
-  AdminModalAction,
-  AdminModalActions,
   AdminModalDetailCard,
-  AdminModalDetailContent,
-  AdminModalDetailGrid,
   AdminModalDetailIcon,
   AdminModalDetailLabel,
   AdminModalDetailValue,
@@ -21,7 +17,7 @@ import {
   type AdminDataTableColumn,
   type AdminMetric,
 } from '@nexor/design-system';
-import { ClipboardList, Eye, FlaskConical, MapPin, RefreshCw } from 'lucide-react';
+import { Clock3, ClipboardList, Eye, FileText, FlaskConical, MapPin, Phone, RefreshCw } from 'lucide-react';
 import styled from 'styled-components';
 import { SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -74,6 +70,26 @@ function getStatusColor(status: string) {
   if (status === 'active' || status === 'licensed' || status === 'approved_pending_payment') return '#15803d';
   if (status === 'rejected' || status === 'admin_rejected') return '#b91c1c';
   return '#d18a00';
+}
+
+function onlyDigits(value: string | undefined) {
+  return (value ?? '').replace(/\D/g, '');
+}
+
+function formatCpf(value: string | undefined) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11) return value?.trim() || 'Não informado';
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function formatCnpj(value: string | undefined) {
+  const digits = onlyDigits(value);
+  if (digits.length !== 14) return value?.trim() || 'Não informado';
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+function canReviewRequest(request: LabLicenseRequest) {
+  return request.status === 'pending';
 }
 
 export function AdminLabLicensing() {
@@ -178,18 +194,19 @@ export function AdminLabLicensing() {
         label: 'Visualizar',
         width: '10%',
         align: 'center',
-        render: (row) => (
-          <ViewButton
-            type="button"
-            aria-label={`Visualizar solicitação de ${row.labName}`}
-            onClick={() => {
-              setSelectedRequest(row);
-              setRejectReason('');
-            }}
-          >
-            <Eye size={18} aria-hidden />
-          </ViewButton>
-        ),
+        render: (row) =>
+          canReviewRequest(row) ? (
+            <ViewButton
+              type="button"
+              aria-label={`Visualizar solicitação de ${row.labName}`}
+              onClick={() => {
+                setSelectedRequest(row);
+                setRejectReason('');
+              }}
+            >
+              <Eye size={18} aria-hidden />
+            </ViewButton>
+          ) : null,
       },
     ],
     []
@@ -263,18 +280,20 @@ export function AdminLabLicensing() {
                     <AdminMobileMetaValue>{row.professionalSummary || 'Não informado'}</AdminMobileMetaValue>
                   </AdminMobileMetaItem>
                 </AdminMobileMetaGrid>
-                <AdminMobileActions>
-                  <AdminMobileActionButton
-                    type="button"
-                    aria-label={`Abrir dados do laboratório ${row.labName}`}
-                    onClick={() => {
-                      setSelectedRequest(row);
-                      setRejectReason('');
-                    }}
-                  >
-                    Revisar solicitação
-                  </AdminMobileActionButton>
-                </AdminMobileActions>
+                {canReviewRequest(row) ? (
+                  <AdminMobileActions>
+                    <AdminMobileActionButton
+                      type="button"
+                      aria-label={`Abrir dados do laboratório ${row.labName}`}
+                      onClick={() => {
+                        setSelectedRequest(row);
+                        setRejectReason('');
+                      }}
+                    >
+                      Revisar solicitação
+                    </AdminMobileActionButton>
+                  </AdminMobileActions>
+                ) : null}
               </AdminMobileCard>
             )}
           />
@@ -285,79 +304,135 @@ export function AdminLabLicensing() {
         open={Boolean(selectedRequest)}
         title="Dados enviados pelo laboratório"
         ariaLabel="Dados enviados pelo laboratório"
+        mobilePlacement="center"
         icon={<FlaskConical size={32} />}
-        subtitle={selectedRequest ? `${selectedRequest.labName} • ${selectedRequest.cnpj}` : null}
+        subtitle={
+          selectedRequest ? (
+            <ModalSubtitleInline>
+              <span>{selectedRequest.labName}</span>
+              <InlineDot aria-hidden />
+              <span>{formatCnpj(selectedRequest.cnpj)}</span>
+            </ModalSubtitleInline>
+          ) : null
+        }
         onClose={() => setSelectedRequest(null)}
         footer={
           selectedRequest ? (
-            <AdminModalActions>
-              <AdminModalAction
+            <CompactModalActions>
+              <CompactModalButton
                 type="button"
-                actionTone="attention"
+                variant="secondary"
                 disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
                 onClick={handleReject}
               >
                 {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
-              </AdminModalAction>
-              <AdminModalAction
+              </CompactModalButton>
+              <CompactModalButton
                 type="button"
                 disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                $tone="success"
                 onClick={handleApprove}
               >
                 {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
-              </AdminModalAction>
-            </AdminModalActions>
+              </CompactModalButton>
+            </CompactModalActions>
           ) : null
         }
       >
         {selectedRequest ? (
           <>
-            <AdminModalDetailGrid>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <ClipboardList size={22} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Resumo operacional</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{selectedRequest.professionalSummary || 'Não informado'}</AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <RefreshCw size={22} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Status do fluxo</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{workflowLabel[selectedRequest.workflowStatus] ?? selectedRequest.workflowStatus}</AdminModalDetailValue>
-                  <AdminStatusPill color={getStatusColor(selectedRequest.status)} label={statusLabel[selectedRequest.status] ?? selectedRequest.status} />
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-            </AdminModalDetailGrid>
+            <CompactModalPairGrid>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>CPF</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>{formatCpf(selectedRequest.cpf)}</CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>CNPJ</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>{formatCnpj(selectedRequest.cnpj)}</CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <ClipboardList size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>Resumo operacional</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {selectedRequest.professionalSummary || 'Não informado'}
+                  </CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <RefreshCw size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>Status do fluxo</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <StatusPill $color={getStatusColor(selectedRequest.status)}>
+                    <StatusDot $color={getStatusColor(selectedRequest.status)} />
+                    {workflowLabel[selectedRequest.workflowStatus] ?? selectedRequest.workflowStatus}
+                  </StatusPill>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+            </CompactModalPairGrid>
 
             {selectedRequest.locations.map((location) => (
-              <AdminModalDetailCard key={`${location.name}:${location.cep}`}>
-                <AdminModalDetailIcon aria-hidden>
-                  <MapPin size={26} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>{location.name}</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{location.address}</AdminModalDetailValue>
-                  <AdminModalDetailValue>
+              <LocationDisclosure key={`${location.name}:${location.cep}`}>
+                <LocationSummary>
+                  <CompactModalCardHeader>
+                    <CompactModalDetailIcon aria-hidden>
+                      <MapPin size={18} />
+                    </CompactModalDetailIcon>
+                    <CompactModalDetailLabel>{location.name}</CompactModalDetailLabel>
+                  </CompactModalCardHeader>
+                  <LocationSummaryHint>Ver detalhes</LocationSummaryHint>
+                </LocationSummary>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>{location.address}</CompactModalDetailValue>
+                  <CompactModalDetailValue>
                     {location.city} {location.state ? `- ${location.state}` : ''} - {location.cep}
-                  </AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
+                  </CompactModalDetailValue>
+                  <LocationMeta>
+                    <LocationMetaItem>
+                      <Phone size={16} aria-hidden />
+                      {location.phone ?? 'Telefone não informado'}
+                    </LocationMetaItem>
+                    <InlineDot aria-hidden />
+                    <LocationMetaItem>
+                      <Clock3 size={16} aria-hidden />
+                      {location.serviceHours}
+                    </LocationMetaItem>
+                  </LocationMeta>
+                </CompactModalCardBody>
+              </LocationDisclosure>
             ))}
 
-            <AdminModalTextAreaGroup>
-              <AdminModalTextAreaLabel htmlFor="lab-reject-reason">Motivo da recusa</AdminModalTextAreaLabel>
-              <AdminModalTextArea
+            <CompactModalTextAreaGroup>
+              <CompactModalTextAreaLabel htmlFor="lab-reject-reason">Motivo da recusa</CompactModalTextAreaLabel>
+              <CompactModalTextArea
                 id="lab-reject-reason"
                 placeholder="Obrigatório apenas para recusar."
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
               />
-            </AdminModalTextAreaGroup>
+            </CompactModalTextAreaGroup>
           </>
         ) : null}
       </AdminModal>
@@ -377,4 +452,221 @@ const ViewButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' 
   place-items: center;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+const CompactModalPairGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+
+  @media (max-width: 360px) {
+    gap: 5px;
+  }
+`;
+
+const CompactModalDetailCard = styled(AdminModalDetailCard)`
+  min-height: 0;
+  display: grid;
+  padding: 7px;
+  gap: 5px;
+  border-radius: 8px;
+
+  @media (max-width: 420px) {
+    padding: 6px;
+    gap: 5px;
+  }
+`;
+
+const CompactModalCardHeader = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const CompactModalCardBody = styled.div`
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+`;
+
+const CompactModalDetailIcon = styled(AdminModalDetailIcon)`
+  width: 24px;
+  height: 24px;
+
+  @media (max-width: 420px) {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 340px) {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const CompactModalDetailLabel = styled(AdminModalDetailLabel)`
+  font-size: 12px;
+  line-height: 1.2;
+
+  @media (min-width: 421px) {
+    font-size: 13px;
+  }
+`;
+
+const CompactModalDetailValue = styled(AdminModalDetailValue)`
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+
+  @media (min-width: 421px) {
+    font-size: 11px;
+  }
+`;
+
+const CompactModalTextAreaGroup = styled(AdminModalTextAreaGroup)`
+  gap: 6px;
+`;
+
+const CompactModalTextAreaLabel = styled(AdminModalTextAreaLabel)`
+  font-size: 14px;
+`;
+
+const CompactModalTextArea = styled(AdminModalTextArea)`
+  min-height: 58px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  resize: none;
+`;
+
+const CompactModalActions = styled.div`
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+`;
+
+const CompactModalButton = styled(Button) <{ $tone?: 'success' }>`
+  flex: 0 1 calc(50% - 5px);
+  min-width: 0;
+  min-height: 38px;
+  padding-inline: 10px;
+  white-space: normal;
+  background: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.green : undefined)};
+  border-color: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.green : undefined)};
+  color: ${({ theme, $tone }) => ($tone === 'success' ? theme.colors.bgElevated : undefined)};
+
+  [data-button-content],
+  [data-button-label] {
+    min-width: 0;
+    white-space: normal;
+    text-wrap: balance;
+  }
+`;
+
+const LocationDisclosure = styled.details`
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  &[open] {
+    display: grid;
+    gap: 5px;
+  }
+
+  @media (max-width: 420px) {
+    padding: 6px;
+  }
+`;
+
+const LocationSummary = styled.summary`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const LocationSummaryHint = styled.span`
+  flex: 0 0 auto;
+  color: ${({ theme }) => theme.colors.green};
+  font-size: 10px;
+  font-weight: 700;
+`;
+
+const ModalSubtitleInline = styled.span`
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+const InlineDot = styled.span`
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.green};
+`;
+
+const LocationMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 11px;
+  line-height: 1.25;
+`;
+
+const LocationMetaItem = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  svg {
+    color: ${({ theme }) => theme.colors.green};
+  }
+`;
+
+const StatusPill = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: ${({ $color }) => $color};
+  background: ${({ $color }) => `${$color}12`};
+  font-size: 12px;
+  line-height: 1.2;
+`;
+
+const StatusDot = styled.span<{ $color: string }>`
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: ${({ $color }) => $color};
 `;

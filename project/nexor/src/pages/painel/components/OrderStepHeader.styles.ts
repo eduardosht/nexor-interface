@@ -173,7 +173,7 @@ export const OrderSummaryText = styled.div`
 export const OrderEyebrow = styled.span`
   color: #4b5563;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
 `;
 
@@ -205,7 +205,7 @@ export const OrderStatusSummary = styled.span`
 
   strong {
     color: #0f172a;
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -231,7 +231,7 @@ export const OrderMetadataItem = styled.span`
   span {
     color: #5f6b7a;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0;
     line-height: 1.35;
   }
@@ -239,7 +239,7 @@ export const OrderMetadataItem = styled.span`
   strong {
     color: #0f172a;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.3;
   }
 

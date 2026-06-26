@@ -14,75 +14,111 @@ export function Privacidade() {
     <LegalPage>
       <LegalContainer>
         <LegalTitle>Política de Privacidade</LegalTitle>
-        <LegalUpdatedAt>Última atualização: maio de 2026</LegalUpdatedAt>
+        <LegalUpdatedAt>Última atualização: junho de 2026</LegalUpdatedAt>
+
         <LegalSection>
           <LegalSectionTitle>1. Quem somos</LegalSectionTitle>
           <LegalBody>
-            A Nexor é uma empresa-plataforma de produtos de performance. Está Política de Privacidade descreve como
-            coletamos, usamos e protegemos os dados pessoais tratados no site institucional e na conta Nexor.
+            A Nexor é uma empresa-plataforma de produtos de performance. Esta Política de Privacidade descreve como
+            coletamos, usamos e protegemos os dados pessoais tratados no site institucional, na conta Nexor e nos produtos
+            do ecossistema, incluindo o Biteplaner.
           </LegalBody>
           <LegalBody>
-            Produtos da Nexor, como o Biteplaner, podem manter políticas complementares adaptadas ao seu próprio contexto operacional.
+            A Nexor é responsável pelo tratamento dos dados pessoais tratados diretamente em sua plataforma. Alguns
+            produtos podem ter fluxos complementares, sempre vinculados às finalidades informadas ao titular.
           </LegalBody>
         </LegalSection>
+
         <LegalSection>
           <LegalSectionTitle>2. Dados que coletamos</LegalSectionTitle>
-          <LegalBody>Coletamos apenas os dados necessários para operar o site e a conta Nexor:</LegalBody>
+          <LegalBody>Coletamos dados necessários para operar a conta, prestar serviços e manter segurança e auditoria.</LegalBody>
+          <LegalBody>
+            Podemos tratar nome, e-mail, telefone, senha protegida, cpf, cnpj, razão social, perfil de uso, papéis do
+            usuário, consentimentos, preferências, IP, user-agent, registros de auditoria, dados de pagamento processados
+            pela Stripe e dados clínicos e de saúde informados em formulários do Biteplaner.
+          </LegalBody>
           <LegalList>
-            <li><strong>Conta Nexor:</strong> nome, e-mail, senha e dados cadastrais básicos informados pelo usuário.</li>
-            <li><strong>Consentimentos:</strong> registros de aceite de Termos de Uso, Política de Privacidade e preferência de comunicações de marketing.</li>
-            <li><strong>Dados de navegação:</strong> endereço IP, tipo de navegador e preferências de cookies, além de medições de uso quando cookies opcionais estiverem autorizados.</li>
+            <li>Dados de conta e autenticação: cadastro, login, recuperação de senha, verificação de e-mail e segurança.</li>
+            <li>Dados profissionais e operacionais: perfis de cliente, dentista, parceiro, laboratório e administrador.</li>
+            <li>Dados de pagamento: identificadores e status de transações, sem armazenamento local de dados completos de cartão.</li>
+            <li>Dados clínicos do Biteplaner: informações fornecidas em formulários de triagem, acompanhamento e cuidado odontológico ou orofacial.</li>
+            <li>Dados de navegação e consentimento: preferências de cookies, localStorage, cookie de convite de parceiro e histórico de aceite.</li>
           </LegalList>
         </LegalSection>
+
         <LegalSection>
-          <LegalSectionTitle>3. Finalidade do uso</LegalSectionTitle>
+          <LegalSectionTitle>3. Finalidades do uso</LegalSectionTitle>
           <LegalList>
             <li>Permitir criação, autenticação, recuperação e segurança da conta Nexor.</li>
-            <li>Enviar comunicações essenciais da conta e dos produtos relacionados, como verificação de e-mail, recuperação de senha, alertas de segurança e avisos operacionais.</li>
-            <li>Enviar newsletters e comunicações promocionais, comerciais ou educativas por e-mail somente quando houver consentimento opcional para isso.</li>
-            <li>Analisar o uso do site para melhorar a experiência do visitante.</li>
-            <li>Cumprir obrigações legais e regulatórias aplicáveis.</li>
+            <li>Viabilizar acesso a produtos, fluxos administrativos, pedidos, relatórios e jornadas Biteplaner.</li>
+            <li>Registrar consentimentos, preferências, auditoria, prevenção a fraude e rastreabilidade operacional.</li>
+            <li>Processar pagamentos, cobranças, reembolsos e registros financeiros por provedores contratados.</li>
+            <li>Enviar comunicações essenciais de conta, segurança, atendimento, operação e suporte.</li>
+            <li>Enviar newsletters e comunicações promocionais apenas quando houver consentimento opcional.</li>
+            <li>Cumprir obrigações legais, regulatórias, fiscais, contratuais e solicitações de autoridades competentes.</li>
           </LegalList>
         </LegalSection>
+
         <LegalSection>
           <LegalSectionTitle>4. Base legal (LGPD)</LegalSectionTitle>
           <LegalList>
-            <li><strong>Execução de contrato e procedimentos preliminares:</strong> para operar a conta, autenticar o usuário e viabilizar acesso aos produtos.</li>
-            <li><strong>Legítimo interesse:</strong> para segurança da plataforma, prevenção a fraude e melhoria da experiência.</li>
-            <li><strong>Consentimento:</strong> para newsletters e comunicações promocionais, comerciais ou educativas por e-mail, bem como para cookies não essenciais quando aplicável.</li>
+            <li>Execução de contrato e procedimentos preliminares: conta, produtos, pedidos, suporte, pagamentos e acesso.</li>
+            <li>Consentimento: cookies opcionais, marketing e comunicações não essenciais.</li>
+            <li>Legítimo interesse: segurança, prevenção a fraude, melhoria da plataforma e auditoria proporcional.</li>
+            <li>Proteção da saúde e execução contratual: dados clínicos e de saúde usados em fluxos do Biteplaner.</li>
+            <li>Cumprimento de obrigação legal ou regulatória: registros fiscais, financeiros, contábeis e resposta a autoridades.</li>
           </LegalList>
         </LegalSection>
+
         <LegalSection>
           <LegalSectionTitle>5. Compartilhamento de dados</LegalSectionTitle>
-          <LegalBody>Não vendemos nem alugamos dados pessoais. Podemos compartilhá-los apenas nas seguintes situações:</LegalBody>
+          <LegalBody>
+            Não vendemos nem alugamos dados pessoais. Compartilhamos dados apenas quando necessário para operar a plataforma,
+            cumprir obrigações legais ou atender solicitação do titular.
+          </LegalBody>
           <LegalList>
-            <li><strong>Provedores de tecnologia:</strong> serviços de autenticação, hospedagem, analytics e comunicação que apoiam a operação da conta Nexor e do site.</li>
-            <li><strong>Produtos do ecossistema Nexor:</strong> quando necessário para viabilizar o acesso do usuário ao produto que ele escolheu utilizar.</li>
-            <li><strong>Exigência legal:</strong> quando obrigados por lei, decisão judicial ou autoridade competente.</li>
+            <li>Supabase: autenticação, banco de dados, storage e funções de backend.</li>
+            <li>Stripe: pagamentos, assinaturas, cobranças e registros transacionais.</li>
+            <li>Resend e provedores de e-mail: mensagens transacionais, suporte e comunicações autorizadas.</li>
+            <li>Perfis autorizados do Biteplaner: clientes, dentistas, parceiros, laboratórios e administradores, conforme papel e finalidade.</li>
+            <li>Autoridades ou terceiros quando houver obrigação legal, ordem judicial ou necessidade de defesa de direitos.</li>
           </LegalList>
         </LegalSection>
+
         <LegalSection>
           <LegalSectionTitle>6. Retenção de dados</LegalSectionTitle>
+          <LegalBody>
+            A retenção segue necessidade, finalidade, obrigações legais e políticas internas de segurança. Ao final do prazo
+            aplicável, os dados devem ser revisados para exclusão, anonimização ou manutenção por obrigação legal.
+          </LegalBody>
           <LegalList>
-            <li>Dados cadastrais da conta: pelo período necessário para manutenção da conta e cumprimento de obrigações legais.</li>
-            <li>Consentimentos: pelo período necessário para demonstração de histórico de aceite e cumprimento regulatório.</li>
+            <li>Dados de conta: enquanto a conta estiver ativa e pelo prazo necessário para obrigações legais, segurança e auditoria.</li>
+            <li>Consentimentos: pelo período necessário para demonstrar histórico de aceite, revogação e cumprimento regulatório.</li>
             <li>Preferências de marketing: até revogação do consentimento ou encerramento da finalidade correspondente.</li>
+            <li>Formulários clínicos do Biteplaner: 120 meses, sujeitos a revisão de anonimização, bloqueio legal ou exclusão.</li>
+            <li>Feedback operacional do Biteplaner: 60 meses, sujeitos a revisão de exclusão, agregação ou anonimização.</li>
           </LegalList>
         </LegalSection>
+
         <LegalSection>
-          <LegalSectionTitle>7. Seus direitos</LegalSectionTitle>
+          <LegalSectionTitle>7. Direitos do titular</LegalSectionTitle>
           <LegalBody>
-            Conforme a Lei Geral de Proteção de Dados (LGPD), você tem direito a confirmar a existência de tratamento,
-            acessar, corrigir, atualizar, solicitar exclusão quando cabível, revogar consentimento e obter outras
-            informações previstas em lei.
+            Você pode confirmar a existência de tratamento, acessar dados pessoais, exportar uma cópia dos dados, corrigir
+            dados incompletos, inexatos ou desatualizados, solicitar exclusão ou anonimização quando cabível, pedir revisão
+            de decisões aplicáveis e revogar consentimentos.
           </LegalBody>
-          <LegalBody>Para exercer seus direitos, entre em contato pelo e-mail abaixo.</LegalBody>
-        </LegalSection>
-        <LegalSection>
-          <LegalSectionTitle>8. Contato</LegalSectionTitle>
           <LegalBody>
-            Dúvidas ou solicitações relacionadas a está política devem ser enviadas pelos canais oficiais informados na página de contato.
-            Responsável pelo tratamento de dados: Nexor.
+            Algumas solicitações podem depender de validação de identidade, preservação de registros legais, prevenção a fraude
+            ou manutenção de dados mínimos para cumprimento de obrigações legais.
+          </LegalBody>
+        </LegalSection>
+
+        <LegalSection>
+          <LegalSectionTitle>8. Contato LGPD</LegalSectionTitle>
+          <LegalBody>
+            Para exercer direitos de titular ou tirar dúvidas de privacidade, envie mensagem para contato@nexoradvance.com.br
+            com o assunto LGPD. Informe o e-mail da conta e descreva a solicitação para que possamos localizar e tratar o pedido
+            com segurança.
           </LegalBody>
         </LegalSection>
       </LegalContainer>

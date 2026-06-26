@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
 
 export const Page = styled.div`
@@ -258,7 +259,7 @@ export const ProductHeader = styled.div`
 export const ProductTitle = styled.h3`
   margin: 0;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -295,6 +296,179 @@ export const ProductLink = styled.a`
   &:hover {
     opacity: 0.85;
   }
+`;
+
+export const PrivacyPanel = styled(Card)`
+  padding: 18px 20px;
+`;
+
+export const PrivacyHeader = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
+`;
+
+export const PrivacyBadge = styled.span`
+  flex: 0 0 auto;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => `${theme.colors.green}33`};
+  background: ${({ theme }) => `${theme.colors.green}14`};
+  color: ${({ theme }) => theme.colors.green};
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+`;
+
+export const PrivacyActionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 920px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const privacyActionStyles = `
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+`;
+
+export const PrivacyActionButton = styled.button`
+  ${privacyActionStyles}
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-family: inherit;
+  transition: border-color 150ms ease, background 150ms ease, opacity 150ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+`;
+
+export const PrivacyActionLink = styled(Link)`
+  ${privacyActionStyles}
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+export const PrivacyActionAnchor = styled.a`
+  ${privacyActionStyles}
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+export const PrivacyConsentSummary = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const PrivacyConsentItem = styled.div`
+  min-height: 76px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.bgBase};
+`;
+
+export const PrivacyConsentLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+`;
+
+export const PrivacyConsentStatus = styled.span`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  font-weight: 800;
+`;
+
+export const PrivacyConsentHint = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.4;
+`;
+
+export const PrivacyInlineButton = styled.button`
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 4px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 150ms ease, opacity 150ms ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+`;
+
+export const PrivacyRightsList = styled.ul`
+  margin: 16px 0 0;
+  padding-left: 18px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 13px;
+  line-height: 1.55;
 `;
 
 

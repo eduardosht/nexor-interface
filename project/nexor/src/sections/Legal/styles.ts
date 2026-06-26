@@ -27,7 +27,7 @@ export const SectionLabel = styled.p`
 
 export const Title = styled.h2`
   font-size: clamp(3rem, 3.5vw, 5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.15;
   margin: 0 0 12px;

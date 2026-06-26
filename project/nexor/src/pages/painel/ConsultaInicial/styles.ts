@@ -205,7 +205,7 @@ export const SideCard = styled.section`
 export const SectionTitle = styled.h2`
   margin: 0;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -269,7 +269,7 @@ export const AdaptedBadge = styled.span<{ $adapted: boolean }>`
   background: ${({ $adapted }) => ($adapted ? 'rgba(22, 101, 52, 0.1)' : 'rgba(107, 114, 128, 0.1)')};
   color: ${({ $adapted }) => ($adapted ? '#166534' : '#4b5563')};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const ClinicMeta = styled.span`
@@ -315,7 +315,7 @@ export const ClinicPageIndicator = styled.span`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const RatingBadge = styled.span`

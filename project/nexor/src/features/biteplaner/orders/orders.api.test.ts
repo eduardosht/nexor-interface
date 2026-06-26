@@ -49,10 +49,12 @@ describe('orders api module', () => {
       status: 'awaiting_payment',
       limit: 25,
       createdBefore: '2026-06-17T12:00:00.000Z',
+      initDate: '2026-02-01T00:00:00.000Z',
+      finalDate: '2026-05-31T23:59:59.999Z',
     });
 
     expect(apiGet).toHaveBeenCalledWith(
-      '/v1/orders?as=dentist&status=awaiting_payment&limit=25&createdBefore=2026-06-17T12%3A00%3A00.000Z',
+      '/v1/orders?as=dentist&status=awaiting_payment&limit=25&createdBefore=2026-06-17T12%3A00%3A00.000Z&initDate=2026-02-01T00%3A00%3A00.000Z&finalDate=2026-05-31T23%3A59%3A59.999Z',
       'tok',
     );
   });

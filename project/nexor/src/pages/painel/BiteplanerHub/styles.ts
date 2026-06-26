@@ -85,7 +85,7 @@ export const RoleTabButton = styled.button<{ $active: boolean }>`
   background: transparent;
   color: ${({ $active, theme }) => ($active ? '#6d3df5' : theme.colors.textSecondary)};
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: color 160ms ease;
@@ -280,7 +280,7 @@ export const HeroFloatingCard = styled.div`
     display: grid;
     gap: 4px;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   strong {
@@ -912,17 +912,9 @@ export const OperationalStatContent = styled.div`
 
 export const PartnerDashboardGrid = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
-
-  @media (max-width: 1400px) {
-    grid-template-columns: 1fr;
-  }
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 export const PartnerChartPanel = styled.section`
@@ -933,6 +925,13 @@ export const PartnerChartPanel = styled.section`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+
+  @media (max-width: 720px) {
+    gap: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
 `;
 
 export const PartnerChartHeader = styled.div`
@@ -941,6 +940,12 @@ export const PartnerChartHeader = styled.div`
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
+
+  @media (max-width: 720px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
 `;
 
 export const PartnerPanelTitleGroup = styled.div`
@@ -953,6 +958,15 @@ export const PartnerPanelTitleGroup = styled.div`
     display: grid;
     gap: 4px;
     min-width: 0;
+  }
+
+  @media (max-width: 720px) {
+    align-items: center;
+    gap: 10px;
+  }
+
+  @media (max-width: 420px) {
+    align-items: flex-start;
   }
 `;
 
@@ -971,6 +985,17 @@ export const PartnerPanelIcon = styled.span<{ $tone: 'blue' | 'purple' | 'green'
         ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(34, 197, 94, 0.05))'
         : 'linear-gradient(135deg, rgba(124, 58, 237, 0.13), rgba(124, 58, 237, 0.05))'};
   color: ${({ $tone }) => ($tone === 'blue' ? '#3b82f6' : $tone === 'green' ? '#16a34a' : '#7c3aed')};
+
+  @media (max-width: 720px) {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `;
 
 export const PartnerPeriodControl = styled.div`
@@ -981,6 +1006,18 @@ export const PartnerPeriodControl = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 8px;
   background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 720px) {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 360px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 `;
 
 export const PartnerPeriodButton = styled.button<{ $active: boolean }>`
@@ -1000,6 +1037,12 @@ export const PartnerPeriodButton = styled.button<{ $active: boolean }>`
   &:hover {
     color: ${({ $active, theme }) => ($active ? theme.colors.bgElevated : theme.colors.textPrimary)};
   }
+
+  @media (max-width: 720px) {
+    min-height: 30px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
 `;
 
 export const PartnerBarChart = styled.div`
@@ -1011,6 +1054,25 @@ export const PartnerBarChart = styled.div`
   .recharts-surface {
     outline: none;
   }
+
+  @media (max-width: 720px) {
+    gap: 10px;
+    min-height: 0;
+  }
+`;
+
+export const PartnerBarCanvas = styled.div`
+  width: 100%;
+  height: 292px;
+  min-width: 0;
+
+  @media (max-width: 720px) {
+    height: 210px;
+  }
+
+  @media (max-width: 420px) {
+    height: 184px;
+  }
 `;
 
 export const PartnerChartLegend = styled.div`
@@ -1018,8 +1080,9 @@ export const PartnerChartLegend = styled.div`
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 
-  @media (max-width: 760px) {
+  @media (max-width: 720px) {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 `;
 
@@ -1045,14 +1108,26 @@ export const PartnerChartLegendItem = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 14px;
-    font-weight: 800;
+    font-weight: 700;
+  }
+
+  @media (max-width: 720px) {
+    min-height: 36px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+
+    strong {
+      font-size: 13px;
+    }
   }
 `;
 
 export const PartnerOperationPanel = styled.section`
+  grid-column: 1 / -1;
   display: grid;
   align-content: start;
-  gap: 28px;
+  gap: 18px;
   padding: 24px;
   border-radius: 16px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -1062,20 +1137,21 @@ export const PartnerOperationPanel = styled.section`
 
 export const PartnerActionCards = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
 
-  @media (max-width: 1120px) {
-    grid-template-columns: 1fr;
+  @media (max-width: 720px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 `;
 
 export const PartnerActionCard = styled(Link)`
   display: grid;
   align-content: start;
-  gap: 16px;
-  min-height: 244px;
-  padding: 28px;
+  gap: 10px;
+  min-height: 0;
+  padding: 18px;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -1089,12 +1165,13 @@ export const PartnerActionCard = styled(Link)`
 
   strong {
     font-size: 18px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.2;
   }
 
-  > svg:last-child {
-    margin-top: auto;
+  @media (max-width: 720px) {
+    padding: 12px;
+    gap: 8px;
   }
 
   &:hover {
@@ -1107,9 +1184,9 @@ export const PartnerActionCard = styled(Link)`
 export const PartnerActionButton = styled.button`
   display: grid;
   align-content: start;
-  gap: 16px;
-  min-height: 244px;
-  padding: 28px;
+  gap: 10px;
+  min-height: 0;
+  padding: 18px;
   border-radius: 12px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
@@ -1124,12 +1201,13 @@ export const PartnerActionButton = styled.button`
 
   strong {
     font-size: 18px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.2;
   }
 
-  > svg:last-child {
-    margin-top: auto;
+  @media (max-width: 720px) {
+    padding: 12px;
+    gap: 8px;
   }
 
   &:hover {
@@ -1201,7 +1279,7 @@ export const PartnerBarColumn = styled.div`
 
 export const PartnerBarValue = styled.strong`
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -1239,7 +1317,7 @@ export const PartnerBarFill = styled.div<{ $percent: number }>`
 export const PartnerBarLabel = styled.span`
   min-height: 34px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.3;
   color: ${({ theme }) => theme.colors.textPrimary};
 
@@ -1281,7 +1359,7 @@ export const StatValue = styled.strong`
   display: block;
   min-width: 0;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow-wrap: anywhere;
@@ -1343,6 +1421,202 @@ export const OperationalTableShell = styled.div`
   min-width: 0;
 `;
 
+export const TableFilterActions = styled.div`
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+`;
+
+export const TableToolbarActions = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px;
+
+  @media (max-width: 768px) {
+    display: grid;
+    gap: 12px;
+  }
+`;
+
+export const TableFilterLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+`;
+
+export const TableFilterControl = styled.div`
+  min-width: min(260px, 100%);
+
+  @media (max-width: 768px) {
+    min-width: 0;
+    width: 100%;
+  }
+`;
+
+export const DateRangeControls = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+
+  @media (max-width: 640px) {
+    display: grid;
+  }
+`;
+
+export const DateRangeField = styled.label`
+  min-width: 132px;
+  display: grid;
+  gap: 4px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+
+  input {
+    min-height: 36px;
+    width: 100%;
+    border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+    border-radius: 8px;
+    padding: 0 10px;
+    background: ${({ theme }) => theme.colors.bgElevated};
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font: inherit;
+    font-size: 13px;
+    text-transform: none;
+  }
+`;
+
+export const DateRangeApplyButton = styled.button`
+  min-height: 36px;
+  border: 1px solid ${({ theme }) => theme.colors.green};
+  border-radius: 8px;
+  padding: 0 12px;
+  background: ${({ theme }) => theme.colors.green};
+  color: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+export const DateRangeError = styled.span`
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+`;
+
+export const QueueMobileCard = styled.article`
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  display: grid;
+  gap: 10px;
+`;
+
+export const QueueMobileHeader = styled.header`
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+
+  > strong {
+    min-width: 0;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  > span {
+    min-width: 0;
+
+    > span:last-child {
+      font-size: 12px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+    }
+  }
+`;
+
+export const QueueMobileDetail = styled.div`
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+
+  > span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  > strong {
+    min-width: 0;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 13px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+`;
+
+export const QueueMobileActions = styled.div`
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+`;
+
+const mobileActionTone = {
+  neutral: '#404040',
+  success: '#15803d',
+  danger: '#b91c1c',
+  warning: '#b45309',
+  info: '#2563eb',
+} as const;
+
+export const QueueMobileActionButton = styled.button<{ $tone: keyof typeof mobileActionTone }>`
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid ${({ $tone }) => mobileActionTone[$tone]};
+  border-radius: 8px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ $tone }) => mobileActionTone[$tone]};
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 700;
+  cursor: pointer;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.64;
+  }
+`;
+
 export const ReferralPanel = styled.section`
   display: grid;
   gap: 18px;
@@ -1388,7 +1662,7 @@ export const ReferralField = styled.div`
 
   > span {
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: ${({ theme }) => theme.colors.textSecondary};
@@ -1445,7 +1719,7 @@ export const ReferralSubmitButton = styled.button`
     linear-gradient(135deg, #111111, #242424);
   color: #ffffff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   box-shadow: 0 12px 24px rgba(23, 23, 23, 0.14);
   transition:
@@ -1870,7 +2144,7 @@ export const AthleteOrderStage = styled.p`
 
   strong {
     color: #16803b;
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -1928,7 +2202,7 @@ export const AthleteOrderStatusBadge = styled.span<{ $tone: 'success' | 'warning
   background: ${({ $tone }) => athleteStatusTone[$tone].bg};
   color: ${({ $tone }) => athleteStatusTone[$tone].color};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
@@ -2065,7 +2339,7 @@ export const DentistStatusValue = styled.strong<{ $tone?: 'success' | 'warning' 
   color: ${({ $tone, theme }) =>
     $tone === 'success' ? '#059669' : $tone === 'warning' ? '#d18a00' : theme.colors.textPrimary};
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   overflow-wrap: anywhere;
 `;
@@ -2150,7 +2424,7 @@ export const CourseCompletionMark = styled.small`
   gap: 5px;
   width: fit-content;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #15803d;
@@ -2483,47 +2757,58 @@ export const DocumentationActionButton = styled.button<{ $tone?: keyof typeof ta
 `;
 
 export const ReferralInviteModalBox = styled(ModalBox)`
-  width: min(100%, 760px);
-  gap: 20px;
-  padding: 28px;
-  border-radius: 16px;
+  width: min(100%, 640px);
+  gap: 14px;
+  padding: 22px;
+  border-radius: 14px;
   border-color: rgba(148, 163, 184, 0.34);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.26);
+  box-shadow: 0 22px 58px rgba(15, 23, 42, 0.22);
 
   @media (max-width: 720px) {
-    max-height: calc(100vh - 28px);
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
     overflow-y: auto;
-    padding: 22px;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 12px;
   }
 `;
 
 export const ReferralInviteModalHeader = styled(ModalHeader)`
   align-items: flex-start;
-  gap: 16px;
+  gap: 12px;
 `;
 
 export const ReferralInviteModalTitle = styled(ModalTitle)`
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.2;
   letter-spacing: 0;
+
+  @media (max-width: 720px) {
+    font-size: 16px;
+  }
 `;
 
 export const ReferralInviteModalSubtitle = styled(ModalSubtitle)`
-  margin-top: 6px;
-  font-size: 15px;
-  line-height: 1.55;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.4;
 
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 800;
+    font-weight: 700;
+  }
+
+  @media (max-width: 720px) {
+    font-size: 12px;
   }
 `;
 
 export const ReferralInviteModalCloseButton = styled(ModalCloseButton)`
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 8px;
   background: ${({ theme }) => theme.colors.bgBase};
 
   svg {
@@ -2531,24 +2816,29 @@ export const ReferralInviteModalCloseButton = styled(ModalCloseButton)`
   }
 
   @media (max-width: 720px) {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 `;
 
 export const ReferralInviteQrShell = styled(QrShell)`
   position: relative;
-  gap: 14px;
-  min-height: 320px;
-  padding: 28px;
-  border-radius: 18px;
+  gap: 8px;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 14px;
   background: ${({ theme }) => theme.colors.bgBase};
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 
   @media (max-width: 720px) {
-    min-height: auto;
-    padding: 20px 16px;
+    padding: 10px;
+    border-radius: 10px;
   }
 `;
 
@@ -2556,12 +2846,12 @@ export const ReferralInviteQrFrame = styled.div`
   position: relative;
   display: grid;
   place-items: center;
-  padding: 22px;
+  padding: 14px;
 
   svg {
-    width: min(100%, 240px);
+    width: min(100%, 176px);
     height: auto;
-    filter: drop-shadow(0 10px 18px rgba(15, 23, 42, 0.12));
+    filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.1));
   }
 
   &::before {
@@ -2580,13 +2870,33 @@ export const ReferralInviteQrFrame = styled.div`
       linear-gradient(#16803b, #16803b) right bottom / 2px 28px no-repeat;
     border-radius: 12px;
   }
+
+  @media (max-width: 720px) {
+    padding: 8px;
+
+    svg {
+      width: min(100%, 136px);
+    }
+
+    &::before {
+      background:
+        linear-gradient(#16803b, #16803b) left top / 18px 2px no-repeat,
+        linear-gradient(#16803b, #16803b) left top / 2px 18px no-repeat,
+        linear-gradient(#16803b, #16803b) right top / 18px 2px no-repeat,
+        linear-gradient(#16803b, #16803b) right top / 2px 18px no-repeat,
+        linear-gradient(#16803b, #16803b) left bottom / 18px 2px no-repeat,
+        linear-gradient(#16803b, #16803b) left bottom / 2px 18px no-repeat,
+        linear-gradient(#16803b, #16803b) right bottom / 18px 2px no-repeat,
+        linear-gradient(#16803b, #16803b) right bottom / 2px 18px no-repeat;
+    }
+  }
 `;
 
 export const ReferralInviteQrCaption = styled(QrCaption)`
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: none;
@@ -2595,29 +2905,38 @@ export const ReferralInviteQrCaption = styled(QrCaption)`
   svg {
     color: #16803b;
   }
+
+  @media (max-width: 720px) {
+    font-size: 11px;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
 `;
 
 export const ReferralInviteModalField = styled(ModalField)`
-  gap: 12px;
+  gap: 8px;
 `;
 
 export const ReferralInviteModalLabel = styled(ModalLabel)`
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  letter-spacing: 0.06em;
 `;
 
 export const ReferralInviteLinkInputGroup = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 52px;
-  min-height: 52px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  min-height: 44px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   background: ${({ theme }) => theme.colors.bgBase};
 
   @media (max-width: 640px) {
-    grid-template-columns: minmax(0, 1fr) 56px;
-    min-height: 58px;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    min-height: 40px;
   }
 `;
 
@@ -2627,7 +2946,7 @@ export const ReferralInviteLinkPreview = styled(LinkPreview)`
   border: 0;
   border-radius: 0;
   background: transparent;
-  font-size: 14px;
+  font-size: 12px;
 
   &:focus {
     outline: none;
@@ -2640,26 +2959,50 @@ export const ReferralInviteInlineCopyButton = styled.button`
   justify-content: center;
   border: 0;
   border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  background: #15803d;
+  color: #f8fbff;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+
+  &:hover {
+    background: #166534;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(21, 128, 61, 0.32);
+    outline-offset: -2px;
+  }
 `;
 
 export const ReferralInviteModalActions = styled(ModalActions)`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 
-  @media (max-width: 820px) {
-    grid-template-columns: minmax(0, 1fr);
+  @media (max-width: 560px) {
+    gap: 6px;
+
+    > button,
+    > a {
+      width: auto;
+    }
   }
 `;
 
 const referralInviteActionBase = css`
-  min-height: 52px;
-  border-radius: 12px;
-  font-size: 15px;
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 700;
+
+  @media (max-width: 560px) {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 11px;
+    line-height: 1.15;
+  }
 `;
 
 export const ReferralInviteCopyButton = styled.button`
@@ -2667,15 +3010,13 @@ export const ReferralInviteCopyButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  border: 0;
-  background: linear-gradient(135deg, #16803b, #239655);
-  color: #ffffff;
-  box-shadow: 0 18px 34px rgba(22, 128, 59, 0.24);
-  cursor: pointer;
+  gap: 6px;
 
-  &:hover {
-    transform: translateY(-1px);
+  &[data-variant='primary'] {
+    border-color: #15803d;
+    background: #15803d;
+    color: #f8fbff;
+    box-shadow: none;
   }
 `;
 
@@ -2730,57 +3071,60 @@ export const ModalActionLink = styled(motion.a)`
 `;
 
 const whatsappActionStyles = css`
-  min-height: 58px;
-  gap: 14px;
-  padding: 0 26px;
-  border-color: #52b967;
-  border-radius: 999px;
-  background: #52b967;
+  border-color: #15803d;
+  background: #15803d;
   color: #f8fff9;
-  box-shadow: 0 12px 24px rgba(31, 150, 72, 0.24);
-  font-size: 18px;
-  font-weight: 800;
-  white-space: nowrap;
+  box-shadow: none;
+  white-space: normal;
 
   svg {
-    width: 32px;
-    height: 32px;
     color: currentColor;
-    stroke-width: 2.6;
   }
 
   &:hover {
-    border-color: #47a95d;
-    background: #47a95d;
-    box-shadow: 0 14px 28px rgba(31, 150, 72, 0.3);
-  }
-
-  @media (max-width: 560px) {
-    width: 100%;
-    min-height: 52px;
-    padding: 0 14px;
-    font-size: 14px;
-
-    svg {
-      width: 24px;
-      height: 24px;
-    }
+    border-color: #166534;
+    background: #166534;
+    box-shadow: none;
   }
 `;
 
-export const ReferralInviteActionLink = styled(ModalActionLink) <{ $variant?: 'whatsapp' }>`
+export const ReferralInviteActionLink = styled(ModalActionLink) <{ $variant?: 'whatsapp'; $disabled?: boolean }>`
   ${referralInviteActionBase}
-  gap: 10px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border-color: #15803d;
   background: ${({ theme }) => theme.colors.bgBase};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 15px;
+  color: #15803d;
+  box-shadow: none;
+  white-space: normal;
 
   svg {
-    color: #16803b;
+    width: 16px;
+    height: 16px;
+    color: currentColor;
   }
 
   ${({ $variant }) => ($variant === 'whatsapp' ? whatsappActionStyles : '')}
+
+  ${({ $disabled, theme }) =>
+    $disabled
+      ? css`
+          border-color: ${theme.colors.borderDefault};
+          background: ${theme.colors.bgInset};
+          color: ${theme.colors.textMuted};
+          cursor: not-allowed;
+          pointer-events: none;
+          box-shadow: none;
+        `
+      : ''}
+
+  @media (max-width: 560px) {
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
 `;
 
 export const ModalForm = styled.form`
@@ -2797,10 +3141,6 @@ export const DocumentationGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-
-  @media (max-width: 680px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 export const DocumentationItem = styled.div`
@@ -2810,6 +3150,10 @@ export const DocumentationItem = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 12px;
   background: ${({ theme }) => theme.colors.bgElevated};
+`;
+
+export const DocumentationFullWidthItem = styled(DocumentationItem)`
+  grid-column: 1 / -1;
 `;
 
 export const DocumentationLabel = PortalMetaLabel;
@@ -2832,7 +3176,7 @@ export const DocumentationPurchaseSection = styled.section`
 
   ${DocumentationValue} {
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.45;
   }
 `;

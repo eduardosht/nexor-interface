@@ -67,7 +67,7 @@ const ACCOUNT_DELETION_APPROVED_REASON = 'account_deletion_approved';
 const JOURNEY_STEPS: JourneyStep[] = [
   {
     key: 'prerequisite',
-    title: 'Pre-requisito',
+    title: 'Pré-consulta',
     description: 'Completar a triagem inicial e liberar a continuidade da jornada.',
     icon: ClipboardCheck,
   },
@@ -86,7 +86,7 @@ const JOURNEY_STEPS: JourneyStep[] = [
   {
     key: 'purchase',
     title: 'Compra',
-    description: 'Pagamento mock confirmado apenas quando o caso está apto clinicamente.',
+    description: 'Pagamento confirmado apenas quando o caso está apto clinicamente.',
     icon: CreditCard,
   },
   {
@@ -152,7 +152,7 @@ function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneySt
     return {
       text: 'Sua jornada Biteplaner foi criada. Comece pelo cadastro inicial para liberar as próximas etapas.',
       actionTitle: 'O que fazer agora?',
-      actionText: 'Esta etapa depende de você. Preencha o cadastro inicial para avançar para o pré-requisito.',
+      actionText: 'Esta etapa depende de você. Preencha o cadastro inicial para avançar para a pré-consulta.',
       estimate: '3 minutos',
       buttonLabel: 'Iniciar cadastro',
       whyTitle: 'Por que preciso preencher o cadastro?',
@@ -164,10 +164,10 @@ function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneySt
     return {
       text: 'Você criou sua jornada com sucesso. Continue preenchendo as informações iniciais para avançar para a próxima etapa.',
       actionTitle: 'O que fazer agora?',
-      actionText: 'Esta etapa depende de você. Preencha o pré-requisito para liberar a escolha da clínica e avançar na jornada.',
+      actionText: 'Esta etapa depende de você. Preencha a pré-consulta para liberar a escolha da clínica e avançar na jornada.',
       estimate: '3 minutos',
-      buttonLabel: 'Iniciar pré-requisito',
-      whyTitle: 'Por que preciso preencher o pré-requisito?',
+      buttonLabel: 'Iniciar pré-consulta',
+      whyTitle: 'Por que preciso preencher a pré-consulta?',
       whyText: 'Essas informações são essenciais para que possamos indicar a clínica mais adequada para o seu caso.',
     };
   }
@@ -191,12 +191,29 @@ function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneySt
   }
 
   if (order.status === 'awaiting_payment') {
+    const purchaseAlreadySent =
+      Boolean(order.purchaseConfiguration) ||
+      order.paymentRequest?.status === 'pending_admin_message' ||
+      order.paymentRequest?.status === 'message_sent';
+
+    if (purchaseAlreadySent) {
+      return {
+        text: 'Em breve você receberá o link de pagamento por e-mail e celular.',
+        actionTitle: 'Ordem de compra enviada',
+        actionText: 'Em breve você receberá o link de pagamento por e-mail e celular.',
+        estimate: order.paymentRequest?.status === 'message_sent' ? 'Link enviado' : 'Aguardando link',
+        buttonLabel: null,
+        whyTitle: 'Por que preciso aguardar?',
+        whyText: 'O link é enviado manualmente pela equipe Nexor para garantir que os dados de contato, valor e configuração do pedido estejam corretos.',
+      };
+    }
+
     return {
       text: 'Seu caso foi aprovado clinicamente. Conclua a compra para liberar a próxima fase da jornada.',
       actionTitle: 'O que fazer agora?',
       actionText: 'Esta etapa depende de você. Finalize o pagamento para liberar os registros operacionais e a produção.',
       estimate: '3 minutos',
-      buttonLabel: 'Ir para compra',
+      buttonLabel: 'Confirmar compra',
       whyTitle: 'Por que o pagamento libera a jornada?',
       whyText: 'A confirmação do pagamento autoriza a continuidade operacional com dentista e laboratório licenciados.',
     };
@@ -429,11 +446,11 @@ function formatPurchaseOption(value: string) {
   const normalized = value.trim().toLowerCase();
 
   if (normalized === 'impacto') {
-    return 'Linha Impacto';
+    return 'Linha Impact';
   }
 
   if (normalized === 'esportes') {
-    return 'Linha Esportes';
+    return 'Linha Strength';
   }
 
   if (normalized === 'preto') {
@@ -1134,49 +1151,6 @@ export function Jornada() {
               description={currentStepNotice}
               testId="journey-step-notice"
             />
-          ) : null}
-          {!orderProblem && paymentDetails ? (
-            <S.PaymentConfirmationCard data-testid="journey-payment-confirmation">
-              <S.PaymentConfirmationHeader as="summary">
-                <S.PaymentConfirmationIcon aria-hidden>
-                  <CreditCard size={18} />
-                </S.PaymentConfirmationIcon>
-                <S.PaymentConfirmationCopy>
-                  <strong>Detalhes do pagamento</strong>
-                  <span>
-                    Seu pagamento foi aprovado. O próximo passo é o dentista dar o OK e enviar a produção para o
-                    laboratório licenciado.
-                  </span>
-                </S.PaymentConfirmationCopy>
-                <S.PaymentCollapseIndicator aria-hidden />
-              </S.PaymentConfirmationHeader>
-              <S.PaymentDetailsGrid>
-                <S.PaymentDetailItem>
-                  <span>Quantidade</span>
-                  <strong>{paymentDetails.quantity}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Modelo</span>
-                  <strong>{paymentDetails.model}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Cor</span>
-                  <strong>{paymentDetails.color}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Valor pago</span>
-                  <strong>{paymentDetails.amount}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Forma de pagamento</span>
-                  <strong>{paymentDetails.method}</strong>
-                </S.PaymentDetailItem>
-                <S.PaymentDetailItem>
-                  <span>Data do pagamento</span>
-                  <strong>{paymentDetails.paidAt}</strong>
-                </S.PaymentDetailItem>
-              </S.PaymentDetailsGrid>
-            </S.PaymentConfirmationCard>
           ) : null}
           {!orderProblem && paymentDetails && selectedFormsOrder.status !== 'completed' ? (
             <S.NextStepCard data-testid="journey-payment-next-step">

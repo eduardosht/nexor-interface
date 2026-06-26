@@ -69,6 +69,10 @@ export const HeroIcon = styled.span`
   background: linear-gradient(145deg, #ecfdf3 0%, #f7fff9 100%);
   color: #008d3f;
 
+  @media (max-width: 768px) {
+    display: none;
+  }
+
   @media (max-width: 560px) {
     width: 58px;
     height: 58px;
@@ -264,7 +268,7 @@ export const StepBadge = styled.span`
   color: #ffffff;
   box-shadow: inset 0 0 0 4px #ffffff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SectionTitle = styled.h2`
@@ -298,6 +302,10 @@ export const FullField = styled.div`
   grid-column: 1 / -1;
 `;
 
+export const ValidationTarget = styled.div`
+  min-width: 0;
+`;
+
 export const DocumentPurposeCard = styled.div`
   grid-column: 1 / -1;
   display: grid;
@@ -318,7 +326,7 @@ export const DocumentPurposeCard = styled.div`
 export const DocumentPurposeTitle = styled.p`
   margin: 0 0 6px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.4;
 `;
 
@@ -333,7 +341,7 @@ export const DocumentPurposeList = styled.ul`
 
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -381,7 +389,7 @@ export const ClinicSectionTitle = styled.h3`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 `;
 
@@ -418,7 +426,7 @@ export const ClinicTitle = styled.h4`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 `;
 
@@ -426,7 +434,7 @@ export const TermsLabel = styled.span`
   font-weight: 400;
 
   strong {
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -502,6 +510,6 @@ export const ActionPrivacyNote = styled.div`
 
   strong {
     color: #008d3f;
-    font-weight: 800;
+    font-weight: 700;
   }
 `;

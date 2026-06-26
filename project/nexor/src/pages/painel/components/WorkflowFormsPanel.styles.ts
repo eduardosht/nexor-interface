@@ -142,22 +142,21 @@ export const HighlightedClinicalDateField = styled.div`
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
 
   ${FieldShell} {
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
 export const RadioQuestionSlot = styled.div`
   > fieldset {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
     align-items: start;
-    justify-content: space-between;
+    justify-content: stretch;
     min-height: 44px;
-    gap: 16px;
+    gap: 7px;
   }
 
   > fieldset > legend {
-    display: contents;
     min-height: auto;
     margin: 0;
     padding: 0;
@@ -166,7 +165,8 @@ export const RadioQuestionSlot = styled.div`
   }
 
   > fieldset > div {
-    align-items: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     min-height: 44px;
   }
 
@@ -384,7 +384,7 @@ export const PendingRequiredCountBadge = styled.span`
   background: rgba(220, 38, 38, 0.1);
   color: #dc2626;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 
@@ -440,13 +440,13 @@ export const PendingRequiredItem = styled.li`
 `;
 
 export const PendingRequiredButton = styled.button`
+  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
   width: 100%;
   min-height: 58px;
-  padding: 12px 16px;
+  padding: 12px 48px 12px 16px;
   border: 1px solid rgba(203, 213, 225, 0.86);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.74);
@@ -470,10 +470,8 @@ export const PendingRequiredButton = styled.button`
   }
 
   @media (max-width: 720px) {
-    grid-template-columns: 28px minmax(0, 1fr) 24px;
-    gap: 10px;
     min-height: 50px;
-    padding: 10px 12px;
+    padding: 10px 40px 10px 12px;
   }
 `;
 
@@ -496,6 +494,22 @@ export const PendingRequiredItemNumber = styled.span`
   }
 `;
 
+export const PendingRequiredItemContent = styled.span`
+  min-width: 0;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+`;
+
+export const PendingRequiredItemHeader = styled.span`
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+`;
+
 export const PendingRequiredItemLabel = styled.span`
   min-width: 0;
   color: #111827;
@@ -511,30 +525,30 @@ export const PendingRequiredItemLabel = styled.span`
   }
 `;
 
-export const PendingRequiredItemBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 6px;
-  background: rgba(220, 38, 38, 0.1);
+export const PendingRequiredItemMessage = styled.span`
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
   color: #dc2626;
   font-size: 13px;
   font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
 
   @media (max-width: 720px) {
-    grid-column: 2;
-    justify-self: start;
-    min-height: 22px;
-    padding: 0 8px;
     font-size: 12px;
   }
 `;
 
 export const PendingRequiredItemArrow = styled.span`
+  position: absolute;
+  right: 14px;
+  top: 14px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -551,6 +565,8 @@ export const PendingRequiredItemArrow = styled.span`
   }
 
   @media (max-width: 720px) {
+    right: 10px;
+    top: 12px;
     width: 24px;
     height: 24px;
 
@@ -617,7 +633,7 @@ export const ActionPrivacyNote = styled.div`
 
   strong {
     color: #008d3f;
-    font-weight: 800;
+    font-weight: 700;
   }
 `;
 
@@ -633,7 +649,7 @@ export const OrthodonticBlockerFeedback = styled.div`
   background: rgba(254, 242, 242, 0.92);
   color: #991B1B;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.45;
 `;
 
@@ -867,7 +883,7 @@ export const OnboardingStepText = styled.span`
   gap: 2px;
   min-width: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
 
   small {
@@ -993,7 +1009,7 @@ export const SectionProgressPill = styled.div`
   background: #ffffff;
   color: #07152f;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 
   strong {
     color: #009c4a;
@@ -1030,7 +1046,7 @@ export const IntakeProgressHeader = styled.div`
 export const StepKicker = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 `;
@@ -1046,7 +1062,7 @@ export const SectionLead = styled.p`
 export const StepProgressValue = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const ProgressTrack = styled.div`
@@ -1173,7 +1189,7 @@ export const SectionHeading = styled.h4`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
 `;
 
@@ -1462,7 +1478,7 @@ export const CheckboxFieldShell = styled.fieldset`
     padding: 0;
     color: #17213a;
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.35;
   }
 
@@ -1485,7 +1501,7 @@ export const ConsentLabel = styled.span`
   font-weight: 400;
 
   strong {
-    font-weight: 800;
+    font-weight: 700;
   }
 
   @media (max-width: 720px) {

@@ -29,7 +29,7 @@ export const SectionLabel = styled.p`
 
 export const Title = styled.h2`
   font-size: clamp(2rem, 3vw, 2.5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0;
@@ -83,7 +83,7 @@ export const PillarIcon = styled.div`
   justify-content: center;
   color: ${({ theme }) => theme.colors.bgBase};
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 20px;
 `;
 
@@ -124,7 +124,7 @@ export const ApproachLabel = styled.p`
 
 export const ApproachTitle = styled.h2`
   font-size: clamp(2rem, 3vw, 2.5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: #fafafa;
   margin: 0 0 48px;
@@ -168,7 +168,7 @@ export const CtaSection = styled.section`
 
 export const CtaTitle = styled.h2`
   font-size: clamp(1.75rem, 2.5vw, 2.25rem);
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 16px;
 `;

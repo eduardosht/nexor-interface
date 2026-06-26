@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, CheckCircle2, Circle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { accountQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
@@ -46,6 +46,7 @@ export function Notificacoes() {
   const navigate = useNavigate();
   const { backendUser, session } = useAuth();
   const [page, setPage] = useState(1);
+  const [selectedNotification, setSelectedNotification] = useState<AccountNotificationResponse | null>(null);
   const ownerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
 
   const notificationsQuery = useQuery<AccountNotificationsResponse>({
@@ -96,7 +97,20 @@ export function Notificacoes() {
               const notificationAction = getNotificationAction(notification);
 
               return (
-                <S.NotificationItem key={notification.id} $unread={!notification.read}>
+                <S.NotificationItem
+                  key={notification.id}
+                  $unread={!notification.read}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Abrir notificação ${notification.title}`}
+                  onClick={() => setSelectedNotification(notification)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedNotification(notification);
+                    }
+                  }}
+                >
                   <S.NotificationIcon $unread={!notification.read}>
                     {notification.read ? <CheckCircle2 size={18} aria-hidden /> : <Circle size={18} aria-hidden />}
                   </S.NotificationIcon>
@@ -112,7 +126,8 @@ export function Notificacoes() {
                     {notificationAction ? (
                       <S.NotificationActionButton
                         type="button"
-                        onClick={() => {
+                        onClick={(event) => {
+                          event.stopPropagation();
                           void navigate(notificationAction.path);
                         }}
                       >
@@ -126,6 +141,26 @@ export function Notificacoes() {
           </S.NotificationList>
         )}
       </S.ListPanel>
+
+      {selectedNotification ? (
+        <S.ModalBackdrop>
+          <S.NotificationModal role="dialog" aria-modal="true" aria-label={selectedNotification.title}>
+            <S.ModalHeader>
+              <S.ModalTitle>{selectedNotification.title}</S.ModalTitle>
+              <S.ModalCloseButton
+                type="button"
+                aria-label="Fechar notificação"
+                title="Fechar"
+                onClick={() => setSelectedNotification(null)}
+              >
+                <X size={18} aria-hidden />
+              </S.ModalCloseButton>
+            </S.ModalHeader>
+            <S.ModalDate>{formatNotificationDate(selectedNotification.createdAt)}</S.ModalDate>
+            <S.ModalMessage>{selectedNotification.message}</S.ModalMessage>
+          </S.NotificationModal>
+        </S.ModalBackdrop>
+      ) : null}
 
       <S.Pagination aria-label="Paginação de notificações">
         <S.PageButton

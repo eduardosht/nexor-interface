@@ -1144,7 +1144,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                         : order?.status === 'awaiting_dentist_acceptance'
                           ? 'Aguardando aceite'
                           : order?.status === 'registration_started'
-                            ? 'Aguardando pré-requisito'
+                            ? 'Aguardando pré-consulta'
                             : 'Consulta vinculada'}
                     </S.ScheduleButton>
                   ) : null}

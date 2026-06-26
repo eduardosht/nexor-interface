@@ -53,16 +53,22 @@ export function orderHandlers(server: Server) {
     const rawStatus = request.queryParams.status;
     const rawLimit = request.queryParams.limit;
     const rawCreatedBefore = request.queryParams.createdBefore;
+    const rawInitDate = request.queryParams.initDate;
+    const rawFinalDate = request.queryParams.finalDate;
     const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
     const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
     const createdBefore = Array.isArray(rawCreatedBefore) ? rawCreatedBefore[0] : rawCreatedBefore;
+    const initDate = Array.isArray(rawInitDate) ? rawInitDate[0] : rawInitDate;
+    const finalDate = Array.isArray(rawFinalDate) ? rawFinalDate[0] : rawFinalDate;
     return listOrders(
       { requestHeaders: request.requestHeaders },
       mode,
       {
         status: typeof status === 'string' ? status : undefined,
         limit: typeof limitValue === 'string' ? Number(limitValue) : undefined,
-        createdBefore: typeof createdBefore === 'string' ? createdBefore : undefined
+        createdBefore: typeof createdBefore === 'string' ? createdBefore : undefined,
+        initDate: typeof initDate === 'string' ? initDate : undefined,
+        finalDate: typeof finalDate === 'string' ? finalDate : undefined
       }
     );
   }));
@@ -417,6 +423,30 @@ export function orderHandlers(server: Server) {
     );
   }));
 
+  server.post('/v1/orders/:orderId/purchase-confirmation', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const model = typeof body.model === 'string' ? body.model : 'impacto';
+    const color = typeof body.color === 'string' ? body.color : 'preto';
+    const quantity = typeof body.quantity === 'number' ? body.quantity : Number(body.quantity);
+
+    return new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(
+          request.params.orderId,
+          {
+            type: 'confirm-purchase-request',
+            model,
+            color,
+            quantity,
+          },
+          { requestHeaders: request.requestHeaders }
+        ),
+      }
+    );
+  }));
+
   server.post('/v1/orders/:orderId/payment-confirmed', withDemoErrors((_schema, request) =>
     new Response(
       200,
@@ -443,6 +473,20 @@ export function orderHandlers(server: Server) {
     )
   ));
 
+  server.post('/v1/admin/orders/:orderId/payment-message-sent', withDemoErrors((_schema, request) =>
+    new Response(
+      200,
+      {},
+      {
+        order: applyOrderAction(
+          request.params.orderId,
+          { type: 'mark-payment-message-sent' },
+          { requestHeaders: request.requestHeaders }
+        ),
+      }
+    )
+  ));
+
   server.post('/v1/orders/:orderId/production-request/draft', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 
@@ -463,12 +507,6 @@ export function orderHandlers(server: Server) {
             scan3dFileRef:
               body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
                 ? body.scan3dFileRef as Record<string, unknown>
-                : null,
-            prescriptionFileName:
-              typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
-            prescriptionFileRef:
-              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
-                ? body.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
             selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
@@ -503,12 +541,6 @@ export function orderHandlers(server: Server) {
             scan3dFileRef:
               body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
                 ? body.scan3dFileRef as Record<string, unknown>
-                : null,
-            prescriptionFileName:
-              typeof body.prescriptionFileName === 'string' ? body.prescriptionFileName : '',
-            prescriptionFileRef:
-              body.prescriptionFileRef && typeof body.prescriptionFileRef === 'object'
-                ? body.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
             selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
@@ -546,12 +578,6 @@ export function orderHandlers(server: Server) {
             scan3dFileRef:
               payload.scan3dFileRef && typeof payload.scan3dFileRef === 'object'
                 ? payload.scan3dFileRef as Record<string, unknown>
-                : null,
-            prescriptionFileName:
-              typeof payload.prescriptionFileName === 'string' ? payload.prescriptionFileName : '',
-            prescriptionFileRef:
-              payload.prescriptionFileRef && typeof payload.prescriptionFileRef === 'object'
-                ? payload.prescriptionFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: payload.lgpdConfirmed === true,
             selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null,

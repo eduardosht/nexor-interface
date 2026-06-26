@@ -75,5 +75,5 @@ const Page = styled.span`
   border-radius: 8px;
   color: #15803d;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;

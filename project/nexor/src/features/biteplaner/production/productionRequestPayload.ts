@@ -70,8 +70,6 @@ export function mapProductionRequestPayload(payload: Record<string, unknown>): P
     labNotes: getProductionPayloadString(payload, 'labNotes'),
     scan3dFileName: getProductionPayloadString(payload, 'scan3dFileName'),
     scan3dFileRef: getProductionPayloadFileRef(payload, 'scan3dFileRef'),
-    prescriptionFileName: getProductionPayloadString(payload, 'prescriptionFileName'),
-    prescriptionFileRef: getProductionPayloadFileRef(payload, 'prescriptionFileRef'),
     lgpdConfirmed: getProductionPayloadBoolean(payload, 'lgpdConfirmed'),
     selectedLabId: typeof selectedLabId === 'string' && selectedLabId.trim() ? selectedLabId : null,
     purchaseConfiguration: getProductionPayloadPurchaseConfiguration(payload),

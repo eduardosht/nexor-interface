@@ -15,7 +15,7 @@ const captures = [
   { persona: 'athleteRegistered', route: '/cadastro?invite=bp-partner-demo-001', file: '05-cliente-cadastro-conta-convite.png' },
   { persona: 'athleteRegistered', route: '/painel/biteplaner/onboarding', file: '07-cliente-onboarding-lgpd-bloqueio.png' },
   { persona: 'athlete', route: '/painel/biteplaner/onboarding', file: '08-cliente-onboarding-formulario.png' },
-  { persona: 'athletePrerequisite', route: '/painel/pre-requisito', file: '09-cliente-pre-requisito.png' },
+  { persona: 'athletePrerequisite', route: '/painel/pre-consulta', file: '09-cliente-pre-consulta.png' },
   { persona: 'athleteScheduling', route: '/painel/consulta-inicial', file: '10-cliente-selecao-clinica.png' },
   { persona: 'athletePreConsultation', route: '/painel/biteplaner/jornada', file: '11-cliente-pre-consulta-clinica.png' },
   { persona: 'athletePayment', route: '/painel/compra', file: '12-cliente-compra-biteplanner.png' },

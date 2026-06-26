@@ -1151,7 +1151,7 @@ export const MobileComparisonLegendItem = styled.div<{ $highlighted?: boolean }>
     font-family: ${({ theme }) => theme.fonts.display};
     font-size: clamp(11px, 2vw, 13px);
     line-height: 1.18;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
   }
@@ -1203,7 +1203,7 @@ export const MobileComparisonCriterion = styled.div`
     color: #07101d;
     font-size: clamp(17px, 2.7vw, 20px);
     line-height: 1.2;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: 0;
   }
 

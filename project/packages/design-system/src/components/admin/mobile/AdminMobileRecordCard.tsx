@@ -95,7 +95,7 @@ export const AdminMobileCardTitle = styled.strong`
   min-width: 0;
   color: ${({ theme }) => adminColor(theme, 'textPrimary', 'text', '#171717')};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   overflow-wrap: anywhere;
 `;
@@ -130,7 +130,7 @@ export const AdminMobileMetaItem = styled.div`
 export const AdminMobileMetaLabel = styled.dt`
   color: ${({ theme }) => adminColor(theme, 'textSecondary', 'textMuted', '#525252')};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   text-transform: uppercase;
 `;

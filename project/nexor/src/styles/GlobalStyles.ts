@@ -55,11 +55,6 @@ export const GlobalStyles = createGlobalStyle`
     outline-offset: 0;
   }
 
-  button,
-  button * {
-    font-weight: 400 !important;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;

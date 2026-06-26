@@ -22,7 +22,7 @@ export const HeroLabel = styled.p`
 
 export const HeroTitle = styled.h1`
   font-size: clamp(2.5rem, 5vw, 4rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -69,7 +69,7 @@ export const TrackLabel = styled.p`
 
 export const TrackTitle = styled.h2`
   font-size: clamp(1.75rem, 2.5vw, 2.25rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.textPrimary};
   margin: 0 0 16px;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu, CreditCard } from 'lucide-react';
 import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
@@ -164,6 +164,7 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/pagamentos', label: 'Pagamentos', Icon: CreditCard },
   { to: '/painel/admin/remocoes-conta', label: 'Remoções', Icon: ShieldCheck },
   { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
   { to: '/painel/admin/parceiros', label: 'Parceiros', Icon: Handshake },
@@ -177,6 +178,7 @@ const ADMIN_NAV_ITEMS = [
 const ADMIN_OVERVIEW_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => item.to === '/painel/admin/home');
 const ADMIN_BITEPLANER_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
   item.to === '/painel/admin/ordens' ||
+  item.to === '/painel/admin/pagamentos' ||
   item.to === '/painel/admin/remocoes-conta' ||
   item.to === '/painel/admin/checkups/emails' ||
   item.to === '/painel/admin/relatorios' ||
@@ -189,14 +191,6 @@ const ADMIN_SYSTEM_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
   item.to === '/painel/admin/configuracoes/negocio' ||
   item.to === '/painel/admin/configuracoes/sistema'
 ));
-
-const ADMIN_MOBILE_PRIMARY_NAV_ITEMS = [
-  { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
-  { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
-  { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
-  { to: '/painel/admin/usuarios', label: 'Usuários', Icon: UserRound },
-  { to: '/painel/admin/configuracoes/negocio', label: 'Configurações', Icon: Settings2 },
-];
 
 type BiteplanerMenuMode = 'customer' | 'partner' | 'dentist' | 'lab';
 
@@ -297,9 +291,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const isDentistBiteplanerMode = biteplanerMode === 'dentist';
   const isLabBiteplanerMode = biteplanerMode === 'lab';
   const isCustomerBiteplanerMode = biteplanerMode === 'customer';
-  const isLicensingBiteplanerMode = isDentistBiteplanerMode || isLabBiteplanerMode;
   const showEvaluationsSubmenu = isPartnerBiteplanerMode || isDentistBiteplanerMode || isLabBiteplanerMode;
-  const showBiteplanerMvpMenus = import.meta.env.VITE_MOCK === 'true';
   const isAdmin = hasAdministrativeRole(backendUser?.roles);
   const showBiteplanerProductMenu = canSeeBiteplanerProductMenu(backendUser);
   const showCustomerOrderSubmenu = hasStartedBiteplanerCustomerOrder(backendUser);
@@ -334,7 +326,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
     [notifications]
   );
   const visibleNotifications = notificationsFilter === 'unread' ? unreadNotifications : notifications.slice(0, 10);
-  const hasUnreadNotifications = notifications.some((notification) => !notification.read);
+  const hasUnreadNotifications = unreadNotifications.length > 0;
   const markNotificationRead = useMutation({
     mutationFn: (notification: MockNotification) =>
       api.patch<{ notification: AccountNotificationResponse }>(
@@ -576,6 +568,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 <S.MobileDrawerLink key={to} to={to} onClick={() => setMobileAdminMenuOpen(false)}>
                   <Icon size={17} aria-hidden />
                   {label}
+                  {to === '/painel/notificacoes' && hasUnreadNotifications ? (
+                    <S.MobileDrawerUnreadDot data-testid="mobile-nav-unread-dot" aria-hidden="true" />
+                  ) : null}
                 </S.MobileDrawerLink>
               ))}
             </S.MobileDrawerNav>
@@ -616,6 +611,9 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                 >
                   <Icon size={16} />
                   <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
+                  {to === '/painel/notificacoes' && hasUnreadNotifications ? (
+                    <S.NavUnreadDot data-testid="nav-unread-dot" aria-hidden="true" />
+                  ) : null}
                 </S.StyledNavLink>
               ))}
 
@@ -645,17 +643,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <Home size={13} />
                     Home
                   </S.SubNavLink>
-                  {isLicensingBiteplanerMode && showBiteplanerMvpMenus ? (
-                    <S.SubNavLink
-                      to={`/painel/biteplaner/licenciamento${biteplanerModeQuery}`}
-                      $collapsed={collapsed}
-                      title={collapsed ? 'Licenciamento' : undefined}
-                    >
-                      {isLabBiteplanerMode ? <FlaskConical size={13} /> : <Stethoscope size={13} />}
-                      <S.SubNavText>Licenciamento</S.SubNavText>
-                      <S.MvpBadge>MVP1</S.MvpBadge>
-                    </S.SubNavLink>
-                  ) : isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
+                  {isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
                     <S.SubNavLink
                       to="/painel/biteplaner/jornada"
                       $collapsed={collapsed}
@@ -902,16 +890,6 @@ export function PortalLayout({ children }: { children: ReactNode }) {
             {children}
           </S.ContentInner>
         </S.ContentScroll>
-        {isAdmin ? (
-          <S.MobileBottomNav aria-label="Navegação principal mobile">
-            {ADMIN_MOBILE_PRIMARY_NAV_ITEMS.map(({ to, label, Icon }) => (
-              <S.MobileBottomNavLink key={to} to={to}>
-                <Icon size={18} aria-hidden />
-                <span>{label}</span>
-              </S.MobileBottomNavLink>
-            ))}
-          </S.MobileBottomNav>
-        ) : null}
       </S.ContentArea>
     </S.Shell>
   );

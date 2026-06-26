@@ -175,6 +175,99 @@ describe('MinhaConta', () => {
     expect(mockApiGet).toHaveBeenCalledWith('/v1/account/communication-preferences', 'tok');
   });
 
+  it('shows LGPD rights shortcuts and exports account privacy data', async () => {
+    const createObjectURL = vi.fn(() => 'blob:nexor-export');
+    const revokeObjectURL = vi.fn();
+    const click = vi.fn();
+    const appendChild = vi.spyOn(document.body, 'appendChild');
+
+    vi.stubGlobal('URL', {
+      createObjectURL,
+      revokeObjectURL,
+    });
+    vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+      const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLAnchorElement;
+      if (tagName === 'a') {
+        element.click = click;
+      }
+      return element;
+    });
+    mockApiGet
+      .mockResolvedValueOnce({
+        user: {
+          email: 'joao@nexor.dev',
+          fullName: 'Joao Silva',
+          roles: ['user'],
+        },
+      })
+      .mockResolvedValueOnce({ productRoles: [] })
+      .mockResolvedValueOnce({ deletionRequest: null })
+      .mockResolvedValueOnce({
+        preferences: {
+          profileId: 'profile-1',
+          systemFlowEmailEnabled: true,
+          updatedAt: '2026-06-20T12:00:00.000Z',
+        },
+      })
+      .mockResolvedValueOnce({
+        latestAccountConsents: {
+          marketing: true,
+          privacy: true,
+          terms: true,
+        },
+        latestCookieConsent: {
+          version: 1,
+          necessary: true,
+          preferences: true,
+          analytics: false,
+          acceptedAt: '2026-06-20T12:00:00.000Z',
+        },
+      })
+      .mockResolvedValueOnce({
+        exportedAt: '2026-06-25T12:00:00.000Z',
+        profile: { email: 'joao@nexor.dev' },
+      });
+    mockApiPost.mockResolvedValueOnce({
+      revoked: [
+        {
+          id: 'revocation-1',
+          type: 'marketing',
+          accepted: false,
+          acceptedAt: '2026-06-25T12:10:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: /privacidade e lgpd/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /política de privacidade/i })).toHaveAttribute('href', '/privacidade');
+    expect(screen.getByRole('link', { name: /política de cookies/i })).toHaveAttribute('href', '/cookies');
+    expect(screen.getByRole('link', { name: /falar com o canal lgpd/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('mailto:contato@nexoradvance.com.br')
+    );
+    expect(await screen.findByText(/marketing ativo/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /revogar marketing/i }));
+
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith('/v1/account/consents/revoke', { types: ['marketing'] }, 'tok');
+    });
+    expect(await screen.findByRole('status')).toHaveTextContent(/marketing revogado/i);
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar meus dados/i }));
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalledWith('/v1/account/privacy-export', 'tok');
+    });
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(appendChild).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:nexor-export');
+    expect(await screen.findByRole('status')).toHaveTextContent(/exportação gerada/i);
+  });
+
   it('asks for confirmation before disabling system flow emails', async () => {
     mockApiGet
       .mockResolvedValueOnce({
@@ -274,6 +367,8 @@ describe('MinhaConta', () => {
     expect(await screen.findByText('Clínica Edu')).toBeInTheDocument();
     expect(screen.getByText('529.982.247-25')).toBeInTheDocument();
     expect(screen.getByText('19.131.243/0001-97')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar cpf/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /editar cnpj/i })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('Clínica Edu')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /editar nome da clínica/i }));

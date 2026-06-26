@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { Building2, ChevronRight, ClipboardPlus, Info, ShieldCheck, UserRoundCheck } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -13,6 +13,10 @@ import {
 } from '@nexor/design-system';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
+import {
+  FormValidations,
+  type FormValidationItem,
+} from '../components/FormValidations';
 import * as S from './styles';
 
 type RouteRole = 'parceiro' | 'dentista' | 'laboratório';
@@ -234,6 +238,15 @@ const getProfessionalSummaryHint = (value: string | undefined) => {
   return `Mínimo de ${PROFESSIONAL_SUMMARY_MIN_LENGTH} caracteres.`;
 };
 
+function createValidationItem(key: string, label: string, message?: string): FormValidationItem {
+  return {
+    key,
+    label,
+    sectionIndex: -1,
+    message,
+  };
+}
+
 const isValidCnpj = (value: string) => {
   const digits = onlyDigits(value);
   if (digits.length !== 14 || /^(\d)\1+$/.test(digits)) return false;
@@ -301,6 +314,7 @@ export function CadastroPerfilBiteplaner() {
   const { session } = useAuth();
   const token = session?.access_token;
   const config = ROLE_CONFIG[role as RouteRole];
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [values, setValues] = useState<Values>({});
   const [clinics, setClinics] = useState<ClinicValues[]>(() => [createEmptyClinic()]);
   const [consents, setConsents] = useState(CONSENT_DEFAULTS);
@@ -453,6 +467,13 @@ export function CadastroPerfilBiteplaner() {
     return false;
   }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerServiceLocations.length, partnerType, values]);
 
+  const missingRequiredFields = getMissingRequiredFields();
+  const invalidValidationFields = missingRequiredFields.length === 0 ? getInvalidValidationFields() : [];
+  const blockingValidationFields =
+    missingRequiredFields.length > 0 ? missingRequiredFields : invalidValidationFields;
+  const blockingValidationFieldsAreInvalid =
+    missingRequiredFields.length === 0 && invalidValidationFields.length > 0;
+
   if (!config) {
     return <Navigate to="/painel/home" replace />;
   }
@@ -602,6 +623,153 @@ export function CadastroPerfilBiteplaner() {
     };
   }
 
+  function getMissingRequiredFields() {
+    if (!config) {
+      return [];
+    }
+
+    const items: FormValidationItem[] = [];
+    const addIfMissing = (condition: boolean, key: string, label: string) => {
+      if (condition) {
+        items.push(createValidationItem(key, label));
+      }
+    };
+
+    if (config.apiRole === 'partner') {
+      const academyLocation = clinics[0];
+
+      addIfMissing(!values.name?.trim(), 'name', 'Nome da empresa ou parceiro');
+      addIfMissing(!values.documentNumber?.trim(), 'documentNumber', 'CNPJ');
+      addIfMissing(!partnerType, 'partnerType', 'Tipo de parceiro');
+
+      if (partnerType === 'academy') {
+        addIfMissing(!academyLocation?.cep.trim(), 'academyCep', 'CEP');
+        addIfMissing(!academyLocation?.city.trim(), 'academyCity', 'Cidade');
+        addIfMissing(!academyLocation?.state.trim(), 'academyState', 'Estado');
+        addIfMissing(!academyLocation?.address.trim(), 'academyAddress', 'Endereço');
+      }
+
+      if (partnerType === 'coach_personal') {
+        addIfMissing(partnerServiceLocations.length === 0, 'serviceLocations', 'Locais de atuação');
+      }
+    }
+
+    if (config.apiRole === 'dentist') {
+      clinics.forEach((clinic, index) => {
+        const clinicSuffix = clinics.length > 1 ? ` ${index + 1}` : '';
+
+        addIfMissing(!values.fullName?.trim(), 'fullName', 'Nome profissional');
+        addIfMissing(!values.croNumber?.trim(), 'croNumber', 'CRO');
+        addIfMissing(!values.cnpj?.trim(), 'cnpj', 'CNPJ');
+        addIfMissing(!values.cpf?.trim(), 'cpf', 'CPF');
+        addIfMissing(!values.professionalSummary?.trim(), 'professionalSummary', 'Resumo profissional');
+        addIfMissing(!clinic.name.trim(), `clinicName:${clinic.id}`, `Nome da clínica${clinicSuffix}`);
+        addIfMissing(!clinic.cep.trim(), `clinicCep:${clinic.id}`, `CEP da clínica${clinicSuffix}`);
+        addIfMissing(!clinic.city.trim(), `clinicCity:${clinic.id}`, `Cidade da clínica${clinicSuffix}`);
+        addIfMissing(!clinic.state.trim(), `clinicState:${clinic.id}`, `Estado da clínica${clinicSuffix}`);
+        addIfMissing(!clinic.address.trim(), `clinicAddress:${clinic.id}`, `Endereço da clínica${clinicSuffix}`);
+        addIfMissing(
+          !clinic.serviceHours.trim(),
+          `clinicServiceHours:${clinic.id}`,
+          `Dia e horário de atendimento da clínica${clinicSuffix}`
+        );
+        addIfMissing(!clinic.phone.trim(), `clinicPhone:${clinic.id}`, `Telefone da clínica${clinicSuffix}`);
+        addIfMissing(
+          clinic.isAdapted !== 'yes' && clinic.isAdapted !== 'no',
+          `clinicAdapted:${clinic.id}`,
+          `Clínica adaptada${clinicSuffix}`
+        );
+      });
+    }
+
+    if (config.apiRole === 'lab') {
+      clinics.slice(0, 1).forEach((clinic) => {
+        addIfMissing(!values.labName?.trim(), 'labName', 'Nome do laboratório');
+        addIfMissing(!values.cnpj?.trim(), 'cnpj', 'CNPJ');
+        addIfMissing(!values.cpf?.trim(), 'cpf', 'CPF');
+        addIfMissing(!values.professionalSummary?.trim(), 'professionalSummary', 'Resumo operacional');
+        addIfMissing(!clinic.name.trim(), `clinicName:${clinic.id}`, 'Nome do local');
+        addIfMissing(!clinic.cep.trim(), `clinicCep:${clinic.id}`, 'CEP do local');
+        addIfMissing(!clinic.city.trim(), `clinicCity:${clinic.id}`, 'Cidade do local');
+        addIfMissing(!clinic.state.trim(), `clinicState:${clinic.id}`, 'Estado do local');
+        addIfMissing(!clinic.address.trim(), `clinicAddress:${clinic.id}`, 'Endereço do local');
+        addIfMissing(!clinic.serviceHours.trim(), `clinicServiceHours:${clinic.id}`, 'Dia e horário de operação');
+        addIfMissing(!clinic.phone.trim(), `clinicPhone:${clinic.id}`, 'Telefone do local');
+      });
+    }
+
+    addIfMissing(!consents.operationalTerms, 'operationalTerms', 'Aceite dos termos de cadastro operacional');
+    addIfMissing(!consents.privacyPolicy, 'privacyPolicy', 'Aceite da política de privacidade');
+
+    return items;
+  }
+
+  function getInvalidValidationFields() {
+    if (!config) {
+      return [];
+    }
+
+    const items: FormValidationItem[] = [];
+    const addIfInvalid = (condition: boolean, key: string, label: string, message: string) => {
+      if (condition) {
+        items.push(createValidationItem(key, label, message));
+      }
+    };
+
+    const cnpjValue = config.apiRole === 'partner' ? values.documentNumber : values.cnpj;
+    const cnpjKey = config.apiRole === 'partner' ? 'documentNumber' : 'cnpj';
+    addIfInvalid(Boolean(cnpjValue?.trim()) && !isValidCnpj(cnpjValue ?? ''), cnpjKey, 'CNPJ', 'Informe um CNPJ válido.');
+
+    if (config.apiRole === 'dentist') {
+      addIfInvalid(Boolean(values.croNumber?.trim()) && !isValidCro(values.croNumber ?? ''), 'croNumber', 'CRO', 'Informe um CRO válido no formato CRO-UF 00000.');
+    }
+
+    if (config.apiRole === 'dentist' || config.apiRole === 'lab') {
+      const summaryLabel = config.apiRole === 'lab' ? 'Resumo operacional' : 'Resumo profissional';
+      addIfInvalid(Boolean(values.cpf?.trim()) && !isValidCpf(values.cpf ?? ''), 'cpf', 'CPF', 'Informe um CPF válido.');
+      addIfInvalid(
+        Boolean(values.professionalSummary?.trim()) && !isValidProfessionalSummary(values.professionalSummary),
+        'professionalSummary',
+        summaryLabel,
+        getProfessionalSummaryError(values.professionalSummary, config.apiRole === 'lab' ? 'operacional' : 'profissional') ?? ''
+      );
+    }
+
+    clinics.forEach((clinic) => {
+      const cepError = cepLookupErrors[clinic.id];
+      if (cepError) {
+        items.push(createValidationItem(`clinicCep:${clinic.id}`, config.apiRole === 'lab' ? 'CEP do local' : 'CEP da clínica', cepError));
+      }
+    });
+
+    return items;
+  }
+
+  function handleFormValidationItemClick(item: FormValidationItem) {
+    window.setTimeout(() => {
+      const targets = formRef.current?.querySelectorAll<HTMLElement>('[data-form-validation-key]');
+      const target = Array.from(targets ?? []).find(
+        (element) => element.dataset.formValidationKey === item.key
+      );
+
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      const focusTarget = target.matches(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+        ? target
+        : target.querySelector<HTMLElement>(
+          'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+
+      focusTarget?.focus({ preventScroll: true });
+    }, 80);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -691,7 +859,7 @@ export function CadastroPerfilBiteplaner() {
           </SnackbarStack>
         ) : null}
 
-        <S.Form onSubmit={handleSubmit}>
+        <S.Form ref={formRef} onSubmit={handleSubmit}>
           <S.Section>
             <S.SectionHeader>
               <S.StepBadge>1</S.StepBadge>
@@ -735,35 +903,39 @@ export function CadastroPerfilBiteplaner() {
                     label="Nome da empresa ou parceiro"
                     value={values.name ?? ''}
                     required
+                    data-form-validation-key="name"
                     onChange={updateField('name')}
                   />
                   <Field
                     label="CNPJ"
                     value={values.documentNumber ?? ''}
                     required
+                    data-form-validation-key="documentNumber"
                     inputMode="numeric"
                     maxLength={18}
-                    hint={
+                    error={
                       values.documentNumber &&
                         !isValidCnpj(values.documentNumber)
                         ? 'Informe um CNPJ válido.'
-                        : undefined
+                        : ''
                     }
                     onChange={updateMaskedField('documentNumber', formatCnpj)}
                   />
                   <S.FullField>
-                    <RadioQuestionGroup
-                      name="partner-type"
-                      label="Tipo de parceiro"
-                      value={partnerType ?? ''}
-                      required
-                      inline
-                      options={PARTNER_TYPE_OPTIONS}
-                      onChange={(value) => {
-                        const nextType: PartnerType = value === 'academy' ? 'academy' : 'coach_personal';
-                        setValues((current) => ({ ...current, partnerType: nextType }));
-                      }}
-                    />
+                    <S.ValidationTarget data-form-validation-key="partnerType">
+                      <RadioQuestionGroup
+                        name="partner-type"
+                        label="Tipo de parceiro"
+                        value={partnerType ?? ''}
+                        required
+                        inline
+                        options={PARTNER_TYPE_OPTIONS}
+                        onChange={(value) => {
+                          const nextType: PartnerType = value === 'academy' ? 'academy' : 'coach_personal';
+                          setValues((current) => ({ ...current, partnerType: nextType }));
+                        }}
+                      />
+                    </S.ValidationTarget>
                   </S.FullField>
                   {partnerType === 'academy' ? (
                     <S.FullField>
@@ -783,12 +955,11 @@ export function CadastroPerfilBiteplaner() {
                                 label="CEP"
                                 value={clinic.cep}
                                 required
+                                data-form-validation-key="academyCep"
                                 inputMode="numeric"
                                 maxLength={9}
-                                hint={
-                                  cepLookupErrors[clinic.id] ||
-                                  'Preenchemos cidade, estado e endereço automaticamente.'
-                                }
+                                error={cepLookupErrors[clinic.id]}
+                                hint="Preenchemos cidade, estado e endereço automaticamente."
                                 onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
                                 onBlur={() => lookupClinicCep(clinic.id)}
                               />
@@ -796,26 +967,31 @@ export function CadastroPerfilBiteplaner() {
                                 label="Cidade"
                                 value={clinic.city}
                                 required
+                                data-form-validation-key="academyCity"
                                 onChange={updateClinicField(clinic.id, 'city')}
                               />
-                              <Select
-                                label="Estado"
-                                value={clinic.state}
-                                placeholder="Selecione um estado"
-                                onChange={(value) => {
-                                  setClinics((current) =>
-                                    current.map((item) =>
-                                      item.id === clinic.id ? { ...item, state: value } : item
-                                    )
-                                  );
-                                }}
-                                options={BRAZILIAN_STATE_OPTIONS}
-                              />
+                              <S.ValidationTarget data-form-validation-key="academyState">
+                                <Select
+                                  label="Estado"
+                                  value={clinic.state}
+                                  required
+                                  placeholder="Selecione um estado"
+                                  onChange={(value) => {
+                                    setClinics((current) =>
+                                      current.map((item) =>
+                                        item.id === clinic.id ? { ...item, state: value } : item
+                                      )
+                                    );
+                                  }}
+                                  options={BRAZILIAN_STATE_OPTIONS}
+                                />
+                              </S.ValidationTarget>
                               <S.FullField>
                                 <Field
                                   label="Endereço"
                                   value={clinic.address}
                                   required
+                                  data-form-validation-key="academyAddress"
                                   onChange={updateClinicField(clinic.id, 'address')}
                                 />
                               </S.FullField>
@@ -833,18 +1009,20 @@ export function CadastroPerfilBiteplaner() {
                   ) : null}
                   {partnerType === 'coach_personal' ? (
                     <S.FullField>
-                      <TagAutocompleteField
-                        label="Locais de atuação"
-                        value={partnerServiceLocations}
-                        required
-                        options={PARTNER_SERVICE_LOCATION_OPTIONS}
-                        allowCustomValue
-                        placeholder="Digite ou selecione um local"
-                        hint="Use Enter para adicionar uma opção personalizada."
-                        onChange={(nextValue) => {
-                          setValues((current) => ({ ...current, serviceLocations: nextValue.join('|') }));
-                        }}
-                      />
+                      <S.ValidationTarget data-form-validation-key="serviceLocations">
+                        <TagAutocompleteField
+                          label="Locais de atuação"
+                          value={partnerServiceLocations}
+                          required
+                          options={PARTNER_SERVICE_LOCATION_OPTIONS}
+                          allowCustomValue
+                          placeholder="Digite ou selecione um local"
+                          hint="Use Enter para adicionar uma opção personalizada."
+                          onChange={(nextValue) => {
+                            setValues((current) => ({ ...current, serviceLocations: nextValue.join('|') }));
+                          }}
+                        />
+                      </S.ValidationTarget>
                     </S.FullField>
                   ) : null}
                 </>
@@ -856,37 +1034,42 @@ export function CadastroPerfilBiteplaner() {
                     label="Nome profissional"
                     value={values.fullName ?? ''}
                     required
+                    data-form-validation-key="fullName"
                     onChange={updateField('fullName')}
                   />
                   <Field
                     label="CRO"
                     value={values.croNumber ?? ''}
                     required
+                    data-form-validation-key="croNumber"
                     inputMode="text"
                     maxLength={13}
-                    hint={
+                    error={
                       values.croNumber && !isValidCro(values.croNumber)
                         ? 'Informe um CRO válido no formato CRO-UF 00000.'
-                        : 'Formato: CRO-SP 12345.'
+                        : ''
                     }
+                    hint={values.croNumber && !isValidCro(values.croNumber) ? undefined : 'Formato: CRO-SP 12345.'}
                     onChange={updateMaskedField('croNumber', formatCro)}
                   />
                   <Field
                     label="CNPJ"
                     value={values.cnpj ?? ''}
                     required
+                    data-form-validation-key="cnpj"
                     inputMode="numeric"
                     maxLength={18}
-                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : undefined}
+                    error={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : ''}
                     onChange={updateMaskedField('cnpj', formatCnpj)}
                   />
                   <Field
                     label="CPF"
                     value={values.cpf ?? ''}
                     required
+                    data-form-validation-key="cpf"
                     inputMode="numeric"
                     maxLength={14}
-                    hint={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : undefined}
+                    error={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : ''}
                     onChange={updateMaskedField('cpf', formatCpf)}
                   />
                   <S.DocumentPurposeCard>
@@ -905,6 +1088,7 @@ export function CadastroPerfilBiteplaner() {
                       label="Resumo profissional"
                       value={values.professionalSummary ?? ''}
                       required
+                      data-form-validation-key="professionalSummary"
                       error={getProfessionalSummaryError(values.professionalSummary, 'profissional')}
                       hint={getProfessionalSummaryHint(values.professionalSummary)}
                       onChange={updateField('professionalSummary')}
@@ -931,18 +1115,18 @@ export function CadastroPerfilBiteplaner() {
                                 label="Nome da clínica"
                                 value={clinic.name}
                                 required
+                                data-form-validation-key={`clinicName:${clinic.id}`}
                                 onChange={updateClinicField(clinic.id, 'name')}
                               />
                               <Field
                                 label="CEP da clínica"
                                 value={clinic.cep}
                                 required
+                                data-form-validation-key={`clinicCep:${clinic.id}`}
                                 inputMode="numeric"
                                 maxLength={9}
-                                hint={
-                                  cepLookupErrors[clinic.id] ||
-                                  'Preenchemos cidade, estado, endereço e mapa automaticamente.'
-                                }
+                                error={cepLookupErrors[clinic.id]}
+                                hint="Preenchemos cidade, estado, endereço e mapa automaticamente."
                                 onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
                                 onBlur={() => lookupClinicCep(clinic.id)}
                               />
@@ -950,26 +1134,31 @@ export function CadastroPerfilBiteplaner() {
                                 label="Cidade da clínica"
                                 value={clinic.city}
                                 required
+                                data-form-validation-key={`clinicCity:${clinic.id}`}
                                 onChange={updateClinicField(clinic.id, 'city')}
                               />
-                              <Select
-                                label="Estado da clínica"
-                                value={clinic.state}
-                                placeholder="Selecione um estado"
-                                onChange={(value) => {
-                                  setClinics((current) =>
-                                    current.map((item) =>
-                                      item.id === clinic.id ? { ...item, state: value } : item
-                                    )
-                                  );
-                                }}
-                                options={BRAZILIAN_STATE_OPTIONS}
-                              />
+                              <S.ValidationTarget data-form-validation-key={`clinicState:${clinic.id}`}>
+                                <Select
+                                  label="Estado da clínica"
+                                  value={clinic.state}
+                                  required
+                                  placeholder="Selecione um estado"
+                                  onChange={(value) => {
+                                    setClinics((current) =>
+                                      current.map((item) =>
+                                        item.id === clinic.id ? { ...item, state: value } : item
+                                      )
+                                    );
+                                  }}
+                                  options={BRAZILIAN_STATE_OPTIONS}
+                                />
+                              </S.ValidationTarget>
                               <S.FullField>
                                 <Field
                                   label="Endereço da clínica"
                                   value={clinic.address}
                                   required
+                                  data-form-validation-key={`clinicAddress:${clinic.id}`}
                                   hint="Use o endereço completo que será usado para posicionar a clínica no mapa."
                                   onChange={updateClinicField(clinic.id, 'address')}
                                 />
@@ -984,6 +1173,7 @@ export function CadastroPerfilBiteplaner() {
                                 label="Dia e horário de atendimento da clínica"
                                 value={clinic.serviceHours}
                                 required
+                                data-form-validation-key={`clinicServiceHours:${clinic.id}`}
                                 hint="Ex: Segunda a Sexta - 9h as 18h"
                                 onChange={updateClinicField(clinic.id, 'serviceHours')}
                               />
@@ -991,32 +1181,35 @@ export function CadastroPerfilBiteplaner() {
                                 label="Telefone da clínica"
                                 value={clinic.phone}
                                 required
+                                data-form-validation-key={`clinicPhone:${clinic.id}`}
                                 inputMode="tel"
                                 maxLength={15}
                                 onChange={updateClinicMaskedField(clinic.id, 'phone', formatPhone)}
                               />
                               <S.FullField>
-                                <RadioQuestionGroup
-                                  name={`clinic-adapted-${clinic.id}`}
-                                  label="Clínica adaptada?"
-                                  value={clinic.isAdapted}
-                                  required
-                                  inline
-                                  hint="Essa informação ajuda a orientar clientes que precisam de atendimento em clínica adaptada."
-                                  options={[
-                                    { value: 'yes', label: 'Sim' },
-                                    { value: 'no', label: 'Não' },
-                                  ]}
-                                  onChange={(value) => {
-                                    setClinics((current) =>
-                                      current.map((item) =>
-                                        item.id === clinic.id
-                                          ? { ...item, isAdapted: value === 'yes' ? 'yes' : 'no' }
-                                          : item
-                                      )
-                                    );
-                                  }}
-                                />
+                                <S.ValidationTarget data-form-validation-key={`clinicAdapted:${clinic.id}`}>
+                                  <RadioQuestionGroup
+                                    name={`clinic-adapted-${clinic.id}`}
+                                    label="Clínica adaptada?"
+                                    value={clinic.isAdapted}
+                                    required
+                                    inline
+                                    hint="Essa informação ajuda a orientar clientes que precisam de atendimento em clínica adaptada."
+                                    options={[
+                                      { value: 'yes', label: 'Sim' },
+                                      { value: 'no', label: 'Não' },
+                                    ]}
+                                    onChange={(value) => {
+                                      setClinics((current) =>
+                                        current.map((item) =>
+                                          item.id === clinic.id
+                                            ? { ...item, isAdapted: value === 'yes' ? 'yes' : 'no' }
+                                            : item
+                                        )
+                                      );
+                                    }}
+                                  />
+                                </S.ValidationTarget>
                               </S.FullField>
                             </S.FieldsGrid>
                           </S.ClinicCard>
@@ -1033,24 +1226,27 @@ export function CadastroPerfilBiteplaner() {
                     label="Nome do laboratório"
                     value={values.labName ?? ''}
                     required
+                    data-form-validation-key="labName"
                     onChange={updateField('labName')}
                   />
                   <Field
                     label="CNPJ"
                     value={values.cnpj ?? ''}
                     required
+                    data-form-validation-key="cnpj"
                     inputMode="numeric"
                     maxLength={18}
-                    hint={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : undefined}
+                    error={values.cnpj && !isValidCnpj(values.cnpj) ? 'Informe um CNPJ válido.' : ''}
                     onChange={updateMaskedField('cnpj', formatCnpj)}
                   />
                   <Field
                     label="CPF"
                     value={values.cpf ?? ''}
                     required
+                    data-form-validation-key="cpf"
                     inputMode="numeric"
                     maxLength={14}
-                    hint={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : undefined}
+                    error={values.cpf && !isValidCpf(values.cpf) ? 'Informe um CPF válido.' : ''}
                     onChange={updateMaskedField('cpf', formatCpf)}
                   />
                   <S.DocumentPurposeCard>
@@ -1069,6 +1265,7 @@ export function CadastroPerfilBiteplaner() {
                       label="Resumo operacional"
                       value={values.professionalSummary ?? ''}
                       required
+                      data-form-validation-key="professionalSummary"
                       error={getProfessionalSummaryError(values.professionalSummary, 'operacional')}
                       hint={getProfessionalSummaryHint(values.professionalSummary)}
                       onChange={updateField('professionalSummary')}
@@ -1091,18 +1288,18 @@ export function CadastroPerfilBiteplaner() {
                               label="Nome do local"
                               value={clinic.name}
                               required
+                              data-form-validation-key={`clinicName:${clinic.id}`}
                               onChange={updateClinicField(clinic.id, 'name')}
                             />
                             <Field
                               label="CEP do local"
                               value={clinic.cep}
                               required
+                              data-form-validation-key={`clinicCep:${clinic.id}`}
                               inputMode="numeric"
                               maxLength={9}
-                              hint={
-                                cepLookupErrors[clinic.id] ||
-                                'Preenchemos cidade, estado e endereço automaticamente.'
-                              }
+                              error={cepLookupErrors[clinic.id]}
+                              hint="Preenchemos cidade, estado e endereço automaticamente."
                               onChange={updateClinicMaskedField(clinic.id, 'cep', formatCep)}
                               onBlur={() => lookupClinicCep(clinic.id)}
                             />
@@ -1110,26 +1307,31 @@ export function CadastroPerfilBiteplaner() {
                               label="Cidade do local"
                               value={clinic.city}
                               required
+                              data-form-validation-key={`clinicCity:${clinic.id}`}
                               onChange={updateClinicField(clinic.id, 'city')}
                             />
-                            <Select
-                              label="Estado do local"
-                              value={clinic.state}
-                              placeholder="Selecione um estado"
-                              onChange={(value) => {
-                                setClinics((current) =>
-                                  current.map((item) =>
-                                    item.id === clinic.id ? { ...item, state: value } : item
-                                  )
-                                );
-                              }}
-                              options={BRAZILIAN_STATE_OPTIONS}
-                            />
+                            <S.ValidationTarget data-form-validation-key={`clinicState:${clinic.id}`}>
+                              <Select
+                                label="Estado do local"
+                                value={clinic.state}
+                                required
+                                placeholder="Selecione um estado"
+                                onChange={(value) => {
+                                  setClinics((current) =>
+                                    current.map((item) =>
+                                      item.id === clinic.id ? { ...item, state: value } : item
+                                    )
+                                  );
+                                }}
+                                options={BRAZILIAN_STATE_OPTIONS}
+                              />
+                            </S.ValidationTarget>
                             <S.FullField>
                               <Field
                                 label="Endereço do local"
                                 value={clinic.address}
                                 required
+                                data-form-validation-key={`clinicAddress:${clinic.id}`}
                                 onChange={updateClinicField(clinic.id, 'address')}
                               />
                             </S.FullField>
@@ -1142,6 +1344,7 @@ export function CadastroPerfilBiteplaner() {
                               label="Dia e horário de operação"
                               value={clinic.serviceHours}
                               required
+                              data-form-validation-key={`clinicServiceHours:${clinic.id}`}
                               hint="Ex: Seg. a Sex - 09h as 19h00"
                               onChange={updateClinicField(clinic.id, 'serviceHours')}
                             />
@@ -1149,6 +1352,7 @@ export function CadastroPerfilBiteplaner() {
                               label="Telefone do local"
                               value={clinic.phone}
                               required
+                              data-form-validation-key={`clinicPhone:${clinic.id}`}
                               inputMode="tel"
                               maxLength={15}
                               onChange={updateClinicMaskedField(clinic.id, 'phone', formatPhone)}
@@ -1178,29 +1382,33 @@ export function CadastroPerfilBiteplaner() {
                 política de privacidade
               </S.TermsReadLink>.
             </S.TermsReadIntro>
-            <CheckboxField
-              checked={consents.operationalTerms}
-              onChange={(checked) => setConsents((current) => ({ ...current, operationalTerms: checked }))}
-              label={
-                <S.TermsLabel>
-                  Aceito os <strong>termos de cadastro operacional</strong> do Biteplaner.
-                </S.TermsLabel>
-              }
-              badge="Obrigatório"
-              badgeTone="required"
-            />
-            <CheckboxField
-              checked={consents.privacyPolicy}
-              onChange={(checked) => setConsents((current) => ({ ...current, privacyPolicy: checked }))}
-              label={
-                <S.TermsLabel>
-                  Aceito a <strong>política de privacidade</strong> para análise cadastral e
-                  contato operacional.
-                </S.TermsLabel>
-              }
-              badge="Obrigatório"
-              badgeTone="required"
-            />
+            <S.ValidationTarget data-form-validation-key="operationalTerms">
+              <CheckboxField
+                checked={consents.operationalTerms}
+                onChange={(checked) => setConsents((current) => ({ ...current, operationalTerms: checked }))}
+                label={
+                  <S.TermsLabel>
+                    Aceito os <strong>termos de cadastro operacional</strong> do Biteplaner.
+                  </S.TermsLabel>
+                }
+                badge="Obrigatório"
+                badgeTone="required"
+              />
+            </S.ValidationTarget>
+            <S.ValidationTarget data-form-validation-key="privacyPolicy">
+              <CheckboxField
+                checked={consents.privacyPolicy}
+                onChange={(checked) => setConsents((current) => ({ ...current, privacyPolicy: checked }))}
+                label={
+                  <S.TermsLabel>
+                    Aceito a <strong>política de privacidade</strong> para análise cadastral e
+                    contato operacional.
+                  </S.TermsLabel>
+                }
+                badge="Obrigatório"
+                badgeTone="required"
+              />
+            </S.ValidationTarget>
             <CheckboxField
               checked={consents.contact}
               onChange={(checked) => setConsents((current) => ({ ...current, contact: checked }))}
@@ -1229,6 +1437,26 @@ export function CadastroPerfilBiteplaner() {
               {submitting ? 'Enviando...' : 'Enviar solicitação'}
             </AdminFormButton>
           </S.Actions>
+          <FormValidations
+            items={blockingValidationFields}
+            title={blockingValidationFieldsAreInvalid ? 'Campos com validação pendente' : undefined}
+            description={
+              blockingValidationFieldsAreInvalid
+                ? 'Corrija os campos abaixo para continuar.'
+                : undefined
+            }
+            footer={
+              blockingValidationFieldsAreInvalid
+                ? 'Essas validações são obrigatórias para liberar o envio.'
+                : undefined
+            }
+            ariaLabel={
+              blockingValidationFieldsAreInvalid
+                ? 'Campos preenchidos incorretamente'
+                : undefined
+            }
+            onItemClick={handleFormValidationItemClick}
+          />
         </S.Form>
       </S.ProfileShell>
     </S.Page>

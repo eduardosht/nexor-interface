@@ -21,7 +21,7 @@ export const LegalUpdatedAt = styled.p`
 
 export const LegalTitle = styled.h1`
   font-size: clamp(2rem, 4vw, 3rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
   color: ${({ theme }) => theme.colors.textPrimary};

@@ -194,8 +194,6 @@ const EMPTY_DRAFT: ProductionRequestDraft = {
   labNotes: '',
   scan3dFileName: '',
   scan3dFileRef: null,
-  prescriptionFileName: '',
-  prescriptionFileRef: null,
   lgpdConfirmed: false,
   selectedLabId: null,
   purchaseConfiguration: null,
@@ -206,6 +204,14 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 
 function isUuidOrderId(value: string | undefined): value is string {
   return typeof value === 'string' && UUID_PATTERN.test(value);
+}
+
+function getActorScopedWorkflowFormsQueryKey(orderId: string, ownerId: string) {
+  return [...biteplanerQueryKeys.workflowForms(orderId), 'actor', ownerId] as const;
+}
+
+function getActorScopedWorkflowFormQueryKey(orderId: string, workflowFormId: string, ownerId: string) {
+  return [...biteplanerQueryKeys.workflowForm(orderId, workflowFormId), 'actor', ownerId] as const;
 }
 
 function hasPurchaseConfigurationDivergence(
@@ -318,6 +324,14 @@ function hasFormPayload(form: DemoWorkflowForm | undefined) {
   );
 }
 
+function getDentistProfessionalObservations(form: DemoWorkflowForm | undefined) {
+  const payload = isRecord(form?.payload) ? form.payload : {};
+  const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
+  const value = dentistPayload.professionalObservations;
+
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function getDentistPendingRequiredFields(form: DemoWorkflowForm | undefined) {
   const payload = isRecord(form?.payload) ? form.payload : {};
   const dentistPayload = isRecord(payload.dentist) ? payload.dentist : {};
@@ -382,6 +396,14 @@ function formatCep(value: string) {
   }
 
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function formatAnamnesisDownloadDate(date: Date) {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}${month}${day}`;
 }
 
 function normalizeCep(value: string) {
@@ -665,7 +687,7 @@ export function ProducaoDentista() {
     [orderDetailQuery.data, orderId, orders]
   );
   const workflowFormsQuery = useQuery({
-    queryKey: biteplanerQueryKeys.workflowForms(order?.id ?? 'pending'),
+    queryKey: getActorScopedWorkflowFormsQueryKey(order?.id ?? 'pending', queryOwnerId),
     queryFn: () => fetchWorkflowForms(order!.id, token),
     enabled: Boolean(token && order?.id),
     staleTime: 5 * 60_000,
@@ -729,14 +751,14 @@ export function ProducaoDentista() {
   const intakeFormFromList = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
   const onboardingFormFromList = workflowForms.find((form) => form.templateKey === 'customer_new_user_onboarding');
   const intakeFormDetailQuery = useQuery({
-    queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', intakeFormFromList?.id ?? 'pending'),
+    queryKey: getActorScopedWorkflowFormQueryKey(order?.id ?? 'pending', intakeFormFromList?.id ?? 'pending', queryOwnerId),
     queryFn: () => fetchWorkflowForm(order!.id, intakeFormFromList!.id, token),
     enabled: Boolean(token && order?.id && intakeFormFromList?.id && intakeFormFromList.canViewPayload && !intakeFormFromList.payload),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   });
   const onboardingFormDetailQuery = useQuery({
-    queryKey: biteplanerQueryKeys.workflowForm(order?.id ?? 'pending', onboardingFormFromList?.id ?? 'pending'),
+    queryKey: getActorScopedWorkflowFormQueryKey(order?.id ?? 'pending', onboardingFormFromList?.id ?? 'pending', queryOwnerId),
     queryFn: () => fetchWorkflowForm(order!.id, onboardingFormFromList!.id, token),
     enabled: Boolean(token && order?.id && onboardingFormFromList?.id && onboardingFormFromList.canViewPayload && !onboardingFormFromList.payload),
     staleTime: 5 * 60_000,
@@ -921,7 +943,6 @@ export function ProducaoDentista() {
   const productionRequestCompleted = draft.productionRequestSummary.trim().length > 0;
   const attachmentsCompleted =
     draft.scan3dFileName.trim().length > 0 &&
-    draft.prescriptionFileName.trim().length > 0 &&
     draft.lgpdConfirmed;
   const purchaseDivergenceRequiresConfirmation = hasPurchaseConfigurationDivergence(
     draft.purchaseConfiguration,
@@ -968,6 +989,7 @@ export function ProducaoDentista() {
       actionLabel: 'Aguardando pagamento do cliente',
     };
   const anamnesisSourceDataReady = hasFormPayload(intakeForm);
+  const dentistProfessionalObservations = getDentistProfessionalObservations(intakeForm);
   const dentistSystemValues = useMemo(
     () => getDentistSystemValues(backendUser, session?.user.email),
     [backendUser, session?.user.email]
@@ -989,6 +1011,14 @@ export function ProducaoDentista() {
     isAnamnesisRecordDeepLink,
     isProductionRequestDeepLink,
   ]);
+
+  useEffect(() => {
+    if (!dentistProfessionalObservations || draftRef.current.anamnesisSummary === dentistProfessionalObservations) {
+      return;
+    }
+
+    updateDraft({ anamnesisSummary: dentistProfessionalObservations });
+  }, [dentistProfessionalObservations]);
 
   const mapCenter = useMemo<[number, number]>(() => {
     if (activeLab) {
@@ -1026,9 +1056,6 @@ export function ProducaoDentista() {
       issues.push('anexar o escaneamento 3D intraoral');
     }
 
-    if (!draft.prescriptionFileName.trim()) {
-      issues.push('anexar a prescrição médica assinada e carimbada');
-    }
 
     if (!draft.lgpdConfirmed) {
       issues.push('confirmar o aceite de retenção e rastreabilidade');
@@ -1046,7 +1073,6 @@ export function ProducaoDentista() {
   }, [
     anamnesisCompleted,
     draft.lgpdConfirmed,
-    draft.prescriptionFileName,
     draft.scan3dFileName,
     labSelectionCompleted,
     productionRequestCompleted,
@@ -1084,12 +1110,15 @@ export function ProducaoDentista() {
 
     if (order) {
       queryClient.setQueryData<{ forms: DemoWorkflowForm[] }>(
-        biteplanerQueryKeys.workflowForms(order.id),
+        getActorScopedWorkflowFormsQueryKey(order.id, queryOwnerId),
         { forms: nextForms }
       );
 
       if (nextIntakeForm) {
-        queryClient.setQueryData(biteplanerQueryKeys.workflowForm(order.id, nextIntakeForm.id), nextIntakeForm);
+        queryClient.setQueryData(
+          getActorScopedWorkflowFormQueryKey(order.id, nextIntakeForm.id, queryOwnerId),
+          nextIntakeForm
+        );
       }
     }
 
@@ -1179,11 +1208,11 @@ export function ProducaoDentista() {
     }
   }
 
-  function downloadAnamnesisBlob(orderSnapshot: DemoOrderSummary, blob: Blob) {
+  function downloadAnamnesisBlob(blob: Blob) {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `ficha-anamnese-${getOrderDisplayId(orderSnapshot) || orderSnapshot.id}.pdf`;
+    anchor.download = `ficha-anamnese-${formatAnamnesisDownloadDate(new Date())}.pdf`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -1199,7 +1228,7 @@ export function ProducaoDentista() {
     try {
       const { createFinalAnamnesisPdfBlob } = await import('./finalAnamnesisPdf');
       const blob = await createFinalAnamnesisPdfBlob(orderSnapshot, intakeForm, onboardingForm, draftSnapshot);
-      downloadAnamnesisBlob(orderSnapshot, blob);
+      downloadAnamnesisBlob(blob);
     } catch {
       setPdfNotice('');
       setPdfError('Não foi possível gerar o PDF da anamnese.');
@@ -1234,7 +1263,7 @@ export function ProducaoDentista() {
       }
 
       const blob = new Blob([event.data.arrayBuffer], { type: 'application/pdf' });
-      downloadAnamnesisBlob(orderSnapshot, blob);
+      downloadAnamnesisBlob(blob);
     };
 
     worker.onerror = () => {
@@ -1390,6 +1419,7 @@ export function ProducaoDentista() {
                       actorRole="dentist"
                       defaultValues={dentistSystemValues}
                       showFormHeaderStatus={false}
+                      queryScope={queryOwnerId}
                     />
 
                     {!dentistReviewCompleted ? (
@@ -1408,7 +1438,6 @@ export function ProducaoDentista() {
                         intakeForm={intakeForm}
                         onboardingForm={onboardingForm}
                         draft={draft}
-                        onSummaryChange={(value) => updateDraft({ anamnesisSummary: value })}
                         onDownloadAnamnesisPdf={handleDownloadAnamnesisPdf}
                       />
                     ) : (

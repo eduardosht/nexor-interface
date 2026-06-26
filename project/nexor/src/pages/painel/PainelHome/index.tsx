@@ -48,9 +48,9 @@ const ROLE_ACTIONS: Array<{
 }> = [
     {
       role: 'partner',
-      title: 'Solicitar parceria',
-      description: 'Entrar como parceiro indicador.',
-      buttonLabel: 'Solicitar parceria',
+      title: 'Solicitar cadastro de coach/academia',
+      description: 'Cadastre coach ou academia para indicar atletas e acompanhar oportunidades no Biteplaner.',
+      buttonLabel: 'Solicitar cadastro',
       requestPath: '/painel/biteplaner/cadastro/parceiro',
     },
     {
@@ -221,6 +221,10 @@ export function PainelHome() {
     navigate('/painel/biteplaner/onboarding');
   }
 
+  function openRoleDashboard(role: ProductRoleKey) {
+    navigate(`/painel/biteplaner?mode=${role}`);
+  }
+
   return (
     <S.Page>
       {disableBiteplaner ? (
@@ -372,6 +376,13 @@ export function PainelHome() {
                 : action.buttonLabel;
               const statusLabel = isOperationalRoleBlocked ? 'Indisponível' : getRoleStatusLabel(currentRole?.status);
               const shouldShowActionButton = !isPending && !isActive;
+              const statusTone = isActive
+                ? 'success'
+                : isPending
+                  ? 'warning'
+                  : statusLabel === 'Disponível'
+                    ? 'available'
+                    : 'neutral';
 
               return (
                 <S.RoleActionCard
@@ -382,7 +393,7 @@ export function PainelHome() {
                   <S.RoleCardIcon aria-hidden="true">
                     {getActionIcon(action.role)}
                   </S.RoleCardIcon>
-                  <S.RoleStatusPill $tone={isActive ? 'success' : isPending ? 'warning' : 'neutral'}>
+                  <S.RoleStatusPill $tone={statusTone}>
                     {statusLabel}
                   </S.RoleStatusPill>
                   <S.RoleActionTitle>{actionTitle}</S.RoleActionTitle>
@@ -400,6 +411,15 @@ export function PainelHome() {
                       }}
                     >
                       <span>{actionButtonLabel}</span>
+                      <ArrowRight size={18} strokeWidth={2.2} />
+                    </S.RoleActionButton>
+                  ) : isActive ? (
+                    <S.RoleActionButton
+                      type="button"
+                      aria-label={`Ir para Dashboard ${getOperationalRoleLabel(action.role)}`}
+                      onClick={() => openRoleDashboard(action.role)}
+                    >
+                      <span>Ir para Dashboard</span>
                       <ArrowRight size={18} strokeWidth={2.2} />
                     </S.RoleActionButton>
                   ) : null}

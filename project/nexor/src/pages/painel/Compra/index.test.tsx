@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -25,7 +23,7 @@ vi.mock('../../../lib/api', () => ({
 
 import { Compra } from './index';
 
-function renderPage(initialEntry = '/painel/compra') {
+function renderPage(initialEntry = '/painel/confirmacao-compra') {
   mockUseAuth.mockReturnValue({
     loading: false,
     session: { access_token: 'tok', user: { id: '1', email: 'demo@nexor.dev' } },
@@ -50,26 +48,14 @@ function renderPage(initialEntry = '/painel/compra') {
   );
 }
 
-function selectDropdownOption(label: RegExp, option: RegExp) {
-  fireEvent.click(screen.getByRole('button', { name: label }));
-  fireEvent.click(screen.getByRole('option', { name: option }));
-}
-
 describe('Compra', () => {
-  let locationAssign: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
-    locationAssign = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, assign: locationAssign },
-    });
   });
 
-  it('renders the payment-ready shared order', async () => {
+  it('renders the purchase confirmation screen without Stripe checkout copy', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
@@ -79,157 +65,24 @@ describe('Compra', () => {
           statusLabel: 'Aguardando pagamento',
           stage: 'awaiting_payment',
           created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          customer: { full_name: 'João Demo', email: 'joao@nexor.dev', phone: null },
         },
       ],
     });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('athlete-order-card')).toBeInTheDocument());
-    expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
-    expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
-    const orderCard = screen.getByTestId('athlete-order-card');
-    expect(orderCard).toHaveTextContent(/pedido/i);
-    expect(screen.getByText(/bp-demo-003/i)).toBeInTheDocument();
-    expect(orderCard).not.toHaveTextContent(/status atual/i);
-    expect(orderCard).not.toHaveTextContent(/última atualização/i);
-    expect(orderCard).not.toHaveTextContent(/etapa atual/i);
-    expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/próximos passos/i)).toBeInTheDocument();
-    expect(screen.getByText(/aguardando pagamento pelo cliente/i)).toBeInTheDocument();
-    expect(screen.getByText(/pedido será feito para a produção/i)).toBeInTheDocument();
-    expect(screen.getByText(/dentista licenciado receberá o pedido/i)).toBeInTheDocument();
-    expect(screen.queryByText(/próximos passos observáveis/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/pagamento via stripe checkout/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/biteplaner personalizado/i)).not.toBeInTheDocument();
-    const securePaymentCard = screen.getByTestId('stripe-secure-payment-card');
-    expect(securePaymentCard).toHaveTextContent(/pagamento 100% seguro/i);
-    expect(securePaymentCard).toHaveTextContent(/criptografia de ponta a ponta/i);
-    expect(
-      screen.getByText(/próximos passos/i).compareDocumentPosition(securePaymentCard) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/styles.ts'), 'utf8');
-    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/index.tsx'), 'utf8');
-    expect(stylesSource).toContain('export const MainColumn');
-    expect(stylesSource).toContain('export const AsideColumn');
-    expect(pageSource.indexOf('<S.MainColumn>')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
-    expect(pageSource.indexOf('stripe-secure-payment-card')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
-    expect(screen.queryByText(/o pagamento será processado de forma segura via stripe/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /concluir pagamento/i })).toHaveAttribute('data-tone', 'success');
-  });
+    await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
 
-  it('renders the success state only after the Stripe redirect success query param', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: '11111111-1111-4111-8111-111111111003',
-          displayId: 'BP-DEMO-003',
-          status: 'payment_confirmed',
-          statusLabel: 'Pagamento confirmado',
-          stage: 'payment_confirmed',
-          created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-        },
-      ],
-    });
-
-    renderPage('/painel/compra?checkout=success');
-
-    await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
-    expect(
-      screen.getByText(/próximos passos/i).compareDocumentPosition(screen.getByText(/pagamento realizado com sucesso/i)) &
-      Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
-    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/index.tsx'), 'utf8');
-    expect(pageSource.indexOf('Pagamento realizado com sucesso!')).toBeLessThan(pageSource.indexOf('<S.AsideColumn>'));
-    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/Compra/styles.ts'), 'utf8');
-    const detailsLinkStyles = stylesSource.slice(
-      stylesSource.indexOf('export const DetailsLink'),
-      stylesSource.indexOf('export const InfoPanel')
-    );
-    expect(detailsLinkStyles).toContain('biteplanerButtonSurfaceStyles');
-    expect(detailsLinkStyles).toContain('biteplanerButtonHoverStyles');
-    const orderCard = screen.getByTestId('payment-success-order-card');
-    expect(orderCard).toHaveTextContent(/pedido/i);
-    expect(orderCard).not.toHaveTextContent(/status atual/i);
-    expect(orderCard).not.toHaveTextContent(/última atualização/i);
-    expect(orderCard).not.toHaveTextContent(/data do pagamento/i);
-    expect(orderCard).not.toHaveTextContent(/etapa atual/i);
-    expect(orderCard).not.toHaveTextContent(/pagamento confirmado/i);
-    expect(screen.queryByText(/aguardando pagamento pelo cliente/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/pedido será feito para a produção/i)).toBeInTheDocument();
-    expect(screen.getByText(/aguardando/i)).toBeInTheDocument();
-    expect(screen.getByText(/pagamento aprovado/i)).toBeInTheDocument();
-    expect(screen.getByText(/transação processada com sucesso via stripe/i)).toBeInTheDocument();
-    expect(screen.getByText(/comprovante e os informativos do pagamento serão enviados para o e-mail cadastrado/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /acompanhar jornada/i })).toHaveAttribute(
-      'href',
-      '/painel/biteplaner/jornada'
-    );
-    expect(screen.queryByRole('link', { name: /ver detalhes do pedido/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /solicitar suporte/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /baixar comprovante/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /confirmação de compra/i })).toBeInTheDocument();
+    expect(screen.getByText(/enviaremos o link de pagamento por e-mail e celular/i)).toBeInTheDocument();
+    expect(screen.getByText((_content, element) => element?.textContent === 'R$ 1.370,00/unidade')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar ordem de compra/i })).toHaveAttribute('data-tone', 'success');
+    expect(screen.queryByText(/stripe/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
   });
 
-  it('renders the paid success state when the current order was already paid', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: '11111111-1111-4111-8111-111111111003',
-          displayId: 'BP-DEMO-003',
-          status: 'payment_confirmed',
-          statusLabel: 'Pagamento confirmado',
-          stage: 'payment_confirmed',
-          created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-        },
-      ],
-    });
-
-    renderPage('/painel/compra');
-
-    await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
-    expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/pagamento confirmado/i);
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/status atual/i);
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
-    expect(screen.getByText(/pagamento aprovado/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /acompanhar jornada/i })).toHaveAttribute(
-      'href',
-      '/painel/biteplaner/jornada'
-    );
-    expect(screen.queryByRole('button', { name: /solicitar suporte/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
-  });
-
-  it('renders the paid success state when the current order already advanced after payment', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: '11111111-1111-4111-8111-111111111004',
-          displayId: 'BP-DEMO-004',
-          status: 'lab_processing',
-          statusLabel: 'Em processo - Laboratório',
-          stage: 'laboratory',
-          created_at: '2026-05-02T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-        },
-      ],
-    });
-
-    renderPage('/painel/compra');
-
-    await waitFor(() => expect(screen.getByText(/pagamento realizado com sucesso/i)).toBeInTheDocument());
-    expect(screen.queryByText(/nenhum pedido aguardando pagamento apareceu/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/em produção/i);
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/status atual/i);
-    expect(screen.getByTestId('payment-success-order-card')).not.toHaveTextContent(/última atualização/i);
-    expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
-  });
-
-  it('reconciles Stripe payment when checkout success returns with a session id', async () => {
+  it('confirms the purchase internally and keeps the customer waiting for the payment link', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
@@ -239,59 +92,46 @@ describe('Compra', () => {
           statusLabel: 'Aguardando pagamento',
           stage: 'awaiting_payment',
           created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          customer: { full_name: 'João Demo', email: 'joao@nexor.dev', phone: null },
         },
       ],
     });
     mockApiPost.mockResolvedValueOnce({
       order: {
         id: '11111111-1111-4111-8111-111111111003',
-        status: 'payment_confirmed',
+        displayId: 'BP-DEMO-003',
+        status: 'awaiting_payment',
+        statusLabel: 'Aguardando pagamento',
+        stage: 'awaiting_payment',
+        created_at: '2026-05-01T10:00:00.000Z',
+        customer: { full_name: 'João Demo', email: 'joao@nexor.dev', phone: null },
+        purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 2 },
+        paymentRequest: { status: 'pending_admin_message' },
       },
     });
-
-    renderPage('/painel/compra?checkout=success&session_id=cs_test_123');
-
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/11111111-1111-4111-8111-111111111003/checkout-session/cs_test_123/reconcile',
-        {},
-        'tok'
-      )
-    );
-  });
-
-  it('creates a Stripe checkout session and redirects the customer', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: '11111111-1111-4111-8111-111111111003',
-          displayId: 'BP-DEMO-003',
-          status: 'awaiting_payment',
-          statusLabel: 'Aguardando pagamento',
-          stage: 'awaiting_payment',
-          created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-        },
-      ],
-    });
-    mockApiPost.mockResolvedValueOnce({ url: 'https://checkout.stripe.test/session' });
 
     renderPage();
 
     await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByRole('button', { name: /concluir pagamento/i })).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
+    fireEvent.click(screen.getByRole('button', { name: /enviar ordem de compra/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/11111111-1111-4111-8111-111111111003/checkout-session',
+        '/v1/orders/11111111-1111-4111-8111-111111111003/purchase-confirmation',
         { model: 'impacto', color: 'preto', quantity: 2 },
         'tok'
       )
     );
-    expect(locationAssign).toHaveBeenCalledWith('https://checkout.stripe.test/session');
+    const confirmationNotice = screen
+      .getAllByRole('status')
+      .find((element) => /compra confirmada/i.test(element.textContent ?? ''));
+
+    expect(confirmationNotice).toHaveTextContent(/compra confirmada/i);
+    expect(confirmationNotice).toHaveTextContent(/nossa equipe vai enviar o link de pagamento/i);
+    expect(screen.getByText(/ordem de compra enviada/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/em breve você receberá o link de pagamento por e-mail e celular/i).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /enviar ordem de compra/i })).not.toBeInTheDocument();
   });
 
   it('prefills Biteplaner configuration from dentist recommendation and recalculates total by quantity', async () => {
@@ -304,7 +144,7 @@ describe('Compra', () => {
           statusLabel: 'Aguardando pagamento',
           stage: 'awaiting_payment',
           created_at: '2026-05-01T10:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+          customer: { full_name: 'João Demo', email: 'joao@nexor.dev', phone: null },
           dentistRecommendedPurchaseConfiguration: {
             productKey: 'biteplaner',
             model: 'esportes',
@@ -319,7 +159,7 @@ describe('Compra', () => {
 
     await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /modelo do biteplaner/i })).toHaveTextContent(/linha esportes/i)
+      expect(screen.getByRole('button', { name: /modelo do biteplaner/i })).toHaveTextContent(/linha strength/i)
     );
     expect(screen.getByRole('button', { name: /cor do biteplaner/i })).toHaveTextContent(/branco/i);
     expect(screen.getByLabelText(/quantidade/i)).toHaveValue(3);
@@ -328,37 +168,5 @@ describe('Compra', () => {
     fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '4' } });
 
     expect(screen.getByText('R$ 5.480,00')).toBeInTheDocument();
-  });
-
-  it('uses the real checkout order id when the loaded order comes from the demo mock', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: 'BP-DEMO-005',
-          checkoutOrderId: '22222222-2222-4222-8222-222222222005',
-          status: 'awaiting_payment',
-          statusLabel: 'Aguardando pagamento',
-          stage: 'awaiting_payment',
-          created_at: '2026-05-02T14:00:00.000Z',
-          customer: { full_name: 'Marina Lutadora', email: 'marina.demo@nexor.dev', phone: null },
-        },
-      ],
-    });
-    mockApiPost.mockResolvedValueOnce({ url: 'https://checkout.stripe.test/session' });
-
-    renderPage();
-
-    await waitFor(() => expect(screen.getByText('BP-DEMO-005')).toBeInTheDocument());
-    selectDropdownOption(/cor do biteplaner/i, /branco/i);
-    fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '3' } });
-    fireEvent.click(screen.getByRole('button', { name: /concluir pagamento/i }));
-
-    await waitFor(() =>
-      expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/22222222-2222-4222-8222-222222222005/checkout-session',
-        { model: 'impacto', color: 'branco', quantity: 3 },
-        'tok'
-      )
-    );
   });
 });

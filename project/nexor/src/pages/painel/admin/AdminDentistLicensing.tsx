@@ -1,24 +1,19 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import {
+  AdminDataTable,
   AdminModal,
-  AdminModalAction,
-  AdminModalActions,
   AdminModalDetailCard,
-  AdminModalDetailContent,
-  AdminModalDetailGrid,
   AdminModalDetailIcon,
   AdminModalDetailLabel,
   AdminModalDetailValue,
   AdminModalTextArea,
   AdminModalTextAreaGroup,
   AdminModalTextAreaLabel,
-  AdminPagination,
   Button,
-  ResponsiveDataList,
   Select,
-} from '@nexor/design-system';
+  type AdminDataTableColumn,
+} from "@nexor/design-system";
 import {
-  ArrowUpDown,
   CheckCircle2,
   Clock3,
   Eye,
@@ -32,13 +27,16 @@ import {
   UserRoundCheck,
   Clock3 as ClockIcon,
   XCircle,
-} from 'lucide-react';
-import styled from 'styled-components';
-import { SkeletonGrid, SkeletonTable } from '../../../components/Skeleton';
-import { useAuth } from '../../../hooks/useAuth';
-import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
-import { useAdminPortal } from '../../../features/admin/portal';
-import { PortalPageDescription, PortalPageTitle } from '../styles/portalTypography';
+} from "lucide-react";
+import styled from "styled-components";
+import { SkeletonGrid, SkeletonTable } from "../../../components/Skeleton";
+import { useAuth } from "../../../hooks/useAuth";
+import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
+import { useAdminPortal } from "../../../features/admin/portal";
+import {
+  PortalPageDescription,
+  PortalPageTitle,
+} from "../styles/portalTypography";
 import {
   approveDentistLicenseRequest,
   fetchDentistLicenseRequests,
@@ -46,9 +44,9 @@ import {
   getAuthToken,
   rejectDentistLicenseRequest,
   type DentistLicenseRequest,
-} from '../../../features/demo/biteplanerFlow';
-import { PageStack } from './styles';
-import { AdminProductGate } from './AdminProductGate';
+} from "../../../features/demo/biteplanerFlow";
+import { PageStack } from "./styles";
+import { AdminProductGate } from "./AdminProductGate";
 import {
   AdminMobileActionButton,
   AdminMobileActions,
@@ -60,85 +58,74 @@ import {
   AdminMobileMetaItem,
   AdminMobileMetaLabel,
   AdminMobileMetaValue,
-} from './mobileCards';
+} from "./mobileCards";
 
 const statusLabel: Record<string, string> = {
-  pending: 'Aguardando análise',
-  active: 'Aprovado',
-  rejected: 'Recusado',
-  suspended: 'Suspenso',
+  pending: "Aguardando análise",
+  active: "Aprovado",
+  rejected: "Recusado",
+  suspended: "Suspenso",
 };
 
 const workflowLabel: Record<string, string> = {
-  admin_review_pending: 'Aguardando análise',
-  approved_pending_payment: 'Licenciado',
-  payment_confirmed_pending_intention_contract: 'Pagamento confirmado',
-  course_in_progress: 'Curso em andamento',
-  licensing_contract_pending: 'Contrato final pendente',
-  licensed: 'Licenciado',
-  admin_rejected: 'Recusado',
-  distrato_pending: 'Distrato pendente',
-  distrato_signed: 'Distrato assinado',
+  admin_review_pending: "Aguardando análise",
+  approved_pending_payment: "Licenciado",
+  payment_confirmed_pending_intention_contract: "Pagamento confirmado",
+  course_in_progress: "Curso em andamento",
+  licensing_contract_pending: "Contrato final pendente",
+  licensed: "Licenciado",
+  admin_rejected: "Recusado",
+  distrato_pending: "Distrato pendente",
+  distrato_signed: "Distrato assinado",
 };
 
-const pageSizeOptions = [10, 20, 50];
-
 const statusFilterOptions = [
-  { value: 'all', label: 'Todos os filtros' },
-  { value: 'pending', label: 'Aguardando análise' },
-  { value: 'active', label: 'Aprovados' },
-  { value: 'rejected', label: 'Recusados' },
-  { value: 'licensed', label: 'Licenciados' },
+  { value: "all", label: "Todos os filtros" },
+  { value: "pending", label: "Aguardando análise" },
+  { value: "active", label: "Aprovados" },
+  { value: "rejected", label: "Recusados" },
+  { value: "licensed", label: "Licenciados" },
 ];
 
-type SortKey = 'dentist' | 'cro' | 'clinics' | 'status' | 'workflow' | 'submittedAt';
-type SortDirection = 'asc' | 'desc';
-
 function getStatusColor(status: string) {
-  if (status === 'active' || status === 'licensed' || status === 'approved_pending_payment') return '#15803d';
-  if (status === 'rejected' || status === 'admin_rejected') return '#b91c1c';
-  return '#d18a00';
+  if (
+    status === "active" ||
+    status === "licensed" ||
+    status === "approved_pending_payment"
+  )
+    return "#15803d";
+  if (status === "rejected" || status === "admin_rejected") return "#b91c1c";
+  return "#d18a00";
 }
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'NI';
-  return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+  if (parts.length === 0) return "NI";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
 }
 
 function onlyDigits(value: string | undefined) {
-  return (value ?? '').replace(/\D/g, '');
+  return (value ?? "").replace(/\D/g, "");
 }
 
 function formatCpf(value: string | undefined) {
   const digits = onlyDigits(value);
-  if (digits.length !== 11) return value?.trim() || 'Não informado';
+  if (digits.length !== 11) return value?.trim() || "Não informado";
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
 function formatCnpj(value: string | undefined) {
   const digits = onlyDigits(value);
-  if (digits.length !== 14) return value?.trim() || 'Não informado';
+  if (digits.length !== 14) return value?.trim() || "Não informado";
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
-function getSortValue(request: DentistLicenseRequest, key: SortKey) {
-  switch (key) {
-    case 'dentist':
-      return request.dentistName;
-    case 'cro':
-      return request.croNumber;
-    case 'clinics':
-      return request.practiceLocations.length;
-    case 'status':
-      return statusLabel[request.status] ?? request.status;
-    case 'workflow':
-      return workflowLabel[request.workflowStatus] ?? request.workflowStatus;
-    case 'submittedAt':
-      return new Date(request.submittedAt).getTime();
-    default:
-      return '';
-  }
+function canReviewRequest(request: DentistLicenseRequest) {
+  return request.status === "pending";
 }
 
 export function AdminDentistLicensing() {
@@ -147,15 +134,12 @@ export function AdminDentistLicensing() {
   const token = getAuthToken(session);
   const [requests, setRequests] = useState<DentistLicenseRequest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  const [selectedRequest, setSelectedRequest] = useState<DentistLicenseRequest | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
-  const [activeAction, setActiveAction] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [pageSize, setPageSize] = useState(10);
-  const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>('submittedAt');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [search, setSearch] = useState("");
+  const [selectedRequest, setSelectedRequest] =
+    useState<DentistLicenseRequest | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [activeAction, setActiveAction] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadRequests() {
@@ -176,9 +160,12 @@ export function AdminDentistLicensing() {
   const filteredRequests = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
     const visibleByStatus = requests.filter((request) => {
-      if (statusFilter === 'all') return true;
-      if (statusFilter === 'licensed') {
-        return request.workflowStatus === 'licensed' || request.workflowStatus === 'approved_pending_payment';
+      if (statusFilter === "all") return true;
+      if (statusFilter === "licensed") {
+        return (
+          request.workflowStatus === "licensed" ||
+          request.workflowStatus === "approved_pending_payment"
+        );
       }
       return request.status === statusFilter;
     });
@@ -186,108 +173,174 @@ export function AdminDentistLicensing() {
     if (!query) return visibleByStatus;
 
     return visibleByStatus.filter((request) =>
-      `${request.dentistName} ${request.croNumber} ${request.professionalSummary}`.toLowerCase().includes(query)
+      `${request.dentistName} ${request.croNumber} ${request.professionalSummary}`
+        .toLowerCase()
+        .includes(query),
     );
   }, [debouncedSearch, requests, statusFilter]);
-
-  const sortedRequests = useMemo(() => {
-    return [...filteredRequests].sort((a, b) => {
-      const aValue = getSortValue(a, sortKey);
-      const bValue = getSortValue(b, sortKey);
-      const direction = sortDirection === 'asc' ? 1 : -1;
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return (aValue - bValue) * direction;
-      }
-
-      return String(aValue).localeCompare(String(bValue), 'pt-BR', { numeric: true }) * direction;
-    });
-  }, [filteredRequests, sortDirection, sortKey]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedRequests.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const pageStart = (safePage - 1) * pageSize;
-  const paginatedRequests = sortedRequests.slice(pageStart, pageStart + pageSize);
-  const rangeStart = sortedRequests.length === 0 ? 0 : pageStart + 1;
-  const rangeEnd = Math.min(pageStart + pageSize, sortedRequests.length);
 
   const stats = useMemo(
     () => [
       {
-        label: 'Aguardando análise',
-        value: requests.filter((item) => item.status === 'pending').length,
+        label: "Aguardando análise",
+        value: requests.filter((item) => item.status === "pending").length,
         Icon: Clock3,
+        tone: "success" as const,
       },
       {
-        label: 'Aprovados em onboarding',
-        value: requests.filter((item) => item.status === 'active').length,
+        label: "Aprovados em onboarding",
+        value: requests.filter((item) => item.status === "active").length,
         Icon: CheckCircle2,
+        tone: "success" as const,
       },
-      { label: 'Recusados', value: requests.filter((item) => item.status === 'rejected').length, Icon: XCircle },
       {
-        label: 'Licenciados',
+        label: "Recusados",
+        value: requests.filter((item) => item.status === "rejected").length,
+        Icon: XCircle,
+        tone: "danger" as const,
+      },
+      {
+        label: "Licenciados",
         value: requests.filter(
-          (item) => item.workflowStatus === 'licensed' || item.workflowStatus === 'approved_pending_payment'
+          (item) =>
+            item.workflowStatus === "licensed" ||
+            item.workflowStatus === "approved_pending_payment",
         ).length,
         Icon: ShieldCheck,
+        tone: "success" as const,
       },
     ],
-    [requests]
+    [requests],
   );
 
   function updateSearch(value: string) {
     setSearch(value);
-    setPage(1);
   }
 
   function updateStatusFilter(value: string) {
     setStatusFilter(value);
-    setPage(1);
-  }
-
-  function updatePageSize(value: number) {
-    setPageSize(value);
-    setPage(1);
-  }
-
-  function toggleSort(key: SortKey) {
-    setPage(1);
-    setSortKey((currentKey) => {
-      if (currentKey !== key) {
-        setSortDirection('asc');
-        return key;
-      }
-
-      setSortDirection((currentDirection) => (currentDirection === 'asc' ? 'desc' : 'asc'));
-      return currentKey;
-    });
   }
 
   async function handleApprove() {
     if (!selectedRequest || !token) return;
-    setActiveAction('approve');
+    setActiveAction("approve");
     try {
       await approveDentistLicenseRequest(selectedRequest.id, token);
       setSelectedRequest(null);
-      setRejectReason('');
+      setRejectReason("");
       await loadRequests();
     } finally {
-      setActiveAction('');
+      setActiveAction("");
     }
   }
 
   async function handleReject() {
     if (!selectedRequest || !token || !rejectReason.trim()) return;
-    setActiveAction('reject');
+    setActiveAction("reject");
     try {
-      await rejectDentistLicenseRequest(selectedRequest.id, rejectReason.trim(), token);
+      await rejectDentistLicenseRequest(
+        selectedRequest.id,
+        rejectReason.trim(),
+        token,
+      );
       setSelectedRequest(null);
-      setRejectReason('');
+      setRejectReason("");
       await loadRequests();
     } finally {
-      setActiveAction('');
+      setActiveAction("");
     }
   }
+
+  const columns = useMemo<AdminDataTableColumn<DentistLicenseRequest>[]>(
+    () => [
+      {
+        key: "dentist",
+        label: "Dentista",
+        width: "23%",
+        sortValue: (request) => request.dentistName,
+        render: (request) => (
+          <DentistCell>
+            <Avatar aria-hidden>{getInitials(request.dentistName)}</Avatar>
+            <DentistInfo>
+              <DentistName>
+                {request.dentistName || "Não informado"}
+              </DentistName>
+              <DentistMeta>
+                {request.professionalSummary || "Resumo não informado"}
+              </DentistMeta>
+            </DentistInfo>
+          </DentistCell>
+        ),
+      },
+      {
+        key: "cro",
+        label: "CRO",
+        width: "13%",
+        sortValue: (request) => request.croNumber,
+        render: (request) => request.croNumber || "Não informado",
+      },
+      {
+        key: "clinics",
+        label: "Clínicas",
+        width: "10%",
+        sortValue: (request) => request.practiceLocations.length,
+        render: (request) => (
+          <ClinicCountValue>
+            {request.practiceLocations.length}
+          </ClinicCountValue>
+        ),
+      },
+      {
+        key: "status",
+        label: "Status",
+        width: "18%",
+        sortValue: (request) => statusLabel[request.status] ?? request.status,
+        render: (request) => (
+          <StatusPill $color={getStatusColor(request.status)}>
+            <StatusDot $color={getStatusColor(request.status)} />
+            {statusLabel[request.status] ?? request.status}
+          </StatusPill>
+        ),
+      },
+      {
+        key: "workflow",
+        label: "Fluxo",
+        width: "18%",
+        sortValue: (request) =>
+          workflowLabel[request.workflowStatus] ?? request.workflowStatus,
+        render: (request) =>
+          workflowLabel[request.workflowStatus] ?? request.workflowStatus,
+      },
+      {
+        key: "submittedAt",
+        label: "Enviado em",
+        width: "15%",
+        sortValue: (request) => new Date(request.submittedAt).getTime(),
+        render: (request) => formatDate(request.submittedAt),
+      },
+      {
+        key: "view",
+        label: "Visualizar",
+        width: "13%",
+        align: "center",
+        render: (request) =>
+          canReviewRequest(request) ? (
+            <ViewButton
+              type="button"
+              aria-label={`Visualizar solicitação de ${request.dentistName}`}
+              title="Visualizar"
+              onClick={() => {
+                setSelectedRequest(request);
+                setRejectReason("");
+              }}
+            >
+              <Eye size={16} aria-hidden />
+            </ViewButton>
+          ) : null,
+      },
+    ],
+    [],
+  );
 
   return (
     <PageStack>
@@ -298,8 +351,9 @@ export function AdminDentistLicensing() {
         <HeroCopy>
           <AdminTitle>Dentistas querendo se licenciar</AdminTitle>
           <AdminSubtitle>
-            Solicitações enviadas pelo cadastro do dentista para análise da Nexor Admin antes do pagamento,
-            contratos, curso, prova e liberação operacional.
+            Solicitações enviadas pelo cadastro do dentista para análise da
+            Nexor Admin antes do pagamento, contratos, curso, prova e liberação
+            operacional.
           </AdminSubtitle>
         </HeroCopy>
       </AdminHero>
@@ -313,14 +367,14 @@ export function AdminDentistLicensing() {
           ) : (
             <MetricsGrid>
               {stats.map((stat) => (
-                <MetricCard key={stat.label}>
+                <MetricCard key={stat.label} $tone={stat.tone}>
                   <MetricBody>
-                    <MetricIcon aria-hidden>
+                    <MetricIcon $tone={stat.tone} aria-hidden>
                       <stat.Icon size={22} />
                     </MetricIcon>
                     <MetricText>
-                      <MetricValue>{stat.value}</MetricValue>
-                      <MetricLabel>{stat.label}</MetricLabel>
+                      <MetricValue $tone={stat.tone}>{stat.value}</MetricValue>
+                      <MetricLabel $tone={stat.tone}>{stat.label}</MetricLabel>
                     </MetricText>
                   </MetricBody>
                 </MetricCard>
@@ -362,102 +416,27 @@ export function AdminDentistLicensing() {
             {loading ? (
               <SkeletonTable rows={6} columns={6} />
             ) : (
-              <ResponsiveDataList
-                desktop={
-                  <TableWrap data-testid="admin-dentist-requests-table">
-                    <RequestsTable>
-                      <thead>
-                        <tr>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('dentist')}>
-                              Dentista <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('cro')}>
-                              CRO <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('clinics')}>
-                              Clínicas <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('status')}>
-                              Status <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('workflow')}>
-                              Fluxo <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <SortableTh>
-                            <SortButton type="button" onClick={() => toggleSort('submittedAt')}>
-                              Enviado em <ArrowUpDown size={13} aria-hidden />
-                            </SortButton>
-                          </SortableTh>
-                          <th>Visualizar</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedRequests.length === 0 ? (
-                          <tr>
-                            <EmptyCell colSpan={7}>Nenhuma solicitação encontrada.</EmptyCell>
-                          </tr>
-                        ) : (
-                          paginatedRequests.map((request) => (
-                            <tr key={request.id}>
-                              <td>
-                                <DentistCell>
-                                  <Avatar aria-hidden>{getInitials(request.dentistName)}</Avatar>
-                                  <DentistInfo>
-                                    <DentistName>{request.dentistName || 'Não informado'}</DentistName>
-                                    <DentistMeta>{request.professionalSummary || 'Resumo não informado'}</DentistMeta>
-                                  </DentistInfo>
-                                </DentistCell>
-                              </td>
-                              <td>{request.croNumber || 'Não informado'}</td>
-                              <ClinicCount>{request.practiceLocations.length}</ClinicCount>
-                              <td>
-                                <StatusPill $color={getStatusColor(request.status)}>
-                                  <StatusDot $color={getStatusColor(request.status)} />
-                                  {statusLabel[request.status] ?? request.status}
-                                </StatusPill>
-                              </td>
-                              <td>{workflowLabel[request.workflowStatus] ?? request.workflowStatus}</td>
-                              <td>{formatDate(request.submittedAt)}</td>
-                              <ActionCell>
-                                <ViewButton
-                                  type="button"
-                                  aria-label={`Visualizar solicitação de ${request.dentistName}`}
-                                  title="Visualizar"
-                                  onClick={() => {
-                                    setSelectedRequest(request);
-                                    setRejectReason('');
-                                  }}
-                                >
-                                  <Eye size={16} aria-hidden />
-                                </ViewButton>
-                              </ActionCell>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </RequestsTable>
-                  </TableWrap>
-                }
-                data={paginatedRequests}
+              <AdminDataTable
+                data={filteredRequests}
+                columns={columns}
                 keyExtractor={(request) => request.id}
                 emptyMessage="Nenhuma solicitação encontrada."
+                pageSize={10}
+                initialSortKey="submittedAt"
+                initialSortDirection="desc"
+                testId="admin-dentist-requests-table"
                 mobileTestId="admin-dentist-requests-mobile-list"
-                renderCard={(request) => (
+                renderMobileCard={(request) => (
                   <AdminMobileCard>
                     <AdminMobileCardHeader>
                       <div>
-                        <AdminMobileCardTitle>{request.dentistName || 'Não informado'}</AdminMobileCardTitle>
-                        <AdminMobileCardSubtitle>{request.professionalSummary || 'Resumo não informado'}</AdminMobileCardSubtitle>
+                        <AdminMobileCardTitle>
+                          {request.dentistName || "Não informado"}
+                        </AdminMobileCardTitle>
+                        <AdminMobileCardSubtitle>
+                          {request.professionalSummary ||
+                            "Resumo não informado"}
+                        </AdminMobileCardSubtitle>
                       </div>
                       <StatusPill $color={getStatusColor(request.status)}>
                         <StatusDot $color={getStatusColor(request.status)} />
@@ -467,52 +446,48 @@ export function AdminDentistLicensing() {
                     <AdminMobileMetaGrid>
                       <AdminMobileMetaItem>
                         <AdminMobileMetaLabel>CRO</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>{request.croNumber || 'Não informado'}</AdminMobileMetaValue>
+                        <AdminMobileMetaValue>
+                          {request.croNumber || "Não informado"}
+                        </AdminMobileMetaValue>
                       </AdminMobileMetaItem>
                       <AdminMobileMetaItem>
                         <AdminMobileMetaLabel>Clínicas</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>{request.practiceLocations.length}</AdminMobileMetaValue>
+                        <AdminMobileMetaValue>
+                          {request.practiceLocations.length}
+                        </AdminMobileMetaValue>
                       </AdminMobileMetaItem>
                       <AdminMobileMetaItem>
                         <AdminMobileMetaLabel>Fluxo</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>{workflowLabel[request.workflowStatus] ?? request.workflowStatus}</AdminMobileMetaValue>
+                        <AdminMobileMetaValue>
+                          {workflowLabel[request.workflowStatus] ??
+                            request.workflowStatus}
+                        </AdminMobileMetaValue>
                       </AdminMobileMetaItem>
                       <AdminMobileMetaItem>
                         <AdminMobileMetaLabel>Enviado em</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>{formatDate(request.submittedAt)}</AdminMobileMetaValue>
+                        <AdminMobileMetaValue>
+                          {formatDate(request.submittedAt)}
+                        </AdminMobileMetaValue>
                       </AdminMobileMetaItem>
                     </AdminMobileMetaGrid>
-                    <AdminMobileActions>
-                      <AdminMobileActionButton
-                        type="button"
-                        aria-label={`Abrir dados do dentista ${request.dentistName}`}
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setRejectReason('');
-                        }}
-                      >
-                        Revisar solicitação
-                      </AdminMobileActionButton>
-                    </AdminMobileActions>
+                    {canReviewRequest(request) ? (
+                      <AdminMobileActions>
+                        <AdminMobileActionButton
+                          type="button"
+                          aria-label={`Abrir dados do dentista ${request.dentistName}`}
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setRejectReason("");
+                          }}
+                        >
+                          Revisar solicitação
+                        </AdminMobileActionButton>
+                      </AdminMobileActions>
+                    ) : null}
                   </AdminMobileCard>
                 )}
               />
             )}
-
-            {!loading ? (
-              <AdminPagination
-                page={safePage}
-                totalPages={totalPages}
-                totalItems={sortedRequests.length}
-                rangeStart={rangeStart}
-                rangeEnd={rangeEnd}
-                pageSize={pageSize}
-                pageSizeOptions={pageSizeOptions}
-                ariaLabel="Paginação de solicitações"
-                onPageChange={setPage}
-                onPageSizeChange={updatePageSize}
-              />
-            ) : null}
           </RequestsPanel>
         </>
       ) : null}
@@ -521,96 +496,142 @@ export function AdminDentistLicensing() {
         open={Boolean(selectedRequest)}
         title="Dados enviados pelo dentista"
         ariaLabel="Dados enviados pelo dentista"
+        mobilePlacement="center"
         icon={<UserRoundCheck size={32} />}
         subtitle={
           selectedRequest ? (
-            <>
-              {selectedRequest.dentistName}
+            <ModalSubtitleInline>
+              <span>{selectedRequest.dentistName}</span>
               <InlineDot aria-hidden />
-              {selectedRequest.croNumber}
-            </>
+              <span>{selectedRequest.croNumber}</span>
+            </ModalSubtitleInline>
           ) : null
         }
         onClose={() => setSelectedRequest(null)}
         footer={
           selectedRequest ? (
-            <AdminModalActions>
-              <AdminModalAction
+            <CompactModalActions>
+              <CompactModalButton
                 type="button"
-                actionTone="attention"
-                disabled={activeAction === 'reject' || !rejectReason.trim() || selectedRequest.status !== 'pending'}
+                variant="secondary"
+                disabled={
+                  activeAction === "reject" ||
+                  !rejectReason.trim() ||
+                  selectedRequest.status !== "pending"
+                }
                 onClick={handleReject}
               >
-                {activeAction === 'reject' ? 'Recusando...' : 'Recusar cadastro'}
-              </AdminModalAction>
-              <AdminModalAction
+                {activeAction === "reject"
+                  ? "Recusando..."
+                  : "Recusar cadastro"}
+              </CompactModalButton>
+              <CompactModalButton
                 type="button"
-                disabled={activeAction === 'approve' || selectedRequest.status !== 'pending'}
+                disabled={
+                  activeAction === "approve" ||
+                  selectedRequest.status !== "pending"
+                }
+                $tone="success"
                 onClick={handleApprove}
               >
-                {activeAction === 'approve' ? 'Aprovando...' : 'Aprovar cadastro'}
-              </AdminModalAction>
-            </AdminModalActions>
+                {activeAction === "approve"
+                  ? "Aprovando..."
+                  : "Aprovar cadastro"}
+              </CompactModalButton>
+            </CompactModalActions>
           ) : null
         }
       >
         {selectedRequest ? (
           <>
-            <AdminModalDetailGrid>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <FileText size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>CPF</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{formatCpf(selectedRequest.cpf)}</AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <FileText size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>CNPJ</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{formatCnpj(selectedRequest.cnpj)}</AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <FileText size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Resumo profissional</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{selectedRequest.professionalSummary || 'Não informado'}</AdminModalDetailValue>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-              <AdminModalDetailCard>
-                <AdminModalDetailIcon aria-hidden>
-                  <HeartPulse size={24} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>Status do fluxo</AdminModalDetailLabel>
+            <CompactModalPairGrid>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>CPF</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {formatCpf(selectedRequest.cpf)}
+                  </CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>CNPJ</CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {formatCnpj(selectedRequest.cnpj)}
+                  </CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <FileText size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>
+                    Resumo profissional
+                  </CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {selectedRequest.professionalSummary || "Não informado"}
+                  </CompactModalDetailValue>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+              <CompactModalDetailCard>
+                <CompactModalCardHeader>
+                  <CompactModalDetailIcon aria-hidden>
+                    <HeartPulse size={18} />
+                  </CompactModalDetailIcon>
+                  <CompactModalDetailLabel>
+                    Status do fluxo
+                  </CompactModalDetailLabel>
+                </CompactModalCardHeader>
+                <CompactModalCardBody>
                   <StatusPill $color={getStatusColor(selectedRequest.status)}>
-                    <StatusDot $color={getStatusColor(selectedRequest.status)} />
-                    {workflowLabel[selectedRequest.workflowStatus] ?? selectedRequest.workflowStatus}
+                    <StatusDot
+                      $color={getStatusColor(selectedRequest.status)}
+                    />
+                    {workflowLabel[selectedRequest.workflowStatus] ??
+                      selectedRequest.workflowStatus}
                   </StatusPill>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
-            </AdminModalDetailGrid>
+                </CompactModalCardBody>
+              </CompactModalDetailCard>
+            </CompactModalPairGrid>
 
             {selectedRequest.practiceLocations.map((clinic) => (
-              <AdminModalDetailCard key={`${clinic.name}:${clinic.cep}`}>
-                <AdminModalDetailIcon aria-hidden>
-                  <MapPin size={26} />
-                </AdminModalDetailIcon>
-                <AdminModalDetailContent>
-                  <AdminModalDetailLabel>{clinic.name}</AdminModalDetailLabel>
-                  <AdminModalDetailValue>{clinic.address}</AdminModalDetailValue>
-                  <AdminModalDetailValue>{clinic.city} {clinic.state ? `- ${clinic.state}` : ''} - {clinic.cep}</AdminModalDetailValue>
+              <ClinicDisclosure key={`${clinic.name}:${clinic.cep}`}>
+                <ClinicSummary>
+                  <CompactModalCardHeader>
+                    <CompactModalDetailIcon aria-hidden>
+                      <MapPin size={18} />
+                    </CompactModalDetailIcon>
+                    <CompactModalDetailLabel>
+                      {clinic.name}
+                    </CompactModalDetailLabel>
+                  </CompactModalCardHeader>
+                  <ClinicSummaryHint>Ver detalhes</ClinicSummaryHint>
+                </ClinicSummary>
+                <CompactModalCardBody>
+                  <CompactModalDetailValue>
+                    {clinic.address}
+                  </CompactModalDetailValue>
+                  <CompactModalDetailValue>
+                    {clinic.city} {clinic.state ? `- ${clinic.state}` : ""} -{" "}
+                    {clinic.cep}
+                  </CompactModalDetailValue>
                   <ClinicMeta>
                     <ClinicMetaItem>
                       <Phone size={16} aria-hidden />
-                      {clinic.phone ?? 'Telefone não informado'}
+                      {clinic.phone ?? "Telefone não informado"}
                     </ClinicMetaItem>
                     <InlineDot aria-hidden />
                     <ClinicMetaItem>
@@ -618,19 +639,21 @@ export function AdminDentistLicensing() {
                       {clinic.serviceHours}
                     </ClinicMetaItem>
                   </ClinicMeta>
-                </AdminModalDetailContent>
-              </AdminModalDetailCard>
+                </CompactModalCardBody>
+              </ClinicDisclosure>
             ))}
 
-            <AdminModalTextAreaGroup>
-              <AdminModalTextAreaLabel htmlFor="dentist-reject-reason">Motivo da recusa</AdminModalTextAreaLabel>
-              <AdminModalTextArea
+            <CompactModalTextAreaGroup>
+              <CompactModalTextAreaLabel htmlFor="dentist-reject-reason">
+                Motivo da recusa
+              </CompactModalTextAreaLabel>
+              <CompactModalTextArea
                 id="dentist-reject-reason"
                 placeholder="Obrigatório apenas para recusar."
                 value={rejectReason}
                 onChange={(event) => setRejectReason(event.target.value)}
               />
-            </AdminModalTextAreaGroup>
+            </CompactModalTextAreaGroup>
           </>
         ) : null}
       </AdminModal>
@@ -647,14 +670,18 @@ const AdminHero = styled.header`
   position: relative;
 
   &::after {
-    content: '';
+    content: "";
     position: absolute;
     right: 0;
     top: -28px;
     width: 88px;
     height: 112px;
     opacity: 0.32;
-    background-image: radial-gradient(circle, rgba(21, 128, 61, 0.35) 1.8px, transparent 2px);
+    background-image: radial-gradient(
+      circle,
+      rgba(21, 128, 61, 0.35) 1.8px,
+      transparent 2px
+    );
     background-size: 24px 24px;
     pointer-events: none;
   }
@@ -688,6 +715,8 @@ const AdminSubtitle = styled(PortalPageDescription)`
   margin: 12px 0 0;
 `;
 
+type MetricTone = "success" | "danger";
+
 const MetricsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -699,11 +728,12 @@ const MetricsGrid = styled.div`
   }
 
   @media (max-width: 640px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 `;
 
-const MetricCard = styled.article`
+const MetricCard = styled.article<{ $tone: MetricTone }>`
   min-width: 0;
   min-height: 96px;
   padding: 18px;
@@ -715,6 +745,12 @@ const MetricCard = styled.article`
   flex-direction: column;
   justify-content: space-between;
   gap: 14px;
+
+  @media (max-width: 640px) {
+    min-height: 86px;
+    padding: 12px;
+    gap: 10px;
+  }
 `;
 
 const MetricBody = styled.div`
@@ -723,37 +759,53 @@ const MetricBody = styled.div`
   gap: 12px;
 `;
 
-const MetricIcon = styled.div`
+const MetricIcon = styled.div<{ $tone: MetricTone }>`
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: ${({ theme }) => theme.colors.green};
-  background: rgba(21, 128, 61, 0.1);
+  color: ${({ theme, $tone }) =>
+    $tone === "danger" ? theme.colors.error : theme.colors.green};
+  background: ${({ theme, $tone }) =>
+    `${$tone === "danger" ? theme.colors.error : theme.colors.green}1A`};
+
+  @media (max-width: 640px) {
+    width: 36px;
+    height: 36px;
+  }
 `;
 
 const MetricText = styled.div`
   min-width: 0;
 `;
 
-const MetricValue = styled.strong`
+const MetricValue = styled.strong<{ $tone: MetricTone }>`
   display: block;
   font-size: 28px;
   line-height: 1;
-  font-weight: 800;
-  color: ${({ theme }) => theme.colors.green};
+  font-weight: 700;
+  color: ${({ theme, $tone }) =>
+    $tone === "danger" ? theme.colors.error : theme.colors.green};
+
+  @media (max-width: 640px) {
+    font-size: 22px;
+  }
 `;
 
-const MetricLabel = styled.span`
+const MetricLabel = styled.span<{ $tone: MetricTone }>`
   display: block;
   margin-top: 6px;
   font-size: 13px;
   line-height: 1.35;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
+  color: ${({ theme, $tone }) =>
+    $tone === "danger" ? theme.colors.error : theme.colors.textSecondary};
 
+  @media (max-width: 640px) {
+    font-size: 12px;
+  }
+`;
 
 const RequestsPanel = styled.section`
   width: 100%;
@@ -836,103 +888,163 @@ const CompactFilterSelect = styled(Select)`
   width: 100%;
 `;
 
-const TableWrap = styled.div`
+const CompactModalPairGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+
+  @media (max-width: 360px) {
+    gap: 5px;
+  }
+`;
+
+const CompactModalDetailCard = styled(AdminModalDetailCard) <{
+  $fullWidth?: boolean;
+}>`
+  grid-column: ${({ $fullWidth }) => ($fullWidth ? "1 / -1" : "auto")};
+  min-height: 0;
+  display: grid;
+  padding: 7px;
+  gap: 5px;
+  border-radius: 8px;
+
+  @media (max-width: 420px) {
+    padding: 6px;
+    gap: 5px;
+  }
+`;
+
+const CompactModalCardHeader = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const CompactModalCardBody = styled.div`
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+`;
+
+const CompactModalDetailIcon = styled(AdminModalDetailIcon)`
+  width: 24px;
+  height: 24px;
+
+  @media (max-width: 420px) {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 340px) {
+    width: 18px;
+    height: 18px;
+  }
+`;
+
+const CompactModalDetailLabel = styled(AdminModalDetailLabel)`
+  font-size: 12px;
+  line-height: 1.2;
+
+  @media (min-width: 421px) {
+    font-size: 13px;
+  }
+`;
+
+const CompactModalDetailValue = styled(AdminModalDetailValue)`
+  font-size: 10px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+
+  @media (min-width: 421px) {
+    font-size: 11px;
+  }
+`;
+
+const CompactModalTextAreaGroup = styled(AdminModalTextAreaGroup)`
+  gap: 6px;
+`;
+
+const CompactModalTextAreaLabel = styled(AdminModalTextAreaLabel)`
+  font-size: 14px;
+`;
+
+const CompactModalTextArea = styled(AdminModalTextArea)`
+  min-height: 58px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+  resize: none;
+`;
+
+const CompactModalActions = styled.div`
   width: 100%;
   min-width: 0;
-  overflow-x: auto;
-`;
-
-const RequestsTable = styled.table`
-  width: 100%;
-  min-width: 900px;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-
-  thead {
-    background: ${({ theme }) => theme.colors.bgInset};
-  }
-
-  th,
-  td {
-    padding: 10px 14px;
-    text-align: left;
-    vertical-align: middle;
-  }
-
-  th {
-    height: 42px;
-    box-sizing: border-box;
-    font-size: 12px;
-    line-height: 1.2;
-    font-weight: 700;
-    text-transform: none;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-
-  td {
-    height: 54px;
-    box-sizing: border-box;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
-    font-size: 14px;
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-
-  th:first-child {
-    border-radius: 10px 0 0 10px;
-    width: 23%;
-  }
-
-  th:nth-child(2) {
-    width: 13%;
-  }
-
-  th:nth-child(3) {
-    width: 10%;
-  }
-
-  th:nth-child(4) {
-    width: 18%;
-  }
-
-  th:nth-child(5) {
-    width: 18%;
-  }
-
-  th:nth-child(6) {
-    width: 15%;
-  }
-
-  th:last-child {
-    border-radius: 0 10px 10px 0;
-    width: 13%;
-    text-align: center;
-  }
-
-  tbody tr {
-    background: ${({ theme }) => theme.colors.bgElevated};
-    transition: background 160ms ease;
-  }
-
-  tbody tr:hover {
-    background: ${({ theme }) => theme.colors.bg};
-  }
-`;
-
-const SortableTh = styled.th``;
-
-const SortButton = styled.button`
-  all: unset;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 7px;
-  cursor: pointer;
+  justify-content: space-between;
+  gap: 10px;
+`;
 
-  &:focus-visible {
-    outline: 2px solid rgba(21, 128, 61, 0.24);
-    outline-offset: 3px;
-    border-radius: 4px;
+const CompactModalButton = styled(Button) <{ $tone?: "success" }>`
+  flex: 0 1 calc(50% - 5px);
+  min-width: 0;
+  min-height: 38px;
+  padding-inline: 10px;
+  white-space: normal;
+  background: ${({ theme, $tone }) =>
+    $tone === "success" ? theme.colors.green : undefined};
+  border-color: ${({ theme, $tone }) =>
+    $tone === "success" ? theme.colors.green : undefined};
+  color: ${({ theme, $tone }) =>
+    $tone === "success" ? theme.colors.bgElevated : undefined};
+
+  [data-button-content],
+  [data-button-label] {
+    min-width: 0;
+    white-space: normal;
+    text-wrap: balance;
   }
+`;
+
+const ClinicDisclosure = styled.details`
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  &[open] {
+    display: grid;
+    gap: 5px;
+  }
+
+  @media (max-width: 420px) {
+    padding: 6px;
+  }
+`;
+
+const ClinicSummary = styled.summary`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+`;
+
+const ClinicSummaryHint = styled.span`
+  flex: 0 0 auto;
+  color: ${({ theme }) => theme.colors.green};
+  font-size: 10px;
+  font-weight: 700;
 `;
 
 const DentistCell = styled.div`
@@ -952,7 +1064,7 @@ const Avatar = styled.span`
   background: rgba(21, 128, 61, 0.12);
   color: ${({ theme }) => theme.colors.green};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 const DentistInfo = styled.div`
@@ -965,7 +1077,7 @@ const DentistName = styled.strong`
   min-width: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -982,21 +1094,21 @@ const DentistMeta = styled.span`
   white-space: nowrap;
 `;
 
-const ClinicCount = styled.td`
+const ClinicCountValue = styled.span`
   color: ${({ theme }) => theme.colors.green} !important;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 const StatusPill = styled.span<{ $color: string }>`
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   max-width: 100%;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border-radius: 7px;
   color: ${({ $color }) => $color};
   background: ${({ $color }) => `${$color}12`};
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.2;
 `;
 
@@ -1008,11 +1120,10 @@ const StatusDot = styled.span<{ $color: string }>`
   background: ${({ $color }) => $color};
 `;
 
-const ActionCell = styled.td`
-  text-align: center !important;
-`;
-
-const IconButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as const })`
+const IconButton = styled(Button).attrs({
+  variant: "ghost" as const,
+  size: "sm" as const,
+})`
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
@@ -1042,10 +1153,19 @@ const ViewButton = styled(IconButton)`
   }
 `;
 
-const EmptyCell = styled.td`
-  height: 120px;
-  text-align: center !important;
-  color: ${({ theme }) => theme.colors.textSecondary};
+const ModalSubtitleInline = styled.span`
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const InlineDot = styled.span`
@@ -1059,15 +1179,15 @@ const InlineDot = styled.span`
 const ClinicMeta = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   flex-wrap: wrap;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 14px;
-  line-height: 1.35;
+  font-size: 11px;
+  line-height: 1.25;
 
   @media (max-width: 680px) {
-    gap: 10px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 11px;
   }
 `;
 

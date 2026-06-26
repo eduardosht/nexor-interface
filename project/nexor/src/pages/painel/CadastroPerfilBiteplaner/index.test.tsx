@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { describe, expect, it, vi } from 'vitest';
@@ -130,6 +132,13 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.getByRole('heading', { name: /solicitar cadastro de laborat.rio/i })).toBeInTheDocument();
   });
 
+  it('hides the registration hero icon on tablet and smaller screens', () => {
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/CadastroPerfilBiteplaner/styles.ts'), 'utf8');
+
+    expect(stylesSource).toContain('@media (max-width: 768px)');
+    expect(stylesSource).toContain('display: none;');
+  });
+
   it('collects CPF with a document purpose card for dentist and laboratory onboarding', () => {
     let view = renderPage('/painel/biteplaner/cadastro/dentista');
 
@@ -164,6 +173,8 @@ describe('CadastroPerfilBiteplaner', () => {
     expect(screen.queryByText(/salvar rascunho/i)).not.toBeInTheDocument();
     expect(screen.getByText(/cadastre a clínica de atendimento/i)).toBeInTheDocument();
     expect(screen.getByText(/a nexor irá verificar o cadastro do dentista/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/campos obrigatórios pendentes/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/nome profissional/i).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText(/nome profissional/i), {
       target: { value: 'Dra Maria' },
@@ -310,7 +321,8 @@ describe('CadastroPerfilBiteplaner', () => {
     });
 
     expect(screen.getByLabelText(/cro/i)).toHaveValue('CRO-XX 123');
-    expect(screen.getByText(/cro v.lido no formato/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/cro v.lido no formato/i).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/campos preenchidos incorretamente/i)).toBeInTheDocument();
     expect(submit).toBeDisabled();
   });
 
@@ -350,7 +362,8 @@ describe('CadastroPerfilBiteplaner', () => {
 
     await fillCepAndWaitForAddress();
 
-    expect(screen.getByText(/resumo profissional deve ter pelo menos 10 caracteres/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/resumo profissional deve ter pelo menos 10 caracteres/i).length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/campos preenchidos incorretamente/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/resumo profissional/i)).toHaveAttribute('aria-invalid', 'true');
     expect(submit).toBeDisabled();
   });
@@ -541,7 +554,7 @@ describe('CadastroPerfilBiteplaner', () => {
   it('renders dentist terms with only relevant phrases emphasized', () => {
     renderPage();
 
-    expect(screen.getByText(/termos de cadastro operacional/i).tagName).toBe('STRONG');
+    expect(screen.getAllByText(/termos de cadastro operacional/i).some((node) => node.tagName === 'STRONG')).toBe(true);
     expect(
       screen.getAllByText(/política de privacidade/i).some((node) => node.tagName === 'STRONG')
     ).toBe(true);

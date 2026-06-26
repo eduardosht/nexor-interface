@@ -67,25 +67,6 @@ export function OrderInfoCard({
           <S.OrderHelpText>{orderHelpText}</S.OrderHelpText>
         </S.OrderSummaryText>
       </S.OrderSummary>
-      {showMetadata ? (
-        <S.OrderMetadata>
-          <S.OrderMetadataItem aria-label="Status atual do pedido" data-testid="athlete-order-status">
-            <span>STATUS ATUAL</span>
-            <strong>{status.label}</strong>
-          </S.OrderMetadataItem>
-          {showLastUpdate && updatedAtDate && updatedAtTime ? (
-            <S.OrderMetadataItem aria-label="Última atualização do pedido">
-              <span>ÚLTIMA ATUALIZAÇÃO</span>
-              <strong>{updatedAtDate}</strong>
-              <small>às {updatedAtTime}</small>
-            </S.OrderMetadataItem>
-          ) : null}
-          <S.OrderMetadataItem aria-label="Etapa atual do pedido">
-            <span>ETAPA ATUAL</span>
-            <strong>{stageLabel}</strong>
-          </S.OrderMetadataItem>
-        </S.OrderMetadata>
-      ) : null}
     </S.OrderBanner>
   );
 }

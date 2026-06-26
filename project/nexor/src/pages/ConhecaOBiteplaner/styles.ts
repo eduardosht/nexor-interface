@@ -39,7 +39,7 @@ export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: clamp(1.75rem, 3vw, 2.75rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.08;
 `;
@@ -146,7 +146,7 @@ export const SectionTitle = styled.h2`
   margin: 0 0 14px;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: clamp(1.15rem, 1.8vw, 1.45rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.25;
 `;
@@ -179,7 +179,7 @@ export const DefinitionItem = styled.div`
   dt {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.45;
   }
 
@@ -231,7 +231,7 @@ export const Table = styled.table`
   th {
     background: ${mutedSurface};
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-weight: 800;
+    font-weight: 700;
   }
 
   td {

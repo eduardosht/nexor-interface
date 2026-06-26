@@ -171,7 +171,7 @@ const Title = styled.strong<{ $tokens: BrandTokens }>`
   color: ${({ $tokens }) => $tokens.colors.text};
   font-family: ${({ $tokens }) => $tokens.fonts.display};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   letter-spacing: 0.02em;
   text-transform: uppercase;

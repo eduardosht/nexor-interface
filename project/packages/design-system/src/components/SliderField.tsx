@@ -92,7 +92,7 @@ const CurrentValue = styled.output<{ $tokens: BrandTokens; $progress: number; $v
   color: ${({ $tokens }) => $tokens.colors.accentContrast};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   pointer-events: none;
   transform: translateX(-50%) translateY(${({ $visible }) => ($visible ? '0' : '6px')}) scale(${({ $visible }) => ($visible ? 1 : 0.96)});

@@ -10,12 +10,23 @@ export type AdminModalProps = {
   subtitle?: ReactNode;
   icon?: ReactNode;
   ariaLabel?: string;
+  mobilePlacement?: 'bottom' | 'center';
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
 };
 
-export function AdminModal({ open, title, subtitle, icon, ariaLabel, onClose, children, footer }: AdminModalProps) {
+export function AdminModal({
+  open,
+  title,
+  subtitle,
+  icon,
+  ariaLabel,
+  mobilePlacement = 'bottom',
+  onClose,
+  children,
+  footer,
+}: AdminModalProps) {
   const { tokens } = useDesignSystem();
 
   if (!open) return null;
@@ -24,13 +35,14 @@ export function AdminModal({ open, title, subtitle, icon, ariaLabel, onClose, ch
     <Overlay
       $tokens={tokens}
       role="dialog"
+      $mobilePlacement={mobilePlacement}
       aria-modal="true"
       aria-label={ariaLabel ?? title}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <Box $tokens={tokens}>
+      <Box $mobilePlacement={mobilePlacement} $tokens={tokens}>
         <Header $tokens={tokens}>
           <TitleGroup>
             {icon ? <HeroIcon $tokens={tokens} aria-hidden>{icon}</HeroIcon> : null}
@@ -123,7 +135,7 @@ export const AdminModalDetailLabel = styled.strong`
   margin: 0;
   font-size: 16px;
   line-height: 1.25;
-  font-weight: 800;
+  font-weight: 700;
   color: #171717;
 `;
 
@@ -161,7 +173,7 @@ export const AdminModalTextArea = styled.textarea`
   line-height: 1.5;
 `;
 
-const Overlay = styled.div<{ $tokens: BrandTokens }>`
+const Overlay = styled.div<{ $tokens: BrandTokens; $mobilePlacement: 'bottom' | 'center' }>`
   position: fixed;
   inset: 0;
   z-index: 50;
@@ -173,14 +185,16 @@ const Overlay = styled.div<{ $tokens: BrandTokens }>`
 
   @media (max-width: 680px) {
     padding: 10px;
-    place-items: end center;
+    place-items: ${({ $mobilePlacement }) => ($mobilePlacement === 'center' ? 'center' : 'end center')};
   }
 `;
 
-const Box = styled.div<{ $tokens: BrandTokens }>`
+const Box = styled.div<{ $tokens: BrandTokens; $mobilePlacement: 'bottom' | 'center' }>`
   width: min(900px, 100%);
   max-height: calc(100vh - 48px);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
   padding: 28px;
   border: 1px solid ${({ $tokens }) => $tokens.colors.border};
   border-radius: 14px;
@@ -190,11 +204,15 @@ const Box = styled.div<{ $tokens: BrandTokens }>`
   flex-direction: column;
   gap: 20px;
 
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
   @media (max-width: 680px) {
     width: 100%;
     max-height: calc(100vh - 20px);
     padding: 14px;
-    border-radius: 14px 14px 0 0;
+    border-radius: ${({ $mobilePlacement }) => ($mobilePlacement === 'center' ? '14px' : '14px 14px 0 0')};
     gap: 12px;
   }
 `;
@@ -250,7 +268,7 @@ const Title = styled.h2<{ $tokens: BrandTokens }>`
   margin: 0;
   font-size: 24px;
   line-height: 1.12;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ $tokens }) => $tokens.colors.text};
 
   @media (max-width: 680px) {
@@ -296,9 +314,9 @@ const Footer = styled.div`
 
   @media (max-width: 680px) {
     position: sticky;
-    bottom: -16px;
-    margin: 0 -16px -16px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    bottom: -14px;
+    margin: 0 -14px -14px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
     border-top: 1px solid #e0e0e0;
     background: inherit;
   }
@@ -311,7 +329,7 @@ const ActionButton = styled(Button) <{ $actionTone: AdminModalActionTone }>`
   padding: 0 20px;
   border-radius: 9px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   ${({ $actionTone }) =>
     $actionTone === 'attention'

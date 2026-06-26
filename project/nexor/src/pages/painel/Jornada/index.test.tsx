@@ -572,7 +572,7 @@ describe('Jornada', () => {
             {
               id: 'BP-TESTE4-001',
               status: 'registration_started',
-              statusLabel: 'Pre-requisito pendente',
+              statusLabel: 'Pré-consulta pendente',
               stage: 'pre_requisite_pending',
               created_at: '2026-05-01T10:00:00.000Z',
               customer: { full_name: 'tete4', email: 'tete4@nexor.dev', phone: null },
@@ -672,7 +672,7 @@ describe('Jornada', () => {
     await waitFor(() => expect(screen.getByTestId('journey-step-registration')).toHaveTextContent(/conclu.do/i));
     expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/atual/i);
     await waitFor(() =>
-      expect(screen.getByRole('link', { name: /iniciar pr/i })).toHaveAttribute('href', '/painel/pre-requisito')
+      expect(screen.getByRole('link', { name: /iniciar pr/i })).toHaveAttribute('href', '/painel/pre-consulta')
     );
   });
 
@@ -684,7 +684,7 @@ describe('Jornada', () => {
             {
               id: 'BP-DEMO-001',
               status: 'registration_started',
-              statusLabel: 'Pre-requisito pendente',
+              statusLabel: 'Pré-consulta pendente',
               stage: 'pre_requisite_pending',
               created_at: '2026-05-01T10:00:00.000Z',
               customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -720,7 +720,7 @@ describe('Jornada', () => {
           {
             id: 'BP-DEMO-001',
             status: 'registration_started',
-            statusLabel: 'Pre-requisito pendente',
+            statusLabel: 'Pré-consulta pendente',
             stage: 'pre_requisite_pending',
             created_at: '2026-05-01T10:00:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -748,7 +748,7 @@ describe('Jornada', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('journey-step-prerequisite')).toHaveTextContent(/atual/i));
-    expect(screen.getByRole('link', { name: /iniciar pré-requisito/i })).toHaveAttribute('href', '/painel/pre-requisito');
+    expect(screen.getByRole('link', { name: /iniciar pré-consulta/i })).toHaveAttribute('href', '/painel/pre-consulta');
     expectNoEmbeddedStepContent();
   });
 
@@ -997,7 +997,40 @@ describe('Jornada', () => {
     expectNoEmbeddedStepContent();
   });
 
-  it('shows collapsed payment details and advances the journey to laboratory after Stripe confirmation', async () => {
+  it('tells the customer to wait for the payment link after purchase confirmation', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-024',
+            status: 'awaiting_payment',
+            statusLabel: 'Aguardando pagamento',
+            stage: 'awaiting_payment',
+            created_at: '2026-05-02T10:00:00.000Z',
+            customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
+            purchaseConfiguration: {
+              productKey: 'biteplaner',
+              model: 'impacto',
+              color: 'preto',
+              quantity: 2,
+              paymentFlow: 'manual_link',
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage();
+
+    const actionCard = await screen.findByTestId('journey-action-card');
+    expect(actionCard).toHaveTextContent(/ordem de compra enviada/i);
+    expect(actionCard).toHaveTextContent(/em breve você receberá o link de pagamento por e-mail e celular/i);
+    expect(actionCard).toHaveTextContent(/aguardando link/i);
+    expect(screen.queryByRole('link', { name: /confirmar compra/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/atual/i);
+  });
+
+  it('advances the journey to laboratory after payment confirmation without showing payment details', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
@@ -1029,26 +1062,11 @@ describe('Jornada', () => {
 
     renderPage();
 
-    const paymentBox = await screen.findByTestId('journey-payment-confirmation');
     const nextStepBox = await screen.findByTestId('journey-payment-next-step');
     expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/conclu.do/i);
     expect(screen.getByTestId('journey-step-laboratory')).toHaveTextContent(/atual/i);
-    expect(paymentBox).toHaveTextContent(/detalhes do pagamento/i);
-    expect(paymentBox).not.toHaveAttribute('open');
-    fireEvent.click(within(paymentBox).getByText(/detalhes do pagamento/i));
-    expect(paymentBox).toHaveAttribute('open');
-    expect(paymentBox).toHaveTextContent(/próximo passo/i);
-    expect(paymentBox).toHaveTextContent(/dentista dar o ok/i);
-    expect(paymentBox).toHaveTextContent(/enviar a produção para o laboratório/i);
-    expect(paymentBox).toHaveTextContent(/quantidade/i);
-    expect(paymentBox).toHaveTextContent(/4/i);
-    expect(paymentBox).toHaveTextContent(/linha esportes/i);
-    expect(paymentBox).toHaveTextContent(/preto/i);
-    expect(paymentBox).toHaveTextContent(/r\$ 5.480,00/i);
-    expect(paymentBox).toHaveTextContent(/cartão/i);
-    expect(paymentBox).not.toHaveTextContent(/cupom/i);
-    expect(paymentBox).not.toHaveTextContent(/desconto/i);
-    expect(paymentBox).not.toHaveTextContent(/recibo/i);
+    expect(screen.queryByTestId('journey-payment-confirmation')).not.toBeInTheDocument();
+    expect(screen.queryByText(/detalhes do pagamento/i)).not.toBeInTheDocument();
     expect(nextStepBox).toHaveTextContent(/o que acontece agora/i);
     expect(nextStepBox).toHaveTextContent(/aguarde o dentista confirmar os dados operacionais/i);
     expectNoEmbeddedStepContent();

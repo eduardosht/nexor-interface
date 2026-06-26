@@ -197,7 +197,7 @@ export function CadastroUsuarioBiteplaner() {
       }
     }
 
-    setError('Estamos preparando o pré-requisito Biteplaner. Aguarde alguns instantes antes de continuar.');
+    setError('Estamos preparando a pré-consulta Biteplaner. Aguarde alguns instantes antes de continuar.');
     nextStepPollingRef.current = false;
   }
 
@@ -240,7 +240,7 @@ export function CadastroUsuarioBiteplaner() {
   );
 
   return (
-    <S.Page>
+    <S.OnboardingPage>
       {loading ? (
         <S.Content aria-label="Carregando pedido Biteplaner">
           <SkeletonCard lines={5} blockHeight="96px" />
@@ -426,6 +426,6 @@ export function CadastroUsuarioBiteplaner() {
 
         </S.Content>
       ) : null}
-    </S.Page>
+    </S.OnboardingPage>
   );
 }

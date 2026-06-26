@@ -282,7 +282,6 @@ describe('shared Biteplaner demo state', () => {
       licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-016')?.productionRequestDraft
     ).toEqual(expect.objectContaining({
       scan3dFileName: 'camila-boxe-arcada-superior.stl',
-      prescriptionFileName: 'prescricao-camila-boxe.pdf'
     }));
 
     const acceptedOrder = applyOrderAction('BP-DEMO-012', {
@@ -449,7 +448,6 @@ describe('shared Biteplaner demo state', () => {
       productionRequestSummary: 'Pedido reenviado para o segundo laboratório.',
       labNotes: 'Nova tentativa com laboratório alternativo.',
       scan3dFileName: 'scan-v2.stl',
-      prescriptionFileName: 'prescricao-v2.pdf',
       lgpdConfirmed: true,
       selectedLabId: 'lab-demo-002',
     }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
@@ -476,7 +474,6 @@ describe('shared Biteplaner demo state', () => {
       productionRequestSummary: 'Pedido reenviado para o primeiro laboratório.',
       labNotes: 'Retorno para o laboratório inicial.',
       scan3dFileName: 'scan-v3.stl',
-      prescriptionFileName: 'prescricao-v3.pdf',
       lgpdConfirmed: true,
       selectedLabId: 'lab-demo-001',
     }, { requestHeaders: { 'x-demo-persona': 'dentist' } });

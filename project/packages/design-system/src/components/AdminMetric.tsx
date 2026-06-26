@@ -78,7 +78,7 @@ const Value = styled.strong<{ $tokens: BrandTokens; $tone: AdminMetricTone }>`
   display: block;
   font-size: 32px;
   line-height: 1;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ $tokens, $tone }) => {
     if ($tone === 'danger') return $tokens.colors.danger;
     if ($tone === 'neutral') return $tokens.colors.text;

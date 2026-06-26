@@ -35,6 +35,13 @@ describe('routes', () => {
     expect(routesSource).toContain("{ path: '/painel/notificacoes', element: <PainelRoute><Notificacoes /></PainelRoute> }");
   });
 
+  it('routes purchase confirmation and admin payment operations separately', () => {
+    expect(routesSource).toContain("const AdminPayments = lazy(() => import('../pages/painel/admin/AdminPayments')");
+    expect(routesSource).toContain("{ path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
+    expect(routesSource).toContain("{ path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
+    expect(routesSource).toContain("{ path: '/painel/admin/pagamentos', element: <AdminPainelRoute><AdminPayments /></AdminPainelRoute> }");
+  });
+
   it('rewrites the demo admin route before Apache treats the asset folder as a directory', () => {
     const demoAdmRewriteIndex = htaccessSource.indexOf('RewriteRule ^demo-adm/?$ /index.html [L]');
     const directorySkipIndex = htaccessSource.indexOf('RewriteCond %{REQUEST_FILENAME} !-d');

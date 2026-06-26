@@ -79,6 +79,30 @@ describe('RadioQuestionGroup', () => {
 
     expect(screen.getByTestId('radio-question-options-answer')).toHaveStyle({
       display: 'flex',
+      'justify-content': 'flex-start',
+    });
+  });
+
+  it('keeps inline options below the question label', () => {
+    render(
+      <DesignSystemProvider brand="nexor">
+        <RadioQuestionGroup
+          name="answer"
+          label="Resposta"
+          inline
+          value="no"
+          onChange={vi.fn()}
+          options={[
+            { value: 'no', label: 'Nao' },
+            { value: 'yes', label: 'Sim' },
+          ]}
+        />
+      </DesignSystemProvider>,
+    );
+
+    expect(screen.getByTestId('radio-question-options-answer')).toHaveStyle({
+      'grid-column': '1/-1',
+      'grid-row': 'auto',
     });
   });
 

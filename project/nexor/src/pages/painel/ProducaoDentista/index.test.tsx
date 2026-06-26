@@ -148,6 +148,7 @@ function reviewedSharedIntake(overrides: Record<string, unknown> = {}) {
       dentist: {
         painlessMaxOpeningMm: 42,
         initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
+        professionalObservations: 'Resumo clínico completo.',
       },
     },
     ...overrides,
@@ -234,6 +235,10 @@ function configureApiGet({
   mockApiGet.mockImplementation((url: string) => {
     if (url === '/v1/orders?as=dentist') {
       return Promise.resolve({ orders: [order] });
+    }
+
+    if (url === `/v1/orders/${configuredOrderId}`) {
+      return Promise.resolve(order);
     }
 
     if (url === `/v1/orders/${configuredOrderId}/workflow-forms`) {
@@ -368,12 +373,15 @@ function fillRequiredDentistComplement() {
   fireEvent.click(within(eligibilityGroup).getByRole('radio', { name: /sim/i }));
 
   fireEvent.click(screen.getByRole('button', { name: /^modelo/i }));
-  fireEvent.click(screen.getByRole('option', { name: /linha impacto/i }));
+  fireEvent.click(screen.getByRole('option', { name: /linha impact/i }));
 
   fireEvent.click(screen.getByRole('button', { name: /^cor/i }));
   fireEvent.click(screen.getByRole('option', { name: /preto/i }));
 
   fireEvent.change(screen.getByLabelText(/^quantidade/i), { target: { value: '2' } });
+  fireEvent.change(screen.getByLabelText(/observações profissionais/i), {
+    target: { value: 'Resumo clínico completo.' },
+  });
   fireEvent.change(consultationDateInput, { target: { value: '2026-05-12' } });
   fireEvent.change(getPainlessOpeningInput(), { target: { value: '42' } });
   fireEvent.click(
@@ -440,6 +448,7 @@ async function fillProductionRequestUntilLabSelection() {
     fireEvent.blur(summaryInput);
     await clickWizardNextButton();
   } else {
+    await clickWizardNextButton();
     await screen.findByLabelText(/solicitação de produção/i);
   }
 
@@ -449,9 +458,6 @@ async function fillProductionRequestUntilLabSelection() {
 
   fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
     target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-  });
-  fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-    target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
   });
   fireEvent.click(screen.getByRole('checkbox'));
   await clickWizardNextButton();
@@ -575,21 +581,18 @@ describe('ProducaoDentista', () => {
     expect(anamnesisSource).not.toContain('<S.SectionIcon>');
   });
 
-  it('keeps professional observations typing local before syncing the heavy production draft', () => {
+  it('keeps professional observations inside the dentist complement before the anamnesis summary step', () => {
     const anamnesisSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/DentalAnamnesisRecord.tsx'), 'utf8');
+    const sharedIntakeSource = readFileSync(join(process.cwd(), 'src/pages/painel/components/sharedIntakeDefinition.ts'), 'utf8');
     const productionRequestFieldsSource = readFileSync(
       join(process.cwd(), 'src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx'),
       'utf8'
     );
 
-    expect(anamnesisSource).toContain('function DebouncedTextArea');
-    expect(anamnesisSource).toContain('const [localValue, setLocalValue] = useState(value)');
-    expect(anamnesisSource).toContain('window.setTimeout(() => {');
-    expect(anamnesisSource).toContain('delayMs = 300');
-    expect(anamnesisSource).toContain('}, delayMs);');
-    expect(anamnesisSource).toContain('<DebouncedTextArea');
-    expect(anamnesisSource).toContain('onCommit={onSummaryChange}');
-    expect(anamnesisSource).toContain('onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setLocalValue(event.target.value)}');
+    expect(sharedIntakeSource).toContain("key: 'professionalObservations'");
+    expect(sharedIntakeSource).toContain("label: 'Observações profissionais'");
+    expect(anamnesisSource).not.toContain('<DebouncedTextArea');
+    expect(anamnesisSource).not.toContain('onCommit={onSummaryChange}');
     expect(anamnesisSource).not.toContain('const [localSummary, setLocalSummary] = useState(draft.anamnesisSummary)');
     expect(anamnesisSource).not.toContain('onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onSummaryChange(event.target.value)}');
     expect(productionRequestFieldsSource).toContain('function useDebouncedDraftText');
@@ -620,22 +623,17 @@ describe('ProducaoDentista', () => {
     expect(patientStripSource).toContain('<S.QuickLabel>Status clínico</S.QuickLabel>');
   });
 
-  it('allows any file type for the intraoral scan upload field', () => {
+  it('restricts production upload fields to a scan-only LGPD-reviewed policy', () => {
     const productionRequestFieldsSource = readFileSync(
       join(process.cwd(), 'src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx'),
       'utf8'
     );
-    const scanUploadSource = productionRequestFieldsSource.slice(
-      productionRequestFieldsSource.indexOf('label="Escaneamento 3D intraoral (*)"'),
-      productionRequestFieldsSource.indexOf('label="Prescrição médica assinada e carimbada (*)"')
-    );
-    const prescriptionUploadSource = productionRequestFieldsSource.slice(
-      productionRequestFieldsSource.indexOf('label="Prescrição médica assinada e carimbada (*)"')
-    );
 
-    expect(scanUploadSource).not.toContain('accept=');
-    expect(scanUploadSource).toContain('hint="Obrigatório anexar 1 arquivo de escaneamento 3D intraoral."');
-    expect(prescriptionUploadSource).toContain('accept=".pdf,.png,.jpg,.jpeg"');
+    expect(productionRequestFieldsSource).toContain('accept={PRODUCTION_UPLOAD_POLICIES.scan3d.accept}');
+    expect(productionRequestFieldsSource).toContain('Formatos aceitos: STL, PLY, OBJ, DICOM, ZIP ou PDF');
+    expect(productionRequestFieldsSource).toContain('100 MB.');
+    expect(productionRequestFieldsSource).not.toContain('PRODUCTION_UPLOAD_POLICIES.prescription');
+    expect(productionRequestFieldsSource.toLowerCase()).not.toContain('prescri');
   });
 
   it('keeps form action buttons on the onboarding button pattern and admin actions on the design-system Button', () => {
@@ -806,7 +804,7 @@ describe('ProducaoDentista', () => {
     expect(orderCard).not.toHaveTextContent(/etapa atual/i);
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
-    expect(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i).closest('details')).toBeNull();
+    expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
     expect(screen.queryByText(/^anexos obrigatórios$/i)).not.toBeInTheDocument();
@@ -829,7 +827,6 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByLabelText(/solicitação de produção \(\*\)/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/selecionar escaneamento 3d intraoral \(\*\)/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada \(\*\)/i)).toBeInTheDocument();
     expect(screen.getByTestId('dentist-retention-consent-label')).toHaveTextContent(/\(\*\)/);
   });
 
@@ -851,7 +848,9 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getAllByText(/pedido biteplaner/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/linha impacto \/ preto \/ 2/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^linha impact$/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^preto$/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^2$/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/recomendado pelo dentista na consulta/i)).toBeInTheDocument();
   });
 
@@ -904,7 +903,6 @@ describe('ProducaoDentista', () => {
             productionRequestSummary: 'Solicitação de produção já salva no banco.',
             labNotes: 'Observações salvas para o laboratório.',
             scan3dFileName: 'scan-salvo.stl',
-            prescriptionFileName: 'prescricao-salva.pdf',
             purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
             lgpdConfirmed: true,
             selectedLabId: 'profile-lab-edu',
@@ -920,10 +918,9 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByDisplayValue('Solicitação de produção já salva no banco.')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Observações salvas para o laboratório.')).toBeInTheDocument();
     expect(screen.getByText(/scan-salvo\.stl/i)).toBeInTheDocument();
-    expect(screen.getByText(/prescricao-salva\.pdf/i)).toBeInTheDocument();
     expect(screen.getByText(/pedido biteplaner confirmado pelo cliente/i)).toBeInTheDocument();
-    expect(screen.getByText(/cor: preto/i)).toBeInTheDocument();
-    expect(screen.getByText(/quantidade: 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/^preto$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^2$/i)).toBeInTheDocument();
     expect(screen.getByText(/o cliente alterou o pedido antes do pagamento/i)).toBeInTheDocument();
   });
 
@@ -964,7 +961,6 @@ describe('ProducaoDentista', () => {
             productionRequestSummary: '',
             labNotes: '',
             scan3dFileName: '',
-            prescriptionFileName: '',
             lgpdConfirmed: false,
             selectedLabId: '',
           },
@@ -978,7 +974,7 @@ describe('ProducaoDentista', () => {
 
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Resumo clínico salvo.')).toBeInTheDocument();
+    expect(screen.getAllByText(/resumo clínico completo/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
   });
 
@@ -1039,7 +1035,6 @@ describe('ProducaoDentista', () => {
           productionRequestSummary: 'Solicitação devolvida para ajuste.',
           labNotes: 'Revisar escaneamento solicitado pelo laboratório.',
           scan3dFileName: 'scan.stl',
-          prescriptionFileName: 'prescricao.pdf',
           lgpdConfirmed: true,
           selectedLabId: 'lab-demo-001',
         },
@@ -1241,14 +1236,10 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getByText(/clínica esportiva nexor/i)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     expect(screen.getByLabelText(/^solicita.*produ/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i)).toBeInTheDocument();
   });
 
   it('stops the dentist at the anamnesis summary after the initial evaluation is completed', async () => {
@@ -1264,10 +1255,6 @@ describe('ProducaoDentista', () => {
 
     await screen.findByTestId('athlete-order-card');
     await screen.findByText(/etapa 2 de 4/i);
-
-    fireEvent.change(await screen.findByLabelText(/resumo da avalia.*inicial \/ anamnese/i), {
-      target: { value: 'Resumo clinico completo.' },
-    });
 
     expect(screen.getByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /aguardando pagamento do cliente/i })).toBeDisabled();
@@ -1327,12 +1314,14 @@ describe('ProducaoDentista', () => {
     await screen.findByRole('heading', { name: /solicitação de produção/i });
     expect(screen.queryByTestId('dentist-production-steps')).not.toBeInTheDocument();
 
-    const stylesheet = Array.from(document.head.querySelectorAll('style'))
-      .map((style) => style.textContent ?? '')
-      .join('\n');
-
-    expect(await screen.findByRole('region', { name: /seu progresso/i })).toBeInTheDocument();
-    expect(stylesheet).toContain('grid-auto-flow:column');
+    const progressRegion = await screen.findByRole('region', { name: /seu progresso/i });
+    expect(progressRegion).toBeInTheDocument();
+    expect(within(progressRegion).queryByText(/seu cuidado/i)).not.toBeInTheDocument();
+    const workflowFormsStyles = readFileSync(
+      join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.styles.ts'),
+      'utf8'
+    );
+    expect(workflowFormsStyles).toContain('grid-auto-flow: column;');
 
     expect(screen.getByTestId('workflow-forms-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('dental-anamnesis-record')).not.toBeInTheDocument();
@@ -1378,16 +1367,65 @@ describe('ProducaoDentista', () => {
     expect(screen.getAllByText(/observações profissionais/i).length).toBeGreaterThan(0);
   });
 
-  it('requires both the intraoral scan and the signed prescription before enabling completion', async () => {
+  it('fills professional observations in the dentist complement and shows them read-only in the anamnesis record', async () => {
+    configureApiGet({ forms: [sharedIntake()] });
+
+    renderPage();
+
+    await screen.findByTestId('workflow-forms-panel');
+    await goToDentistComplement();
+    mockApiPost.mockResolvedValueOnce(
+      reviewedSharedIntake({
+        payload: {
+          customer: sharedIntake().payload.customer,
+          dentist: {
+            professionalObservations: 'Resumo clínico completo.',
+            biteplannerEligible: 'yes',
+            biteplanerModel: 'impacto',
+            biteplanerColor: 'preto',
+            biteplanerQuantity: 2,
+            consultationDate: '2026-05-12',
+            painlessMaxOpeningMm: 42,
+            dentistClinicalDeclaration: ['accepted'],
+          },
+        },
+      })
+    );
+
+    const professionalObservations = screen.getByLabelText(/observações profissionais/i);
+    fireEvent.change(professionalObservations, {
+      target: { value: 'Resumo clínico preenchido no complemento.' },
+    });
+    fillRequiredDentistComplement();
+
+    fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/workflow-forms/BP-WF-004-INTAKE/submit',
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            dentist: expect.objectContaining({
+              professionalObservations: 'Resumo clínico completo.',
+            }),
+          }),
+        }),
+        'tok'
+      )
+    );
+
+    await screen.findByTestId('dental-anamnesis-record');
+    expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Resumo clínico completo.').length).toBeGreaterThan(0);
+  }, 15000);
+
+  it('requires the intraoral scan before enabling completion', async () => {
     configureApiGet();
 
     renderPage();
 
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1420,9 +1458,6 @@ describe('ProducaoDentista', () => {
     await screen.findByTestId('athlete-order-card');
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1430,9 +1465,6 @@ describe('ProducaoDentista', () => {
     });
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.dcm', { type: 'application/dicom' })] },
-    });
-    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox', { name: /guarda principal do registro clínico/i }));
 
@@ -1454,9 +1486,6 @@ describe('ProducaoDentista', () => {
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
 
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1468,18 +1497,13 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
-    });
     await waitFor(() => expect(screen.getByText('scan.stl')).toBeInTheDocument());
-    await waitFor(() => expect(screen.getByText('prescricao.pdf')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('checkbox'));
 
     await clickWizardNextButton();
     expect(await screen.findByText(/selecionar um laboratório licenciado/i)).toBeInTheDocument();
     expect(screen.queryByText(/preencher a solicitação de produção/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/anexar o escaneamento 3d intraoral/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/anexar a prescrição médica assinada e carimbada/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/confirmar o aceite de retenção e rastreabilidade/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
@@ -1505,7 +1529,8 @@ describe('ProducaoDentista', () => {
     fillRequiredDentistComplement();
     fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
 
-    expect(await screen.findByLabelText(/resumo da avaliação inicial \/ anamnese/i)).toBeInTheDocument();
+    await screen.findByTestId('dental-anamnesis-record');
+    expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
   });
@@ -1535,6 +1560,7 @@ describe('ProducaoDentista', () => {
             consultationDate: '2026-05-12',
             painlessMaxOpeningMm: 42,
             initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
+            professionalObservations: 'Resumo clínico completo.',
             dentistClinicalDeclaration: ['accepted'],
           },
         },
@@ -1544,7 +1570,8 @@ describe('ProducaoDentista', () => {
     fillRequiredDentistComplement();
     fireEvent.click(screen.getByRole('button', { name: /salvar complemento do dentista/i }));
 
-    expect(await screen.findByLabelText(/resumo da avaliação inicial \/ anamnese/i)).toBeInTheDocument();
+    await screen.findByTestId('dental-anamnesis-record');
+    expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
   });
 
   it('submits the production request successfully when all required fields are filled', async () => {
@@ -1562,9 +1589,6 @@ describe('ProducaoDentista', () => {
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
 
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1573,9 +1597,6 @@ describe('ProducaoDentista', () => {
 
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
-    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
@@ -1604,11 +1625,6 @@ describe('ProducaoDentista', () => {
             scan3dFileName: 'scan.stl',
             scan3dFileRef: expect.objectContaining({
               id: expect.stringContaining('ext_scan3d-scan.stl'),
-              provider: 'simulated-external-storage',
-            }),
-            prescriptionFileName: 'prescricao.pdf',
-            prescriptionFileRef: expect.objectContaining({
-              id: expect.stringContaining('ext_prescription-prescricao.pdf'),
               provider: 'simulated-external-storage',
             }),
             lgpdConfirmed: true,
@@ -1700,9 +1716,6 @@ describe('ProducaoDentista', () => {
 
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1711,9 +1724,6 @@ describe('ProducaoDentista', () => {
 
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
-    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
@@ -1731,18 +1741,12 @@ describe('ProducaoDentista', () => {
 
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
-    fireEvent.change(screen.getByLabelText(/selecionar prescrição médica assinada e carimbada/i), {
-      target: { files: [new File(['prescription'], 'prescricao.pdf', { type: 'application/pdf' })] },
     });
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
@@ -1758,9 +1762,6 @@ describe('ProducaoDentista', () => {
 
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
     await clickWizardNextButton();
 
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
@@ -1791,6 +1792,7 @@ describe('ProducaoDentista', () => {
           dentist: {
             painlessMaxOpeningMm: 42,
             initialEvaluationSummary: 'Sem sinais impeditivos para seguir.',
+            professionalObservations: 'Resumo clínico completo.',
           },
         },
       }),
@@ -1816,6 +1818,7 @@ describe('ProducaoDentista', () => {
             dentist: expect.objectContaining({
               consultationDate: '2026-05-12',
               painlessMaxOpeningMm: 42,
+              professionalObservations: 'Resumo clínico completo.',
               dentistClinicalDeclaration: ['accepted'],
             }),
           }),
@@ -1823,10 +1826,29 @@ describe('ProducaoDentista', () => {
         'tok'
       )
     );
-    expect(await screen.findByLabelText(/resumo da avalia.*inicial \/ anamnese/i)).toBeInTheDocument();
+    await screen.findByTestId('dental-anamnesis-record');
+    expect(screen.queryByLabelText(/resumo da avalia.*inicial \/ anamnese/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Resumo clínico completo.').length).toBeGreaterThan(0);
     expect(screen.queryAllByText(/formulário enviado/i).length).toBeLessThanOrEqual(1);
     fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
+  });
+
+  it('does not reuse a submitted dentist workflow cache when the current dentist still has a pending complement', async () => {
+    const queryClient = createTestQueryClient();
+
+    queryClient.setQueryData(['biteplaner', 'orders', 'BP-DEMO-004', 'workflow-forms'], {
+      forms: [reviewedSharedIntake()],
+    });
+
+    configureApiGet({ forms: [sharedIntake()] });
+    renderPageWithQueryClient(queryClient);
+
+    await screen.findByTestId('workflow-forms-panel');
+    await goToDentistComplement();
+
+    expect(screen.getByRole('button', { name: /salvar complemento do dentista/i })).toBeInTheDocument();
+    expect(screen.queryByText(/complemento do dentista indispon/i)).not.toBeInTheDocument();
   });
 
   it('does not reopen a submitted shared intake complement as the initial evaluation step', async () => {
@@ -2177,25 +2199,31 @@ describe('ProducaoDentista', () => {
     expect(screen.getByText(/musculação/i)).toBeInTheDocument();
   });
 
-  it('lets the dentist download the anamnesis PDF before attaching the signed prescription', async () => {
+  it('lets the dentist download the anamnesis PDF before completing production', async () => {
     configureApiGet();
 
     renderPage();
 
     expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
-    const summaryInput = screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i);
-    fireEvent.change(summaryInput, {
-      target: { value: 'Resumo clínico completo para impressão.' },
+    const originalCreateElement = document.createElement.bind(document);
+    const createdAnchors: HTMLAnchorElement[] = [];
+    vi.spyOn(document, 'createElement').mockImplementation((tagName, options) => {
+      const element = originalCreateElement(tagName, options);
+
+      if (tagName === 'a') {
+        createdAnchors.push(element as HTMLAnchorElement);
+      }
+
+      return element;
     });
-    fireEvent.blur(summaryInput);
 
     fireEvent.click(screen.getByRole('button', { name: /baixar ficha de anamnese/i }));
     expect(MockPdfWorker.instances).toHaveLength(1);
     expect(MockPdfWorker.instances[0]?.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         order: expect.objectContaining({ id: 'BP-DEMO-004' }),
-        draft: expect.objectContaining({ anamnesisSummary: 'Resumo clínico completo para impressão.' }),
+        draft: expect.objectContaining({ anamnesisSummary: expect.any(String) }),
       })
     );
 
@@ -2204,9 +2232,17 @@ describe('ProducaoDentista', () => {
     });
 
     expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(createdAnchors.at(-1)?.download).toMatch(/^ficha-anamnese-\d{8}\.pdf$/);
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     expect(screen.queryByText(/anamnese baixada/i)).not.toBeInTheDocument();
   }, 15000);
+
+  it('removes the standalone professional observations card from the anamnesis PDF', () => {
+    const pdfSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/finalAnamnesisPdf.tsx'), 'utf8');
+
+    expect(pdfSource).not.toContain('OBSERVAÇÕES PROFISSIONAIS');
+    expect(pdfSource).not.toContain('<Section number={9} title=\"OBSERVAÇÕES PROFISSIONAIS\">');
+  });
 
   it('renders the clinical form without duplicate internal heading, release metadata or consolidated notice card', async () => {
     configureApiGet({ forms: [sharedIntake()] });
@@ -2265,9 +2301,6 @@ describe('ProducaoDentista', () => {
 
     await screen.findByTestId('athlete-order-card');
     await ensureAnamnesisSummaryStep();
-    fireEvent.change(screen.getByLabelText(/resumo da avaliação inicial \/ anamnese/i), {
-      target: { value: 'Resumo clínico completo.' },
-    });
 
     await clickWizardNextButton();
     expect(MockPdfWorker.instances).toHaveLength(0);

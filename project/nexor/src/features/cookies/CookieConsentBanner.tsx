@@ -42,7 +42,7 @@ const BannerLabel = styled.p`
 const BannerTitle = styled.h2`
   margin: 0 0 10px;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;

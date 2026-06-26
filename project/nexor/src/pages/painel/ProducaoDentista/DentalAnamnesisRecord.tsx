@@ -7,7 +7,7 @@ import {
   Stethoscope,
 } from 'lucide-react';
 import { AdminFormButton } from '@nexor/design-system';
-import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import {
   formatDate,
   getOrderDisplayId,
@@ -34,7 +34,6 @@ type DentalAnamnesisRecordProps = {
   intakeForm?: DemoWorkflowForm;
   onboardingForm?: DemoWorkflowForm;
   draft: ProductionRequestDraft;
-  onSummaryChange: (value: string) => void;
   onDownloadAnamnesisPdf?: () => void;
 };
 
@@ -176,8 +175,8 @@ function FieldItem({ label, value, important = false }: { label: string; value: 
 }
 
 const BITEPLANER_MODEL_LABELS: Record<string, string> = {
-  impacto: 'Linha Impacto',
-  esportes: 'Linha Esportes',
+  impacto: 'Linha Impact',
+  esportes: 'Linha Strength',
 };
 
 const BITEPLANER_COLOR_LABELS: Record<string, string> = {
@@ -372,86 +371,11 @@ function buildPayloadSection(
   };
 }
 
-type DebouncedTextAreaProps = Omit<ComponentProps<typeof S.TextArea>, 'onChange' | 'value'> & {
-  value: string;
-  onCommit: (value: string) => void;
-  delayMs?: number;
-};
-
-function DebouncedTextArea({ value, onCommit, onBlur, delayMs = 300, ...props }: DebouncedTextAreaProps) {
-  const [localValue, setLocalValue] = useState(value);
-  const localValueRef = useRef(localValue);
-  const committedValueRef = useRef(value);
-  const onCommitRef = useRef(onCommit);
-
-  useEffect(() => {
-    onCommitRef.current = onCommit;
-  }, [onCommit]);
-
-  useEffect(() => {
-    localValueRef.current = localValue;
-  }, [localValue]);
-
-  useEffect(() => {
-    if (value === committedValueRef.current) {
-      return;
-    }
-
-    committedValueRef.current = value;
-    setLocalValue(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (localValue === committedValueRef.current) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      committedValueRef.current = localValue;
-      onCommitRef.current(localValue);
-    }, delayMs);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [delayMs, localValue]);
-
-  useEffect(
-    () => () => {
-      if (localValueRef.current !== committedValueRef.current) {
-        committedValueRef.current = localValueRef.current;
-        onCommitRef.current(localValueRef.current);
-      }
-    },
-    []
-  );
-
-  function commitLocalValue() {
-    if (localValue === committedValueRef.current) {
-      return;
-    }
-
-    committedValueRef.current = localValue;
-    onCommitRef.current(localValue);
-  }
-
-  return (
-    <S.TextArea
-      {...props}
-      value={localValue}
-      onBlur={(event) => {
-        onBlur?.(event);
-        commitLocalValue();
-      }}
-      onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setLocalValue(event.target.value)}
-    />
-  );
-}
-
 export function DentalAnamnesisRecord({
   order,
   intakeForm,
   onboardingForm,
   draft,
-  onSummaryChange,
   onDownloadAnamnesisPdf,
 }: DentalAnamnesisRecordProps) {
   const payloadCustomer = getWorkflowFormPayloadSection(intakeForm?.payload, 'customer_pre_consultation_intake', 'customer');
@@ -586,16 +510,10 @@ export function DentalAnamnesisRecord({
     {
       id: 'observacoes',
       title: 'Observações profissionais',
-      description: 'Campo amplo para registrar anamnese final e notas essenciais ao prontuario.',
+      description: 'Notas profissionais registradas no complemento clínico do dentista.',
       status: 'Profissional',
       content: (
-        <DebouncedTextArea
-          aria-label="Resumo da avaliação inicial / anamnese"
-          maxLength={1200}
-          placeholder="Registre apenas achados clínicos necessários para avaliação, aptidão e produção. Não inclua dados de terceiros."
-          value={draft.anamnesisSummary}
-          onCommit={onSummaryChange}
-        />
+        <S.VisibleNotesText>{formatValue(draft.anamnesisSummary)}</S.VisibleNotesText>
       ),
     },
   ];

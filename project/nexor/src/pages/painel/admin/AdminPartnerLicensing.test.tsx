@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { initDesignSystem } from '@nexor/design-system';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
@@ -104,5 +106,26 @@ describe('AdminPartnerLicensing', () => {
         'tok'
       )
     );
+  });
+
+  it('keeps the partner submitted-data modal aligned with the compact licensing modal layout', () => {
+    const source = readFileSync(resolve(__dirname, 'AdminPartnerLicensing.tsx'), 'utf8');
+
+    expect(source).toContain('mobilePlacement="center"');
+    expect(source).toContain('const ModalSubtitleInline = styled.span');
+    expect(source).toContain('const CompactModalPairGrid = styled.div');
+    expect(source).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
+    expect(source).toContain('const CompactModalCardHeader = styled.div');
+    expect(source).toContain('const CompactModalCardBody = styled.div');
+    expect(source).toContain('grid-column: 1 / -1;');
+    expect(source).toContain('const PartnerContextDisclosure = styled.details');
+    expect(source).toContain('<PartnerContextDisclosure');
+    expect(source).not.toContain('<PartnerContextDisclosure open');
+    expect(source).toContain('const CompactModalButton = styled(Button)');
+    expect(source).toContain('$tone="success"');
+    expect(source).not.toContain('<AdminModalDetailGrid>');
+    expect(source).not.toContain('<AdminModalDetailContent>');
+    expect(source).not.toContain('<AdminModalActions>');
+    expect(source).not.toContain('<AdminModalAction');
   });
 });

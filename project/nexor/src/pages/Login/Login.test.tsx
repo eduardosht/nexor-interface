@@ -97,6 +97,32 @@ describe('Login', () => {
     );
   });
 
+  it('replaces generic server auth errors with a friendly login message', () => {
+    vi.mocked(useAuth).mockReturnValue(createAuthMock({
+      authError: 'Unexpected server error.'
+    }));
+
+    renderLogin('?next=%2Fpainel');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Não foi possível acessar sua conta agora. Aguarde alguns instantes e tente novamente.'
+    );
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/unexpected server error/i);
+  });
+
+  it('replaces explicit 500 auth errors with a friendly login message', () => {
+    vi.mocked(useAuth).mockReturnValue(createAuthMock({
+      authError: 'Request failed with status code 500'
+    }));
+
+    renderLogin('?next=%2Fpainel');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Não foi possível acessar sua conta agora. Aguarde alguns instantes e tente novamente.'
+    );
+    expect(screen.getByRole('alert')).not.toHaveTextContent(/500/i);
+  });
+
   it('shows validation error when email is empty', async () => {
     renderLogin();
     fireEvent.click(getSubmitButton());

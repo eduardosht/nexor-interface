@@ -31,18 +31,13 @@ export type RadioQuestionGroupProps = {
 
 const Wrapper = styled.fieldset<{ $tokens: BrandTokens; $variant: RadioQuestionVariant; $inline: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $variant, $inline }) =>
-    $variant === 'inline' || $inline ? 'minmax(0, 1fr) auto' : '1fr'};
-  align-items: center;
+  grid-template-columns: 1fr;
+  align-items: start;
   gap: ${({ $tokens }) => $tokens.spacing.form.labelGap};
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
-
-  @media (max-width: 640px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 const Legend = styled.legend<{ $tokens: BrandTokens }>`
@@ -62,7 +57,7 @@ const Legend = styled.legend<{ $tokens: BrandTokens }>`
 
 const LegendStack = styled.span<{ $tokens: BrandTokens; $inline: boolean; $variant: RadioQuestionVariant }>`
   display: block;
-  grid-column: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '1' : '1 / -1')};
+  grid-column: 1 / -1;
   grid-row: 1;
   min-width: 0;
   color: ${({ $tokens }) => $tokens.colors.text};
@@ -110,12 +105,12 @@ const Options = styled.div<{
   $columns: RadioQuestionColumns;
   $inline: boolean;
 }>`
-  grid-column: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '2' : '1')};
-  grid-row: ${({ $inline, $variant }) => ($inline || $variant === 'inline' ? '1' : 'auto')};
+  grid-column: 1 / -1;
+  grid-row: auto;
   align-self: start;
   display: ${({ $inline }) => ($inline ? 'flex' : 'grid')};
   flex-wrap: ${({ $inline }) => ($inline ? 'wrap' : undefined)};
-  justify-content: ${({ $inline }) => ($inline ? 'flex-end' : undefined)};
+  justify-content: ${({ $inline }) => ($inline ? 'flex-start' : undefined)};
   gap: ${({ $tokens }) => $tokens.spacing['8']};
 
   ${({ $variant, $columns, $inline }) =>
@@ -131,7 +126,7 @@ const Options = styled.div<{
         `
       : css`
           grid-template-columns: repeat(${$columns}, minmax(104px, 1fr));
-          justify-content: end;
+          justify-content: start;
         `}
 
   @media (max-width: 640px) {

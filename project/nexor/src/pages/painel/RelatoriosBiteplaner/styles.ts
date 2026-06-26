@@ -28,7 +28,7 @@ export const Eyebrow = styled.span`
   margin-bottom: 8px;
   color: #1f7a4c;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0;
 `;
@@ -205,7 +205,7 @@ export const Classification = styled.span<{ $tone: string }>`
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   color: ${({ $tone }) => ($tone === 'sensitive' ? '#8d2f25' : $tone === 'financial' ? '#7a4f10' : $tone === 'personal' ? '#285f8f' : '#1f7a4c')};
   background: ${({ $tone }) => ($tone === 'sensitive' ? '#f8e8e5' : $tone === 'financial' ? '#f6edda' : $tone === 'personal' ? '#e8f1f8' : '#e6f3ec')};
 `;
@@ -224,7 +224,7 @@ export const Button = styled.button`
   background: #1f7a4c;
   color: #ffffff;
   padding: 0 16px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 
   &:disabled {

@@ -241,7 +241,7 @@ export const SectionTitle = styled.h2`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const SectionDescription = styled.p`
@@ -438,7 +438,7 @@ export const Avatar = styled.span`
   background: linear-gradient(135deg, #6d28d9, #8b5cf6);
   color: #ffffff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const ReviewerName = styled.strong`
@@ -463,7 +463,7 @@ export const ReviewScore = styled.div`
   gap: 8px;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 export const Comment = styled.p`
@@ -677,7 +677,7 @@ export const ScoreOption = styled.label<{ $active: boolean; $selected: boolean }
     background: ${({ $selected, theme }) => ($selected ? '#fef3c7' : theme.colors.bgBase)};
     color: ${({ $active, $selected }) => ($active || $selected ? '#eab308' : '#d4d4d4')};
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 700;
     transition:
       color 120ms ease,
       background 120ms ease,

@@ -1160,7 +1160,7 @@ async function demonstrateCustomerOnboardingViaUi(page, orderId) {
 
 async function demonstrateCustomerPreConsultViaUi(page, orderId) {
   await setVideoStep(page, 'Cliente preenche pré-consulta', readableStepDescription('cliente-pre-consulta-formulario')).catch(() => undefined);
-  await gotoAndRecord(page, '/painel/pre-requisito', 'cliente-pre-consulta-formulario');
+  await gotoAndRecord(page, '/painel/pre-consulta', 'cliente-pre-consulta-formulario');
   for (let attempt = 0; attempt < 12; attempt += 1) {
     await fillVisibleInputs(page, ['Cliente E2E Biteplaner', '11988887777', '01310-100', 'Treino de força', 'Sem restrições']);
     await fillVisibleTextareas(page, 'Registro de pré-consulta preenchido durante o fluxo E2E para apresentação.');

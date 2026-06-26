@@ -15,7 +15,7 @@ describe('orderPresenter', () => {
   });
 
   it('returns only customer journey labels for order stages', () => {
-    expect(getStageLabel({ stage: 'pre_requisite_pending' })).toBe('Pre-requisito');
+    expect(getStageLabel({ stage: 'pre_requisite_pending' })).toBe('Pré-consulta');
     expect(getStageLabel({ stage: 'awaiting_initial_consultation' })).toBe('Consulta inicial');
     expect(getStageLabel({ stage: 'awaiting_clinical_decision' })).toBe('Decisão clínica');
     expect(getStageLabel({ stage: 'awaiting_payment' })).toBe('Compra');
@@ -24,7 +24,7 @@ describe('orderPresenter', () => {
     expect(getStageLabel({ stage: 'lab_production' })).toBe('Laboratório');
     expect(getStageLabel({ stage: 'awaiting_adaptation' })).toBe('Adaptação e acompanhamento');
     expect(JOURNEY_STAGE_LABELS).toEqual([
-      'Pre-requisito',
+      'Pré-consulta',
       'Consulta inicial',
       'Decisão clínica',
       'Compra',

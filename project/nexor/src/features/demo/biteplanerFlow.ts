@@ -117,6 +117,7 @@ export type DemoOrderSummary = {
   } | null;
   payment?: BiteplanerPaymentSummary | null;
   paymentDetails?: BiteplanerPaymentSummary | null;
+  paymentRequest?: BiteplanerPaymentRequestSummary | null;
   dentistRecommendedPurchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
   purchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
   clinicalLinkSnapshot?: ClinicalLinkSnapshot | null;
@@ -190,6 +191,12 @@ export type BiteplanerPaymentSummary = {
   coupon_code?: string | null;
 };
 
+export type BiteplanerPaymentRequestSummary = {
+  status: 'pending_admin_message' | 'message_sent' | string;
+  confirmedAt?: string | null;
+  messageSentAt?: string | null;
+};
+
 export type ExternalFileReference = {
   id: string;
   fileName: string;
@@ -206,8 +213,6 @@ export type ProductionRequestDraft = {
   labNotes: string;
   scan3dFileName: string;
   scan3dFileRef?: ExternalFileReference | null;
-  prescriptionFileName: string;
-  prescriptionFileRef?: ExternalFileReference | null;
   lgpdConfirmed: boolean;
   selectedLabId: string | null;
   purchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
@@ -520,23 +525,6 @@ export type PartnerRequest = {
   metadata?: Record<string, unknown>;
 };
 
-export type DentistLicensingWorkflow = {
-  id: string;
-  status: string;
-  paymentStatus: string;
-  testAttempts: number;
-  testPassed: boolean;
-  certificateIssuedAt: string | null;
-  metadata: Record<string, unknown>;
-};
-
-export type DentistLicensingCourseContent = {
-  id: string;
-  title: string;
-  videoTitle: string;
-  documentTitle: string;
-};
-
 export type AccountNotification = {
   id: string;
   title: string;
@@ -545,14 +533,6 @@ export type AccountNotification = {
   read?: boolean;
   createdAt?: string;
 };
-
-export type DentistLicensingResponse = {
-  workflow: DentistLicensingWorkflow | null;
-  course: DentistLicensingCourseContent[];
-  notifications: AccountNotification[];
-};
-
-export type LabLicensingResponse = DentistLicensingResponse;
 
 export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athleteRegistered: 'user',
@@ -678,7 +658,7 @@ export function getEffectiveAthleteOrder(
   ) {
     return {
       ...order,
-      statusLabel: 'Pre-requisito pendente',
+      statusLabel: 'Pré-consulta pendente',
       stage: 'pre_requisite_pending',
     };
   }
@@ -696,7 +676,7 @@ export function getAthleteNextPath(order: DemoOrderSummary | null) {
   }
 
   if (order.status === 'registration_started' || order.stage === 'pre_requisite_pending') {
-    return '/painel/pre-requisito';
+    return '/painel/pre-consulta';
   }
 
   if (order.status === 'awaiting_scheduling' || order.status === 'ineligible_reassessment') {
@@ -704,7 +684,7 @@ export function getAthleteNextPath(order: DemoOrderSummary | null) {
   }
 
   if (order.status === 'awaiting_payment') {
-    return '/painel/compra';
+    return '/painel/confirmacao-compra';
   }
 
   return '/painel/biteplaner/jornada';
@@ -722,6 +702,8 @@ export interface OrderListParams {
   status?: string | undefined;
   limit?: number | undefined;
   createdBefore?: string | undefined;
+  initDate?: string | undefined;
+  finalDate?: string | undefined;
 }
 
 export async function fetchOrders(mode: AccessMode, token?: string, params: OrderListParams = {}) {
@@ -741,6 +723,14 @@ export async function fetchOrders(mode: AccessMode, token?: string, params: Orde
 
   if (params.createdBefore !== undefined) {
     query.set('createdBefore', params.createdBefore);
+  }
+
+  if (params.initDate !== undefined) {
+    query.set('initDate', params.initDate);
+  }
+
+  if (params.finalDate !== undefined) {
+    query.set('finalDate', params.finalDate);
   }
 
   const queryString = query.toString();
@@ -842,14 +832,6 @@ export async function rejectPartnerRequest(productRoleId: string, reason: string
   );
 }
 
-export async function fetchDentistLicensing(token?: string) {
-  return api.get<DentistLicensingResponse>('/v1/account/biteplaner/dentist-licensing', token);
-}
-
-export async function fetchLabLicensing(token?: string) {
-  return api.get<LabLicensingResponse>('/v1/account/biteplaner/lab-licensing', token);
-}
-
 export async function markAccountNotificationRead(notificationId: string, token?: string) {
   return api.patch<{ notification: AccountNotification }>(
     `/v1/account/notifications/${notificationId}/read`,
@@ -860,70 +842,6 @@ export async function markAccountNotificationRead(notificationId: string, token?
 
 export async function fetchLicensedLabs(token?: string) {
   return api.get<{ labs: LicensedLabSelectionApiRecord[] }>('/v1/account/biteplaner/licensed-labs', token);
-}
-
-export async function confirmDentistLicensingPayment(token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/dentist-licensing/payment-confirmed',
-    {},
-    token
-  );
-}
-
-export async function confirmLabLicensingPayment(token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/lab-licensing/payment-confirmed',
-    {},
-    token
-  );
-}
-
-export async function signDentistLicensingContract(type: 'intention' | 'licensing' | 'distrato', token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    `/v1/account/biteplaner/dentist-licensing/contracts/${type}/sign`,
-    {},
-    token
-  );
-}
-
-export async function signLabLicensingContract(type: 'intention' | 'licensing' | 'distrato', token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    `/v1/account/biteplaner/lab-licensing/contracts/${type}/sign`,
-    {},
-    token
-  );
-}
-
-export async function updateDentistLicensingCourseProgress(contentId: string, completed: boolean, token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/dentist-licensing/course/progress',
-    { contentId, completed },
-    token
-  );
-}
-
-export async function updateLabLicensingCourseProgress(contentId: string, completed: boolean, token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/lab-licensing/course/progress',
-    { contentId, completed },
-    token
-  );
-}
-
-export async function submitDentistLicensingTest(answers: string[], token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/dentist-licensing/test/submit',
-    { answers },
-    token
-  );
-}
-
-export async function submitLabLicensingTest(answers: string[], token?: string) {
-  return api.post<{ workflow: DentistLicensingWorkflow }>(
-    '/v1/account/biteplaner/lab-licensing/test/submit',
-    { answers },
-    token
-  );
 }
 
 export async function createPartnerInviteLink(
@@ -1075,6 +993,14 @@ export async function requestOrderSupport(
   token?: string
 ) {
   return api.post<{ accepted: true }>(`/v1/orders/${orderId}/support-requests`, payload, token);
+}
+
+export async function confirmPurchaseRequest(orderId: string, payload: CheckoutSessionRequest, token?: string) {
+  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/purchase-confirmation`, payload, token);
+}
+
+export async function markPaymentMessageSent(orderId: string, token?: string) {
+  return api.post<{ order: DemoOrderSummary }>(`/v1/admin/orders/${orderId}/payment-message-sent`, {}, token);
 }
 export async function createCheckoutSession(orderId: string, payload: CheckoutSessionRequest, token?: string) {
   return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, payload, token);

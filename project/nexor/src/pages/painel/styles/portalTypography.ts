@@ -7,7 +7,7 @@ export const PortalPageTitle = styled.h1<{ $size?: 'default' | 'showcase' }>`
   font-size: ${({ $size = 'default' }) =>
     $size === 'showcase' ? 'clamp(2.25rem, 5vw, 4rem)' : 'clamp(1.25rem, 2vw, 1.75rem)'};
   line-height: ${({ $size = 'default' }) => ($size === 'showcase' ? '0.98' : '1.08')};
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 
   ${({ $size = 'default' }) =>
@@ -109,7 +109,7 @@ export const PortalModalTitle = styled.h2`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
 
   @media (max-width: 768px) {
     font-size: 16px;

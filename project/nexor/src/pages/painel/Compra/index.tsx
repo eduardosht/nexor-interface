@@ -1,22 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Select } from '@nexor/design-system';
-import {
-  CheckCircle2,
-  Clock3,
-  Hourglass,
-  LockKeyhole,
-  PartyPopper,
-  ShieldCheck,
-} from 'lucide-react';
+import { Select, Snackbar, SnackbarStack } from '@nexor/design-system';
+import { CheckCircle2, Clock3, Hourglass, PartyPopper, Send, ShieldCheck } from 'lucide-react';
 import * as S from './styles';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  createCheckoutSession,
+  confirmPurchaseRequest,
   fetchOrders,
   getAuthToken,
-  reconcileCheckoutSession,
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
 import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
@@ -24,17 +15,17 @@ import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
 
 const NEXT_STEPS = [
   {
-    title: 'Aguardando pagamento pelo cliente',
+    title: 'Cliente confirma a compra',
     status: 'Aguardando',
     Icon: Hourglass,
   },
   {
-    title: 'Pedido será feito para a produção',
+    title: 'Nexor envia o link de pagamento por e-mail e celular',
     status: 'Pendente',
     Icon: Clock3,
   },
   {
-    title: 'Dentista licenciado receberá o pedido e agendará a consulta de retorno e adaptação.',
+    title: 'Cliente realiza o pagamento para liberar a produção',
     status: 'Pendente',
     Icon: Clock3,
   },
@@ -46,18 +37,11 @@ const BITEPLANER_COLOR_OPTIONS = [
 ];
 
 const BITEPLANER_MODEL_OPTIONS = [
-  { value: 'impacto', label: 'Linha Impacto' },
-  { value: 'esportes', label: 'Linha Esportes' },
+  { value: 'impacto', label: 'Linha Impact' },
+  { value: 'esportes', label: 'Linha Strength' },
 ];
 
 const BITEPLANER_UNIT_PRICE_CENTS = 137000;
-
-function formatCurrencyBRL(cents: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(cents / 100);
-}
 
 const PAYMENT_COMPLETED_STATUSES = new Set([
   'payment_confirmed',
@@ -71,12 +55,28 @@ const PAYMENT_COMPLETED_STATUSES = new Set([
   'completed',
 ]);
 
+function formatCurrencyBRL(cents: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents / 100);
+}
+
 function isPaymentCompletedStatus(status?: string) {
   return Boolean(status && PAYMENT_COMPLETED_STATUSES.has(status));
 }
 
-function getPurchaseSteps(checkoutSuccess: boolean) {
-  if (!checkoutSuccess) {
+function getPurchaseSteps(purchaseConfirmed: boolean, messageSent: boolean, paymentCompleted: boolean) {
+  if (paymentCompleted) {
+    return NEXT_STEPS.map((step) => ({
+      ...step,
+      status: 'Confirmado',
+      Icon: CheckCircle2,
+      state: 'confirmed' as const,
+    }));
+  }
+
+  if (!purchaseConfirmed) {
     return NEXT_STEPS.map((step, index) => ({
       ...step,
       state: index === 0 ? ('active' as const) : ('pending' as const),
@@ -87,7 +87,7 @@ function getPurchaseSteps(checkoutSuccess: boolean) {
     if (index === 0) {
       return {
         ...step,
-        title: 'Pagamento confirmado',
+        title: 'Compra confirmada',
         status: 'Confirmado',
         Icon: CheckCircle2,
         state: 'confirmed' as const,
@@ -97,9 +97,9 @@ function getPurchaseSteps(checkoutSuccess: boolean) {
     if (index === 1) {
       return {
         ...step,
-        status: 'Aguardando',
-        Icon: Hourglass,
-        state: 'active' as const,
+        status: messageSent ? 'Enviada' : 'Aguardando',
+        Icon: messageSent ? CheckCircle2 : Hourglass,
+        state: messageSent ? ('confirmed' as const) : ('active' as const),
       };
     }
 
@@ -116,9 +116,8 @@ type CompraProps = {
   onOrderChange?: (order: DemoOrderSummary) => void;
 };
 
-export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
+export function Compra({ embedded = false, initialOrder = null, onOrderChange }: CompraProps) {
   const { session } = useAuth();
-  const [searchParams] = useSearchParams();
   const token = getAuthToken(session);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
   const [loading, setLoading] = useState(!initialOrder);
@@ -128,10 +127,10 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const [selectedModel, setSelectedModel] = useState(BITEPLANER_MODEL_OPTIONS[0].value);
   const [selectedColor, setSelectedColor] = useState(BITEPLANER_COLOR_OPTIONS[0].value);
   const [quantity, setQuantity] = useState(1);
-  const checkoutSuccess = searchParams.get('checkout') === 'success';
-  const checkoutSessionId = searchParams.get('session_id');
-  const paymentCompleted = checkoutSuccess || isPaymentCompletedStatus(order?.status);
-  const purchaseSteps = getPurchaseSteps(paymentCompleted);
+  const paymentCompleted = isPaymentCompletedStatus(order?.status);
+  const purchaseConfirmed = Boolean(order?.purchaseConfiguration || order?.paymentRequest?.status);
+  const paymentMessageSent = order?.paymentRequest?.status === 'message_sent';
+  const purchaseSteps = getPurchaseSteps(purchaseConfirmed, paymentMessageSent, paymentCompleted);
   const orderConfiguration = order?.purchaseConfiguration ?? order?.dentistRecommendedPurchaseConfiguration ?? null;
   const totalCents = BITEPLANER_UNIT_PRICE_CENTS * quantity;
 
@@ -161,7 +160,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
         }
       } catch {
         if (active) {
-          setError('Não foi possível carregar o pedido de compra da demo.');
+          setError('Não foi possível carregar o pedido de compra.');
         }
       } finally {
         if (active) {
@@ -187,44 +186,9 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
     setQuantity(Math.max(1, Math.min(10, orderConfiguration.quantity)));
   }, [orderConfiguration]);
 
-  useEffect(() => {
-    if (!checkoutSuccess || !checkoutSessionId || !token || !order || order.status !== 'awaiting_payment') {
-      return;
-    }
-
-    let active = true;
-
-    async function reconcilePayment() {
-      try {
-        const checkoutOrderId = order?.checkoutOrderId ?? order?.id;
-
-        if (!checkoutOrderId) {
-          return;
-        }
-
-        const response = await reconcileCheckoutSession(checkoutOrderId, checkoutSessionId as string, token);
-
-        if (active) {
-          setOrder(response.order);
-          setNotice('Pagamento confirmado com sucesso.');
-        }
-      } catch {
-        if (active) {
-          setError('Pagamento recebido pela Stripe, mas ainda não foi possível sincronizar a ordem. Atualize a página em alguns instantes.');
-        }
-      }
-    }
-
-    void reconcilePayment();
-
-    return () => {
-      active = false;
-    };
-  }, [checkoutSessionId, checkoutSuccess, order, token]);
-
   const ctaDisabled = useMemo(
-    () => submitting || !order || order.status !== 'awaiting_payment' || quantity < 1,
-    [order, quantity, submitting]
+    () => submitting || !order || order.status !== 'awaiting_payment' || quantity < 1 || purchaseConfirmed,
+    [order, purchaseConfirmed, quantity, submitting]
   );
 
   async function handleConfirmPurchase() {
@@ -238,14 +202,16 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
 
     try {
       const checkoutOrderId = order.checkoutOrderId ?? order.id;
-      const response = await createCheckoutSession(
+      const response = await confirmPurchaseRequest(
         checkoutOrderId,
         { model: selectedModel, color: selectedColor, quantity },
         token
       );
-      window.location.assign(response.url);
+      setOrder(response.order);
+      onOrderChange?.(response.order);
+      setNotice('Compra confirmada. Nossa equipe vai enviar o link de pagamento por e-mail e celular em poucos momentos.');
     } catch {
-      setError('Não foi possível iniciar o checkout Stripe agora.');
+      setError('Não foi possível confirmar a compra agora. Tente novamente em alguns instantes.');
     } finally {
       setSubmitting(false);
     }
@@ -256,11 +222,10 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
       {!embedded && paymentCompleted ? (
         <S.SuccessHeader>
           <S.SuccessHeroCopy>
-            <S.SuccessTitle>Confirmação de compra da demo</S.SuccessTitle>
+            <S.SuccessTitle>Confirmação de compra</S.SuccessTitle>
             <S.SuccessKicker>Caso liberado para produção</S.SuccessKicker>
             <S.SuccessDescription>
-              O caso clinicamente aprovado está liberado para produção. A ordem será disponibilizada para o dentista em
-              breve.
+              O pagamento foi registrado e o caso clinicamente aprovado está liberado para a próxima etapa operacional.
             </S.SuccessDescription>
           </S.SuccessHeroCopy>
         </S.SuccessHeader>
@@ -268,17 +233,17 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
 
       {!embedded && !paymentCompleted ? (
         <OrderStepHeader
-          title="Confirmação de compra da demo"
-          description="Esta tela inicia o pagamento real quando um caso clinicamente aprovado avança para liberação operacional."
+          title="Confirmação de compra"
+          description="Confira modelo, cor e quantidade. Ao confirmar, a compra será enviada ao nosso sistema e enviaremos o link de pagamento por e-mail e celular em poucos momentos."
           currentStep="purchase"
           order={order}
-          orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
+          orderHelpText="Este pedido está na etapa financeira antes da liberação operacional para produção."
           showOrderMetadata={false}
         />
       ) : null}
 
       {loading ? (
-        <S.Layout aria-label="Carregando etapa de compra">
+        <S.Layout aria-label="Carregando confirmação de compra">
           <SkeletonCard lines={5} blockHeight="42px" />
           <SkeletonGrid cards={1} minCardWidth="280px" />
         </S.Layout>
@@ -288,18 +253,16 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
           {notice ? <S.Banner role="status">{notice}</S.Banner> : null}
 
           {!order ? (
-            <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento. Use o caso já aprovado como referência visual.</S.Banner>
+            <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento.</S.Banner>
           ) : null}
 
-          {paymentCompleted ? (
-            order ? (
-              <OrderInfoCard
-                order={order}
-                orderHelpText="Este pedido está na etapa financeira da demo antes da liberação operacional para produção."
-                testId="payment-success-order-card"
-                showMetadata={false}
-              />
-            ) : null
+          {paymentCompleted && order ? (
+            <OrderInfoCard
+              order={order}
+              orderHelpText="Este pedido está na etapa financeira antes da liberação operacional para produção."
+              testId="payment-success-order-card"
+              showMetadata={false}
+            />
           ) : null}
 
           <S.Layout>
@@ -319,16 +282,15 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                     </S.StepItem>
                   ))}
                 </S.StepList>
-
               </S.Card>
 
               {!paymentCompleted ? (
                 <JourneyNoticeCard
                   tone="success"
                   icon={<ShieldCheck size={18} strokeWidth={2.1} />}
-                  title="Pagamento 100% seguro"
-                  description="Seus dados estão protegidos com criptografia de ponta a ponta."
-                  testId="stripe-secure-payment-card"
+                  title="Link de pagamento enviado pela Nexor"
+                  description="A compra será registrada em nosso sistema e nossa equipe enviará o link de pagamento por e-mail e celular em poucos momentos."
+                  testId="manual-payment-link-card"
                 />
               ) : (
                 <S.SuccessFooter>
@@ -338,7 +300,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                   <S.SuccessFooterCopy>
                     <strong>Pagamento realizado com sucesso!</strong>
                     <span>Sua compra foi confirmada e o processo continuará automaticamente.</span>
-                    <span>O comprovante e os informativos do pagamento serão enviados para o e-mail cadastrado.</span>
+                    <span>Os informativos do pagamento serão enviados para o e-mail cadastrado.</span>
                   </S.SuccessFooterCopy>
                 </S.SuccessFooter>
               )}
@@ -346,75 +308,97 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
 
             <S.AsideColumn>
               <S.SummaryCard>
-              <S.CardTitle>Resumo do pedido</S.CardTitle>
-              <S.Divider />
-              <S.SummaryRow>
-                <span>Biteplaner</span>
-                <strong>{formatCurrencyBRL(BITEPLANER_UNIT_PRICE_CENTS)}</strong>
-              </S.SummaryRow>
-              <S.PriceNotice>
-                Este valor representa especificamente a compra do produto Biteplaner. Valores de consulta com o
-                dentista devem ser acertados diretamente com o profissional no momento da consulta.
-              </S.PriceNotice>
-              {!paymentCompleted ? (
-                <S.ConfigurationGrid>
-                  <Select
-                    label="Modelo do Biteplaner"
-                    value={selectedModel}
-                    options={BITEPLANER_MODEL_OPTIONS}
-                    onChange={setSelectedModel}
-                  />
-                  <Select
-                    label="Cor do Biteplaner"
-                    value={selectedColor}
-                    options={BITEPLANER_COLOR_OPTIONS}
-                    onChange={setSelectedColor}
-                  />
-                  <S.ConfigurationField>
-                    <span>Quantidade</span>
-                    <input
-                      aria-label="Quantidade"
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={quantity}
-                      onChange={(event) => {
-                        const nextQuantity = Number(event.target.value);
-                        setQuantity(Number.isFinite(nextQuantity) ? Math.max(1, Math.min(10, nextQuantity)) : 1);
-                      }}
+                <S.CardTitle>Resumo do pedido</S.CardTitle>
+                <S.Divider />
+                <S.SummaryRow>
+                  <span>Biteplaner</span>
+                  <strong>
+                    {formatCurrencyBRL(BITEPLANER_UNIT_PRICE_CENTS)}
+                    <S.UnitSuffix>/unidade</S.UnitSuffix>
+                  </strong>
+                </S.SummaryRow>
+                <S.PriceNotice>
+                  Este valor representa especificamente a compra do produto Biteplaner. Valores de consulta com o
+                  dentista devem ser acertados diretamente com o profissional no momento da consulta.
+                </S.PriceNotice>
+                {!paymentCompleted ? (
+                  <S.ConfigurationGrid>
+                    <Select
+                      label="Modelo do Biteplaner"
+                      value={selectedModel}
+                      options={BITEPLANER_MODEL_OPTIONS}
+                      onChange={setSelectedModel}
                     />
-                  </S.ConfigurationField>
-                </S.ConfigurationGrid>
-              ) : null}
-              <S.Divider />
-              <S.SummaryRow>
-                <span>Total</span>
-                <S.Total>{formatCurrencyBRL(totalCents)}</S.Total>
-              </S.SummaryRow>
+                    <Select
+                      label="Cor do Biteplaner"
+                      value={selectedColor}
+                      options={BITEPLANER_COLOR_OPTIONS}
+                      onChange={setSelectedColor}
+                    />
+                    <S.ConfigurationField>
+                      <span>Quantidade</span>
+                      <input
+                        aria-label="Quantidade"
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={quantity}
+                        onChange={(event) => {
+                          const nextQuantity = Number(event.target.value);
+                          setQuantity(Number.isFinite(nextQuantity) ? Math.max(1, Math.min(10, nextQuantity)) : 1);
+                        }}
+                      />
+                    </S.ConfigurationField>
+                  </S.ConfigurationGrid>
+                ) : null}
+                <S.Divider />
+                <S.SummaryRow>
+                  <span>Total</span>
+                  <S.Total>{formatCurrencyBRL(totalCents)}</S.Total>
+                </S.SummaryRow>
 
-              {paymentCompleted ? (
-                <>
-                  <S.PaymentApprovedBox>
+                {paymentCompleted ? (
+                  <>
+                    <S.PaymentApprovedBox>
+                      <ShieldCheck size={24} aria-hidden />
+                      <span>
+                        <strong>Pagamento aprovado</strong>
+                        Pagamento registrado com sucesso.
+                      </span>
+                    </S.PaymentApprovedBox>
+                    <S.DetailsLink to="/painel/biteplaner/jornada">Acompanhar jornada</S.DetailsLink>
+                  </>
+                ) : purchaseConfirmed ? (
+                  <S.PurchaseSentBox role="status">
                     <ShieldCheck size={24} aria-hidden />
                     <span>
-                      <strong>Pagamento aprovado</strong>
-                      Transação processada com sucesso via Stripe.
+                      <strong>Ordem de compra enviada</strong>
+                      Em breve você receberá o link de pagamento por e-mail e celular.
                     </span>
-                  </S.PaymentApprovedBox>
-                  <S.DetailsLink to="/painel/biteplaner/jornada">Acompanhar jornada</S.DetailsLink>
-                </>
-              ) : (
-                <S.CheckoutButton onClick={handleConfirmPurchase} disabled={ctaDisabled} data-tone="success">
-                  <LockKeyhole size={18} aria-hidden />
-                  <span>{submitting ? 'Abrindo checkout...' : 'Concluir pagamento'}</span>
-                </S.CheckoutButton>
-              )}
+                  </S.PurchaseSentBox>
+                ) : (
+                  <S.CheckoutButton onClick={handleConfirmPurchase} disabled={ctaDisabled} data-tone="success">
+                    <Send size={18} aria-hidden />
+                    <span>{submitting ? 'Enviando ordem...' : 'Enviar ordem de compra'}</span>
+                  </S.CheckoutButton>
+                )}
               </S.SummaryCard>
             </S.AsideColumn>
           </S.Layout>
-
         </>
       )}
+      {notice ? (
+        <SnackbarStack>
+          <Snackbar
+            tone="success"
+            title="Compra confirmada"
+            message="Sua ordem foi enviada para a Nexor. Em breve você receberá o link de pagamento por e-mail e celular."
+            onClose={() => {
+              setNotice('');
+            }}
+          />
+        </SnackbarStack>
+      ) : null}
     </S.Page>
   );
 }

@@ -165,7 +165,7 @@ const CurrentPage = styled.span<{ $tokens: BrandTokens }>`
   color: #15803d;
   background: ${({ $tokens }) => $tokens.colors.surface};
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 `;
 
 const PageSizeControl = styled.label<{ $tokens: BrandTokens }>`

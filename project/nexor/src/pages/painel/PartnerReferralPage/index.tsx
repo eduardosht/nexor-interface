@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { DataTable, StatusIndicator, type DataTableColumn } from '@nexor/design-system';
+import { AdminDataTable, StatusIndicator, type AdminDataTableColumn } from '@nexor/design-system';
 import { BarChart3, Check, Copy, Eye, Link2, Mail, MessageCircle, Trash2, UserRound, X } from 'lucide-react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
@@ -19,6 +19,22 @@ function buildPartnerInviteLink(token: string) {
   }
 
   return new URL(`/cadastro?invite=${encodeURIComponent(token)}`, window.location.origin).toString();
+}
+
+function isConsumedInviteLink(inviteLink: PartnerOverviewResponse['inviteLinks'][number]) {
+  return inviteLink.status === 'consumed';
+}
+
+function getLeadStatusColor(funnelStage: string) {
+  if (funnelStage === 'interrupted') {
+    return '#B91C1C';
+  }
+
+  if (funnelStage === 'order_advanced' || funnelStage === 'pre_requisite_completed') {
+    return '#15803D';
+  }
+
+  return '#2563EB';
 }
 
 function createQrMatrix(value: string) {
@@ -120,7 +136,7 @@ export function PartnerReferralPage() {
 
     setActiveAction('partner:create-link');
     try {
-      await createPartnerInviteLink(
+      const response = await createPartnerInviteLink(
         {
           customerName: qualifiedCustomerName.trim(),
           customerEmail: qualifiedCustomerEmail.trim() || undefined,
@@ -129,6 +145,7 @@ export function PartnerReferralPage() {
       );
       setQualifiedCustomerName('');
       setQualifiedCustomerEmail('');
+      setSelectedInviteLink(response.inviteLink);
       setNotice('Novo link individual gerado para um cliente qualificado.');
       await loadOverview();
     } finally {
@@ -159,13 +176,27 @@ export function PartnerReferralPage() {
     }
   }
 
-  const linkColumns: DataTableColumn<PartnerOverviewResponse['inviteLinks'][number]>[] = [
-    { key: 'token', label: 'Token', render: (row) => row.token },
-    { key: 'customer', label: 'Cliente qualificado', render: (row) => row.intendedCustomerName ?? 'Não informado' },
-    { key: 'email', label: 'Contato', render: (row) => row.intendedCustomerEmail ?? 'Não informado' },
+  const linkColumns: AdminDataTableColumn<PartnerOverviewResponse['inviteLinks'][number]>[] = [
+    { key: 'token', label: 'Token', width: '18%', sortValue: (row) => row.token, render: (row) => row.token },
+    {
+      key: 'customer',
+      label: 'Cliente qualificado',
+      width: '20%',
+      sortValue: (row) => row.intendedCustomerName ?? '',
+      render: (row) => row.intendedCustomerName ?? 'Não informado',
+    },
+    {
+      key: 'email',
+      label: 'Contato',
+      width: '22%',
+      sortValue: (row) => row.intendedCustomerEmail ?? '',
+      render: (row) => row.intendedCustomerEmail ?? 'Não informado',
+    },
     {
       key: 'status',
       label: 'Status',
+      width: '14%',
+      sortValue: (row) => row.status,
       render: (row) => (
         <StatusIndicator
           color={row.status === 'active' ? '#15803D' : row.status === 'expired' ? '#B91C1C' : '#2563EB'}
@@ -173,11 +204,23 @@ export function PartnerReferralPage() {
         />
       ),
     },
-    { key: 'created', label: 'Gerado em', render: (row) => formatDate(row.created_at) },
+    {
+      key: 'created',
+      label: 'Gerado em',
+      width: '14%',
+      sortValue: (row) => new Date(row.created_at).getTime(),
+      render: (row) => formatDate(row.created_at),
+    },
     {
       key: 'actions',
       label: 'Ações',
+      width: '12%',
+      align: 'center',
       render: (row) => {
+        if (isConsumedInviteLink(row)) {
+          return null;
+        }
+
         const isActive = row.status === 'active';
         const actionTarget = row.intendedCustomerName ?? row.token;
         const inactiveTitle = 'Disponível apenas para links ativos';
@@ -218,20 +261,75 @@ export function PartnerReferralPage() {
     },
   ];
 
-  const leadColumns: DataTableColumn<PartnerOverviewResponse['leads'][number]>[] = [
-    { key: 'customer', label: 'Cliente', render: (row) => row.customerName },
-    { key: 'email', label: 'E-mail', render: (row) => row.customerEmail },
-    { key: 'stage', label: 'Status', render: (row) => row.statusLabel },
-    { key: 'created', label: 'Captado em', render: (row) => formatDate(row.created_at) },
+  const leadColumns: AdminDataTableColumn<PartnerOverviewResponse['leads'][number]>[] = [
+    { key: 'customer', label: 'Cliente', width: '40%', sortValue: (row) => row.customerName, render: (row) => row.customerName },
+    {
+      key: 'stage',
+      label: 'Status',
+      width: '30%',
+      sortValue: (row) => row.statusLabel,
+      render: (row) => <StatusIndicator color={getLeadStatusColor(row.funnelStage)} label={row.statusLabel} />,
+    },
+    {
+      key: 'created',
+      label: 'Captado em',
+      width: '30%',
+      sortValue: (row) => new Date(row.created_at).getTime(),
+      render: (row) => formatDate(row.created_at),
+    },
   ];
 
+  function renderInviteLinkMobileCard(row: PartnerOverviewResponse['inviteLinks'][number]) {
+    return (
+      <S.QueueMobileCard>
+        <S.QueueMobileHeader>
+          <strong>{row.intendedCustomerName ?? row.token}</strong>
+          <StatusIndicator
+            color={row.status === 'active' ? '#15803D' : row.status === 'expired' ? '#B91C1C' : '#2563EB'}
+            label={row.status === 'active' ? 'Ativo' : row.status === 'expired' ? 'Expirado' : 'Consumido'}
+          />
+        </S.QueueMobileHeader>
+        <S.QueueMobileDetail>
+          <span>Token</span>
+          <strong>{row.token}</strong>
+        </S.QueueMobileDetail>
+        <S.QueueMobileDetail>
+          <span>Contato</span>
+          <strong>{row.intendedCustomerEmail ?? 'Não informado'}</strong>
+        </S.QueueMobileDetail>
+        <S.QueueMobileDetail>
+          <span>Gerado em</span>
+          <strong>{formatDate(row.created_at)}</strong>
+        </S.QueueMobileDetail>
+        {!isConsumedInviteLink(row) ? linkColumns.find((column) => column.key === 'actions')?.render(row) : null}
+      </S.QueueMobileCard>
+    );
+  }
+
+  function renderLeadMobileCard(row: PartnerOverviewResponse['leads'][number]) {
+    return (
+      <S.QueueMobileCard>
+        <S.QueueMobileHeader>
+          <strong>{row.customerName}</strong>
+          <StatusIndicator color={getLeadStatusColor(row.funnelStage)} label={row.statusLabel} />
+        </S.QueueMobileHeader>
+        <S.QueueMobileDetail>
+          <span>Captado em</span>
+          <strong>{formatDate(row.created_at)}</strong>
+        </S.QueueMobileDetail>
+      </S.QueueMobileCard>
+    );
+  }
+
   const selectedInviteUrl = selectedInviteLink ? buildPartnerInviteLink(selectedInviteLink.token) : '';
+  const selectedInviteEmail = selectedInviteLink?.intendedCustomerEmail?.trim() ?? '';
+  const canSendEmail = selectedInviteEmail.length > 0;
   const inviteLinkMessage = selectedInviteLink
     ? `Olá! Segue seu link individual do Biteplaner: ${selectedInviteUrl}`
     : '';
   const whatsappHref = selectedInviteLink ? `https://wa.me/?text=${encodeURIComponent(inviteLinkMessage)}` : '#';
-  const emailHref = selectedInviteLink
-    ? `mailto:${selectedInviteLink.intendedCustomerEmail ?? ''}?subject=${encodeURIComponent('Seu link individual do Biteplaner')}&body=${encodeURIComponent(inviteLinkMessage)}`
+  const emailHref = selectedInviteLink && canSendEmail
+    ? `mailto:${selectedInviteEmail}?subject=${encodeURIComponent('Seu link individual do Biteplaner')}&body=${encodeURIComponent(inviteLinkMessage)}`
     : '#';
 
   return (
@@ -331,12 +429,17 @@ export function PartnerReferralPage() {
           {loading ? (
             <SkeletonTable rows={4} columns={5} />
           ) : (
-            <DataTable
+            <AdminDataTable
               data={overview?.inviteLinks ?? []}
               columns={linkColumns}
               keyExtractor={(row) => row.id}
               pageSize={6}
               emptyMessage="Nenhum link individual gerado."
+              initialSortKey="created"
+              initialSortDirection="desc"
+              renderMobileCard={renderInviteLinkMobileCard}
+              testId="partner-invite-links-table"
+              mobileTestId="partner-invite-links-mobile-list"
             />
           )}
         </S.SectionStack>
@@ -356,12 +459,17 @@ export function PartnerReferralPage() {
           {loading ? (
             <SkeletonTable rows={4} columns={4} />
           ) : (
-            <DataTable
+            <AdminDataTable
               data={overview?.leads ?? []}
               columns={leadColumns}
               keyExtractor={(row) => row.id}
               pageSize={6}
               emptyMessage="Nenhuma indicação convertida."
+              initialSortKey="created"
+              initialSortDirection="desc"
+              renderMobileCard={renderLeadMobileCard}
+              testId="partner-converted-referrals-table"
+              mobileTestId="partner-converted-referrals-mobile-list"
             />
           )}
         </S.SectionStack>
@@ -411,16 +519,17 @@ export function PartnerReferralPage() {
             </S.ReferralInviteModalField>
 
             <S.ReferralInviteModalActions>
-              <S.ReferralInviteCopyButton type="button" onClick={() => {
-                void navigator.clipboard.writeText(selectedInviteUrl).then(() => setNotice('Link copiado para compartilhar com o cliente.'));
-              }}>
-                <Copy size={18} strokeWidth={2.2} aria-hidden />
-                Copiar link
-              </S.ReferralInviteCopyButton>
               <S.ReferralInviteActionLink
                 href={emailHref}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
+                aria-disabled={!canSendEmail}
+                $disabled={!canSendEmail}
+                onClick={(event) => {
+                  if (!canSendEmail) {
+                    event.preventDefault();
+                  }
+                }}
+                whileHover={canSendEmail ? { y: -1 } : undefined}
+                whileTap={canSendEmail ? { scale: 0.98 } : undefined}
               >
                 <Mail size={18} strokeWidth={2.2} aria-hidden />
                 Enviar por e-mail

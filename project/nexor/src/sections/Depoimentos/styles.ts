@@ -31,7 +31,7 @@ export const Header = styled.div`
 
 export const Title = styled.h2`
   font-size: clamp(3rem, 3.5vw, 5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   color: #fafafa;
   margin: 0 0 16px;

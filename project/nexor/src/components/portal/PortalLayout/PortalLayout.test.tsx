@@ -224,19 +224,14 @@ describe('PortalLayout navigation', () => {
     expect(screen.queryByRole('button', { name: /^biteplaner$/i })).not.toBeInTheDocument();
   });
 
-  it('renders app-like admin mobile navigation destinations', () => {
+  it('keeps mobile navigation in the header drawer without rendering a bottom bar', () => {
     renderLayout('/painel/admin/ordens', {
       backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
       demoPersona: 'admin',
     });
 
-    const mobileNavigation = screen.getByRole('navigation', { name: /navegação principal mobile/i });
-
-    expect(mobileNavigation).toBeInTheDocument();
-    expect(within(mobileNavigation).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/admin/home');
-    expect(within(mobileNavigation).getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
-    expect(within(mobileNavigation).getByRole('link', { name: /usuários/i })).toHaveAttribute('href', '/painel/admin/usuarios');
-    expect(within(mobileNavigation).getByRole('link', { name: /configurações/i })).toHaveAttribute('href', '/painel/admin/configuracoes/negocio');
+    expect(screen.queryByRole('navigation', { name: /navegação principal mobile/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /abrir menu mobile/i })).toBeInTheDocument();
   });
 
   it('opens mobile admin drawer with secondary admin destinations', () => {
@@ -409,6 +404,44 @@ describe('PortalLayout navigation', () => {
     });
 
     expect(screen.getByRole('button', { name: /notificações/i })).toHaveAttribute('data-has-unread', 'true');
+  });
+
+  it('hides the notification icon dot when there are no unread notifications', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/notifications') {
+        return Promise.resolve({
+          notifications: [
+            {
+              id: 'notification-read',
+              title: 'Resumo semanal disponível',
+              message: 'Resumo já lido.',
+              read: true,
+              createdAt: '2026-05-11T17:10:00.000Z',
+            },
+          ],
+          unreadCount: 0,
+        });
+      }
+
+      return Promise.resolve({ modes: [] });
+    });
+
+    renderLayout('/painel/home');
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Notificações')).toHaveAttribute('data-has-unread', 'false')
+    );
+
+    const stylesSource = readFileSync(join(process.cwd(), 'src/components/portal/PortalLayout/styles.ts'), 'utf8');
+    expect(stylesSource).toContain("display: ${({ $hasUnread }) => ($hasUnread ? 'block' : 'none')};");
+  });
+
+  it('shows an unread dot beside the notifications menu item', async () => {
+    renderLayout('/painel/home');
+
+    const notificationsLink = screen.getByRole('link', { name: /^notificações$/i });
+
+    expect(await within(notificationsLink).findByTestId('nav-unread-dot')).toBeInTheDocument();
   });
 
   it('opens the notifications box with read and unread mock notifications', () => {
@@ -795,7 +828,7 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByRole('link', { name: /^ordem$/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
   });
 
-  it('shows the licensing submenu and hides Ordem for dentist access', () => {
+  it('shows dentist submenus without the deprecated licensing entry', () => {
     renderLayout('/painel/biteplaner?mode=dentist', {
       backendUser: {
         email: 'dentista@nexor.dev',
@@ -805,15 +838,12 @@ describe('PortalLayout navigation', () => {
       demoPersona: 'dentist',
     });
 
-    expect(screen.getByRole('link', { name: /licenciamento/i })).toHaveAttribute(
-      'href',
-      '/painel/biteplaner/licenciamento?mode=dentist'
-    );
+    expect(screen.queryByRole('link', { name: /licenciamento/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /avaliações/i })).toHaveAttribute(
       'href',
       '/painel/biteplaner/avaliacoes?mode=dentist'
     );
-    expect(screen.getByText('MVP1')).toBeInTheDocument();
+    expect(screen.queryByText('MVP1')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
   });
 

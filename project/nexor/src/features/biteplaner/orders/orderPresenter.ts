@@ -20,7 +20,7 @@ export type StatusPresentation = {
 };
 
 export const JOURNEY_STAGE_LABELS = [
-  'Pre-requisito',
+  'Pré-consulta',
   'Consulta inicial',
   'Decisão clínica',
   'Compra',
@@ -29,9 +29,9 @@ export const JOURNEY_STAGE_LABELS = [
 ] as const;
 
 export const STAGE_LABELS: Record<string, (typeof JOURNEY_STAGE_LABELS)[number]> = {
-  new_user_onboarding: 'Pre-requisito',
-  pre_requisite_pending: 'Pre-requisito',
-  registration_started: 'Pre-requisito',
+  new_user_onboarding: 'Pré-consulta',
+  pre_requisite_pending: 'Pré-consulta',
+  registration_started: 'Pré-consulta',
   awaiting_initial_consultation: 'Consulta inicial',
   dentist_acceptance_pending: 'Consulta inicial',
   consultation_linked: 'Consulta inicial',

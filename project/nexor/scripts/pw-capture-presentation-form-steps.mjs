@@ -116,16 +116,16 @@ async function goNext(page) {
 
 async function capturePreRequisito(page) {
   await setPersona(page, "athletePrerequisite");
-  await page.goto(`${baseUrl}/painel/pre-requisito`, { waitUntil: "networkidle" });
+  await page.goto(`${baseUrl}/painel/pre-consulta`, { waitUntil: "networkidle" });
   await waitForReady(page, "Dados iniciais");
-  await screenshot(page, "09a-cliente-pre-requisito-secao-1.png");
+  await screenshot(page, "09a-cliente-pre-consulta-secao-1.png");
   if (await goNext(page)) {
     await waitForReady(page, "Dados clínicos");
-    await screenshot(page, "09b-cliente-pre-requisito-secao-2.png");
+    await screenshot(page, "09b-cliente-pre-consulta-secao-2.png");
   }
   if (await goNext(page)) {
     await waitForReady(page, "Pesquisa de satisfação");
-    await screenshot(page, "09c-cliente-pre-requisito-secao-3.png");
+    await screenshot(page, "09c-cliente-pre-consulta-secao-3.png");
   }
 }
 

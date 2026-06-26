@@ -48,6 +48,20 @@ import {
 
 type AdminProfileStatus = 'pending' | 'active' | 'inactive' | 'suspended' | 'blocked';
 
+type AdminProductRoleStatus = 'pending' | 'active' | 'rejected' | 'suspended';
+
+type AdminProductRole = {
+  id: string;
+  productKey: string;
+  role: string;
+  status: AdminProductRoleStatus;
+  sourceType?: string;
+  metadata?: Record<string, unknown>;
+  approvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type AdminProfile = {
   id: string;
   email: string | null;
@@ -55,6 +69,8 @@ type AdminProfile = {
   phone: string | null;
   status: AdminProfileStatus;
   roles: string[];
+  platformRoles?: string[];
+  productRoles?: AdminProductRole[];
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -115,6 +131,20 @@ const roleColor: Record<string, string> = {
   user: '#64748b',
 };
 
+const productRoleStatusLabel: Record<AdminProductRoleStatus, string> = {
+  active: 'Ativo',
+  pending: 'Pendente',
+  rejected: 'Rejeitado',
+  suspended: 'Suspenso',
+};
+
+const productRoleStatusColor: Record<AdminProductRoleStatus, string> = {
+  active: '#15803d',
+  pending: '#d18a00',
+  rejected: '#b91c1c',
+  suspended: '#b45309',
+};
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) return 'Não informado';
   const date = new Date(value);
@@ -130,7 +160,25 @@ function formatDateTime(value: string | null | undefined) {
 }
 
 function getPrimaryRole(profile: AdminProfile) {
-  return profile.roles[0] ?? 'user';
+  return getPlatformRoles(profile)[0] ?? 'user';
+}
+
+function getPlatformRoles(profile: AdminProfile) {
+  return profile.platformRoles ?? profile.roles ?? [];
+}
+
+function getBiteplanerProductRoles(profile: AdminProfile) {
+  return (profile.productRoles ?? []).filter((role) => role.productKey === 'biteplaner');
+}
+
+function hasBiteplanerProductRole(profile: AdminProfile, role: string) {
+  return getBiteplanerProductRoles(profile).some((productRole) => productRole.role === role);
+}
+
+function formatProductRole(role: AdminProductRole) {
+  const label = roleLabel[role.role] ?? role.role;
+  const status = productRoleStatusLabel[role.status] ?? role.status;
+  return `${label} ${status}`.trim();
 }
 
 function getProfileName(profile: AdminProfile) {
@@ -180,9 +228,9 @@ export function AdminUsers() {
   const metrics = useMemo<AdminMetric[]>(
     () => [
       { label: 'Total de usuários', value: profiles.length, tone: 'success' },
-      { label: 'Clientes', value: profiles.filter((item) => item.roles.includes('customer')).length, tone: 'success' },
-      { label: 'Dentistas', value: profiles.filter((item) => item.roles.includes('dentist')).length, tone: 'success' },
-      { label: 'Laboratórios', value: profiles.filter((item) => item.roles.includes('lab')).length, tone: 'success' },
+      { label: 'Clientes', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'customer')).length, tone: 'success' },
+      { label: 'Dentistas', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'dentist')).length, tone: 'success' },
+      { label: 'Laboratórios', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'lab')).length, tone: 'success' },
     ],
     [profiles]
   );
@@ -194,12 +242,33 @@ export function AdminUsers() {
       { key: 'email', label: 'E-mail', render: (row) => row.email || 'Não informado', sortValue: (row) => row.email ?? '' },
       {
         key: 'profile',
-        label: 'Perfil',
+        label: 'Plataforma',
         render: (row) => {
           const role = getPrimaryRole(row);
           return <AdminStatusPill color={roleColor[role] ?? roleColor.user} label={roleLabel[role] ?? role} />;
         },
         sortValue: (row) => roleLabel[getPrimaryRole(row)] ?? getPrimaryRole(row),
+      },
+      {
+        key: 'productRoles',
+        label: 'Biteplaner',
+        render: (row) => {
+          const productRoles = getBiteplanerProductRoles(row);
+          if (productRoles.length === 0) return 'Sem acesso';
+
+          return (
+            <ProductRoleList>
+              {productRoles.map((role) => (
+                <AdminStatusPill
+                  key={role.id}
+                  color={productRoleStatusColor[role.status] ?? roleColor.user}
+                  label={formatProductRole(role)}
+                />
+              ))}
+            </ProductRoleList>
+          );
+        },
+        sortValue: (row) => getBiteplanerProductRoles(row).map(formatProductRole).join(', '),
       },
       {
         key: 'status',
@@ -335,6 +404,7 @@ export function AdminUsers() {
             mobileTestId="admin-users-mobile-list"
             renderCard={(row) => {
               const role = getPrimaryRole(row);
+              const productRoles = getBiteplanerProductRoles(row);
               return (
                 <AdminMobileCard>
                   <AdminMobileCardHeader>
@@ -346,8 +416,14 @@ export function AdminUsers() {
                   </AdminMobileCardHeader>
                   <AdminMobileMetaGrid>
                     <AdminMobileMetaItem>
-                      <AdminMobileMetaLabel>Perfil</AdminMobileMetaLabel>
+                      <AdminMobileMetaLabel>Plataforma</AdminMobileMetaLabel>
                       <AdminMobileMetaValue>{roleLabel[role] ?? role}</AdminMobileMetaValue>
+                    </AdminMobileMetaItem>
+                    <AdminMobileMetaItem>
+                      <AdminMobileMetaLabel>Biteplaner</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>
+                        {productRoles.length > 0 ? productRoles.map(formatProductRole).join(', ') : 'Sem acesso'}
+                      </AdminMobileMetaValue>
                     </AdminMobileMetaItem>
                     <AdminMobileMetaItem>
                       <AdminMobileMetaLabel>Cadastro</AdminMobileMetaLabel>
@@ -482,6 +558,13 @@ const Feedback = styled.p`
   color: #b91c1c;
   background: rgba(185, 28, 28, 0.06);
   font-size: 14px;
+`;
+
+const ProductRoleList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 `;
 
 const ViewButton = styled(Button).attrs({ variant: 'ghost' as const, size: 'sm' as const })`

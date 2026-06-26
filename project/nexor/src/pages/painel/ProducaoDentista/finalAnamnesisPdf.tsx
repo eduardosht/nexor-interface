@@ -495,18 +495,14 @@ function FinalAnamnesisDocument({
             <Section number={8} title="PLANO DE TRATAMENTO / CONDUTA">
               <Text style={styles.paragraphLine}>{value(draft.productionRequestSummary)}</Text>
               <Text style={styles.paragraphLine}>{value(draft.labNotes)}</Text>
-            </Section>
-
-            <Section number={9} title="OBSERVAÇÕES PROFISSIONAIS">
               <Text style={styles.paragraphLine}>{value(draft.anamnesisSummary)}</Text>
               <Text style={styles.paragraphLine}>Escaneamento 3D: {value(draft.scan3dFileName)}</Text>
-              <Text style={styles.paragraphLine}>Prescrição assinada: {value(draft.prescriptionFileName)}</Text>
             </Section>
           </View>
         </View>
 
         <View style={styles.consent}>
-          <Text style={styles.sectionHeader}>10. TERMO DE CONSENTIMENTO</Text>
+          <Text style={styles.sectionHeader}>9. TERMO DE CONSENTIMENTO</Text>
           <View style={styles.sectionBody}>
             <Text style={styles.consentText}>
               Declaro que as informações fornecidas são verdadeiras e autorizo o uso dos dados para fins de tratamento,

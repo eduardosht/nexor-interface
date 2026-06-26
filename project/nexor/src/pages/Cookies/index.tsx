@@ -6,7 +6,7 @@ import {
   LegalSection,
   LegalSectionTitle,
   LegalTitle,
-  LegalUpdatedAt,
+  LegalUpdatedAt
 } from '../Legal/styles';
 
 export function Cookies() {
@@ -14,22 +14,25 @@ export function Cookies() {
     <LegalPage>
       <LegalContainer>
         <LegalTitle>Política de Cookies</LegalTitle>
-        <LegalUpdatedAt>Última atualização: maio de 2026</LegalUpdatedAt>
+        <LegalUpdatedAt>Última atualização: junho de 2026</LegalUpdatedAt>
 
         <LegalSection>
-          <LegalSectionTitle>1. O que são cookies</LegalSectionTitle>
+          <LegalSectionTitle>1. O que são cookies e storage local</LegalSectionTitle>
           <LegalBody>
-            Cookies são pequenos arquivos de texto usados para lembrar informações do seu navegador durante e após a visita.
-            Eles ajudam a manter o site funcionando, preservar escolhas de navegação e, quando você autoriza, medir o uso
-            do site para orientar melhorias.
+            Cookies são pequenos arquivos de texto usados para lembrar informações do navegador durante e após a visita.
+            Além de cookies, a Nexor também pode usar localStorage para preservar preferências técnicas do navegador.
+          </LegalBody>
+          <LegalBody>
+            Esses mecanismos ajudam a manter o site funcionando, preservar escolhas de navegação, registrar consentimentos
+            e, quando você autoriza, medir o uso do site para orientar melhorias.
           </LegalBody>
         </LegalSection>
 
         <LegalSection>
-          <LegalSectionTitle>2. Categorias de cookies</LegalSectionTitle>
+          <LegalSectionTitle>2. Categorias usadas</LegalSectionTitle>
           <LegalBody>
-            <strong>Cookies necessários:</strong> sustentam funções essenciais, como segurança, navegação básica e memória
-            técnica da sessão. Eles permanecem ativos porque sem eles o site pode não funcionar corretamente.
+            <strong>Cookies necessários:</strong> sustentam funções essenciais, como segurança, navegação básica, convite de
+            parceiro e memória técnica da sessão. Eles permanecem ativos porque sem eles o site pode não funcionar corretamente.
           </LegalBody>
           <LegalBody>
             <strong>Cookies de preferências:</strong> guardam escolhas de navegação para tornar visitas futuras mais simples,
@@ -37,25 +40,40 @@ export function Cookies() {
           </LegalBody>
           <LegalBody>
             <strong>Cookies de analytics:</strong> só podem ser ativados com seu consentimento e servem para medir páginas
-            acessadas, navegação geral e comportamento agregado de uso. Eles existem para orientar melhorias no site, nunca
-            para bloquear sua experiência.
+            acessadas, navegação geral e comportamento agregado de uso. Eles existem para orientar melhorias no site.
           </LegalBody>
         </LegalSection>
 
         <LegalSection>
-          <LegalSectionTitle>3. Como você decide</LegalSectionTitle>
+          <LegalSectionTitle>3. Inventário técnico atual</LegalSectionTitle>
+          <LegalList>
+            <li>localStorage `nexor-cookie-consent`: registra versão, data e escolhas de cookies necessários, preferências e analytics.</li>
+            <li>sessionStorage `nexor_pending_registration`: preserva dados mínimos do cadastro pendente somente durante a sessão do navegador.</li>
+            <li>Cookie `nexor_partner_invite`: preserva token de convite de parceiro por até 30 dias para concluir cadastro vinculado.</li>
+            <li>localStorage de interface: pode guardar preferências operacionais, como estado de menu, persona de demonstração ou cadastro pendente.</li>
+          </LegalList>
+          <LegalBody>
+            O conteúdo desses mecanismos deve ser proporcional à finalidade. A Nexor não utiliza cookies opcionais para impedir
+            acesso ao conteúdo institucional quando você os recusa.
+          </LegalBody>
+        </LegalSection>
+
+        <LegalSection>
+          <LegalSectionTitle>4. Como você decide</LegalSectionTitle>
           <LegalBody>
             Ao entrar no site, você pode aceitar ou recusar cookies opcionais no banner fixo exibido no rodapé da tela.
-            Se quiser mais controle, pode abrir o gerenciamento de preferências e ativar apenas as categorias opcionais que fizerem sentido para você.
+            Se quiser mais controle, pode abrir o gerenciamento de preferências e ativar apenas as categorias opcionais que
+            fizerem sentido para você.
           </LegalBody>
           <LegalBody>
-            Depois da primeira escolha, você pode reabrir essas preferências pelo rodapé do site e atualizar sua decisão a qualquer momento.
-            Quando você estiver autenticado, a Nexor também poderá registrar a preferência escolhida na sua conta para manter histórico de consentimento.
+            Depois da primeira escolha, você pode reabrir essas preferências pelo rodapé do site e atualizar sua decisão a
+            qualquer momento. Quando você estiver autenticado, a Nexor também poderá registrar a preferência escolhida na sua
+            conta para manter histórico de consentimento.
           </LegalBody>
         </LegalSection>
 
         <LegalSection>
-          <LegalSectionTitle>4. Como gerenciar no navegador</LegalSectionTitle>
+          <LegalSectionTitle>5. Como gerenciar no navegador</LegalSectionTitle>
           <LegalBody>
             Além do banner do site, você também pode bloquear, revisar ou apagar cookies diretamente no seu navegador.
             Cada navegador organiza esse caminho de um jeito:
@@ -67,15 +85,17 @@ export function Cookies() {
             <li>Edge: Configurações → Privacidade, pesquisa e serviços</li>
           </LegalList>
           <LegalBody>
-            Desativar cookies opcionais não impede o acesso ao conteúdo institucional. O impacto principal é perder conveniências
-            de preferência e deixar de contribuir com medições agregadas de uso quando essa categoria estiver disponível.
+            Desativar cookies opcionais não impede o acesso ao conteúdo institucional. O impacto principal é perder
+            conveniências de preferência e deixar de contribuir com medições agregadas de uso quando essa categoria estiver
+            disponível.
           </LegalBody>
         </LegalSection>
 
         <LegalSection>
-          <LegalSectionTitle>5. Contato</LegalSectionTitle>
+          <LegalSectionTitle>6. Contato</LegalSectionTitle>
           <LegalBody>
-            Se tiver dúvidas sobre o uso de cookies neste site, fale com a Nexor pelos canais oficiais informados na página de contato.
+            Se tiver dúvidas sobre cookies, localStorage ou preferências de privacidade, fale com a Nexor pelo e-mail
+            contato@nexoradvance.com.br com o assunto LGPD.
           </LegalBody>
         </LegalSection>
       </LegalContainer>

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
@@ -125,6 +125,56 @@ describe('Notificacoes', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /ver ordens do laboratório/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
+  });
+
+  it('opens a modal with the notification message when clicking a notification', async () => {
+    mockApiGet.mockResolvedValue({
+      unreadCount: 1,
+      notifications: [
+        {
+          id: 'notification-message',
+          title: 'Atualização operacional',
+          message: 'Mensagem completa da notificação para ser lida dentro do modal.',
+          read: false,
+          createdAt: '2026-05-12T09:30:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação atualização operacional/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /atualização operacional/i });
+    expect(dialog).toHaveTextContent(/mensagem completa da notificação/i);
+    expect(dialog).toHaveTextContent(/12\/05\/2026/i);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /fechar notificação/i }));
+    expect(screen.queryByRole('dialog', { name: /atualização operacional/i })).not.toBeInTheDocument();
+  });
+
+  it('does not open the message modal when clicking a notification workflow action', async () => {
+    mockApiGet.mockResolvedValue({
+      unreadCount: 1,
+      notifications: [
+        {
+          id: 'customer-action',
+          title: 'Ação necessária no pedido',
+          message: 'Cliente precisa avançar na jornada.',
+          type: 'biteplaner_action_required',
+          metadata: { actionFor: 'customer' },
+          read: false,
+          createdAt: '2026-05-12T09:30:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
+    expect(screen.queryByRole('dialog', { name: /ação necessária no pedido/i })).not.toBeInTheDocument();
   });
 
   it('keeps mobile pagination fixed in the page footer', () => {

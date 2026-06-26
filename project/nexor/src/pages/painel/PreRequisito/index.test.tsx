@@ -82,7 +82,7 @@ function demoOrder(status = 'registration_started') {
     id: 'BP-DEMO-001',
     display_number: 39,
     status,
-    statusLabel: status === 'registration_started' ? 'Pre-requisito pendente' : 'Aguardando consulta inicial',
+    statusLabel: status === 'registration_started' ? 'Pré-consulta pendente' : 'Aguardando consulta inicial',
     stage: status === 'registration_started' ? 'pre_requisite_pending' : 'awaiting_initial_consultation',
     created_at: '2026-05-01T10:00:00.000Z',
     customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -211,12 +211,12 @@ describe('PreRequisito', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByTestId('athlete-order-status')).toBeInTheDocument());
-    expect(screen.getByTestId('pre-requisito-onboarding-card')).toBeInTheDocument();
+    expect(screen.getByTestId('pre-consulta-onboarding-card')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /visão geral dos steps/i })).not.toBeInTheDocument();
     expect(screen.queryByTestId('step-breadcrumb-current')).not.toBeInTheDocument();
     expect(screen.getByText('#39')).toBeInTheDocument();
     expect(screen.queryByText('BP-DEMO-001')).not.toBeInTheDocument();
-    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pre-requisito pendente/i);
+    expect(screen.getByTestId('athlete-order-status')).toHaveTextContent(/pré-consulta pendente/i);
     expect(screen.queryByTestId('athlete-order-card')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /ver jornada/i })).not.toBeInTheDocument();
   });
@@ -241,8 +241,8 @@ describe('PreRequisito', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
-    expect(await screen.findByText(/estamos liberando o pre-requisito biteplaner/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /pré-consulta biteplaner/i })).toBeInTheDocument();
+    expect(await screen.findByText(/estamos liberando a pré-consulta biteplaner/i)).toBeInTheDocument();
     expect(screen.getByText(/seu cadastro foi recebido/i)).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.queryByText(/agradecemos sua disponibilidade/i)).not.toBeInTheDocument();
@@ -260,8 +260,8 @@ describe('PreRequisito', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
-    expect(await screen.findByText(/estamos liberando o pre-requisito biteplaner/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /pré-consulta biteplaner/i })).toBeInTheDocument();
+    expect(await screen.findByText(/estamos liberando a pré-consulta biteplaner/i)).toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
@@ -272,8 +272,8 @@ describe('PreRequisito', () => {
 
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: /pre-requisito biteplaner/i })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByTestId('pre-requisito-onboarding-card')).toBeInTheDocument());
+    expect(await screen.findByRole('heading', { name: /pré-consulta biteplaner/i })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('pre-consulta-onboarding-card')).toBeInTheDocument());
 
     expect(await screen.findByRole('heading', { name: /dados iniciais/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/declaro que li e entendi/i)).not.toBeInTheDocument();
@@ -366,6 +366,20 @@ describe('PreRequisito', () => {
     expect(stepRailStyles).toContain('gap: 8px;');
     expect(stepTabStyles).toContain('min-height: 48px;');
     expect(stepTabStyles).toContain('padding: 9px 10px;');
+  });
+
+  it('keeps mobile bottom spacing for the fixed progress bar', () => {
+    const pageSource = readFileSync(join(process.cwd(), 'src/pages/painel/PreRequisito/index.tsx'), 'utf8');
+    const stylesSource = readFileSync(join(process.cwd(), 'src/pages/painel/PreRequisito/styles.ts'), 'utf8');
+    const prerequisitePageStyles = stylesSource.slice(
+      stylesSource.indexOf('export const PreRequisitoPage'),
+      stylesSource.indexOf('export const OnboardingPage')
+    );
+
+    expect(pageSource).toContain('<S.PreRequisitoPage>');
+    expect(pageSource).toContain('</S.PreRequisitoPage>');
+    expect(prerequisitePageStyles).toContain('@media (max-width: 720px)');
+    expect(prerequisitePageStyles).toContain('padding-bottom: calc(128px + env(safe-area-inset-bottom));');
   });
 
   it('starts the prerequisite form on initial data because Biteplaner consent was already collected', async () => {

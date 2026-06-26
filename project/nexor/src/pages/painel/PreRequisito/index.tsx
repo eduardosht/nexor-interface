@@ -124,7 +124,7 @@ export function PreRequisito() {
   const loading = ordersQuery.isLoading;
   const formsLoading = Boolean(order?.id) && workflowFormsQuery.isLoading;
   const formsError = workflowFormsQuery.isError ? 'Não foi possível carregar a avaliação inicial compartilhada.' : '';
-  const loadError = ordersQuery.isError ? 'Não foi possível carregar o pedido do pre-requisito.' : '';
+  const loadError = ordersQuery.isError ? 'Não foi possível carregar o pedido da pré-consulta.' : '';
   useEffect(() => {
     return () => {
       if (redirectTimeoutRef.current) {
@@ -207,7 +207,7 @@ export function PreRequisito() {
             }
           : current
     );
-    setNotice('Pre-requisito concluído. Agora escolha o consultório para a consulta inicial.');
+    setNotice('Pré-consulta concluída. Agora escolha o consultório para a consulta inicial.');
     redirectTimeoutRef.current = setTimeout(() => {
       navigate('/painel/consulta-inicial');
     }, SUCCESS_REDIRECT_DELAY_MS);
@@ -237,12 +237,12 @@ export function PreRequisito() {
   }
 
   return (
-    <S.Page>
+    <S.PreRequisitoPage>
       {notice ? (
         <SnackbarStack>
           <Snackbar
             tone="success"
-            title="Pre-requisito concluído"
+            title="Pré-consulta concluída"
             message={notice}
             onClose={() => {
               setNotice('');
@@ -252,16 +252,16 @@ export function PreRequisito() {
       ) : null}
 
       <S.Content>
-        <S.OnboardingCard data-testid="pre-requisito-onboarding-card">
+        <S.OnboardingCard data-testid="pre-consulta-onboarding-card">
           {loading ? (
-            <div aria-label="Carregando pedido do pre-requisito">
+            <div aria-label="Carregando pedido da pré-consulta">
               <SkeletonCard lines={5} blockHeight="112px" />
             </div>
           ) : (
             <>
               <S.PrerequisiteHero>
                 <S.OnboardingMainTitle>
-                  <span>Pre-requisito Biteplaner</span>
+                  <span>Pré-consulta Biteplaner</span>
                 </S.OnboardingMainTitle>
                 <S.OnboardingHeroLead>
                   Antes da consulta inicial, registre a avaliação compartilhada para preparar a jornada{' '}
@@ -277,7 +277,7 @@ export function PreRequisito() {
                   <S.PrerequisiteMetaItem>
                     <S.PrerequisiteMetaLabel>Status atual</S.PrerequisiteMetaLabel>
                     <S.PrerequisiteStatus data-testid="athlete-order-status">
-                      {order?.statusLabel ?? 'Pre-requisito pendente'}
+                      {order?.statusLabel ?? 'Pré-consulta pendente'}
                     </S.PrerequisiteStatus>
                   </S.PrerequisiteMetaItem>
                   <S.PrerequisiteMetaItem>
@@ -308,8 +308,8 @@ export function PreRequisito() {
                         </strong>
                         <span>
                           {isProcessingSubmittedIntake
-                            ? 'O pré-requisito foi concluído. Aguarde alguns instantes: você será redirecionado para escolher a clínica da consulta inicial.'
-                            : 'O pré-requisito foi concluído e a próxima etapa da jornada Biteplaner já está disponível.'}
+                            ? 'A pré-consulta foi concluída. Aguarde alguns instantes: você será redirecionado para escolher a clínica da consulta inicial.'
+                            : 'A pré-consulta foi concluída e a próxima etapa da jornada Biteplaner já está disponível.'}
                         </span>
                         <span>
                           Se preferir, acompanhe pelo{' '}
@@ -342,7 +342,7 @@ export function PreRequisito() {
                     <S.ProcessingBanner role="status" aria-live="polite">
                       <S.ProcessingSpinner aria-hidden="true" />
                       <S.ProcessingContent>
-                        <strong>Estamos liberando o Pre-requisito Biteplaner</strong>
+                        <strong>Estamos liberando a Pré-consulta Biteplaner</strong>
                         <span>
                           Seu cadastro foi recebido e a próxima etapa está sendo preparada. Aguarde alguns instantes
                           nesta tela; assim que o formulário for liberado, você poderá continuar.
@@ -359,6 +359,6 @@ export function PreRequisito() {
           )}
         </S.OnboardingCard>
       </S.Content>
-    </S.Page>
+    </S.PreRequisitoPage>
   );
 }

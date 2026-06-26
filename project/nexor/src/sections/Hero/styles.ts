@@ -65,7 +65,7 @@ export const LabelLine = styled.span`
 
 export const Headline = styled(motion.h1)`
   font-size: clamp(3rem, 3.5vw, 5rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   line-height: 1.05;
   margin: 0 0 16px;

@@ -68,7 +68,7 @@ const CheckMark = styled.span<{ $checked: boolean }>`
   background: ${({ $checked }) => ($checked ? '#2563eb' : '#ffffff')};
   color: #ffffff;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   flex: 0 0 auto;
 
@@ -120,7 +120,7 @@ const Badge = styled.span<{ $tokens: BrandTokens; $tone: 'required' | 'optional'
   color: ${({ $tone }) => ($tone === 'required' ? '#1d4ed8' : '#15803d')};
   font-family: ${({ $tokens }) => $tokens.fonts.body};
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 `;
