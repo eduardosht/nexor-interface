@@ -110,6 +110,7 @@ export function PartnerReferralPage() {
   const [qualifiedCustomerName, setQualifiedCustomerName] = useState('');
   const [qualifiedCustomerEmail, setQualifiedCustomerEmail] = useState('');
   const [selectedInviteLink, setSelectedInviteLink] = useState<PartnerOverviewResponse['inviteLinks'][number] | null>(null);
+  const [copiedInviteLinkId, setCopiedInviteLinkId] = useState('');
 
   async function loadOverview() {
     setLoading(true);
@@ -123,6 +124,18 @@ export function PartnerReferralPage() {
   useEffect(() => {
     void loadOverview();
   }, [token]);
+
+  useEffect(() => {
+    if (!copiedInviteLinkId) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopiedInviteLinkId('');
+    }, 2400);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [copiedInviteLinkId]);
 
   async function handleCreateLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -331,6 +344,7 @@ export function PartnerReferralPage() {
   const emailHref = selectedInviteLink && canSendEmail
     ? `mailto:${selectedInviteEmail}?subject=${encodeURIComponent('Seu link individual do Biteplaner')}&body=${encodeURIComponent(inviteLinkMessage)}`
     : '#';
+  const isSelectedInviteCopied = Boolean(selectedInviteLink && copiedInviteLinkId === selectedInviteLink.id);
 
   return (
     <S.Page>
@@ -510,10 +524,18 @@ export function PartnerReferralPage() {
                   type="button"
                   aria-label="Copiar link individual"
                   onClick={() => {
-                    void navigator.clipboard.writeText(selectedInviteUrl).then(() => setNotice('Link copiado para compartilhar com o cliente.'));
+                    void navigator.clipboard.writeText(selectedInviteUrl).then(() => {
+                      setCopiedInviteLinkId(selectedInviteLink.id);
+                      setNotice('Link copiado para compartilhar com o cliente.');
+                    });
                   }}
                 >
                   <Copy size={18} strokeWidth={2.2} aria-hidden />
+                  {isSelectedInviteCopied ? (
+                    <S.ReferralInviteCopyTooltip role="tooltip" aria-live="polite">
+                      Copiado!
+                    </S.ReferralInviteCopyTooltip>
+                  ) : null}
                 </S.ReferralInviteInlineCopyButton>
               </S.ReferralInviteLinkInputGroup>
             </S.ReferralInviteModalField>

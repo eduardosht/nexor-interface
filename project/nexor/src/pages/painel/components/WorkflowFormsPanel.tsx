@@ -254,25 +254,14 @@ function getOnboardingDisplaySections(sections: VisibleSharedSection[]): Display
     makeGroup(
       'satisfaction-improvements',
       'SEÇÃO 3 - PESQUISA DE SATISFAÇÃO E MELHORIAS',
-      'Esta seção é voltada a pesquisas e melhorias. Se você desejar, comunicações e ações comerciais. Tudo aqui é opcional. Seu cadastro e seu cuidado não serão prejudicados caso você não marque as opções abaixo',
-      ['consents', 'feedback']
+      'Esta seção reúne expectativas, percepções e satisfação com a NEXOR e o BITEPLANER. Tudo aqui é usado para melhoria de produto, serviço e comunicação, conforme suas escolhas.',
+      ['satisfaction-improvements', 'feedback', 'consents']
     ),
   ].filter(Boolean) as DisplaySharedSection[];
 }
 
 function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): DisplaySharedSection[] {
   const sectionByKey = Object.fromEntries(sections.map((section) => [section.key, section]));
-  const deviceExperienceSection = sectionByKey['device-experience'];
-  const satisfactionCheckboxFields =
-    sectionByKey['satisfaction-improvements']?.fields.filter((field) => field.type === 'checkbox-group') ?? [];
-  const satisfactionSection: VisibleSharedSection | null = deviceExperienceSection
-    ? {
-      key: 'clinical-satisfaction-fields',
-      title: 'Pesquisa de satisfação',
-      description: 'Expectativas, percepções e autorizações opcionais relacionadas à NEXOR e ao BITEPLANER.',
-      fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields],
-    }
-    : null;
   const makeGroup = (
     key: string,
     title: string,
@@ -308,7 +297,6 @@ function getClinicalCustomerDisplaySections(sections: VisibleSharedSection[]): D
       'Informações clínicas, odontológicas, orofaciais, sintomas atuais e hábitos de vida usadas para seu cuidado.',
       ['medical-history', 'dental-orofacial-history', 'current-pain-function', 'life-habits']
     ),
-    satisfactionSection,
   ].filter(Boolean) as DisplaySharedSection[];
 }
 
@@ -1723,6 +1711,26 @@ function FormItem({
     );
   }
 
+  function getEditableFieldsForSubmission() {
+    if (!isSharedIntake) {
+      return fields.filter((field) =>
+        (!isSharedField(field) || field.ownerRole === actorRole) && isFieldVisibleForPayload(field, payload)
+      );
+    }
+
+    const editableFields = displaySharedSections.flatMap((section) => getEditableFieldsForSection(section));
+    const seenFieldKeys = new Set<string>();
+
+    return editableFields.filter((field) => {
+      if (seenFieldKeys.has(field.key)) {
+        return false;
+      }
+
+      seenFieldKeys.add(field.key);
+      return true;
+    });
+  }
+
   function getFirstMissingSectionIndex() {
     return displaySharedSections.findIndex((section) =>
       getEditableFieldsForSection(section).some((field) => hasMissingRequiredValue(field, payload))
@@ -1910,9 +1918,7 @@ function FormItem({
       return;
     }
 
-    const editableFields = fields.filter((field) =>
-      (!isSharedField(field) || field.ownerRole === actorRole) && isFieldVisibleForPayload(field, payload)
-    );
+    const editableFields = getEditableFieldsForSubmission();
     const firstMissingSectionIndex = isSharedIntake ? getFirstMissingSectionIndex() : -1;
     const localFieldErrors = validateFieldsLocally(editableFields);
 
@@ -1935,7 +1941,7 @@ function FormItem({
       return;
     }
 
-    const invalidScoreField = fields.find((field) => {
+    const invalidScoreField = editableFields.find((field) => {
       if (!isScoreField(field)) {
         return false;
       }

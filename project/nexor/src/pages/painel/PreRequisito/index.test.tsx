@@ -283,7 +283,7 @@ describe('PreRequisito', () => {
     expect(progressCard.querySelector('[aria-current="step"]')).toHaveTextContent(/dados iniciais/i);
     expect(within(progressCard).queryByRole('button')).not.toBeInTheDocument();
     expect(within(progressCard).getByText(/dados clínicos/i)).toBeInTheDocument();
-    expect(within(progressCard).getByText(/pesquisa de satisfação/i)).toBeInTheDocument();
+    expect(within(progressCard).queryByText(/pesquisa de satisfação/i)).not.toBeInTheDocument();
     expect(within(progressCard).queryByText(/experiência com o dispositivo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/questionario odontológico/i)).not.toBeInTheDocument();
   });
@@ -299,7 +299,7 @@ describe('PreRequisito', () => {
 
     expect(progressCard).toHaveTextContent(/dados iniciais/i);
     expect(progressCard).toHaveTextContent(/dados clínicos/i);
-    expect(progressCard).toHaveTextContent(/pesquisa de satisfação/i);
+    expect(progressCard).not.toHaveTextContent(/pesquisa de satisfação/i);
     expect(progressCard).not.toHaveTextContent(/experiência com o dispositivo/i);
     expect(within(progressCard).queryByRole('button')).not.toBeInTheDocument();
   });
@@ -321,13 +321,11 @@ describe('PreRequisito', () => {
     expect(screen.queryByRole('button', { name: /enviar formulário/i })).not.toBeInTheDocument();
   });
 
-  it('keeps the prerequisite customer flow with three visual steps and moves satisfaction checkboxes into the third step', () => {
+  it('keeps the prerequisite customer flow without the satisfaction survey step', () => {
     const source = readFileSync(join(process.cwd(), 'src/pages/painel/components/WorkflowFormsPanel.tsx'), 'utf8');
 
-    expect(source).toContain('const satisfactionCheckboxFields');
-    expect(source).toContain("field.type === 'checkbox-group'");
-    expect(source).toContain('fields: [...deviceExperienceSection.fields, ...satisfactionCheckboxFields]');
-    expect(source).toContain("title: 'Pesquisa de satisfação'");
+    expect(source).not.toContain('satisfactionCheckboxFields');
+    expect(source).not.toContain('clinical-satisfaction-fields');
     expect(source).not.toContain("'clinical-satisfaction'");
   });
 
@@ -481,7 +479,7 @@ describe('PreRequisito', () => {
     await user.click(await screen.findByRole('button', { name: /próxima etapa/i }));
 
     expect(await findField(/quais diagnósticos ou condições/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /próxima etapa/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /enviar formulário/i })).toBeDisabled();
   });
 
   it('uses the minimum slider value as a filled default in the prerequisite clinical flow', async () => {
@@ -502,7 +500,7 @@ describe('PreRequisito', () => {
 
     const sleepQualitySlider = await screen.findByRole('slider', { name: /qualidade do sono/i });
     expect(sleepQualitySlider).toHaveValue('0');
-    expect(screen.getByRole('button', { name: /pr.xima etapa/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /enviar formul.rio/i })).not.toBeDisabled();
   });
 
   it('maps 0 to 10 health scores to accessible slider fields with endpoint descriptions', () => {

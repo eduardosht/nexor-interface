@@ -28,23 +28,36 @@ describe('Privacidade (Nexor)', () => {
     expect(screen.queryByText(/\[[^\]]+\]/)).not.toBeInTheDocument();
   });
 
-  it('declara canal LGPD direto e direitos de exportação, correção, exclusão e revogação', () => {
+  it('declara canal LGPD direto e direitos de exportação, correção, exclusão, portabilidade e revogação', () => {
     render(<Privacidade />, { wrapper: Wrapper });
+
     expect(screen.getByText(/contato@nexoradvance\.com\.br/i)).toBeInTheDocument();
-    expect(screen.getByText(/assunto lgpd/i)).toBeInTheDocument();
+    expect(screen.getByText(/assuntos sobre lgpd/i)).toBeInTheDocument();
     expect(screen.getByText(/exportar uma cópia dos dados/i)).toBeInTheDocument();
-    expect(screen.getByText(/corrigir dados incompletos/i)).toBeInTheDocument();
-    expect(screen.getByText(/exclusão ou anonimização/i)).toBeInTheDocument();
-    expect(screen.getByText(/revogar consentimentos/i)).toBeInTheDocument();
+    expect(screen.getByText(/correção de dados incompletos/i)).toBeInTheDocument();
+    expect(screen.getByText(/anonimização, bloqueio ou eliminação/i)).toBeInTheDocument();
+    expect(screen.getByText(/portabilidade quando aplicável/i)).toBeInTheDocument();
+    expect(screen.getByText(/revogação de consentimentos/i)).toBeInTheDocument();
   });
 
-  it('cobre dados de conta, documentos, pagamentos, dados clínicos do Biteplaner e retenção por categoria', () => {
+  it('cobre dados de conta, documentos, pagamentos, dados clínicos, notificações e retenção por categoria', () => {
     render(<Privacidade />, { wrapper: Wrapper });
+
     expect(screen.getByText(/cpf, cnpj, razão social/i)).toBeInTheDocument();
     expect(screen.getAllByText(/stripe/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/dados clínicos e de saúde/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/leitura de notificações/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/formulários clínicos do biteplaner/i)).toBeInTheDocument();
     expect(screen.getByText(/120 meses/i)).toBeInTheDocument();
     expect(screen.getByText(/60 meses/i)).toBeInTheDocument();
+  });
+
+  it('explica exportação em JSON e remoção com anonimização ou bloqueio quando necessário', () => {
+    render(<Privacidade />, { wrapper: Wrapper });
+
+    expect(screen.getByText(/json estruturado/i)).toBeInTheDocument();
+    expect(screen.getByText(/não deve conter senha, tokens secretos/i)).toBeInTheDocument();
+    expect(screen.getByText(/conta removida sem pendências operacionais relevantes/i)).toBeInTheDocument();
+    expect(screen.getByText(/conta com ordens, pagamentos, produção ou obrigações pendentes/i)).toBeInTheDocument();
   });
 });

@@ -121,6 +121,8 @@ describe('AdminPartnerLicensing', () => {
     expect(source).toContain('const PartnerContextDisclosure = styled.details');
     expect(source).toContain('<PartnerContextDisclosure');
     expect(source).not.toContain('<PartnerContextDisclosure open');
+    expect(source).toContain('@media (min-width: 721px)');
+    expect(source).toContain('font-size: 14px;');
     expect(source).toContain('const CompactModalButton = styled(Button)');
     expect(source).toContain('$tone="success"');
     expect(source).not.toContain('<AdminModalDetailGrid>');

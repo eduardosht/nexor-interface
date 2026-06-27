@@ -275,6 +275,66 @@ describe('PortalLayout navigation', () => {
     expect(minhaConta.compareDocumentPosition(notificacoes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('shows Minha Conta submenus only on the account page', () => {
+    renderLayout('/painel/conta', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+      },
+      demoPersona: 'athlete',
+    });
+
+    expect(screen.getByRole('link', { name: /dados da conta/i })).toHaveAttribute('href', '/painel/conta#dados-da-conta');
+    expect(screen.getByRole('link', { name: /privacidade e lgpd/i })).toHaveAttribute('href', '/painel/conta#privacidade-lgpd');
+    expect(screen.getByRole('link', { name: /excluir conta/i })).toHaveAttribute('href', '/painel/conta#excluir-conta');
+    expect(screen.getByRole('link', { name: /preferências de comunicação/i }).querySelector('svg')).toBeNull();
+  });
+
+  it('hides Minha Conta submenus outside the account page', () => {
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+      },
+      demoPersona: 'athlete',
+    });
+
+    expect(screen.queryByRole('link', { name: /dados da conta/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /privacidade e lgpd/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render submenus when the sidebar is collapsed', () => {
+    renderLayout('/painel/conta', {
+      backendUser: {
+        email: 'cliente@nexor.dev',
+        roles: ['customer'],
+        productRoles: [
+          {
+            productKey: 'biteplaner',
+            role: 'customer',
+            status: 'active',
+            stage: 'order_started',
+            metadata: { orderStarted: true },
+          },
+        ],
+      },
+      demoPersona: 'athlete',
+    });
+
+    expect(screen.getByRole('link', { name: /dados da conta/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^home$/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /colapsar menu/i }));
+
+    expect(screen.queryByRole('link', { name: /dados da conta/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /preferências de comunicação/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^home$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
+    expect(screen.getByTitle('Biteplaner')).toBeInTheDocument();
+  });
+
   it('keeps the portal menu accessible on mobile for non-admin users', () => {
     renderLayout('/painel/home', {
       backendUser: {

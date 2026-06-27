@@ -34,6 +34,49 @@ export const PageTitle = styled(PortalPageTitle)``;
 
 export const PageDescription = styled(PortalPageDescription)``;
 
+export const HeaderActions = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  @media (max-width: 640px) {
+    justify-content: stretch;
+  }
+`;
+
+export const MarkAllReadButton = styled.button`
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.colors.green};
+    background: ${({ theme }) => `${theme.colors.green}0f`};
+    color: ${({ theme }) => theme.colors.green};
+  }
+
+  &:disabled {
+    color: ${({ theme }) => theme.colors.textMuted};
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 640px) {
+    flex: 1 1 180px;
+  }
+`;
+
 export const UnreadSummary = styled.span`
   min-height: 34px;
   padding: 0 12px;

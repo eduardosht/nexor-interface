@@ -403,6 +403,16 @@ describe("AdminDentistLicensing", () => {
     expect(source).toContain("padding: 8px;");
   });
 
+  it("uses 14px text in the dentist submitted-data modal on larger screens", () => {
+    const source = readFileSync(
+      resolve(__dirname, "AdminDentistLicensing.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("@media (min-width: 721px)");
+    expect(source).toContain("font-size: 14px;");
+  });
+
   it("keeps submitted dentist modal pairs on two columns and actions on one design-system button row", () => {
     const source = readFileSync(
       resolve(__dirname, "AdminDentistLicensing.tsx"),

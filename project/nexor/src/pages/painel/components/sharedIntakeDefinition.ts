@@ -1402,6 +1402,38 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
   ],
 };
 
+function getSharedSectionFields(definition: SharedIntakeDefinition, sectionKey: string) {
+  return definition.sections.find((section) => section.key === sectionKey)?.fields ?? [];
+}
+
+function getSharedSectionField(definition: SharedIntakeDefinition, sectionKey: string, fieldKey: string) {
+  return getSharedSectionFields(definition, sectionKey).find((field) => field.key === fieldKey);
+}
+
+const preConsultationDeviceExperienceFields = getSharedSectionFields(
+  SHARED_INITIAL_EVALUATION_INTAKE,
+  'device-experience'
+);
+
+const preConsultationSatisfactionFields = getSharedSectionFields(
+  SHARED_INITIAL_EVALUATION_INTAKE,
+  'satisfaction-improvements'
+);
+
+const migratedOnboardingSatisfactionFields = [
+  ...preConsultationDeviceExperienceFields,
+  ...['nexorSatisfaction', 'biteplanerSatisfaction', 'referralLikelihood']
+    .map((fieldKey) => getSharedSectionField(SHARED_INITIAL_EVALUATION_INTAKE, 'satisfaction-improvements', fieldKey))
+    .filter((field): field is SharedIntakeFieldDefinition => Boolean(field)),
+];
+
+const migratedOnboardingFeedbackFields = [
+  getSharedSectionField(SHARED_INITIAL_EVALUATION_INTAKE, 'satisfaction-improvements', 'openQuestionOrConcern'),
+].filter((field): field is SharedIntakeFieldDefinition => Boolean(field));
+
+const migratedOnboardingConsentFields = preConsultationSatisfactionFields
+  .filter((field) => field.key === 'researchConsent' || field.key === 'marketingConsent');
+
 export const CUSTOMER_NEW_USER_ONBOARDING: SharedIntakeDefinition = {
   label: 'Cadastro de novos usuários Biteplaner',
   description:
@@ -1533,21 +1565,26 @@ DISPOSITIVOS FUTUROS
       ],
     },
     {
-      key: 'consents',
-      title: 'Consentimentos',
-      fields: [
-        { key: 'researchConsent', label: 'Autorizo uso dos dados para análises internas e melhoria do produto', required: false, type: 'checkbox-group', ownerRole: 'user', visibleTo: customerConsentVisible, editableWhen: 'customer_intake', options: consentOption },
-        { key: 'marketingConsent', label: 'Autorizo comunicações e informes personalizados da NEXOR', required: false, type: 'checkbox-group', ownerRole: 'user', visibleTo: customerConsentVisible, editableWhen: 'customer_intake', options: consentOption },
-      ],
+      key: 'satisfaction-improvements',
+      title: 'Pesquisa de satisfação',
+      description:
+        'Perguntas migradas da pré-consulta para concentrar expectativas, percepção da proposta e satisfação no onboarding do cliente.',
+      fields: migratedOnboardingSatisfactionFields,
     },
     {
       key: 'feedback',
       title: 'Feedback',
       fields: [
+        ...migratedOnboardingFeedbackFields,
         { key: 'productDevelopmentAdvice', label: 'Um conselho para a equipe que está criando o produto', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake' },
         { key: 'nexorMostImportantHelp', label: 'Qual a coisa MAIS IMPORTANTE que a NEXOR precisa te auxiliar?', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Em uma frase: “A NEXOR precisa me ajudar a .”' },
         { key: 'finalOpenFeedback', label: 'Tem alguma dúvida, preocupação ou sugestão que não perguntamos?', required: false, type: 'textarea', ownerRole: 'user', visibleTo: userVisible, editableWhen: 'customer_intake', helpText: 'Não inclua dados pessoais de outras pessoas e evite detalhes médicos muito específicos que não deseje compartilhar' },
       ],
+    },
+    {
+      key: 'consents',
+      title: 'Consentimentos',
+      fields: migratedOnboardingConsentFields,
     },
   ],
 };

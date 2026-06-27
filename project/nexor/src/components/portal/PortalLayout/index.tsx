@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu, CreditCard } from 'lucide-react';
@@ -161,6 +161,14 @@ const NAV_ITEMS = [
   { to: '/painel/notificacoes', label: 'Notificações', Icon: Bell },
 ];
 
+const ACCOUNT_SUBNAV_ITEMS = [
+  { to: '/painel/conta#dados-da-conta', label: 'Dados da conta' },
+  { to: '/painel/conta#privacidade-lgpd', label: 'Privacidade e LGPD' },
+  { to: '/painel/conta#dados-onboarding', label: 'Dados de onboarding' },
+  { to: '/painel/conta#seguranca', label: 'Segurança' },
+  { to: '/painel/conta#excluir-conta', label: 'Excluir conta' },
+];
+
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
@@ -282,6 +290,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const displayName = email.split('@')[0];
   const initials = displayName.slice(0, 2).toUpperCase() || 'NX';
 
+  const isAccountActive = location.pathname === '/painel/conta';
   const isBiteplanerActive = location.pathname.startsWith('/painel/biteplaner');
   const requestedBiteplanerMode = new URLSearchParams(location.search).get('mode');
   const biteplanerMode = getActiveBiteplanerMenuMode(backendUser, requestedBiteplanerMode);
@@ -298,11 +307,11 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   const mobileDrawerItems = isAdmin
     ? ADMIN_NAV_ITEMS
     : [
-        ...NAV_ITEMS,
-        ...(showBiteplanerProductMenu
-          ? [{ to: biteplanerHomePath, label: 'Biteplaner', Icon: ShieldCheck }]
-          : []),
-      ];
+      ...NAV_ITEMS,
+      ...(showBiteplanerProductMenu
+        ? [{ to: biteplanerHomePath, label: 'Biteplaner', Icon: ShieldCheck }]
+        : []),
+    ];
   const mobileDrawerLabel = isAdmin ? 'Menu administrativo' : 'Menu do portal';
   const notificationsOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
   const notificationsQueryKey = accountQueryKeys.notifications(notificationsOwnerId);
@@ -416,6 +425,21 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     contentScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!location.hash || location.pathname !== '/painel/conta') {
+      return;
+    }
+
+    const target = document.getElementById(location.hash.slice(1));
+    const scrollContainer = contentScrollRef.current;
+
+    if (!target || !scrollContainer) {
+      return;
+    }
+
+    scrollContainer.scrollTo({ top: Math.max(target.offsetTop - 24, 0), left: 0, behavior: 'smooth' });
+  }, [location.hash, location.pathname]);
 
   useEffect(() => {
     setMobileAdminMenuOpen(false);
@@ -603,24 +627,44 @@ export function PortalLayout({ children }: { children: ReactNode }) {
           {!isAdmin ? (
             <>
               {NAV_ITEMS.map(({ to, label, Icon }) => (
-                <S.StyledNavLink
-                  key={to}
-                  to={to}
-                  $collapsed={collapsed}
-                  title={collapsed ? label : undefined}
-                >
-                  <Icon size={16} />
-                  <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
-                  {to === '/painel/notificacoes' && hasUnreadNotifications ? (
-                    <S.NavUnreadDot data-testid="nav-unread-dot" aria-hidden="true" />
+                <Fragment key={to}>
+                  <S.StyledNavLink
+                    to={to}
+                    $collapsed={collapsed}
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon size={16} />
+                    <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
+                    {to === '/painel/notificacoes' && hasUnreadNotifications ? (
+                      <S.NavUnreadDot data-testid="nav-unread-dot" aria-hidden="true" />
+                    ) : null}
+                  </S.StyledNavLink>
+                  {to === '/painel/conta' && isAccountActive && !collapsed ? (
+                    <>
+                      {ACCOUNT_SUBNAV_ITEMS.map(({ to: subTo, label: subLabel }) => (
+                        <S.SubNavLink
+                          key={subTo}
+                          to={subTo}
+                          $collapsed={collapsed}
+                          $hasIcon={false}
+                          title={collapsed ? subLabel : undefined}
+                        >
+                          <S.SubNavText>{subLabel}</S.SubNavText>
+                        </S.SubNavLink>
+                      ))}
+                    </>
                   ) : null}
-                </S.StyledNavLink>
+                </Fragment>
               ))}
 
               {showBiteplanerProductMenu ? (
                 <>
-                  <S.NavSectionDivider />
-                  <S.NavSectionLabel $collapsed={collapsed}>Produtos</S.NavSectionLabel>
+                  {!collapsed ? (
+                    <>
+                      <S.NavSectionDivider />
+                      <S.NavSectionLabel $collapsed={collapsed}>Produtos</S.NavSectionLabel>
+                    </>
+                  ) : null}
                   <S.NavButton
                     $collapsed={collapsed}
                     $active={isBiteplanerActive}
@@ -633,47 +677,49 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                     <ShieldCheck size={16} />
                     <S.NavLabel $collapsed={collapsed}>Biteplaner</S.NavLabel>
                   </S.NavButton>
-                <>
-                  <S.SubNavLink
-                    to={biteplanerHomePath}
-                    end
-                    $collapsed={collapsed}
-                    title={collapsed ? 'Home' : undefined}
-                  >
-                    <Home size={13} />
-                    Home
-                  </S.SubNavLink>
-                  {isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
-                    <S.SubNavLink
-                      to="/painel/biteplaner/jornada"
-                      $collapsed={collapsed}
-                      title={collapsed ? 'Ordem' : undefined}
-                    >
-                      <FileText size={13} />
-                      Ordem
-                    </S.SubNavLink>
+                  {!collapsed ? (
+                    <>
+                      <S.SubNavLink
+                        to={biteplanerHomePath}
+                        end
+                        $collapsed={collapsed}
+                        title={collapsed ? 'Home' : undefined}
+                      >
+                        <Home size={13} />
+                        Home
+                      </S.SubNavLink>
+                      {isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
+                        <S.SubNavLink
+                          to="/painel/biteplaner/jornada"
+                          $collapsed={collapsed}
+                          title={collapsed ? 'Ordem' : undefined}
+                        >
+                          <FileText size={13} />
+                          Ordem
+                        </S.SubNavLink>
+                      ) : null}
+                      {isPartnerBiteplanerMode ? (
+                        <S.SubNavLink
+                          to="/painel/biteplaner/indicar?mode=partner"
+                          $collapsed={collapsed}
+                          title={collapsed ? 'Indicar' : undefined}
+                        >
+                          <Link2 size={13} />
+                          Indicar
+                        </S.SubNavLink>
+                      ) : null}
+                      {showEvaluationsSubmenu ? (
+                        <S.SubNavLink
+                          to={`/painel/biteplaner/avaliacoes${biteplanerModeQuery}`}
+                          $collapsed={collapsed}
+                          title={collapsed ? 'Avaliações' : undefined}
+                        >
+                          <Star size={13} />
+                          Avaliações
+                        </S.SubNavLink>
+                      ) : null}
+                    </>
                   ) : null}
-                  {isPartnerBiteplanerMode ? (
-                    <S.SubNavLink
-                      to="/painel/biteplaner/indicar?mode=partner"
-                      $collapsed={collapsed}
-                      title={collapsed ? 'Indicar' : undefined}
-                    >
-                      <Link2 size={13} />
-                      Indicar
-                    </S.SubNavLink>
-                  ) : null}
-                  {showEvaluationsSubmenu ? (
-                    <S.SubNavLink
-                      to={`/painel/biteplaner/avaliacoes${biteplanerModeQuery}`}
-                      $collapsed={collapsed}
-                      title={collapsed ? 'Avaliações' : undefined}
-                    >
-                      <Star size={13} />
-                      Avaliações
-                    </S.SubNavLink>
-                  ) : null}
-                </>
                 </>
               ) : null}
             </>
@@ -822,42 +868,42 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                         const notificationAction = getNotificationAction(notification);
 
                         return (
-                        <S.NotificationItem
-                          key={notification.id}
-                          $unread={!notification.read}
-                        >
-                          <S.NotificationOpenButton
-                            type="button"
-                            aria-label={`Abrir notificação ${notification.title}`}
-                            onClick={() => handleNotificationClick(notification)}
+                          <S.NotificationItem
+                            key={notification.id}
+                            $unread={!notification.read}
                           >
-                            <S.NotificationIconBox $unread={!notification.read}>
-                              <ClipboardList size={17} aria-hidden />
-                            </S.NotificationIconBox>
-                            <S.NotificationContent>
-                              <S.NotificationTitle>{notification.title}</S.NotificationTitle>
-                              <S.NotificationPreview>{notification.message}</S.NotificationPreview>
-                              <S.NotificationDate>{notification.datetime}</S.NotificationDate>
-                            </S.NotificationContent>
-                          </S.NotificationOpenButton>
-                          <S.NotificationItemMeta>
-                            <S.NotificationStatus $unread={!notification.read}>
-                              {notification.read ? 'Lida' : 'Não lida'}
-                            </S.NotificationStatus>
-                            <ChevronRight size={18} aria-hidden />
-                            {notificationAction ? (
-                              <S.NotificationActionButton
-                                type="button"
-                                onClick={() => {
-                                  setNotificationsOpen(false);
-                                  void navigate(notificationAction.path);
-                                }}
-                              >
-                                {notificationAction.label}
-                              </S.NotificationActionButton>
-                            ) : null}
-                          </S.NotificationItemMeta>
-                        </S.NotificationItem>
+                            <S.NotificationOpenButton
+                              type="button"
+                              aria-label={`Abrir notificação ${notification.title}`}
+                              onClick={() => handleNotificationClick(notification)}
+                            >
+                              <S.NotificationIconBox $unread={!notification.read}>
+                                <ClipboardList size={17} aria-hidden />
+                              </S.NotificationIconBox>
+                              <S.NotificationContent>
+                                <S.NotificationTitle>{notification.title}</S.NotificationTitle>
+                                <S.NotificationPreview>{notification.message}</S.NotificationPreview>
+                                <S.NotificationDate>{notification.datetime}</S.NotificationDate>
+                              </S.NotificationContent>
+                            </S.NotificationOpenButton>
+                            <S.NotificationItemMeta>
+                              <S.NotificationStatus $unread={!notification.read}>
+                                {notification.read ? 'Lida' : 'Não lida'}
+                              </S.NotificationStatus>
+                              <ChevronRight size={18} aria-hidden />
+                              {notificationAction ? (
+                                <S.NotificationActionButton
+                                  type="button"
+                                  onClick={() => {
+                                    setNotificationsOpen(false);
+                                    void navigate(notificationAction.path);
+                                  }}
+                                >
+                                  {notificationAction.label}
+                                </S.NotificationActionButton>
+                              ) : null}
+                            </S.NotificationItemMeta>
+                          </S.NotificationItem>
                         );
                       })
                     )}

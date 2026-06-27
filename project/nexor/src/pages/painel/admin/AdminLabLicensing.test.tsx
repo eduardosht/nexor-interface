@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { initDesignSystem } from '@nexor/design-system';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -179,5 +181,15 @@ describe('AdminLabLicensing', () => {
         name: /visualizar solicitação de lab pendente/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('uses 14px text in the laboratory submitted-data modal on larger screens', () => {
+    const source = readFileSync(
+      resolve(__dirname, 'AdminLabLicensing.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('@media (min-width: 721px)');
+    expect(source).toContain('font-size: 14px;');
   });
 });

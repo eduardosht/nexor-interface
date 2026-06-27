@@ -1212,7 +1212,7 @@ export function ProducaoDentista() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `ficha-anamnese-${formatAnamnesisDownloadDate(new Date())}.pdf`;
+    anchor.download = `ficha-anamnese-odontologica-${formatAnamnesisDownloadDate(new Date())}.pdf`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();

@@ -6,6 +6,7 @@ import {
   Bell,
   Check,
   ChevronRight,
+  CircleHelp,
   ClipboardList,
   Clock3,
   Copy,
@@ -1270,6 +1271,7 @@ export function BiteplanerHub() {
   const [labDateDraft, setLabDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
   const [labDateRangeError, setLabDateRangeError] = useState('');
   const [pendingOrderAction, setPendingOrderAction] = useState<QueueActionConfig | null>(null);
+  const [selectedPendingPatientConfirmationOrderId, setSelectedPendingPatientConfirmationOrderId] = useState<string | null>(null);
   const [selectedAdjustmentOrderId, setSelectedAdjustmentOrderId] = useState<string | null>(null);
   const [selectedAdaptationOrderId, setSelectedAdaptationOrderId] = useState<string | null>(null);
   const [adaptationCustomerPhones, setAdaptationCustomerPhones] = useState<Record<string, string>>({});
@@ -2013,8 +2015,18 @@ export function BiteplanerHub() {
     }
 
     const presentation = getOrderStatusPresentation(order);
-
     return <StatusIndicator color={presentation.color} label={presentation.label} />;
+  }
+
+  function isWaitingForPatientConfirmation(order: DemoOrderSummary) {
+    const appointment = appointments[order.id]?.[0] ?? null;
+
+    return (
+      selectedMode === 'dentist' &&
+      order.status === 'in_progress' &&
+      Boolean(appointment?.dentist_confirmed_at) &&
+      !appointment?.user_confirmed_at
+    );
   }
 
   function getOrderLabel(order: DemoOrderSummary) {
@@ -2026,6 +2038,11 @@ export function BiteplanerHub() {
   }
 
   function handleDentistQueueAction(row: DemoOrderSummary, action: QueueActionConfig) {
+    if (action.id.endsWith(':patient-pending-info')) {
+      setSelectedPendingPatientConfirmationOrderId(row.id);
+      return;
+    }
+
     if (action.id.endsWith(':production-wizard')) {
       navigate(`/painel/dentista/producao/${row.id}`);
       return;
@@ -2109,6 +2126,24 @@ export function BiteplanerHub() {
 
       if (appointment?.user_confirmed_at && appointment.dentist_confirmed_at) {
         return [getPreConsultationReviewAction(order)];
+      }
+
+      if (isWaitingForPatientConfirmation(order)) {
+        return [
+          {
+            id: `${order.id}:patient-pending-info`,
+            title: 'Entender pendência',
+            ariaLabel: `Entender pendência da ordem ${orderLabel}`,
+            testId: 'dentist-order-action-patient-pending-info',
+            icon: <CircleHelp size={15} aria-hidden />,
+            tone: 'neutral',
+            confirmTitle: 'Aguardando aceite do cliente',
+            confirmDescription: `A ordem ${orderLabel} está aguardando uma ação do paciente.`,
+            actionKey: `${order.id}:patient-pending-info`,
+            successMessage: '',
+            execute: async () => undefined
+          }
+        ];
       }
 
       if (!appointment || appointment.dentist_confirmed_at) {
@@ -2764,6 +2799,9 @@ export function BiteplanerHub() {
   const selectedDocumentationOrder = selectedDocumentationOrderId ? orders.find((order) => order.id === selectedDocumentationOrderId) ?? null : null;
   const productionRequestDraft = selectedProductionRequestDraft ?? selectedDocumentationOrder?.productionRequestDraft ?? null;
   const selectedAdjustmentOrder = selectedAdjustmentOrderId ? orders.find((order) => order.id === selectedAdjustmentOrderId) ?? null : null;
+  const selectedPendingPatientConfirmationOrder = selectedPendingPatientConfirmationOrderId
+    ? orders.find((order) => order.id === selectedPendingPatientConfirmationOrderId) ?? null
+    : null;
   const selectedAdaptationOrder = selectedAdaptationOrderId ? orders.find((order) => order.id === selectedAdaptationOrderId) ?? null : null;
   const selectedAdaptationAppointment = selectedAdaptationOrder
     ? getLatestAdaptationAppointmentFromList(appointments[selectedAdaptationOrder.id])
@@ -3536,6 +3574,61 @@ export function BiteplanerHub() {
             });
           }}
         />
+      ) : null}
+
+      {selectedPendingPatientConfirmationOrder ? (
+        <S.ModalOverlay
+          role="dialog"
+          aria-modal="true"
+          aria-label="Ordem aguardando aceite do cliente"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedPendingPatientConfirmationOrderId(null);
+            }
+          }}
+        >
+          <S.ModalBox>
+            <S.ModalHeader>
+              <div>
+                <S.ModalTitle>Aguardando aceite do cliente</S.ModalTitle>
+                <S.ModalSubtitle>
+                  Ordem {getOrderLabel(selectedPendingPatientConfirmationOrder)} em andamento.
+                </S.ModalSubtitle>
+              </div>
+              <S.ModalCloseButton
+                type="button"
+                aria-label="Fechar modal de pendência do cliente"
+                onClick={() => {
+                  setSelectedPendingPatientConfirmationOrderId(null);
+                }}
+              >
+                <X size={16} aria-hidden />
+              </S.ModalCloseButton>
+            </S.ModalHeader>
+
+            <S.ModalField>
+              <p>
+                O dentista já confirmou a consulta desta ordem, mas o paciente ainda precisa confirmar o aceite para
+                que o fluxo avance.
+              </p>
+              <p>
+                Enquanto essa ação estiver pendente, a ordem permanece como <strong>Em andamento</strong> sem novas
+                ações operacionais para o dentista.
+              </p>
+            </S.ModalField>
+
+            <S.ModalActions>
+              <S.ModalPrimaryButton
+                type="button"
+                onClick={() => {
+                  setSelectedPendingPatientConfirmationOrderId(null);
+                }}
+              >
+                Entendi
+              </S.ModalPrimaryButton>
+            </S.ModalActions>
+          </S.ModalBox>
+        </S.ModalOverlay>
       ) : null}
 
       {selectedInviteLink ? (

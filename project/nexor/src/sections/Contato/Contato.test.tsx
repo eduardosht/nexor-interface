@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { Contato } from './Contato';
 import { lightTheme } from '../../styles/theme';
@@ -18,6 +19,14 @@ vi.mock('../../config/env', () => ({
   },
 }));
 
+function renderContato(initialEntry = '/') {
+  return render(
+    <MemoryRouter initialEntries={[initialEntry]}>
+      <ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>
+    </MemoryRouter>
+  );
+}
+
 describe('Contato', () => {
   beforeEach(() => {
     apiPost.mockReset();
@@ -25,22 +34,40 @@ describe('Contato', () => {
   });
 
   it('renderiza heading', () => {
-    render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    renderContato();
     expect(screen.getByRole('heading', { name: /fale com/i })).toBeInTheDocument();
   });
 
   it('renderiza link de email', () => {
-    render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    renderContato();
     expect(screen.getByTestId('contact-email')).toHaveAttribute('href', 'mailto:contato@nexoradvance.com.br');
   });
 
   it('tem id contato para âncora', () => {
-    const { container } = render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    const { container } = renderContato();
     expect(container.querySelector('#contato')).toBeInTheDocument();
   });
 
+  it('preseleciona o assunto LGPD quando a home abre na ancora de contato com query', () => {
+    renderContato('/?assunto=lgpd#contato');
+
+    expect(screen.getByText('Assuntos sobre LGPD')).toBeInTheDocument();
+  });
+
+  it('rola para a secao do formulario quando a home abre na ancora de contato', () => {
+    const scrollIntoView = vi.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+
+    renderContato('/?assunto=lgpd#contato');
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+
+    Element.prototype.scrollIntoView = originalScrollIntoView;
+  });
+
   it('remove numeros do campo nome', () => {
-    render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    renderContato();
 
     fireEvent.change(screen.getByLabelText(/nome/i), {
       target: { value: 'Cliente 456 Teste' },
@@ -50,7 +77,7 @@ describe('Contato', () => {
   });
 
   it('envia o formulário para a API de contato institucional', async () => {
-    render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    renderContato();
 
     fireEvent.change(screen.getByLabelText(/nome/i), {
       target: { name: 'nome', value: 'Maria Cliente' },
@@ -77,7 +104,7 @@ describe('Contato', () => {
 
   it('mostra erro quando a API de contato falha', async () => {
     apiPost.mockRejectedValueOnce(new Error('Falha'));
-    render(<ThemeProvider theme={lightTheme}><Contato /></ThemeProvider>);
+    renderContato();
 
     fireEvent.change(screen.getByLabelText(/nome/i), {
       target: { name: 'nome', value: 'Maria Cliente' },

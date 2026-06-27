@@ -2232,10 +2232,26 @@ describe('ProducaoDentista', () => {
     });
 
     expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(createdAnchors.at(-1)?.download).toMatch(/^ficha-anamnese-\d{8}\.pdf$/);
+    expect(createdAnchors.at(-1)?.download).toMatch(/^ficha-anamnese-odontologica-\d{8}\.pdf$/);
     expect(HTMLAnchorElement.prototype.click).toHaveBeenCalled();
     expect(screen.queryByText(/anamnese baixada/i)).not.toBeInTheDocument();
   }, 15000);
+
+  it('builds the anamnesis PDF from the full summary record sections', () => {
+    const pdfSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/finalAnamnesisPdf.tsx'), 'utf8');
+
+    expect(pdfSource).toContain('SHARED_INITIAL_EVALUATION_INTAKE.sections');
+    expect(pdfSource).toContain('ANAMNESIS_SECTION_KEYS');
+    expect(pdfSource).toContain('PdfPayloadSection');
+    expect(pdfSource).toContain('RASTREABILIDADE E GUARDA');
+    expect(pdfSource).toContain('OBSERVAÇÕES E CONDUTA');
+    expect(pdfSource).not.toContain('PEDIDO DO DISPOSITIVO');
+    expect(pdfSource).not.toContain('Nexor Biteplaner');
+    expect(pdfSource).not.toContain('BITEPLANER</Text>');
+    expect(pdfSource).not.toContain('getOrderClinicalPracticeLocation');
+    expect(pdfSource).not.toContain('styles.brand');
+    expect(pdfSource).not.toContain('styles.clinicName');
+  });
 
   it('removes the standalone professional observations card from the anamnesis PDF', () => {
     const pdfSource = readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/finalAnamnesisPdf.tsx'), 'utf8');

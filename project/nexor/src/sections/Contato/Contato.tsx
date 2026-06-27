@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { Button, Field, Select, sanitizePersonName } from '@nexor/design-system';
 import { env } from '../../config/env';
@@ -11,6 +12,7 @@ const ASSUNTOS = [
   { value: 'produto', label: 'Dúvidas sobre produto' },
   { value: 'performance', label: 'Consultoria de performance' },
   { value: 'imprensa', label: 'Imprensa / Mídia' },
+  { value: 'lgpd', label: 'Assuntos sobre LGPD' },
   { value: 'outro', label: 'Outro' },
 ];
 
@@ -23,12 +25,27 @@ interface FormState {
 
 export function Contato() {
   const { contactEmail, contactWhatsapp } = env;
-  const ref = useRef(null);
+  const location = useLocation();
+  const ref = useRef<HTMLElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-15%' });
   const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '' });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const shouldPreselectLgpd = location.hash === '#contato' && params.get('assunto') === 'lgpd';
+
+    if (!shouldPreselectLgpd) {
+      return;
+    }
+
+    setForm((prev) => (prev.assunto === 'lgpd' ? prev : { ...prev, assunto: 'lgpd' }));
+    if (typeof ref.current?.scrollIntoView === 'function') {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [location.hash, location.search]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.name === 'nome' ? sanitizePersonName(e.target.value) : e.target.value;

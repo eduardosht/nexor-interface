@@ -1232,6 +1232,62 @@ describe('BiteplanerHub', () => {
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
+  it('opens an action modal when an in-progress dentist order waits for patient confirmation', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({
+        productKey: 'biteplaner',
+        defaultMode: 'dentist',
+        enrollment: null,
+        modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
+      })
+      .mockResolvedValueOnce({
+        orders: [
+          {
+            id: 'BP-DEMO-PATIENT-PENDING',
+            status: 'in_progress',
+            statusLabel: 'Em andamento',
+            stage: 'consultation_linked',
+            created_at: '2026-05-01T10:00:00.000Z',
+            customer: { full_name: 'Paciente Pendente', email: 'pendente@nexor.dev', phone: '11999990001' },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        appointments: [
+          {
+            id: 'appointment-patient-pending',
+            order_id: 'BP-DEMO-PATIENT-PENDING',
+            type: 'initial',
+            status: 'scheduled',
+            scheduled_at: '2026-05-07T10:00:00.000Z',
+            user_confirmed_at: null,
+            dentist_confirmed_at: '2026-05-07T11:00:00.000Z',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ events: [] })
+      .mockResolvedValueOnce({ forms: [] });
+
+    renderPage('/painel/biteplaner?mode=dentist', {
+      demoPersona: 'dentist',
+      backendUser: { email: 'dentista@nexor.dev', roles: ['dentist'] },
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dentist-queue-table')).toBeInTheDocument());
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Em andamento')[0]).toBeInTheDocument();
+
+    const infoActions = screen.getAllByTestId('dentist-order-action-patient-pending-info');
+    expect(infoActions.length).toBeGreaterThan(0);
+    fireEvent.click(infoActions[0]);
+
+    const modal = screen.getByRole('dialog', { name: /ordem aguardando aceite do cliente/i });
+    expect(within(modal).getByText('Aguardando aceite do cliente')).toBeInTheDocument();
+    expect(within(modal).getByText(/o dentista já confirmou a consulta/i)).toBeInTheDocument();
+    expect(within(modal).getByText(/o paciente ainda precisa confirmar/i)).toBeInTheDocument();
+  });
+
   it('opens the pre-consultation review after both appointment confirmations for licensed dentists', async () => {
     mockApiGet
       .mockResolvedValueOnce({

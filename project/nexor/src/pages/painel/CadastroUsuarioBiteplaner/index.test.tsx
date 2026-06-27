@@ -149,6 +149,23 @@ function selectTagOption(label: RegExp, search: string, optionName: RegExp | str
   fireEvent.click(screen.getByRole('option', { name: optionName }));
 }
 
+function selectScore(label: RegExp, value: number, max = 10) {
+  const group = screen.getByRole('radiogroup', { name: label });
+  fireEvent.click(within(group).getByRole('radio', { name: new RegExp(`${value} de ${max}`) }));
+}
+
+function fillMigratedSatisfactionFields() {
+  selectDropdown(/como conheceu inicialmente/i, /redes sociais/i);
+  selectDropdown(/motiva.*o inicial/i, /performance/i);
+  selectScore(/proposta inicial do biteplaner/i, 8);
+  fireEvent.click(screen.getByLabelText(/aumento de performance/i));
+  fireEvent.click(screen.getByLabelText(/melhorar performance/i));
+  fireEvent.click(screen.getByLabelText(/^desconforto$/i));
+  selectScore(/satisfa.*o geral com a nexor/i, 8);
+  selectScore(/satisfa.*o geral com o biteplaner/i, 8);
+  selectDropdown(/voc.* indicaria a nexor e o biteplaner/i, /com certeza/i);
+}
+
 function getTextField(label: RegExp) {
   return screen.getByLabelText(label, { selector: 'input, textarea' });
 }
@@ -271,6 +288,7 @@ async function fillRequiredOnboardingFields({ cpf = '52998224725', birthDate = '
   await clickEnabledNextStep();
 
   expect(screen.queryByLabelText(/pol.*tica de privacidade/i)).not.toBeInTheDocument();
+  fillMigratedSatisfactionFields();
   expect(screen.getByText(/A NEXOR precisa me ajudar a/i)).toBeInTheDocument();
 
   fireEvent.change(getTextField(/mais importante.*nexor/i), { target: { value: 'A treinar com segurança' } });
@@ -405,6 +423,15 @@ describe('CadastroUsuarioBiteplaner', () => {
             previousTrainingInjuries: 'Não',
             monthlyTrainingLocationSpend: 200,
             monthlyIncomeRange: '5001_10000',
+            biteplanerDiscoverySource: 'social_media',
+            initialMotivation: 'performance',
+            initialProposalRating: 8,
+            biteplanerInterestReasons: ['performance'],
+            expectedUseBenefit: ['performance'],
+            imaginedUseBarriers: ['discomfort'],
+            nexorSatisfaction: 8,
+            biteplanerSatisfaction: 8,
+            referralLikelihood: 'definitely',
             nexorMostImportantHelp: 'A treinar com segurança',
             privacyConsent: ['accepted'],
           }),
@@ -828,6 +855,8 @@ describe('CadastroUsuarioBiteplaner', () => {
     fireEvent.change(getTextField(/maior preocupa.*o/i), { target: { value: 'Evitar lesões' } });
     selectDropdown(/trabalho afeta/i, /n.o afeta/i);
     await clickEnabledNextStep();
+
+    fillMigratedSatisfactionFields();
 
     fireEvent.change(getTextField(/mais importante.*nexor/i), { target: { value: 'A treinar com segurança' } });
     fireEvent.click(screen.getByRole('button', { name: /enviar formul.*rio/i }));

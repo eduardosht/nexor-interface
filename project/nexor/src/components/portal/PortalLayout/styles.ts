@@ -435,27 +435,29 @@ export const NavSectionDivider = styled.div`
   margin: 6px 12px;
 `;
 
-export const SubNavLink = styled(NavLink) <{ $collapsed: boolean }>`
+export const SubNavLink = styled(NavLink) <{ $collapsed: boolean; $hasIcon?: boolean }>`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px 8px 42px;
+  gap: ${({ $hasIcon = true }) => ($hasIcon ? '10px' : '0')};
+  padding: ${({ $hasIcon = true }) => ($hasIcon ? '8px 16px 8px 42px' : '8px 16px 8px 36px')};
   font-size: 12px;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.3;
+  color: ${({ theme }) => theme.colors.textSoft};
   text-decoration: none;
-  white-space: nowrap;
+  white-space: ${({ $hasIcon = true }) => ($hasIcon ? 'nowrap' : 'normal')};
   transition: color 120ms ease, background 120ms ease;
   opacity: ${({ $collapsed }) => ($collapsed ? 0 : 1)};
   pointer-events: ${({ $collapsed }) => ($collapsed ? 'none' : 'auto')};
+  min-width: 0;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textSecondary};
     background: ${({ theme }) => theme.colors.bgInset};
   }
 
   &.active {
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textSecondary};
     background: ${({ theme }) => theme.colors.bgInset};
     font-weight: 600;
   }
@@ -465,8 +467,8 @@ export const SubNavLink = styled(NavLink) <{ $collapsed: boolean }>`
 
 export const SubNavText = styled.span`
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 `;
 
 export const MvpBadge = styled.span`

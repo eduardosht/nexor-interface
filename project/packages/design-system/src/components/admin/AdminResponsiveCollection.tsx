@@ -78,7 +78,6 @@ const State = styled.div`
   padding: 14px 12px;
   border: 1px solid ${({ theme }) => adminColor(theme, 'borderDefault', 'border', '#E0E0E0')};
   border-radius: 8px;
-  background: ${({ theme }) => adminColor(theme, 'bgSubtle', 'surfaceSubtle', '#F7F7F7')};
   color: ${({ theme }) => adminColor(theme, 'textSecondary', 'textMuted', '#525252')};
   font-size: 13px;
   line-height: 1.4;

@@ -1,16 +1,71 @@
 import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer';
 import {
   getOrderDisplayId,
-  getOrderClinicalPracticeLocation,
   type DemoOrderSummary,
   type DemoWorkflowForm,
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
-import { getWorkflowFormPayloadSection } from '../components/workflowFormFieldDictionary';
+import {
+  SHARED_INITIAL_EVALUATION_INTAKE,
+  type SharedIntakeFieldDefinition,
+  type SharedIntakeSectionDefinition,
+} from '../components/sharedIntakeDefinition';
+import {
+  getWorkflowFormPayloadSection,
+  hasWorkflowPayloadValue,
+  isAffirmativeWorkflowValue,
+} from '../components/workflowFormFieldDictionary';
 
-const missingValue = 'Não informado';
+const missingValue = '';
 const navy = '#0b3566';
 const border = '#9fb2cc';
+
+const ANAMNESIS_SECTION_KEYS = new Set([
+  'initial-data',
+  'medical-history',
+  'dental-orofacial-history',
+  'current-pain-function',
+  'life-habits',
+  'biteplaner-experience',
+  'dentist-clinical-complement',
+]);
+
+const HIDDEN_SUMMARY_FIELD_KEYS = new Set(['dentistClinicalDeclaration']);
+
+const CLINICAL_DETAIL_PARENT_BY_KEY: Record<string, string> = {
+  relevantMedicalDiagnosisDetails: 'hasRelevantMedicalDiagnosis',
+  currentMedicationDetails: 'currentMedicationUse',
+  longTermPainOrSleepMedicationDetails: 'longTermPainOrSleepMedicationUse',
+  headNeckSpineSurgeryDetails: 'headNeckSpineSurgeryHistory',
+  faceJawTraumaDetails: 'faceJawTraumaHistory',
+  headNeckSpineAccidentDetails: 'headNeckSpineAccidentHistory',
+  tmdDiagnosisDetails: 'hasTmdDiagnosis',
+  regularDentistCityNeighborhood: 'regularDentistVisit',
+  caffeineStimulantsUse: 'usesCaffeineStimulants',
+  openingMidlineDeviationSide: 'openingMidlineDeviation',
+};
+
+const CURRENT_PAIN_DETAIL_KEYS = new Set([
+  'painLocations',
+  'painPatternDetails',
+  'averagePainLastWeek',
+  'worstPainLastWeek',
+  'painAggravatingFactors',
+  'painReliefFactors',
+  'hasMouthOpeningDifficulty',
+  'mandibularFunctionSymptoms',
+  'jointClickFrequency',
+  'trainingTeethClenching',
+  'trainingJawTensionMoment',
+  'trainingInterruptedByPain',
+  'trainingPerformanceImpact',
+  'missedTrainingDuePain',
+]);
+
+const CHECKBOX_OTHER_DETAIL_BY_KEY: Record<string, string> = {
+  expectedUseBenefitOther: 'expectedUseBenefit',
+  imaginedUseBarriersOther: 'imaginedUseBarriers',
+};
 
 function value(rawValue: unknown): string {
   if (Array.isArray(rawValue)) {
@@ -36,16 +91,8 @@ function dateValue(rawValue: unknown): string {
   return value(rawValue);
 }
 
-function checkText(raw: unknown) {
-  return value(raw) === 'Sim' ? '(x) Sim   ( ) Não' : value(raw) === 'Não' ? '( ) Sim   (x) Não' : '( ) Sim   ( ) Não';
-}
-
 function hasFilledValue(rawValue: unknown) {
-  if (Array.isArray(rawValue)) {
-    return rawValue.length > 0;
-  }
-
-  return rawValue !== null && rawValue !== undefined && rawValue !== '';
+  return hasWorkflowPayloadValue(rawValue);
 }
 
 function calculateAgeYears(birthDate: unknown) {
@@ -82,6 +129,103 @@ function buildCustomerProfileFallback(onboardingPayload: Record<string, unknown>
   };
 }
 
+function payloadHasCheckboxValue(payload: Record<string, unknown>, fieldKey: string, optionValue: string) {
+  const rawValue = payload[fieldKey];
+
+  if (Array.isArray(rawValue)) {
+    return rawValue.some((item) => String(item) === optionValue);
+  }
+
+  return String(rawValue ?? '').split('|').includes(optionValue);
+}
+
+function getOptionLabel(field: SharedIntakeFieldDefinition, rawValue: unknown) {
+  const option = field.options?.find((candidate) => String(candidate.value) === String(rawValue));
+  return option?.label ?? value(rawValue);
+}
+
+function formatFieldValue(field: SharedIntakeFieldDefinition, rawValue: unknown) {
+  if (Array.isArray(rawValue)) {
+    return rawValue.length > 0 ? rawValue.map((item) => getOptionLabel(field, item)).join(', ') : missingValue;
+  }
+
+  if (field.type === 'checkbox-group' && typeof rawValue === 'string' && rawValue.includes('|')) {
+    const values = rawValue.split('|').map((item) => item.trim()).filter(Boolean);
+    return values.length > 0 ? values.map((item) => getOptionLabel(field, item)).join(', ') : missingValue;
+  }
+
+  if (field.type === 'date') {
+    return dateValue(rawValue);
+  }
+
+  if (field.options?.length) {
+    return getOptionLabel(field, rawValue);
+  }
+
+  return value(rawValue);
+}
+
+function getFieldPayloadValue(
+  field: SharedIntakeFieldDefinition,
+  customer: Record<string, unknown>,
+  dentist: Record<string, unknown>
+) {
+  return field.ownerRole === 'dentist' ? dentist[field.key] : customer[field.key];
+}
+
+function isFieldVisibleForPayload(
+  field: SharedIntakeFieldDefinition,
+  customer: Record<string, unknown>,
+  dentist: Record<string, unknown>
+) {
+  if (HIDDEN_SUMMARY_FIELD_KEYS.has(field.key)) {
+    return false;
+  }
+
+  const payload = field.ownerRole === 'dentist' ? dentist : customer;
+  const parentKey = CLINICAL_DETAIL_PARENT_BY_KEY[field.key];
+
+  if (parentKey) {
+    return isAffirmativeWorkflowValue(payload[parentKey]) || hasFilledValue(payload[field.key]);
+  }
+
+  if (CURRENT_PAIN_DETAIL_KEYS.has(field.key)) {
+    return isAffirmativeWorkflowValue(customer.hasCurrentPain) || hasFilledValue(customer[field.key]);
+  }
+
+  const checkboxOtherParentKey = CHECKBOX_OTHER_DETAIL_BY_KEY[field.key];
+
+  if (checkboxOtherParentKey) {
+    return payloadHasCheckboxValue(payload, checkboxOtherParentKey, 'other');
+  }
+
+  if (payload.orthodonticTreatmentStatus === 'active' && field.key === 'needsAdaptedClinic') {
+    return false;
+  }
+
+  return true;
+}
+
+function getSectionStatus(section: SharedIntakeSectionDefinition) {
+  const hasDentistFields = section.fields.some((field) => field.ownerRole === 'dentist');
+  const hasCustomerFields = section.fields.some((field) => field.ownerRole === 'user');
+
+  if (hasDentistFields && hasCustomerFields) {
+    return 'Paciente / Profissional';
+  }
+
+  return hasDentistFields ? 'Profissional' : 'Paciente';
+}
+
+function sentenceCase(rawValue: string) {
+  const normalized = rawValue.trim().toLocaleLowerCase('pt-BR');
+  return normalized ? `${normalized.charAt(0).toLocaleUpperCase('pt-BR')}${normalized.slice(1)}` : rawValue;
+}
+
+function formatSectionTitle(title: string) {
+  return sentenceCase(title.replace(/^SEÇÃO\s*\d+\s*[-–—]\s*/i, ''));
+}
+
 const styles = StyleSheet.create({
   page: {
     padding: 18,
@@ -93,38 +237,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 160,
-  },
-  toothMark: {
-    width: 42,
-    height: 42,
-    borderWidth: 2,
-    borderColor: navy,
-    borderRadius: 14,
-    alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
-  },
-  toothMarkText: {
-    color: navy,
-    fontSize: 18,
-    fontWeight: 700,
-  },
-  clinicName: {
-    color: navy,
-    fontSize: 16,
-    fontWeight: 700,
-  },
-  clinicSub: {
-    color: navy,
-    fontSize: 7,
-    letterSpacing: 3,
+    marginBottom: 10,
   },
   titleBlock: {
     alignItems: 'center',
@@ -152,19 +266,27 @@ const styles = StyleSheet.create({
     fontSize: 8,
     marginBottom: 10,
   },
+  sectionsStack: {
+    gap: 7,
+  },
   columns: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 7,
+    alignItems: 'flex-start',
   },
   column: {
     flex: 1,
     gap: 7,
   },
   section: {
+    width: '100%',
     borderWidth: 1,
     borderColor: border,
     borderRadius: 7,
     overflow: 'hidden',
+  },
+  sectionFull: {
+    width: '100%',
   },
   sectionHeader: {
     minHeight: 20,
@@ -177,82 +299,45 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     padding: 8,
-    gap: 5,
+    gap: 3,
   },
-  row: {
+  sectionMeta: {
+    color: '#42526b',
+    fontSize: 7.5,
+    marginBottom: 3,
+  },
+  formRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    alignItems: 'flex-end',
+    gap: 5,
+    minHeight: 14,
   },
-  label: {
-    fontSize: 8.5,
+  formLabel: {
+    fontSize: 8.2,
+    color: '#111827',
   },
-  line: {
+  formLine: {
     flexGrow: 1,
     borderBottomWidth: 1,
     borderBottomColor: '#a8b3c4',
     minHeight: 12,
     paddingLeft: 3,
   },
-  lineText: {
-    fontSize: 8.5,
+  formLineText: {
+    fontSize: 8.2,
+    color: '#111827',
+  },
+  stackedField: {
+    gap: 2,
+    minHeight: 26,
   },
   paragraphLine: {
     borderBottomWidth: 1,
     borderBottomColor: '#a8b3c4',
-    minHeight: 16,
+    minHeight: 14,
     paddingTop: 3,
-  },
-  bullet: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 8.4,
-  },
-  check: {
-    width: 96,
-    fontSize: 8.4,
-  },
-  subHeading: {
-    color: navy,
-    fontSize: 8.7,
-    fontWeight: 700,
-    marginTop: 2,
-  },
-  checkboxGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-  },
-  checkboxItem: {
-    width: '31%',
-    fontSize: 8,
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: '#a8b3c4',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    minHeight: 16,
-  },
-  tableHeader: {
-    backgroundColor: '#e9edf4',
-  },
-  tableCell: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: '#a8b3c4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#a8b3c4',
-    padding: 3,
-    fontSize: 7.5,
-  },
-  tableLastCell: {
-    borderRightWidth: 0,
+    fontSize: 8.2,
+    color: '#111827',
   },
   consent: {
     marginTop: 8,
@@ -296,75 +381,96 @@ const styles = StyleSheet.create({
   },
 });
 
-function FillLine({ label, children }: { label: string; children: string }) {
+function Section({
+  number,
+  title,
+  children,
+  fullWidth = false,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+  fullWidth?: boolean;
+}) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <View style={styles.line}>
-        <Text style={styles.lineText}>{children}</Text>
-      </View>
-    </View>
-  );
-}
-
-function BulletCheck({ label, raw }: { label: string; raw: unknown }) {
-  return (
-    <View style={styles.bullet}>
-      <Text style={styles.bulletText}>• {label}</Text>
-      <Text style={styles.check}>{checkText(raw)}</Text>
-    </View>
-  );
-}
-
-function Section({ number, title, children }: { number: number; title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
+    <View wrap={false} style={[styles.section, ...(fullWidth ? [styles.sectionFull] : [])]}>
       <Text style={styles.sectionHeader}>{number}. {title}</Text>
       <View style={styles.sectionBody}>{children}</View>
     </View>
   );
 }
 
-function MedicationTable({ customer }: { customer: Record<string, unknown> }) {
+function PdfFieldItem({ label, rawValue }: { label: string; rawValue: unknown }) {
+  const formatted = value(rawValue);
+  const useStackedLine = label.length > 56 || formatted.length > 42;
+
+  if (useStackedLine) {
+    return (
+      <View style={styles.stackedField}>
+        <Text style={styles.formLabel}>{label}:</Text>
+        <Text style={styles.paragraphLine}>{formatted}</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.table}>
-      <View style={[styles.tableRow, styles.tableHeader]}>
-        <Text style={styles.tableCell}>Medicamento</Text>
-        <Text style={styles.tableCell}>Dosagem</Text>
-        <Text style={[styles.tableCell, styles.tableLastCell]}>Frequência</Text>
-      </View>
-      <View style={styles.tableRow}>
-        <Text style={styles.tableCell}>{value(customer.currentMedicationName)}</Text>
-        <Text style={styles.tableCell}>{value(customer.currentMedicationDosage)}</Text>
-        <Text style={[styles.tableCell, styles.tableLastCell]}>{value(customer.currentMedicationFrequency)}</Text>
-      </View>
-      <View style={styles.tableRow}>
-        <Text style={styles.tableCell}> </Text>
-        <Text style={styles.tableCell}> </Text>
-        <Text style={[styles.tableCell, styles.tableLastCell]}> </Text>
+    <View style={styles.formRow}>
+      <Text style={styles.formLabel}>{label}:</Text>
+      <View style={styles.formLine}>
+        <Text style={styles.formLineText}>{formatted}</Text>
       </View>
     </View>
   );
 }
 
-function ClinicalTable({ dentist }: { dentist: Record<string, unknown> }) {
-  const rows: Array<[string, unknown]> = [
-    ['Oclusão', dentist.occlusion],
-    ['Abertura sem dor', dentist.painlessMaxOpeningMm],
-    ['Abertura com dor', dentist.painfulMaxOpeningMm],
-    ['ATM', dentist.hasTmdDiagnosis],
-    ['Observações clínicas', dentist.clinicalSectionNotes],
+function PdfPayloadSection({
+  index,
+  section,
+  customer,
+  dentist,
+  extraItems = [],
+}: {
+  index: number;
+  section: SharedIntakeSectionDefinition;
+  customer: Record<string, unknown>;
+  dentist: Record<string, unknown>;
+  extraItems?: Array<{ label: string; value: unknown }>;
+}) {
+  const fieldItems = section.fields
+    .filter((field) => isFieldVisibleForPayload(field, customer, dentist))
+    .map((field) => {
+      const rawValue = getFieldPayloadValue(field, customer, dentist);
+
+      if (!hasFilledValue(rawValue) && !field.required) {
+        return null;
+      }
+
+      return {
+        key: field.key,
+        label: field.label,
+        value: formatFieldValue(field, rawValue),
+      };
+    })
+    .filter((item): item is { key: string; label: string; value: string } => Boolean(item));
+
+  const items = [
+    ...extraItems.map((item, itemIndex) => ({ key: `extra-${itemIndex}`, label: item.label, value: item.value })),
+    ...fieldItems,
   ];
 
+  if (items.length === 0) {
+    return null;
+  }
+
   return (
-    <View style={styles.table}>
-      {rows.map(([label, raw]) => (
-        <View style={styles.tableRow} key={String(label)}>
-          <Text style={[styles.tableCell, { flex: 0.42 }]}>{label}</Text>
-          <Text style={[styles.tableCell, styles.tableLastCell]}>{value(raw)}</Text>
-        </View>
+    <Section number={index} title={formatSectionTitle(section.title)} fullWidth={items.length > 10}>
+      <Text style={styles.sectionMeta}>
+        {getSectionStatus(section)} · {section.description ?? 'Resumo dos campos preenchidos na ficha clínica.'}
+      </Text>
+      {items.map((item) => (
+        <PdfFieldItem key={item.key} label={item.label} rawValue={item.value} />
       ))}
-    </View>
+    </Section>
   );
 }
 
@@ -399,20 +505,15 @@ function FinalAnamnesisDocument({
   const consultationDate = dateValue(dentist.consultationDate);
   const generatedAt = consultationDate !== missingValue ? consultationDate : new Date().toLocaleDateString('pt-BR');
   const patientName = value(customer.fullName ?? order.customer?.full_name);
+  const payloadSections = SHARED_INITIAL_EVALUATION_INTAKE.sections
+    .filter((section) => ANAMNESIS_SECTION_KEYS.has(section.key));
+  const totalContentSections = payloadSections.length + 2;
+  const firstColumnSectionCount = Math.ceil(totalContentSections / 2);
 
   return (
-    <Document author="Nexor Biteplaner" title={`Ficha de Anamnese ${getOrderDisplayId(order)}`}>
+    <Document author="Nexor" title={`Ficha de Anamnese Odontológica ${getOrderDisplayId(order)}`}>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.brand}>
-            <View style={styles.toothMark}>
-              <Text style={styles.toothMarkText}>BP</Text>
-            </View>
-            <View>
-              <Text style={styles.clinicName}>{value(getOrderClinicalPracticeLocation(order)?.name)}</Text>
-              <Text style={styles.clinicSub}>BITEPLANER</Text>
-            </View>
-          </View>
           <View style={styles.titleBlock}>
             <Text style={styles.title}>FICHA DE ANAMNESE</Text>
             <Text style={styles.subtitle}>ODONTOLÓGICA</Text>
@@ -424,85 +525,62 @@ function FinalAnamnesisDocument({
         </View>
 
         <View style={styles.columns}>
-          <View style={styles.column}>
-            <Section number={1} title="IDENTIFICAÇÃO DO PACIENTE">
-              <FillLine label="Nome completo:">{patientName}</FillLine>
-              <FillLine label="Telefone:">{value(customer.phone ?? order.customer?.phone)}</FillLine>
-              <FillLine label="E-mail:">{value(customer.email ?? order.customer?.email)}</FillLine>
-              <FillLine label="Modalidade principal:">{value(customer.sportRoutine)}</FillLine>
-              <FillLine label="Convênio:">{missingValue}</FillLine>
-            </Section>
+          {[0, 1].map((columnIndex) => (
+            <View key={columnIndex} style={styles.column}>
+              {payloadSections.map((section, index) => {
+                const sectionNumber = index + 1;
+                const belongsToColumn =
+                  columnIndex === 0 ? sectionNumber <= firstColumnSectionCount : sectionNumber > firstColumnSectionCount;
 
-            <Section number={2} title="QUEIXA PRINCIPAL">
-              <Text>Descreva o motivo principal da consulta:</Text>
-              <Text style={styles.paragraphLine}>{value(customer.initialMotivation)}</Text>
-              <Text style={styles.paragraphLine}>{value(customer.relevantMedicalDiagnosisDetails)}</Text>
-            </Section>
+                if (!belongsToColumn) {
+                  return null;
+                }
 
-            <Section number={3} title="HISTÓRICO DA CONDIÇÃO ATUAL">
-              <FillLine label="Quando começou?">{missingValue}</FillLine>
-              <FillLine label="Dor média última semana:">{value(customer.averagePainLastWeek)}</FillLine>
-              <BulletCheck label="O problema piora durante atividade?" raw={customer.trainingJawTensionMoment ? 'yes' : undefined} />
-              <BulletCheck label="Já realizou tratamento anterior?" raw={customer.tratamentoAnterior} />
-              <BulletCheck label="Usa medicação para isso?" raw={customer.currentMedicationUse} />
-            </Section>
+                return (
+                  <PdfPayloadSection
+                    key={section.key}
+                    index={sectionNumber}
+                    section={section}
+                    customer={customer}
+                    dentist={dentist}
+                    extraItems={
+                      section.key === 'initial-data'
+                        ? [
+                          { label: 'Nome completo do paciente', value: patientName },
+                          { label: 'Telefone', value: customer.phone ?? order.customer?.phone },
+                          { label: 'E-mail', value: customer.email ?? order.customer?.email },
+                        ]
+                        : []
+                    }
+                  />
+                );
+              })}
 
-            <Section number={4} title="HISTÓRICO MÉDICO">
-              <Text style={styles.subHeading}>4.1 Doenças pré-existentes</Text>
-              <View style={styles.checkboxGrid}>
-                <Text style={styles.checkboxItem}>( ) Diabetes</Text>
-                <Text style={styles.checkboxItem}>( ) Hipertensão</Text>
-                <Text style={styles.checkboxItem}>( ) Cardiopatias</Text>
-                <Text style={styles.checkboxItem}>( ) Ansiedade</Text>
-                <Text style={styles.checkboxItem}>( ) Epilepsia</Text>
-                <Text style={styles.checkboxItem}>( ) Outras</Text>
-              </View>
-              <FillLine label="Condições relatadas:">{value(customer.relevantMedicalDiagnosisDetails)}</FillLine>
-              <Text style={styles.subHeading}>4.2 Medicamentos em uso</Text>
-              <MedicationTable customer={customer} />
-              <Text style={styles.subHeading}>4.3 Alergias</Text>
-              <FillLine label="Alergias:">{value(customer.alergias)}</FillLine>
-              <Text style={styles.subHeading}>4.4 Cirurgias anteriores</Text>
-              <FillLine label="Qual?">{value(customer.cirurgiasAnteriores)}</FillLine>
-            </Section>
-          </View>
+              {columnIndex === 1 ? (
+                <>
+                  <Section number={payloadSections.length + 1} title="RASTREABILIDADE E GUARDA">
+                    <PdfFieldItem label="Data da consulta" rawValue={generatedAt} />
+                    <PdfFieldItem label="Ordem" rawValue={getOrderDisplayId(order)} />
+                    <PdfFieldItem label="Profissional responsável" rawValue={dentist.dentistName ?? 'Dentista licenciado'} />
+                    <PdfFieldItem label="Guarda do registro" rawValue="Responsabilidade do dentista" />
+                    <PdfFieldItem label="LGPD operacional da produção" rawValue={draft.lgpdConfirmed ? 'Ciente' : 'Pendente'} />
+                    <PdfFieldItem label="Laboratório selecionado" rawValue={draft.selectedLabId} />
+                  </Section>
 
-          <View style={styles.column}>
-            <Section number={5} title="HISTÓRICO ODONTOLÓGICO">
-              <BulletCheck label="Usa aparelho no momento?" raw={customer.usesOrthodonticAppliance} />
-              <BulletCheck label="Já realizou tratamento de canal?" raw={customer.canal} />
-              <BulletCheck label="Possui implantes?" raw={customer.implantes} />
-              <BulletCheck label="Range ou aperta os dentes?" raw={customer.relevantMedicalDiagnosisDetails} />
-              <BulletCheck label="Tem dores na ATM?" raw={customer.hasTmdDiagnosis} />
-              <BulletCheck label="Já sofreu trauma facial?" raw={customer.traumaFacial} />
-              <BulletCheck label="Usa protetor bucal?" raw={customer.usaProtetorBucal} />
-            </Section>
-
-            <Section number={6} title="HÁBITOS E ROTINA">
-              <BulletCheck label="Fuma" raw={customer.nicotineUse && customer.nicotineUse !== 'none' ? 'yes' : 'no'} />
-              <BulletCheck label="Consome bebidas alcoólicas" raw={customer.alcool} />
-              <BulletCheck label="Consome cafeína em excesso" raw={customer.cafeina} />
-              <FillLine label="Sono:">{value(customer.sleepQualityScore)}</FillLine>
-              <FillLine label="Modalidade esportiva:">{value(customer.sportRoutine)}</FillLine>
-              <FillLine label="Frequência treino:">{value(customer.frequenciaTreino)}</FillLine>
-              <FillLine label="Intensidade/estresse:">{value(customer.stressLevel)}</FillLine>
-            </Section>
-
-            <Section number={7} title="AVALIAÇÃO CLÍNICA (PROFISSIONAL)">
-              <ClinicalTable dentist={dentist} />
-            </Section>
-
-            <Section number={8} title="PLANO DE TRATAMENTO / CONDUTA">
-              <Text style={styles.paragraphLine}>{value(draft.productionRequestSummary)}</Text>
-              <Text style={styles.paragraphLine}>{value(draft.labNotes)}</Text>
-              <Text style={styles.paragraphLine}>{value(draft.anamnesisSummary)}</Text>
-              <Text style={styles.paragraphLine}>Escaneamento 3D: {value(draft.scan3dFileName)}</Text>
-            </Section>
-          </View>
+                  <Section number={payloadSections.length + 2} title="OBSERVAÇÕES E CONDUTA">
+                    <PdfFieldItem label="Resumo da anamnese" rawValue={draft.anamnesisSummary} />
+                    <PdfFieldItem label="Solicitação de produção" rawValue={draft.productionRequestSummary} />
+                    <PdfFieldItem label="Observações para o laboratório" rawValue={draft.labNotes} />
+                    <PdfFieldItem label="Escaneamento 3D intraoral" rawValue={draft.scan3dFileName} />
+                  </Section>
+                </>
+              ) : null}
+            </View>
+          ))}
         </View>
 
         <View style={styles.consent}>
-          <Text style={styles.sectionHeader}>9. TERMO DE CONSENTIMENTO</Text>
+          <Text style={styles.sectionHeader}>{payloadSections.length + 3}. TERMO DE CONSENTIMENTO</Text>
           <View style={styles.sectionBody}>
             <Text style={styles.consentText}>
               Declaro que as informações fornecidas são verdadeiras e autorizo o uso dos dados para fins de tratamento,
@@ -520,7 +598,7 @@ function FinalAnamnesisDocument({
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Suas informações estão protegidas. Esta ficha segue diretrizes de privacidade e segurança clínica da jornada Biteplaner.
+            Suas informações estão protegidas. Esta ficha segue diretrizes de privacidade e segurança clínica da jornada odontológica.
           </Text>
           <Text style={styles.footerText}>
             Ordem {getOrderDisplayId(order)} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}

@@ -29,11 +29,20 @@ describe('Cookies (Nexor)', () => {
     expect(screen.getByText(/reabrir essas preferências pelo rodapé do site/i)).toBeInTheDocument();
   });
 
-  it('descreve localStorage, chave de consentimento e cookie de convite de parceiro', () => {
+  it('descreve localStorage, sessionStorage, chave de consentimento e cookie de convite de parceiro', () => {
     render(<Cookies />, { wrapper: Wrapper });
     expect(screen.getAllByText(/localStorage/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/sessionStorage/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/nexor-cookie-consent/i)).toBeInTheDocument();
+    expect(screen.getByText(/nexor_pending_registration/i)).toBeInTheDocument();
     expect(screen.getByText(/nexor_partner_invite/i)).toBeInTheDocument();
     expect(screen.getByText(/30 dias/i)).toBeInTheDocument();
+  });
+
+  it('relaciona cookies com LGPD e revogação de consentimento', () => {
+    render(<Cookies />, { wrapper: Wrapper });
+    expect(screen.getByText(/podem envolver dados pessoais/i)).toBeInTheDocument();
+    expect(screen.getByText(/possibilidade de revogação/i)).toBeInTheDocument();
+    expect(screen.getByText(/assuntos sobre lgpd/i)).toBeInTheDocument();
   });
 });

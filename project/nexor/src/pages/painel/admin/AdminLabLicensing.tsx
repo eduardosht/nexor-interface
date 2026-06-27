@@ -513,6 +513,10 @@ const CompactModalDetailLabel = styled(AdminModalDetailLabel)`
   @media (min-width: 421px) {
     font-size: 13px;
   }
+
+  @media (min-width: 721px) {
+    font-size: 14px;
+  }
 `;
 
 const CompactModalDetailValue = styled(AdminModalDetailValue)`
@@ -522,6 +526,10 @@ const CompactModalDetailValue = styled(AdminModalDetailValue)`
 
   @media (min-width: 421px) {
     font-size: 11px;
+  }
+
+  @media (min-width: 721px) {
+    font-size: 14px;
   }
 `;
 
@@ -539,6 +547,10 @@ const CompactModalTextArea = styled(AdminModalTextArea)`
   font-size: 12px;
   line-height: 1.3;
   resize: none;
+
+  @media (min-width: 721px) {
+    font-size: 14px;
+  }
 `;
 
 const CompactModalActions = styled.div`
@@ -605,6 +617,10 @@ const LocationSummaryHint = styled.span`
   color: ${({ theme }) => theme.colors.green};
   font-size: 10px;
   font-weight: 700;
+
+  @media (min-width: 721px) {
+    font-size: 14px;
+  }
 `;
 
 const ModalSubtitleInline = styled.span`
@@ -638,6 +654,10 @@ const LocationMeta = styled.div`
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 11px;
   line-height: 1.25;
+
+  @media (min-width: 721px) {
+    font-size: 14px;
+  }
 `;
 
 const LocationMetaItem = styled.span`

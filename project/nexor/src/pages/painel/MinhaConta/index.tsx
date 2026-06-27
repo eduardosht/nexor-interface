@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, ExternalLink, Mail, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, ExternalLink, Mail, Pencil } from 'lucide-react';
 import {
   Field as DesignSystemField,
   Snackbar,
@@ -43,6 +43,7 @@ type ProductRole = {
   productKey: string;
   role: 'customer' | 'partner' | 'dentist' | 'lab';
   status: string;
+  stage?: string | null;
   metadata: Record<string, unknown>;
 };
 
@@ -103,6 +104,14 @@ type PracticeLocationMetadata = {
   coordinates?: { lat: number; lng: number };
 };
 
+type CepAddressLookup = {
+  cep: string;
+  address: string;
+  city: string;
+  state: string;
+  coordinates: { lat: number; lng: number };
+};
+
 const deletionReasonOptions = [
   { value: '', label: 'Prefiro não informar' },
   { value: 'privacy', label: 'Privacidade e LGPD' },
@@ -111,6 +120,8 @@ const deletionReasonOptions = [
   { value: 'service_issue', label: 'Tive problema com o serviço' },
   { value: 'other', label: 'Outros' },
 ] as const;
+
+const PRODUCT_ROLES_LOAD_TIMEOUT_MS = 10000;
 
 type DeletionReason = (typeof deletionReasonOptions)[number]['value'];
 type AccountSnackbar = {
@@ -305,7 +316,35 @@ function getProductStatusTone(status: string): 'success' | 'error' {
   return status === 'rejected' ? 'error' : 'success';
 }
 
-async function fetchCepCoordinates(cep: string) {
+function getProductRoleKey(role: ProductRole) {
+  return role.id ?? `${role.productKey}:${role.role}`;
+}
+
+function hasCompletedCustomerOnboarding(role: ProductRole) {
+  if (role.role !== 'customer') {
+    return true;
+  }
+
+  const metadata = role.metadata ?? {};
+
+  return (
+    metadata.onboardingCompleted === true ||
+    Boolean(metadata.onboardingSubmittedAt) ||
+    Boolean(metadata.customerNewUserOnboardingSubmittedAt) ||
+    Boolean(metadata.fullName && (metadata.cpf || metadata.birthDate || metadata.currentSports)) ||
+    Boolean(role.stage && role.stage !== 'new_user_onboarding')
+  );
+}
+
+function formatStringList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).join(', ');
+  }
+
+  return getString(value);
+}
+
+async function fetchCepAddress(cep: string): Promise<CepAddressLookup | null> {
   const digits = cep.replace(/\D/g, '');
   if (digits.length !== 8 || typeof fetch !== 'function') {
     return null;
@@ -319,8 +358,40 @@ async function fetchCepCoordinates(cep: string) {
   const data = await response.json();
   const lat = Number(String(data.lat ?? '').replace(',', '.'));
   const lng = Number(String(data.lng ?? '').replace(',', '.'));
+  const address = [getString(data.address), getString(data.district)].filter(Boolean).join(' - ');
+  const city = getString(data.city);
+  const state = getString(data.state).toUpperCase();
 
-  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  if (!address || !city || !state || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  return {
+    cep,
+    address,
+    city,
+    state,
+    coordinates: { lat, lng },
+  };
+}
+
+function withTimeout<T>(promise: Promise<T> | T, timeoutMs: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+
+    Promise.resolve(promise).then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
 }
 
 export function MinhaConta() {
@@ -329,6 +400,8 @@ export function MinhaConta() {
   const [saving, setSaving] = useState(false);
   const [passwordSending, setPasswordSending] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingProductRoles, setLoadingProductRoles] = useState(false);
+  const [productRolesError, setProductRolesError] = useState('');
   const [loadedRoles, setLoadedRoles] = useState<string[]>([]);
   const [productRoles, setProductRoles] = useState<ProductRole[]>([]);
   const [savingProductRoleId, setSavingProductRoleId] = useState('');
@@ -346,7 +419,10 @@ export function MinhaConta() {
   const [communicationPreferences, setCommunicationPreferences] = useState<CommunicationPreferences | null>(null);
   const [communicationPreferencesSaving, setCommunicationPreferencesSaving] = useState(false);
   const [disableCommunicationModalOpen, setDisableCommunicationModalOpen] = useState(false);
+  const [expandedOnboardingCards, setExpandedOnboardingCards] = useState<Set<string>>(() => new Set());
   const [snackbar, setSnackbar] = useState<AccountSnackbar | null>(null);
+  const loadedAccountTokenRef = useRef<string | null>(null);
+  const accountLoadRequestIdRef = useRef(0);
 
   const email = backendUser?.email ?? session?.user.email ?? '—';
   const roles = loadedRoles.length > 0 ? loadedRoles : (backendUser?.roles ?? []);
@@ -357,7 +433,10 @@ export function MinhaConta() {
   const deletionStatus = deletionRequest?.request?.status;
   const systemFlowEmailEnabled = communicationPreferences?.systemFlowEmailEnabled ?? true;
   const marketingConsentActive = privacyConsents?.latestAccountConsents?.marketing === true;
-  const analyticsConsentActive = privacyConsents?.latestCookieConsent?.analytics === true;
+  const visibleProductRoles = useMemo(
+    () => productRoles.filter((role) => role.role !== 'customer' || hasCompletedCustomerOnboarding(role)),
+    [productRoles]
+  );
 
   function getOnboardingEditKey(role: ProductRole, field: string) {
     return `${role.id ?? `${role.productKey}:${role.role}`}:${field}`;
@@ -386,12 +465,13 @@ export function MinhaConta() {
     field: string,
     label: string,
     value: string | boolean | undefined,
-    editor: ReactNode
+    editor: ReactNode,
+    span?: 'two' | 'full'
   ) {
     const isEditing = isEditingOnboardingField(role, field);
 
     return (
-      <S.Field>
+      <S.Field $span={span}>
         <S.FieldLabel>{label}</S.FieldLabel>
         {isEditing ? (
           editor
@@ -412,9 +492,9 @@ export function MinhaConta() {
     );
   }
 
-  function renderLockedOnboardingField(label: string, value: string | boolean | undefined) {
+  function renderLockedOnboardingField(label: string, value: string | boolean | undefined, span?: 'two' | 'full') {
     return (
-      <S.Field>
+      <S.Field $span={span}>
         <S.FieldLabel>{label}</S.FieldLabel>
         <S.FieldValue>{getDisplayValue(value)}</S.FieldValue>
       </S.Field>
@@ -429,6 +509,19 @@ export function MinhaConta() {
         </S.SaveBtn>
       </S.FormActions>
     );
+  }
+
+  function toggleOnboardingCard(role: ProductRole) {
+    const key = getProductRoleKey(role);
+    setExpandedOnboardingCards((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   }
 
   function updateRoleMetadata(productRoleId: string | undefined, field: string, value: string | string[]) {
@@ -690,6 +783,37 @@ export function MinhaConta() {
     );
   }
 
+  function renderCustomerOnboardingFields(metadata: Record<string, unknown>) {
+    return (
+      <>
+        <S.OnboardingFieldGroup>
+          <S.OnboardingGroupTitle>Dados pessoais</S.OnboardingGroupTitle>
+          <S.CardRow>
+            {renderLockedOnboardingField('Nome completo', getString(metadata.fullName))}
+            {renderLockedOnboardingField('E-mail', getString(metadata.email))}
+            {renderLockedOnboardingField('Telefone', getString(metadata.phone))}
+            {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
+            {renderLockedOnboardingField('Data de nascimento', getString(metadata.birthDate))}
+            {renderLockedOnboardingField('Profissão', getString(metadata.profession))}
+            {renderLockedOnboardingField('Cidade/bairro de residência', getString(metadata.residenceCityOrNeighborhood), 'full')}
+          </S.CardRow>
+        </S.OnboardingFieldGroup>
+        <S.OnboardingFieldGroup>
+          <S.OnboardingGroupTitle>Dados esportivos</S.OnboardingGroupTitle>
+          <S.CardRow>
+            {renderLockedOnboardingField('Sexo biológico', getString(metadata.biologicalSex))}
+            {renderLockedOnboardingField('Lateralidade dominante', getString(metadata.dominantLaterality))}
+            {renderLockedOnboardingField('Peso corporal', getString(metadata.bodyMassKg))}
+            {renderLockedOnboardingField('Altura', getString(metadata.heightMeters))}
+            {renderLockedOnboardingField('Esportes atuais', formatStringList(metadata.currentSports), 'two')}
+            {renderLockedOnboardingField('Experiência de treino', getString(metadata.trainingExperience))}
+            {renderLockedOnboardingField('Cidade/bairro de treino', getString(metadata.trainingCityOrNeighborhood), 'two')}
+          </S.CardRow>
+        </S.OnboardingFieldGroup>
+      </>
+    );
+  }
+
   function renderDentistOnboardingFields(
     role: ProductRole,
     metadata: Record<string, unknown>,
@@ -698,136 +822,129 @@ export function MinhaConta() {
   ) {
     return (
       <>
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'fullName',
-            'Nome profissional',
-            getString(metadata.fullName),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.fullName)}
-              onChange={(event) => updateDentistMetadata(role.id, 'fullName', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'croNumber',
-            'CRO',
-            getString(metadata.croNumber),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.croNumber)}
-              onChange={(event) => updateDentistMetadata(role.id, 'croNumber', event.target.value)}
-            />
-          )}
-          {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
-          {renderLockedOnboardingField('CNPJ', formatCnpj(getString(metadata.cnpj)))}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'professionalSummary',
-          'Resumo profissional',
-          getString(metadata.professionalSummary),
-          <S.TextArea
-            value={getString(metadata.professionalSummary)}
-            onChange={(event) => updateDentistMetadata(role.id, 'professionalSummary', event.target.value)}
-          />
-        )}
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'clinicName',
-            'Nome da clínica',
-            primaryLocation.name,
-            <S.FieldInput
-              type="text"
-              value={primaryLocation.name}
-              onChange={(event) => updateDentistLocation(role.id, 'name', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'clinicPhone',
-            'Telefone da clínica',
-            primaryLocation.phone,
-            <S.FieldInput
-              type="text"
-              value={primaryLocation.phone}
-              onChange={(event) => updateDentistLocation(role.id, 'phone', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'clinicCep',
-            'CEP',
-            primaryLocation.cep,
-            <S.FieldInput
-              type="text"
-              value={primaryLocation.cep}
-              onChange={(event) => updateDentistLocation(role.id, 'cep', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'clinicIsAdapted',
-            'Clínica adaptada',
-            primaryLocation.isAdapted,
-            <S.FieldSelect
-              value={primaryLocation.isAdapted ? 'yes' : 'no'}
-              onChange={(event) => updateDentistLocation(role.id, 'isAdapted', event.target.value === 'yes')}
-            >
-              <option value="yes">Sim</option>
-              <option value="no">Não</option>
-            </S.FieldSelect>
-          )}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'clinicAddress',
-          'Endereço da clínica',
-          primaryLocation.address,
-          <S.FieldInput
-            type="text"
-            value={primaryLocation.address}
-            onChange={(event) => updateDentistLocation(role.id, 'address', event.target.value)}
-          />
-        )}
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'clinicCity',
-            'Cidade',
-            primaryLocation.city,
-            <S.FieldInput
-              type="text"
-              value={primaryLocation.city}
-              onChange={(event) => updateDentistLocation(role.id, 'city', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'clinicState',
-            'Estado',
-            primaryLocation.state,
-            <S.FieldInput
-              type="text"
-              value={primaryLocation.state}
-              onChange={(event) => updateDentistLocation(role.id, 'state', event.target.value.toUpperCase().slice(0, 2))}
-            />
-          )}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'clinicServiceHours',
-          'Dia e horário de atendimento',
-          primaryLocation.serviceHours,
-          <S.FieldInput
-            type="text"
-            value={primaryLocation.serviceHours}
-            onChange={(event) => updateDentistLocation(role.id, 'serviceHours', event.target.value)}
-          />
-        )}
+        <S.OnboardingFieldGroup>
+          <S.OnboardingGroupTitle>Dados profissionais</S.OnboardingGroupTitle>
+          <S.CardRow>
+            {renderOnboardingField(
+              role,
+              'fullName',
+              'Nome profissional',
+              getString(metadata.fullName),
+              <S.FieldInput
+                type="text"
+                value={getString(metadata.fullName)}
+                onChange={(event) => updateDentistMetadata(role.id, 'fullName', event.target.value)}
+              />
+            )}
+            {renderOnboardingField(
+              role,
+              'croNumber',
+              'CRO',
+              getString(metadata.croNumber),
+              <S.FieldInput
+                type="text"
+                value={getString(metadata.croNumber)}
+                onChange={(event) => updateDentistMetadata(role.id, 'croNumber', event.target.value)}
+              />
+            )}
+            {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
+            {renderLockedOnboardingField('CNPJ', formatCnpj(getString(metadata.cnpj)))}
+            {renderOnboardingField(
+              role,
+              'professionalSummary',
+              'Resumo profissional',
+              getString(metadata.professionalSummary),
+              <S.TextArea
+                value={getString(metadata.professionalSummary)}
+                onChange={(event) => updateDentistMetadata(role.id, 'professionalSummary', event.target.value)}
+              />,
+              'two'
+            )}
+          </S.CardRow>
+        </S.OnboardingFieldGroup>
+        <S.OnboardingFieldGroup>
+          <S.OnboardingGroupTitle>Dados da clínica</S.OnboardingGroupTitle>
+          <S.CardRow>
+            {renderOnboardingField(
+              role,
+              'clinicName',
+              'Nome da clínica',
+              primaryLocation.name,
+              <S.FieldInput
+                type="text"
+                value={primaryLocation.name}
+                onChange={(event) => updateDentistLocation(role.id, 'name', event.target.value)}
+              />
+            )}
+            {renderOnboardingField(
+              role,
+              'clinicPhone',
+              'Telefone da clínica',
+              primaryLocation.phone,
+              <S.FieldInput
+                type="text"
+                value={primaryLocation.phone}
+                onChange={(event) => updateDentistLocation(role.id, 'phone', event.target.value)}
+              />
+            )}
+            {renderOnboardingField(
+              role,
+              'clinicIsAdapted',
+              'Clínica adaptada',
+              primaryLocation.isAdapted,
+              <S.FieldSelect
+                value={primaryLocation.isAdapted ? 'yes' : 'no'}
+                onChange={(event) => updateDentistLocation(role.id, 'isAdapted', event.target.value === 'yes')}
+              >
+                <option value="yes">Sim</option>
+                <option value="no">Não</option>
+              </S.FieldSelect>
+            )}
+            {renderOnboardingField(
+              role,
+              'clinicServiceHours',
+              'Dia e horário de atendimento',
+              primaryLocation.serviceHours,
+              <S.FieldInput
+                type="text"
+                value={primaryLocation.serviceHours}
+                onChange={(event) => updateDentistLocation(role.id, 'serviceHours', event.target.value)}
+              />,
+              'full'
+            )}
+          </S.CardRow>
+        </S.OnboardingFieldGroup>
+        <S.OnboardingFieldGroup>
+          <S.OnboardingGroupTitle>Endereço da clínica</S.OnboardingGroupTitle>
+          <S.CardRow>
+            {renderOnboardingField(
+              role,
+              'clinicCep',
+              'CEP',
+              primaryLocation.cep,
+              <S.FieldInput
+                type="text"
+                value={primaryLocation.cep}
+                onChange={(event) => updateDentistLocation(role.id, 'cep', event.target.value)}
+                onBlur={(event) => void handleDentistCepBlur(role.id, event.target.value)}
+              />
+            )}
+            {renderOnboardingField(
+              role,
+              'clinicAddress',
+              'Endereço da clínica',
+              primaryLocation.address,
+              <S.FieldInput
+                type="text"
+                value={primaryLocation.address}
+                onChange={(event) => updateDentistLocation(role.id, 'address', event.target.value)}
+              />,
+              'two'
+            )}
+            {renderLockedOnboardingField('Cidade', primaryLocation.city)}
+            {renderLockedOnboardingField('Estado', primaryLocation.state, 'two')}
+          </S.CardRow>
+        </S.OnboardingFieldGroup>
         {renderOnboardingActions(role, isSavingRole)}
       </>
     );
@@ -835,19 +952,21 @@ export function MinhaConta() {
 
   useEffect(() => {
     if (!session) return;
+    const token = session.access_token;
+    if (loadedAccountTokenRef.current === token) return;
+    const requestId = accountLoadRequestIdRef.current + 1;
+    accountLoadRequestIdRef.current = requestId;
     let active = true;
+    const shouldApplyState = () => active && accountLoadRequestIdRef.current === requestId;
 
     async function load() {
       setLoadingProfile(true);
+      setLoadingProductRoles(true);
+      setProductRolesError('');
+
       try {
-        const [resp, productRolesResp, deletionResp, communicationPreferencesResp, accountConsentsResp] = await Promise.all([
-          api.get<MeResponse>('/v1/auth/me', session!.access_token),
-          api.get<ProductRolesResponse>('/v1/account/product-roles', session!.access_token),
-          api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', session!.access_token),
-          fetchCommunicationPreferences(session!.access_token),
-          api.get<AccountConsentsResponse>('/v1/account/consents', session!.access_token),
-        ]);
-        if (!active) {
+        const resp = await api.get<MeResponse>('/v1/auth/me', token);
+        if (!shouldApplyState()) {
           return;
         }
 
@@ -859,17 +978,55 @@ export function MinhaConta() {
         }
 
         setLoadedRoles(nextRoles);
-        setProductRoles(productRolesResp?.productRoles ?? []);
-        setDeletionRequest(deletionResp?.deletionRequest ?? null);
-        setCommunicationPreferences(communicationPreferencesResp?.preferences ?? null);
-        setPrivacyConsents(accountConsentsResp ?? null);
       } catch {
         /* silently skip — name stays empty */
       } finally {
-        if (active) {
+        if (shouldApplyState()) {
           setLoadingProfile(false);
         }
       }
+
+      try {
+        const productRolesResp = await withTimeout(
+          api.get<ProductRolesResponse>('/v1/account/product-roles', token),
+          PRODUCT_ROLES_LOAD_TIMEOUT_MS,
+          'Product roles request timed out.'
+        );
+        if (!shouldApplyState()) {
+          return;
+        }
+
+        setProductRoles(productRolesResp?.productRoles ?? []);
+        setProductRolesError('');
+      } catch {
+        if (shouldApplyState()) {
+          setProductRoles([]);
+          setProductRolesError('Não foi possível carregar os dados de onboarding. Tente atualizar a página em instantes.');
+        }
+      } finally {
+        if (shouldApplyState()) {
+          setLoadingProductRoles(false);
+          loadedAccountTokenRef.current = token;
+        }
+      }
+
+      const [deletionResult, communicationPreferencesResult, accountConsentsResult] = await Promise.allSettled([
+        api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', token),
+        fetchCommunicationPreferences(token),
+        api.get<AccountConsentsResponse>('/v1/account/consents', token),
+      ]);
+
+      if (!shouldApplyState()) {
+        return;
+      }
+
+      setDeletionRequest(deletionResult.status === 'fulfilled' ? deletionResult.value?.deletionRequest ?? null : null);
+      setCommunicationPreferences(
+        communicationPreferencesResult.status === 'fulfilled'
+          ? communicationPreferencesResult.value?.preferences ?? null
+          : null
+      );
+      setPrivacyConsents(accountConsentsResult.status === 'fulfilled' ? accountConsentsResult.value ?? null : null);
     }
 
     void load();
@@ -923,6 +1080,35 @@ export function MinhaConta() {
     });
   }
 
+  async function handleDentistCepBlur(productRoleId: string | undefined, cep: string) {
+    if (!productRoleId) {
+      return;
+    }
+
+    const cepAddress = await fetchCepAddress(cep).catch(() => null);
+    if (!cepAddress) {
+      return;
+    }
+
+    updateProductRoleMetadata(productRoleId, (metadata) => {
+      const primaryLocation = getPrimaryPracticeLocation(metadata);
+      const nextLocation = {
+        ...primaryLocation,
+        cep: cepAddress.cep,
+        address: cepAddress.address,
+        city: cepAddress.city,
+        state: cepAddress.state,
+        coordinates: cepAddress.coordinates,
+      };
+
+      return {
+        ...metadata,
+        practiceLocations: [nextLocation],
+        practiceLocation: nextLocation,
+      };
+    });
+  }
+
   async function handleSaveProductRole(role: ProductRole) {
     if (!session || !role.id) {
       return;
@@ -936,11 +1122,9 @@ export function MinhaConta() {
 
       if (role.role === 'dentist') {
         const primaryLocation = getPrimaryPracticeLocation(metadata);
-        const coordinates = await fetchCepCoordinates(primaryLocation.cep).catch(() => null);
         const nextLocation = {
           ...primaryLocation,
           dentistName: getString(metadata.fullName) || primaryLocation.dentistName,
-          ...(coordinates ? { coordinates } : {}),
         };
 
         metadata = {
@@ -1016,8 +1200,8 @@ export function MinhaConta() {
     setDisableCommunicationModalOpen(true);
   }
 
-  async function handleRevokeMarketingConsent() {
-    if (!session?.access_token || marketingRevocationSubmitting || !marketingConsentActive) {
+  async function handleMarketingConsentChange(enabled: boolean) {
+    if (!session?.access_token || marketingRevocationSubmitting || enabled === marketingConsentActive) {
       return;
     }
 
@@ -1025,24 +1209,35 @@ export function MinhaConta() {
     setSnackbar(null);
 
     try {
-      await api.post('/v1/account/consents/revoke', { types: ['marketing'] }, session.access_token);
+      if (enabled) {
+        await api.post(
+          '/v1/account/consents',
+          { consents: [{ type: 'marketing', accepted: true }] },
+          session.access_token
+        );
+      } else {
+        await api.post('/v1/account/consents/revoke', { types: ['marketing'] }, session.access_token);
+      }
+
       setPrivacyConsents((current) => ({
         ...current,
         latestAccountConsents: {
           ...(current?.latestAccountConsents ?? {}),
-          marketing: false,
+          marketing: enabled,
         },
       }));
       setSnackbar({
         tone: 'success',
-        title: 'Marketing revogado',
-        message: 'Seu consentimento para comunicações de marketing foi revogado.',
+        title: enabled ? 'Marketing ativado' : 'Marketing revogado',
+        message: enabled
+          ? 'Seu consentimento para comunicações de marketing foi ativado.'
+          : 'Seu consentimento para comunicações de marketing foi revogado.',
       });
     } catch {
       setSnackbar({
         tone: 'error',
-        title: 'Falha ao revogar',
-        message: 'Não foi possível revogar o consentimento agora. Tente novamente ou acione o canal LGPD.',
+        title: 'Falha ao salvar marketing',
+        message: 'Não foi possível atualizar o consentimento agora. Tente novamente ou acione o canal LGPD.',
       });
     } finally {
       setMarketingRevocationSubmitting(false);
@@ -1074,7 +1269,7 @@ export function MinhaConta() {
       setSnackbar({
         tone: 'success',
         title: 'Exportação gerada',
-        message: 'O arquivo JSON com os dados da sua conta foi preparado neste navegador.',
+        message: 'O arquivo JSON estruturado com os dados da sua conta foi preparado neste navegador.',
       });
     } catch {
       setSnackbar({
@@ -1284,6 +1479,7 @@ export function MinhaConta() {
 
       <S.TopGrid>
         <S.Section
+          id="dados-da-conta"
           variants={fadeSection}
           initial="hidden"
           animate="visible"
@@ -1354,6 +1550,7 @@ export function MinhaConta() {
 
       {!isAdmin ? (
         <S.Section
+          id="privacidade-lgpd"
           variants={fadeSection}
           initial="hidden"
           animate="visible"
@@ -1368,8 +1565,43 @@ export function MinhaConta() {
                   Exporte seus dados, revise preferências, consulte políticas ou solicite correção, revogação e análise de exclusão pelo canal LGPD.
                 </S.SecurityText>
               </div>
-              <S.PrivacyBadge>Auditoria ativa</S.PrivacyBadge>
             </S.PrivacyHeader>
+
+            <S.PrivacyConsentSummary aria-label="Resumo de consentimentos LGPD">
+              <S.PrivacyConsentItem>
+                <S.PreferenceContent>
+                  <S.PrivacyConsentStatus>{marketingConsentActive ? 'Marketing ativo' : 'Marketing revogado'}</S.PrivacyConsentStatus>
+                  <S.PrivacyConsentHint>Preferências de marketing para receber novidades e informativos sobre o produto.</S.PrivacyConsentHint>
+                  <S.PreferenceSwitchLabel>
+                    <S.PreferenceSwitchInput
+                      type="checkbox"
+                      checked={marketingConsentActive}
+                      disabled={marketingRevocationSubmitting}
+                      onChange={(event) => void handleMarketingConsentChange(event.target.checked)}
+                    />
+                    <S.PreferenceSwitchText>Receber novidades e informativos sobre o produto</S.PreferenceSwitchText>
+                  </S.PreferenceSwitchLabel>
+                </S.PreferenceContent>
+              </S.PrivacyConsentItem>
+
+              <S.PrivacyConsentItem>
+                <S.PreferenceContent>
+                  <S.PrivacyConsentStatus>Fluxos do sistema por e-mail</S.PrivacyConsentStatus>
+                  <S.PrivacyConsentHint>Inclui lembretes de check-up, andamento de pedidos e comunicações operacionais da sua jornada. E-mails de segurança e autenticação continuam ativos.</S.PrivacyConsentHint>
+                  <S.PreferenceSwitchLabel>
+                    <S.PreferenceSwitchInput
+                      type="checkbox"
+                      checked={systemFlowEmailEnabled}
+                      disabled={communicationPreferencesSaving}
+                      onChange={(event) => handleCommunicationPreferenceChange(event.target.checked)}
+                    />
+                    <S.PreferenceSwitchText>Receber comunicações de fluxos do sistema por e-mail</S.PreferenceSwitchText>
+
+                  </S.PreferenceSwitchLabel>
+                </S.PreferenceContent>
+              </S.PrivacyConsentItem>
+            </S.PrivacyConsentSummary>
+
             <S.PrivacyActionGrid>
               <S.PrivacyActionButton
                 type="button"
@@ -1379,88 +1611,88 @@ export function MinhaConta() {
                 <Download size={16} aria-hidden />
                 {privacyExportSubmitting ? 'Gerando exportação...' : 'Exportar meus dados'}
               </S.PrivacyActionButton>
-              <S.PrivacyActionLink to="/privacidade">
+              <S.PrivacyActionLink to="/privacidade" target="_blank" rel="noreferrer">
                 <ExternalLink size={16} aria-hidden />
                 Política de Privacidade
               </S.PrivacyActionLink>
-              <S.PrivacyActionLink to="/cookies">
+              <S.PrivacyActionLink to="/cookies" target="_blank" rel="noreferrer">
                 <ExternalLink size={16} aria-hidden />
                 Política de Cookies
               </S.PrivacyActionLink>
-              <S.PrivacyActionAnchor href={`mailto:contato@nexoradvance.com.br?subject=LGPD%20-%20Solicita%C3%A7%C3%A3o%20da%20conta%20${encodeURIComponent(email)}`}>
+              <S.PrivacyActionLink to="/?assunto=lgpd#contato" target="_blank" rel="noreferrer">
                 <Mail size={16} aria-hidden />
                 Falar com o canal LGPD
-              </S.PrivacyActionAnchor>
-              <S.PrivacyActionButton type="button" onClick={() => setDeletionModalOpen(true)}>
-                <Trash2 size={16} aria-hidden />
-                Solicitar exclusão
-              </S.PrivacyActionButton>
+              </S.PrivacyActionLink>
             </S.PrivacyActionGrid>
-            <S.PrivacyConsentSummary aria-label="Resumo de consentimentos LGPD">
-              <S.PrivacyConsentItem>
-                <S.PrivacyConsentLabel>Marketing</S.PrivacyConsentLabel>
-                <S.PrivacyConsentStatus>{marketingConsentActive ? 'Marketing ativo' : 'Marketing revogado'}</S.PrivacyConsentStatus>
-                <S.PrivacyInlineButton
-                  type="button"
-                  disabled={!marketingConsentActive || marketingRevocationSubmitting}
-                  onClick={() => void handleRevokeMarketingConsent()}
-                >
-                  {marketingRevocationSubmitting ? 'Revogando...' : 'Revogar marketing'}
-                </S.PrivacyInlineButton>
-              </S.PrivacyConsentItem>
-              <S.PrivacyConsentItem>
-                <S.PrivacyConsentLabel>Analytics</S.PrivacyConsentLabel>
-                <S.PrivacyConsentStatus>{analyticsConsentActive ? 'Analytics ativo' : 'Analytics inativo'}</S.PrivacyConsentStatus>
-                <S.PrivacyConsentHint>Preferências de cookies podem ser alteradas pela política de cookies.</S.PrivacyConsentHint>
-              </S.PrivacyConsentItem>
-            </S.PrivacyConsentSummary>
-            <S.PrivacyRightsList aria-label="Direitos LGPD disponíveis">
-              <li>Acesso e exportação dos dados da conta.</li>
-              <li>Correção de dados cadastrais e atualização de preferências.</li>
-              <li>Revogação de comunicações não essenciais.</li>
-              <li>Solicitação de exclusão com análise de ordens e obrigações legais.</li>
-            </S.PrivacyRightsList>
           </S.PrivacyPanel>
         </S.Section>
       ) : null}
 
       <S.Section
+        id="dados-onboarding"
         variants={fadeSection}
         initial="hidden"
         animate="visible"
         transition={{ delay: 0.06 } as never}
       >
         <S.SectionTitle>Dados de onboarding</S.SectionTitle>
-        {loadingProfile ? (
+        {loadingProductRoles ? (
           <SkeletonCard lines={5} blockHeight="44px" />
-        ) : productRoles.length > 0 ? (
+        ) : productRolesError ? (
+          <S.Card>
+            <S.ProductContent>
+              <S.ProductText>{productRolesError}</S.ProductText>
+            </S.ProductContent>
+          </S.Card>
+        ) : visibleProductRoles.length > 0 ? (
           <S.OnboardingStack>
-            {productRoles.map((role) => {
+            {visibleProductRoles.map((role) => {
               const metadata = role.metadata ?? {};
               const primaryLocation = getPrimaryPracticeLocation(metadata);
               const isSavingRole = Boolean(role.id && savingProductRoleId === role.id);
+              const isCollapsibleRole = role.role === 'dentist' || role.role === 'customer';
+              const roleKey = getProductRoleKey(role);
+              const isExpanded = !isCollapsibleRole || expandedOnboardingCards.has(roleKey);
 
               return (
-                <S.Card key={role.id ?? `${role.productKey}:${role.role}`}>
-                  <S.ProductContent>
-                    <S.ProductHeader>
-                      <S.ProductTitle>{getRoleLabel(role.role)}</S.ProductTitle>
-                      <S.ProductBadge $tone={getProductStatusTone(role.status)}>
-                        {getProductStatusLabel(role.status)}
-                      </S.ProductBadge>
-                    </S.ProductHeader>
-                    {role.role === 'dentist'
-                      ? renderDentistOnboardingFields(role, metadata, primaryLocation, isSavingRole)
-                      : role.role === 'partner'
-                        ? renderPartnerOnboardingFields(role, metadata, isSavingRole)
-                        : role.role === 'lab'
-                          ? renderLabOnboardingFields(role, metadata, isSavingRole)
-                          : (
-                            <S.ProductText>
-                              Dados de {getRoleLabel(role.role).toLowerCase()} cadastrados para o produto Biteplaner.
-                            </S.ProductText>
-                          )}
-                  </S.ProductContent>
+                <S.Card key={roleKey}>
+                  <S.OnboardingCardContent>
+                    {isCollapsibleRole ? (
+                      <S.OnboardingCollapseButton
+                        type="button"
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleOnboardingCard(role)}
+                      >
+                        <S.ProductHeader>
+                          <S.ProductTitle>{getRoleLabel(role.role)}</S.ProductTitle>
+                          <S.ProductBadge $tone={getProductStatusTone(role.status)}>
+                            {getProductStatusLabel(role.status)}
+                          </S.ProductBadge>
+                        </S.ProductHeader>
+                        <S.CollapseIcon $expanded={isExpanded}>
+                          <ChevronDown size={16} aria-hidden />
+                        </S.CollapseIcon>
+                      </S.OnboardingCollapseButton>
+                    ) : (
+                      <S.OnboardingStaticHeader>
+                        <S.ProductTitle>{getRoleLabel(role.role)}</S.ProductTitle>
+                        <S.ProductBadge $tone={getProductStatusTone(role.status)}>
+                          {getProductStatusLabel(role.status)}
+                        </S.ProductBadge>
+                      </S.OnboardingStaticHeader>
+                    )}
+                    {isExpanded ? (
+                      <S.OnboardingBody>
+                        {role.role === 'dentist'
+                          ? renderDentistOnboardingFields(role, metadata, primaryLocation, isSavingRole)
+                          : role.role === 'customer'
+                            ? renderCustomerOnboardingFields(metadata)
+                            : role.role === 'partner'
+                              ? renderPartnerOnboardingFields(role, metadata, isSavingRole)
+                              : renderLabOnboardingFields(role, metadata, isSavingRole)}
+                      </S.OnboardingBody>
+                    ) : null}
+                  </S.OnboardingCardContent>
                 </S.Card>
               );
             })}
@@ -1468,43 +1700,14 @@ export function MinhaConta() {
         ) : (
           <S.Card>
             <S.ProductContent>
-              <S.ProductText>Nenhum onboarding de produto foi encontrado para esta conta.</S.ProductText>
+              <S.ProductText style={{ margin: 0 }}>Nenhum onboarding de produto foi encontrado para esta conta.</S.ProductText>
             </S.ProductContent>
           </S.Card>
         )}
       </S.Section>
 
-      {!isAdmin ? (
-        <S.Section
-          variants={fadeSection}
-          initial="hidden"
-          animate="visible"
-          transition={{ delay: 0.075 } as never}
-        >
-          <S.SectionTitle>Preferências de comunicação</S.SectionTitle>
-          <S.Card>
-            <S.PreferenceRow>
-              <S.PreferenceContent>
-                <S.SecurityTitle>Fluxos do sistema por e-mail</S.SecurityTitle>
-                <S.SecurityText>
-                  Inclui lembretes de check-up, andamento de pedidos e comunicações operacionais da sua jornada. E-mails de segurança e autenticação continuam ativos.
-                </S.SecurityText>
-                <S.PreferenceSwitchLabel>
-                  <S.PreferenceSwitchInput
-                    type="checkbox"
-                    checked={systemFlowEmailEnabled}
-                    disabled={communicationPreferencesSaving}
-                    onChange={(event) => handleCommunicationPreferenceChange(event.target.checked)}
-                  />
-                  <S.PreferenceSwitchText>Receber comunicações de fluxos do sistema por e-mail</S.PreferenceSwitchText>
-                </S.PreferenceSwitchLabel>
-              </S.PreferenceContent>
-            </S.PreferenceRow>
-          </S.Card>
-        </S.Section>
-      ) : null}
-
       <S.Section
+        id="seguranca"
         variants={fadeSection}
         initial="hidden"
         animate="visible"
@@ -1528,6 +1731,7 @@ export function MinhaConta() {
 
       {!isAdmin ? (
         <S.Section
+          id="excluir-conta"
           variants={fadeSection}
           initial="hidden"
           animate="visible"

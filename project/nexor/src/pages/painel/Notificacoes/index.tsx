@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle2, Circle, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
@@ -44,13 +44,15 @@ function formatNotificationDate(value: string) {
 
 export function Notificacoes() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { backendUser, session } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedNotification, setSelectedNotification] = useState<AccountNotificationResponse | null>(null);
   const ownerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
+  const notificationsQueryKey = [...accountQueryKeys.notifications(ownerId), 'all', 100] as const;
 
   const notificationsQuery = useQuery<AccountNotificationsResponse>({
-    queryKey: [...accountQueryKeys.notifications(ownerId), 'all', 100],
+    queryKey: notificationsQueryKey,
     queryFn: () =>
       api.get<AccountNotificationsResponse>(
         '/v1/account/notifications?status=all&limit=100',
@@ -59,6 +61,90 @@ export function Notificacoes() {
     enabled: Boolean(session),
     staleTime: 60_000,
   });
+
+  const markNotificationReadMutation = useMutation({
+    mutationFn: (notificationId: string) =>
+      api.patch<{ notification: AccountNotificationResponse }>(
+        `/v1/account/notifications/${notificationId}/read`,
+        {},
+        session!.access_token
+      ),
+    onSuccess: (_response, notificationId) => {
+      const readAt = new Date().toISOString();
+
+      queryClient.setQueryData<AccountNotificationsResponse>(notificationsQueryKey, (current) => {
+        if (!current) {
+          return current;
+        }
+
+        let changed = false;
+        const notifications = current.notifications.map((notification) => {
+          if (notification.id !== notificationId || notification.read) {
+            return notification;
+          }
+
+          changed = true;
+          return {
+            ...notification,
+            read: true,
+            readAt: notification.readAt ?? readAt,
+          };
+        });
+
+        return {
+          ...current,
+          notifications,
+          unreadCount: changed ? Math.max(0, current.unreadCount - 1) : current.unreadCount,
+        };
+      });
+
+      setSelectedNotification((current) =>
+        current?.id === notificationId
+          ? { ...current, read: true, readAt: current.readAt ?? readAt }
+          : current
+      );
+    },
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () =>
+      api.patch<{ notifications?: AccountNotificationResponse[] }>(
+        '/v1/account/notifications/read-all',
+        {},
+        session!.access_token
+      ),
+    onSuccess: () => {
+      const readAt = new Date().toISOString();
+
+      queryClient.setQueryData<AccountNotificationsResponse>(notificationsQueryKey, (current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          notifications: current.notifications.map((notification) => ({
+            ...notification,
+            read: true,
+            readAt: notification.readAt ?? readAt,
+          })),
+          unreadCount: 0,
+        };
+      });
+
+      setSelectedNotification((current) =>
+        current ? { ...current, read: true, readAt: current.readAt ?? readAt } : current
+      );
+    },
+  });
+
+  function openNotification(notification: AccountNotificationResponse) {
+    setSelectedNotification(notification);
+
+    if (!notification.read && session) {
+      markNotificationReadMutation.mutate(notification.id);
+    }
+  }
 
   const notifications = notificationsQuery.data?.notifications ?? [];
   const unreadCount = notificationsQuery.data?.unreadCount ?? 0;
@@ -78,10 +164,21 @@ export function Notificacoes() {
             Acompanhe todas as notificações da sua conta em ordem cronológica.
           </S.PageDescription>
         </S.TitleGroup>
-        <S.UnreadSummary>
-          <Bell size={16} aria-hidden />
-          {unreadCount} não lida{unreadCount === 1 ? '' : 's'}
-        </S.UnreadSummary>
+        <S.HeaderActions>
+          <S.MarkAllReadButton
+            type="button"
+            disabled={unreadCount === 0 || markAllReadMutation.isPending || notificationsQuery.isLoading}
+            onClick={() => {
+              markAllReadMutation.mutate();
+            }}
+          >
+            Marcar todas como lida
+          </S.MarkAllReadButton>
+          <S.UnreadSummary>
+            <Bell size={16} aria-hidden />
+            {unreadCount} não lida{unreadCount === 1 ? '' : 's'}
+          </S.UnreadSummary>
+        </S.HeaderActions>
       </S.Header>
 
       <S.ListPanel>
@@ -103,11 +200,11 @@ export function Notificacoes() {
                   role="button"
                   tabIndex={0}
                   aria-label={`Abrir notificação ${notification.title}`}
-                  onClick={() => setSelectedNotification(notification)}
+                  onClick={() => openNotification(notification)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      setSelectedNotification(notification);
+                      openNotification(notification);
                     }
                   }}
                 >

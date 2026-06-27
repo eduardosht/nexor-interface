@@ -7,9 +7,10 @@ import { lightTheme } from '../../../styles/theme';
 import { TestQueryClientProvider } from '../../../test/renderWithQueryClient';
 import { Notificacoes } from './index';
 
-const { mockUseAuth, mockApiGet } = vi.hoisted(() => ({
+const { mockUseAuth, mockApiGet, mockApiPatch } = vi.hoisted(() => ({
   mockUseAuth: vi.fn(),
   mockApiGet: vi.fn(),
+  mockApiPatch: vi.fn(),
 }));
 const mockNavigate = vi.hoisted(() => vi.fn());
 
@@ -20,6 +21,7 @@ vi.mock('../../../hooks/useAuth', () => ({
 vi.mock('../../../lib/api', () => ({
   api: {
     get: mockApiGet,
+    patch: mockApiPatch,
   },
 }));
 
@@ -50,7 +52,9 @@ describe('Notificacoes', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
+    mockApiPatch.mockReset();
     mockNavigate.mockReset();
+    mockApiPatch.mockResolvedValue({});
     mockApiGet.mockResolvedValue({
       unreadCount: 2,
       notifications: Array.from({ length: 12 }, (_, index) => ({
@@ -145,6 +149,14 @@ describe('Notificacoes', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /abrir notificação atualização operacional/i }));
 
+    await waitFor(() =>
+      expect(mockApiPatch).toHaveBeenCalledWith(
+        '/v1/account/notifications/notification-message/read',
+        {},
+        'tok'
+      )
+    );
+
     const dialog = screen.getByRole('dialog', { name: /atualização operacional/i });
     expect(dialog).toHaveTextContent(/mensagem completa da notificação/i);
     expect(dialog).toHaveTextContent(/12\/05\/2026/i);
@@ -175,6 +187,40 @@ describe('Notificacoes', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
     expect(screen.queryByRole('dialog', { name: /ação necessária no pedido/i })).not.toBeInTheDocument();
+  });
+
+  it('marks all notifications as read from the header action', async () => {
+    mockApiGet.mockResolvedValue({
+      unreadCount: 2,
+      notifications: [
+        {
+          id: 'notification-1',
+          title: 'Primeira notificação',
+          message: 'Mensagem da primeira notificação.',
+          read: false,
+          createdAt: '2026-05-12T09:30:00.000Z',
+        },
+        {
+          id: 'notification-2',
+          title: 'Segunda notificação',
+          message: 'Mensagem da segunda notificação.',
+          read: false,
+          createdAt: '2026-05-12T09:20:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    const markAllReadButton = await screen.findByRole('button', { name: /marcar todas como lida/i });
+    await waitFor(() => expect(markAllReadButton).toBeEnabled());
+    fireEvent.click(markAllReadButton);
+
+    await waitFor(() =>
+      expect(mockApiPatch).toHaveBeenCalledWith('/v1/account/notifications/read-all', {}, 'tok')
+    );
+    expect(screen.getByText(/0 não lidas/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Lida')).toHaveLength(2);
   });
 
   it('keeps mobile pagination fixed in the page footer', () => {

@@ -205,11 +205,13 @@ describe('PartnerReferralPage', () => {
       expect.stringContaining('https://wa.me/')
     );
 
+    expect(screen.queryByRole('tooltip', { name: /copiado/i })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /copiar link individual/i }));
 
     await waitFor(() =>
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('bp-partner-demo-001'))
     );
+    expect(screen.getByRole('tooltip', { name: /copiado/i })).toBeInTheDocument();
   });
 
   it('removes a generated partner link from the list', async () => {

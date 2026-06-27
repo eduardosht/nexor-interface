@@ -50,6 +50,38 @@ export function authHandlers(server: Server) {
     return new Response(200, {}, { profile: { id: user.profileId } });
   });
 
+  server.get('/v1/account/privacy-export', (_schema, request) => {
+    const { user } = getAuthPayload({ requestHeaders: request.requestHeaders });
+
+    return new Response(200, {}, {
+      metadados: {
+        formato: 'json',
+        finalidade: 'Acesso e portabilidade de dados pessoais da própria conta.',
+        geradoPor: 'Nexor',
+        exportadoEm: new Date().toISOString(),
+        secoes: ['dadosDaConta', 'perfil', 'produtos', 'consentimentos']
+      },
+      dadosDaConta: {
+        email: user.email,
+        perfisGlobais: user.roles
+      },
+      perfil: {
+        nomeCompleto: user.email?.split('@')[0] ?? null,
+        email: user.email,
+        status: 'active'
+      },
+      produtos: user.productRoles.map((role) => ({
+        produto: role.productKey,
+        perfil: role.role,
+        status: role.status,
+        origem: role.sourceType ?? null,
+        criadoEm: role.createdAt,
+        atualizadoEm: role.updatedAt
+      })),
+      consentimentos: []
+    });
+  });
+
   server.post('/v1/account/consents', () => new Response(200, {}, {}));
   server.post('/v1/account/cookie-consent', () => new Response(200, {}, { consent: { id: 'demo-cookie-consent' } }));
   server.get('/v1/account/notifications', withDemoErrors((_schema, request) => {
@@ -81,14 +113,21 @@ export function authHandlers(server: Server) {
     const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
     const rawRole = request.queryParams.role;
     const rawSearch = request.queryParams.search;
+    const rawEmail = request.queryParams.email;
+    const rawPage = request.queryParams.page;
     const role = Array.isArray(rawRole) ? rawRole[0] : rawRole;
     const search = Array.isArray(rawSearch) ? rawSearch[0] : rawSearch;
-    const limit = limitValue === undefined ? 50 : Number(limitValue);
+    const email = Array.isArray(rawEmail) ? rawEmail[0] : rawEmail;
+    const pageValue = Array.isArray(rawPage) ? rawPage[0] : rawPage;
+    const limit = limitValue === undefined ? 25 : Number(limitValue);
+    const page = pageValue === undefined ? 1 : Number(pageValue);
 
     return listAdminProfiles({
       role,
       search,
-      limit: Number.isFinite(limit) ? limit : 50
+      email,
+      page: Number.isFinite(page) ? page : 1,
+      limit: Number.isFinite(limit) ? limit : 25
     });
   }));
   server.patch('/v1/admin/profiles/:profileId/status', withDemoErrors((_schema, request) => {

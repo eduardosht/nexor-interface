@@ -18,6 +18,7 @@ import {
   Button,
   Field,
   FilterSheet,
+  AdminPagination,
   ResponsiveDataList,
   Select,
   type AdminDataTableColumn,
@@ -68,6 +69,7 @@ type AdminProfile = {
   fullName: string | null;
   phone: string | null;
   status: AdminProfileStatus;
+  deleted?: boolean;
   roles: string[];
   platformRoles?: string[];
   productRoles?: AdminProductRole[];
@@ -77,7 +79,17 @@ type AdminProfile = {
 
 type ProfilesResponse = {
   profiles: AdminProfile[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    rangeStart: number;
+    rangeEnd: number;
+  };
 };
+
+const USERS_PAGE_SIZE = 25;
 
 const profileOptions = [
   { value: '', label: 'Todos os perfis' },
@@ -191,7 +203,16 @@ export function AdminUsers() {
   const token = session?.access_token;
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<ProfilesResponse['pagination']>({
+    page: 1,
+    limit: USERS_PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+    rangeStart: 0,
+    rangeEnd: 0,
+  });
   const [profile, setProfile] = useState('');
   const [selectedProfile, setSelectedProfile] = useState<AdminProfile | null>(null);
   const [nextStatus, setNextStatus] = useState<AdminProfileStatus>('active');
@@ -200,7 +221,7 @@ export function AdminUsers() {
   const [error, setError] = useState('');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [draftProfile, setDraftProfile] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const debouncedEmailFilter = useDebouncedValue(emailFilter, 300);
 
   async function loadProfiles() {
     if (!selectedProduct || !token) return;
@@ -209,11 +230,12 @@ export function AdminUsers() {
     setError('');
 
     try {
-      const params = new URLSearchParams({ limit: '200' });
+      const params = new URLSearchParams({ limit: String(USERS_PAGE_SIZE), page: String(page) });
       if (profile) params.set('role', profile);
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
+      if (debouncedEmailFilter.trim()) params.set('email', debouncedEmailFilter.trim());
       const response = await api.get<ProfilesResponse>(`/v1/admin/profiles?${params.toString()}`, token);
       setProfiles(response.profiles);
+      setPagination(response.pagination);
     } catch {
       setError('Não foi possível carregar os usuários pelo backend.');
     } finally {
@@ -223,16 +245,16 @@ export function AdminUsers() {
 
   useEffect(() => {
     void loadProfiles();
-  }, [selectedProduct, token, profile, debouncedSearch]);
+  }, [selectedProduct, token, profile, debouncedEmailFilter, page]);
 
   const metrics = useMemo<AdminMetric[]>(
     () => [
-      { label: 'Total de usuários', value: profiles.length, tone: 'success' },
+      { label: 'Total de usuários', value: pagination.total, tone: 'success' },
       { label: 'Clientes', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'customer')).length, tone: 'success' },
       { label: 'Dentistas', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'dentist')).length, tone: 'success' },
       { label: 'Laboratórios', value: profiles.filter((item) => hasBiteplanerProductRole(item, 'lab')).length, tone: 'success' },
     ],
-    [profiles]
+    [pagination.total, profiles]
   );
 
   const columns = useMemo<AdminDataTableColumn<AdminProfile>[]>(
@@ -273,8 +295,13 @@ export function AdminUsers() {
       {
         key: 'status',
         label: 'Status',
-        render: (row) => <AdminStatusPill color={statusColor[row.status]} label={statusLabel[row.status]} />,
-        sortValue: (row) => statusLabel[row.status],
+        render: (row) => (
+          <AdminStatusPill
+            color={row.deleted ? '#525252' : statusColor[row.status]}
+            label={row.deleted ? 'Conta deletada' : statusLabel[row.status]}
+          />
+        ),
+        sortValue: (row) => row.deleted ? 'Conta deletada' : statusLabel[row.status],
       },
       { key: 'createdAt', label: 'Cadastro', render: (row) => formatDateTime(row.createdAt), sortValue: (row) => row.createdAt ?? '' },
       { key: 'updatedAt', label: 'Atualizado em', render: (row) => formatDateTime(row.updatedAt), sortValue: (row) => row.updatedAt ?? '' },
@@ -287,7 +314,9 @@ export function AdminUsers() {
           <ViewButton
             type="button"
             aria-label={`Editar usuário ${getProfileName(row)}`}
+            disabled={row.deleted === true}
             onClick={() => {
+              if (row.deleted === true) return;
               setSelectedProfile(row);
               setNextStatus(row.status);
               setStatusReason('');
@@ -300,6 +329,16 @@ export function AdminUsers() {
     ],
     []
   );
+
+  function updateEmailFilter(value: string) {
+    setPage(1);
+    setEmailFilter(value);
+  }
+
+  function updateProfileFilter(value: string) {
+    setPage(1);
+    setProfile(value);
+  }
 
   async function handleSaveStatus() {
     if (!selectedProfile || !token || !statusReason.trim()) return;
@@ -337,7 +376,7 @@ export function AdminUsers() {
   }
 
   function applyMobileFilters() {
-    setProfile(draftProfile);
+    updateProfileFilter(draftProfile);
     setMobileFiltersOpen(false);
   }
 
@@ -363,10 +402,10 @@ export function AdminUsers() {
           <AdminMobileOnly>
             <Field
               as="input"
-              label="Buscar"
-              placeholder="Nome, e-mail ou ID"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              label="E-mail"
+              placeholder="usuario@exemplo.com"
+              value={emailFilter}
+              onChange={(event) => updateEmailFilter(event.target.value)}
             />
             <Button type="button" variant="secondary" onClick={openMobileFilters}>
               Abrir filtros de usuários
@@ -378,11 +417,11 @@ export function AdminUsers() {
                 data={profiles}
                 columns={columns}
                 keyExtractor={(row) => row.id}
-                searchLabel="Buscar"
-                searchPlaceholder="Buscar por nome, e-mail ou ID..."
-                searchValue={search}
-                onSearchChange={setSearch}
-                pageSize={6}
+                searchLabel="E-mail"
+                searchPlaceholder="Filtrar por e-mail..."
+                searchValue={emailFilter}
+                onSearchChange={updateEmailFilter}
+                pageSize={Math.max(1, profiles.length)}
                 emptyMessage="Nenhum usuário encontrado para os filtros aplicados."
                 actions={
                   <FilterWrap>
@@ -390,7 +429,7 @@ export function AdminUsers() {
                       label="Perfil"
                       value={profile}
                       placeholder="Todos os perfis"
-                      onChange={setProfile}
+                      onChange={updateProfileFilter}
                       options={profileOptions}
                     />
                   </FilterWrap>
@@ -412,7 +451,10 @@ export function AdminUsers() {
                       <AdminMobileCardTitle>{getProfileName(row)}</AdminMobileCardTitle>
                       <AdminMobileCardSubtitle>{row.email || 'E-mail não informado'}</AdminMobileCardSubtitle>
                     </div>
-                    <AdminStatusPill color={statusColor[row.status]} label={statusLabel[row.status]} />
+                    <AdminStatusPill
+                      color={row.deleted ? '#525252' : statusColor[row.status]}
+                      label={row.deleted ? 'Conta deletada' : statusLabel[row.status]}
+                    />
                   </AdminMobileCardHeader>
                   <AdminMobileMetaGrid>
                     <AdminMobileMetaItem>
@@ -442,7 +484,9 @@ export function AdminUsers() {
                     <AdminMobileActionButton
                       type="button"
                       aria-label={`Editar usuário ${getProfileName(row)}`}
+                      disabled={row.deleted === true}
                       onClick={() => {
+                        if (row.deleted === true) return;
                         setSelectedProfile(row);
                         setNextStatus(row.status);
                         setStatusReason('');
@@ -453,7 +497,17 @@ export function AdminUsers() {
                   </AdminMobileActions>
                 </AdminMobileCard>
               );
-            }}
+                }}
+          />
+
+          <AdminPagination
+            page={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.total}
+            rangeStart={pagination.rangeStart}
+            rangeEnd={pagination.rangeEnd}
+            onPageChange={setPage}
+            ariaLabel="Paginação de usuários"
           />
 
           <FilterSheet

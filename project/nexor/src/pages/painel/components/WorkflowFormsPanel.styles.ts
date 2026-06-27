@@ -782,7 +782,7 @@ export const OnboardingProgressRail = styled.div<{ $expanded?: boolean }>`
   @media (max-width: 720px) {
     grid-auto-flow: column;
     grid-auto-columns: auto;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     justify-content: center;
     width: 100%;
     max-width: 100%;
@@ -1474,7 +1474,6 @@ export const CheckboxFieldShell = styled.fieldset`
   legend {
     float: left;
     width: 100%;
-    margin: 0 0 18px;
     padding: 0;
     color: #17213a;
     font-size: 13px;

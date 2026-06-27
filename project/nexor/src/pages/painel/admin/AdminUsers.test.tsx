@@ -95,6 +95,14 @@ describe('AdminUsers', () => {
           updatedAt: '2026-06-11T10:00:00.000Z',
         },
       ],
+      pagination: {
+        page: 1,
+        limit: 25,
+        total: 1,
+        totalPages: 1,
+        rangeStart: 1,
+        rangeEnd: 1,
+      },
     });
 
     renderPage();
@@ -115,5 +123,48 @@ describe('AdminUsers', () => {
 
     const filterDialog = screen.getByRole('dialog', { name: /filtros de usuários/i });
     expect(within(filterDialog).getByLabelText(/perfil/i)).toBeInTheDocument();
+  });
+
+  it('filters users by e-mail with backend pagination and labels deleted accounts', async () => {
+    mockApiGet.mockResolvedValue({
+      profiles: [
+        {
+          id: 'profile-removed',
+          email: 'deleted+profile-removed@privacy.nexor.local',
+          fullName: 'Conta removida',
+          phone: null,
+          status: 'blocked',
+          deleted: true,
+          roles: [],
+          platformRoles: [],
+          productRoles: [],
+          createdAt: '2026-06-10T10:00:00.000Z',
+          updatedAt: '2026-06-11T10:00:00.000Z',
+        },
+      ],
+      pagination: {
+        page: 2,
+        limit: 25,
+        total: 26,
+        totalPages: 2,
+        rangeStart: 26,
+        rangeEnd: 26,
+      },
+    });
+
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByText(/conta removida/i).length).toBeGreaterThan(0));
+    expect(screen.getAllByText(/conta deletada/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/mostrando 26 a 26 de 26 resultados/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getAllByLabelText(/e-mail/i)[0], { target: { value: 'dentista2@gmail.com' } });
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenLastCalledWith(
+        expect.stringContaining('email=dentista2%40gmail.com'),
+        'tok'
+      );
+    });
   });
 });

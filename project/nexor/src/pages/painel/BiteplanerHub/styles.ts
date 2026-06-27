@@ -2926,12 +2926,13 @@ export const ReferralInviteModalLabel = styled(ModalLabel)`
 `;
 
 export const ReferralInviteLinkInputGroup = styled.div`
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   min-height: 44px;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;
   background: ${({ theme }) => theme.colors.bgBase};
 
   @media (max-width: 640px) {
@@ -2954,11 +2955,13 @@ export const ReferralInviteLinkPreview = styled(LinkPreview)`
 `;
 
 export const ReferralInviteInlineCopyButton = styled.button`
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 0;
   border-left: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 0 9px 9px 0;
   background: #15803d;
   color: #f8fbff;
   cursor: pointer;
@@ -2973,6 +2976,37 @@ export const ReferralInviteInlineCopyButton = styled.button`
   &:focus-visible {
     outline: 2px solid rgba(21, 128, 61, 0.32);
     outline-offset: -2px;
+  }
+`;
+
+export const ReferralInviteCopyTooltip = styled.span`
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  pointer-events: none;
+  padding: 6px 9px;
+  border-radius: 7px;
+  color: ${({ theme }) => theme.colors.bgElevated};
+  background: ${({ theme }) => theme.colors.textPrimary};
+  box-shadow: 0 10px 24px rgba(23, 23, 23, 0.16);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    top: 100%;
+    border: 5px solid transparent;
+    border-top-color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 

@@ -57,39 +57,44 @@ export const DangerCard = styled(Card)`
 
 export const CardRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: ${({ theme }) => theme.colors.borderSubtle};
 
+  @media (max-width: 820px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (max-width: 560px) { grid-template-columns: 1fr; }
 `;
 
-export const Field = styled.div<{ $editable?: boolean }>`
-  padding: 16px 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+export const Field = styled.div<{ $editable?: boolean; $span?: 'two' | 'full' }>`
+  min-height: 82px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 8px;
   position: relative;
+  background: ${({ theme }) => theme.colors.bgElevated};
+  grid-column: span ${({ $span }) => ($span === 'full' ? 3 : $span === 'two' ? 2 : 1)};
 
-  &:nth-child(odd) {
-    border-right: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  @media (max-width: 820px) {
+    grid-column: span ${({ $span }) => ($span === 'full' ? 2 : 1)};
   }
 
-  &:last-child, &:nth-last-child(2):nth-child(odd) {
-    border-bottom: none;
+  @media (max-width: 560px) {
+    grid-column: span 1;
   }
 `;
 
 export const FieldLabel = styled.span`
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
 export const FieldValue = styled.span`
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -248,6 +253,15 @@ export const ProductContent = styled.div`
   padding: 18px 20px;
 `;
 
+export const OnboardingCardContent = styled.div`
+  display: block;
+`;
+
+export const OnboardingBody = styled.div`
+  padding: 16px 20px 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+`;
+
 export const ProductHeader = styled.div`
   display: flex;
   align-items: center;
@@ -298,6 +312,78 @@ export const ProductLink = styled.a`
   }
 `;
 
+export const OnboardingStaticHeader = styled(ProductHeader)`
+  min-height: 48px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+`;
+
+export const OnboardingCollapseButton = styled.button`
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  padding: 14px 16px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  ${ProductHeader} {
+    margin-bottom: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(23, 23, 23, 0.22);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+`;
+
+export const OnboardingFieldGroup = styled.div`
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgElevated};
+
+  & + & {
+    margin-top: 16px;
+  }
+`;
+
+export const OnboardingGroupTitle = styled.h4`
+  margin: 0;
+  padding: 13px 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+`;
+
+export const CollapseIcon = styled.span<{ $expanded: boolean }>`
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 6px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  transform: rotate(${({ $expanded }) => ($expanded ? '180deg' : '0deg')});
+  transition: transform 150ms ease, color 150ms ease, border-color 150ms ease;
+
+  ${OnboardingCollapseButton}:hover & {
+    border-color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
 export const PrivacyPanel = styled(Card)`
   padding: 18px 20px;
 `;
@@ -330,8 +416,8 @@ export const PrivacyBadge = styled.span`
 
 export const PrivacyActionGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
 
   @media (max-width: 920px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -401,8 +487,8 @@ export const PrivacyActionAnchor = styled.a`
 export const PrivacyConsentSummary = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  gap: 8px;
+  margin: 16px 0;
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
@@ -420,13 +506,6 @@ export const PrivacyConsentItem = styled.div`
   background: ${({ theme }) => theme.colors.bgBase};
 `;
 
-export const PrivacyConsentLabel = styled.span`
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-`;
-
 export const PrivacyConsentStatus = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
@@ -438,39 +517,6 @@ export const PrivacyConsentHint = styled.span`
   font-size: 12px;
   line-height: 1.4;
 `;
-
-export const PrivacyInlineButton = styled.button`
-  justify-self: start;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 4px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: border-color 150ms ease, opacity 150ms ease;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.textPrimary};
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-`;
-
-export const PrivacyRightsList = styled.ul`
-  margin: 16px 0 0;
-  padding-left: 18px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  line-height: 1.55;
-`;
-
 
 export const PreferenceRow = styled.div`
   display: grid;

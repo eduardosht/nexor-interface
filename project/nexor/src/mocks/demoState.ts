@@ -91,6 +91,7 @@ type ProductRolePayload = {
   productKey: 'biteplaner';
   role: 'customer' | 'partner' | 'dentist' | 'lab';
   status: 'pending' | 'active' | 'rejected' | 'suspended';
+  sourceType?: 'self_service' | 'admin' | 'migration' | 'partner_invite';
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -3437,30 +3438,55 @@ export function getDemoStateSnapshot() {
 export function listAdminProfiles(filters: {
   role?: string | undefined;
   search?: string | undefined;
+  email?: string | undefined;
+  page?: number | undefined;
   limit?: number | undefined;
 }) {
   const query = filters.search?.trim().toLowerCase() ?? '';
-  const limit = filters.limit && Number.isFinite(filters.limit) ? filters.limit : 50;
+  const emailQuery = filters.email?.trim().toLowerCase() ?? '';
+  const page = filters.page && Number.isFinite(filters.page) ? Math.max(1, filters.page) : 1;
+  const limit = filters.limit && Number.isFinite(filters.limit) ? Math.max(1, filters.limit) : 25;
 
-  const profiles = state.users
+  const filtered = state.users
     .filter((user) => (filters.role ? user.roles.includes(filters.role) : true))
+    .filter((user) => (emailQuery ? user.email.toLowerCase().includes(emailQuery) : true))
     .filter((user) => {
       if (!query) return true;
       return `${user.profileId} ${user.fullName} ${user.email}`.toLowerCase().includes(query);
-    })
-    .slice(0, limit)
+    });
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const startIndex = (page - 1) * limit;
+  const paginated = filtered.slice(startIndex, startIndex + limit);
+  const rangeStart = total === 0 || paginated.length === 0 ? 0 : startIndex + 1;
+  const rangeEnd = rangeStart === 0 ? 0 : startIndex + paginated.length;
+
+  const profiles = paginated
     .map((user) => ({
       id: user.profileId,
       email: user.email,
       fullName: user.fullName,
       phone: user.phone,
       status: user.status ?? (user.roles.length > 0 ? 'active' : 'pending'),
+      deleted: user.email.startsWith('deleted+') && user.email.endsWith('@privacy.nexor.local'),
       roles: user.roles,
+      platformRoles: user.roles,
+      productRoles: user.productRoles ?? generatedProductRoles(user),
       createdAt: user.enrollment?.created_at ?? user.productRoles?.[0]?.createdAt ?? '2026-05-01T09:00:00.000Z',
       updatedAt: user.productRoles?.[0]?.updatedAt ?? user.enrollment?.created_at ?? '2026-05-01T09:00:00.000Z',
     }));
 
-  return { profiles };
+  return {
+    profiles,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      rangeStart,
+      rangeEnd
+    }
+  };
 }
 
 export function updateAdminProfileStatus(profileId: string, status: 'pending' | 'active' | 'inactive' | 'suspended' | 'blocked') {
@@ -3524,6 +3550,7 @@ function generatedProductRoles(user: DemoUser): ProductRolePayload[] {
       productKey: 'biteplaner',
       role,
       status: 'active',
+      sourceType: 'self_service',
       metadata: {},
       createdAt: '2026-05-01T09:00:00.000Z',
       updatedAt: '2026-05-01T09:00:00.000Z'

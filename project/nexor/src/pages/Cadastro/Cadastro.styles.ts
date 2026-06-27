@@ -175,7 +175,7 @@ export const Actions = styled.div`
   flex-wrap: wrap;
 `;
 
-export const Button = styled(BaseButton)<{ $secondary?: boolean }>`
+export const Button = styled(BaseButton) <{ $secondary?: boolean }>`
   background: ${({ theme, $secondary }) => ($secondary ? '#fff' : theme.colors.textPrimary)};
   color: ${({ theme, $secondary }) => ($secondary ? theme.colors.textPrimary : '#fff')};
   border: 1px solid ${({ theme, $secondary }) => ($secondary ? theme.colors.borderDefault : theme.colors.textPrimary)};

@@ -30,10 +30,19 @@ describe('Termos (Nexor)', () => {
 
   it('descreve perfis Biteplaner, pagamentos, cancelamento, suspensão e foro competente', () => {
     render(<Termos />, { wrapper: Wrapper });
+
     expect(screen.getAllByText(/clientes, dentistas, parceiros, laboratórios e administradores/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/stripe/i)).toBeInTheDocument();
     expect(screen.getAllByText(/cancelamento/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/suspender ou bloquear/i)).toBeInTheDocument();
     expect(screen.getByText(/foro legalmente competente/i)).toBeInTheDocument();
+  });
+
+  it('explica notificações, leitura, exportação e exclusão de conta', () => {
+    render(<Termos />, { wrapper: Wrapper });
+
+    expect(screen.getByText(/a leitura de notificações pode ser registrada/i)).toBeInTheDocument();
+    expect(screen.getByText(/exportação e pedidos de exclusão/i)).toBeInTheDocument();
+    expect(screen.getByText(/remoção, bloqueio, anonimização ou retenção mínima/i)).toBeInTheDocument();
   });
 });
