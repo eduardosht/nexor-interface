@@ -336,6 +336,7 @@ const TIMELINE_STATUS_LABELS: Record<string, string> = {
   appointment_confirmed: 'Consulta confirmada',
   treatment_required: 'Tratamento prévio necessário',
   awaiting_payment: 'Aguardando pagamento',
+  payment_confirmed: 'Pagamento confirmado',
   awaiting_dentist_forms: 'Formulários do dentista pendentes',
   ineligible_reassessment: 'Inaptidão',
   awaiting_lab_start: 'Aguardando aceite do laboratório',
@@ -423,9 +424,15 @@ const TIMELINE_TRANSITION_DESCRIPTIONS: Record<string, string> = {
   'follow_up->completed': 'Acompanhamento concluído e jornada encerrada.',
 };
 
+function getTimelineStatusKey(status: string) {
+  return status.trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
 function getTimelineStatusLabel(status: string) {
-  if (TIMELINE_STATUS_LABELS[status]) {
-    return TIMELINE_STATUS_LABELS[status];
+  const statusKey = getTimelineStatusKey(status);
+
+  if (TIMELINE_STATUS_LABELS[statusKey]) {
+    return TIMELINE_STATUS_LABELS[statusKey];
   }
 
   return status
@@ -455,7 +462,7 @@ function getTimelineEventDescription(event: DemoTimelineEvent) {
     return TIMELINE_REASON_DESCRIPTIONS[event.reason];
   }
 
-  const transitionKey = `${event.fromStatus ?? 'start'}->${event.toStatus}`;
+  const transitionKey = `${event.fromStatus ? getTimelineStatusKey(event.fromStatus) : 'start'}->${getTimelineStatusKey(event.toStatus)}`;
 
   if (TIMELINE_TRANSITION_DESCRIPTIONS[transitionKey]) {
     return TIMELINE_TRANSITION_DESCRIPTIONS[transitionKey];
@@ -702,6 +709,18 @@ function getPartnerReportRows(partnerOverview: PartnerOverviewResponse | null, r
   ];
 }
 
+function getPartnerReportSheets(partnerOverview: PartnerOverviewResponse | null, referenceDate = new Date()) {
+  const rows = getPartnerReportRows(partnerOverview, referenceDate);
+  const ordersSectionIndex = rows.findIndex((row) => row[0] === 'Pedidos ativos e finalizados');
+  const linksRows = ordersSectionIndex > -1 ? rows.slice(0, Math.max(0, ordersSectionIndex - 1)) : rows;
+  const ordersRows = ordersSectionIndex > -1 ? rows.slice(0, 3).concat(rows.slice(ordersSectionIndex)) : rows.slice(0, 3);
+
+  return [
+    { name: 'Links gerados', rows: linksRows },
+    { name: 'Pedidos', rows: ordersRows },
+  ];
+}
+
 function getColumnName(index: number) {
   let columnName = '';
   let value = index + 1;
@@ -829,7 +848,7 @@ function createZip(files: Array<{ name: string; content: string }>) {
 }
 
 export function buildPartnerReportWorkbook(partnerOverview: PartnerOverviewResponse | null, referenceDate = new Date()) {
-  const worksheetXml = buildWorksheetXml(getPartnerReportRows(partnerOverview, referenceDate));
+  const sheets = getPartnerReportSheets(partnerOverview, referenceDate);
 
   return createZip([
     {
@@ -839,7 +858,12 @@ export function buildPartnerReportWorkbook(partnerOverview: PartnerOverviewRespo
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  ${sheets
+    .map(
+      (_, index) =>
+        `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+    )
+    .join('\n  ')}
 </Types>`,
     },
     {
@@ -853,20 +877,27 @@ export function buildPartnerReportWorkbook(partnerOverview: PartnerOverviewRespo
       name: 'xl/workbook.xml',
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <sheets><sheet name="Relatório" sheetId="1" r:id="rId1"/></sheets>
+  <sheets>${sheets
+    .map((sheet, index) => `<sheet name="${escapeXml(sheet.name)}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`)
+    .join('')}</sheets>
 </workbook>`,
     },
     {
       name: 'xl/_rels/workbook.xml.rels',
       content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  ${sheets
+    .map(
+      (_, index) =>
+        `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`
+    )
+    .join('\n  ')}
 </Relationships>`,
     },
-    {
-      name: 'xl/worksheets/sheet1.xml',
-      content: worksheetXml,
-    },
+    ...sheets.map((sheet, index) => ({
+      name: `xl/worksheets/sheet${index + 1}.xml`,
+      content: buildWorksheetXml(sheet.rows),
+    })),
   ]);
 }
 

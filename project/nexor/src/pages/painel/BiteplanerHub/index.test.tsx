@@ -87,6 +87,42 @@ function getDesktopTable(testId: string) {
   return table;
 }
 
+function getWorkbookEntryText(workbook: Uint8Array, entryName: string) {
+  const decoder = new TextDecoder();
+  let offset = 0;
+
+  while (offset < workbook.length) {
+    const signature =
+      workbook[offset] |
+      (workbook[offset + 1] << 8) |
+      (workbook[offset + 2] << 16) |
+      (workbook[offset + 3] << 24);
+
+    if (signature !== 0x04034b50) {
+      break;
+    }
+
+    const compressedSize =
+      workbook[offset + 18] |
+      (workbook[offset + 19] << 8) |
+      (workbook[offset + 20] << 16) |
+      (workbook[offset + 21] << 24);
+    const nameLength = workbook[offset + 26] | (workbook[offset + 27] << 8);
+    const extraLength = workbook[offset + 28] | (workbook[offset + 29] << 8);
+    const nameStart = offset + 30;
+    const contentStart = nameStart + nameLength + extraLength;
+    const name = decoder.decode(workbook.slice(nameStart, nameStart + nameLength));
+
+    if (name === entryName) {
+      return decoder.decode(workbook.slice(contentStart, contentStart + compressedSize));
+    }
+
+    offset = contentStart + compressedSize;
+  }
+
+  throw new Error(`Workbook entry not found: ${entryName}`);
+}
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason?: unknown) => void;
@@ -724,17 +760,31 @@ describe('BiteplanerHub', () => {
 
     const workbook = buildPartnerReportWorkbook(partnerOverview, new Date('2026-06-12T12:00:00.000Z'));
     const workbookText = new TextDecoder().decode(workbook);
+    const workbookXml = getWorkbookEntryText(workbook, 'xl/workbook.xml');
+    const workbookRelsXml = getWorkbookEntryText(workbook, 'xl/_rels/workbook.xml.rels');
+    const linksSheetXml = getWorkbookEntryText(workbook, 'xl/worksheets/sheet1.xml');
+    const ordersSheetXml = getWorkbookEntryText(workbook, 'xl/worksheets/sheet2.xml');
 
     expect(workbook[0]).toBe(0x50);
     expect(workbook[1]).toBe(0x4b);
     expect(workbookText).toContain('xl/worksheets/sheet1.xml');
+    expect(workbookText).toContain('xl/worksheets/sheet2.xml');
+    expect(workbookXml).toContain('name="Links gerados"');
+    expect(workbookXml).toContain('name="Pedidos"');
+    expect(workbookRelsXml).toContain('Target="worksheets/sheet1.xml"');
+    expect(workbookRelsXml).toContain('Target="worksheets/sheet2.xml"');
     expect(workbookText).toContain('Relatório do parceiro - últimos 12 meses');
     expect(workbookText).toContain('bp-partner-current');
     expect(workbookText).toContain('Ativo');
+    expect(linksSheetXml).toContain('bp-partner-current');
+    expect(linksSheetXml).not.toContain('BP-DEMO-010');
     expect(workbookText).toContain('BP-DEMO-010');
     expect(workbookText).toContain('Pedido ativo');
     expect(workbookText).toContain('BP-DEMO-011');
     expect(workbookText).toContain('Finalizado');
+    expect(ordersSheetXml).toContain('BP-DEMO-010');
+    expect(ordersSheetXml).toContain('BP-DEMO-011');
+    expect(ordersSheetXml).not.toContain('bp-partner-current');
     expect(workbookText).not.toContain('bp-partner-old');
   });
 
@@ -947,6 +997,22 @@ describe('BiteplanerHub', () => {
                 },
                 createdAt: '2026-05-01T10:30:00.000Z',
               },
+              {
+                id: 'event-1-payment',
+                orderId: 'BP-DEMO-201',
+                fromStatus: 'awaiting_payment',
+                toStatus: 'payment confirmed',
+                reason: 'legacy_payment_confirmed',
+                createdAt: '2026-05-01T10:45:00.000Z',
+              },
+              {
+                id: 'event-1-forms',
+                orderId: 'BP-DEMO-201',
+                fromStatus: 'payment confirmed',
+                toStatus: 'awaiting_dentist_forms',
+                reason: 'legacy_status_transition',
+                createdAt: '2026-05-01T11:00:00.000Z',
+              },
             ]
           : [
               {
@@ -993,8 +1059,14 @@ describe('BiteplanerHub', () => {
     expect(within(timelineDialog).queryByText(/^practice_location_selected_by_customer$/i)).not.toBeInTheDocument();
     expect(within(timelineDialog).getByText(/cliente informou que combinou a consulta fora da plataforma/i)).toBeInTheDocument();
     expect(within(timelineDialog).getByText(/cliente cancelou a consulta na clínica anterior com dr\. bruno lima/i)).toBeInTheDocument();
+    expect(within(timelineDialog).getByText(/^Pagamento confirmado$/i)).toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/^Payment Confirmed$/i)).not.toBeInTheDocument();
+    expect(
+      within(timelineDialog).getByText(/status alterado de pagamento confirmado para formul/i)
+    ).toBeInTheDocument();
+    expect(within(timelineDialog).queryByText(/status alterado de payment confirmed/i)).not.toBeInTheDocument();
     const timelineRows = within(timelineDialog).getAllByRole('row');
-    expect(timelineRows[1]).toHaveTextContent(/aguardando agendamento/i);
+    expect(timelineRows.some((row) => /aguardando agendamento/i.test(row.textContent ?? ''))).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: /fechar modal das atualizações/i }));
     fireEvent.click(within(dentistQueueTable).getByRole('button', { name: /aceitar consulta agendada da ordem bp-demo-201/i }));
     expect(await screen.findByRole('dialog', { name: /confirmar ação da ordem/i })).toBeInTheDocument();
