@@ -95,6 +95,63 @@ export const completeProductionRequest = (
   token?: string,
 ) => api.post<unknown>(`/v1/orders/${orderId}/forms/production-request`, { payload }, token);
 
+export interface ProductionScanUploadIntentRequest {
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  checksumSha256?: string | undefined;
+}
+
+export interface ProductionScanUploadIntentResponse {
+  uploadId: string;
+  objectKey: string;
+  uploadUrl: string;
+  requiredHeaders: Record<string, string>;
+  expiresAt: string;
+}
+
+export interface ProductionScanConfirmRequest extends ProductionScanUploadIntentRequest {
+  uploadId: string;
+  objectKey: string;
+}
+
+export interface ProductionScanConfirmResponse {
+  fileRef: NonNullable<ProductionRequestDraft['scan3dFileRef']>;
+}
+
+export const createProductionScanUploadIntent = (
+  orderId: string,
+  payload: ProductionScanUploadIntentRequest,
+  token?: string,
+) =>
+  api.post<ProductionScanUploadIntentResponse>(
+    `/v1/orders/${orderId}/attachments/production-scan3d/upload-intent`,
+    payload,
+    token,
+  );
+
+export const confirmProductionScanUpload = (
+  orderId: string,
+  payload: ProductionScanConfirmRequest,
+  token?: string,
+) =>
+  api.post<ProductionScanConfirmResponse>(
+    `/v1/orders/${orderId}/attachments/production-scan3d/confirm`,
+    payload,
+    token,
+  );
+
+export const createProductionScanDownloadUrl = (
+  orderId: string,
+  fileRefId: string,
+  token?: string,
+) =>
+  api.post<{ downloadUrl: string; expiresAt: string }>(
+    `/v1/orders/${orderId}/attachments/production-scan3d/download-url`,
+    { fileRefId },
+    token,
+  );
+
 export const startLabProduction = (orderId: string, token?: string) =>
   api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/lab-production-started`, {}, token);
 

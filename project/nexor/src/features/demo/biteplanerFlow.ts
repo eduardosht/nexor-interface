@@ -201,10 +201,16 @@ export type BiteplanerPaymentRequestSummary = {
 export type ExternalFileReference = {
   id: string;
   fileName: string;
-  provider: 'simulated-external-storage';
+  provider: 'simulated-external-storage' | 'amazon-s3';
   mimeType: string;
   sizeBytes: number;
   uploadedAt: string;
+  purpose?: 'production_scan3d';
+  objectKey?: string;
+  bucket?: string;
+  checksumSha256?: string;
+  scanStatus?: 'not_scanned' | 'pending_scan' | 'clean' | 'blocked';
+  uploadedByProfileId?: string;
 };
 
 export type ProductionRequestDraft = {

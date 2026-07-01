@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from '../../../lib/api';
 import {
   completeProductionRequest,
+  confirmProductionScanUpload,
+  createProductionScanDownloadUrl,
+  createProductionScanUploadIntent,
   fetchOrderForm,
   fetchOrders,
   returnOrderToDentist,
@@ -91,6 +94,69 @@ describe('orders api module', () => {
       '/v1/orders/order-1/lab-return-for-adjustment',
       { reason: 'Corrigir arquivo' },
       'tok',
+    );
+  });
+
+  it('creates production scan upload intent through API', async () => {
+    apiPost.mockResolvedValueOnce({
+      uploadId: 'upload_123',
+      objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+      uploadUrl: 'https://s3.test/upload',
+      requiredHeaders: { 'Content-Type': 'model/stl' },
+      expiresAt: '2026-07-01T00:10:00.000Z',
+    });
+
+    await createProductionScanUploadIntent(
+      'order-1',
+      {
+        fileName: 'scan.stl',
+        mimeType: 'model/stl',
+        sizeBytes: 2048,
+      },
+      'token',
+    );
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/attachments/production-scan3d/upload-intent',
+      { fileName: 'scan.stl', mimeType: 'model/stl', sizeBytes: 2048 },
+      'token',
+    );
+  });
+
+  it('confirms production scan upload through API', async () => {
+    apiPost.mockResolvedValueOnce({ fileRef: { id: 'upload_123', provider: 'amazon-s3' } });
+
+    await confirmProductionScanUpload(
+      'order-1',
+      {
+        uploadId: 'upload_123',
+        objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+        fileName: 'scan.stl',
+        mimeType: 'model/stl',
+        sizeBytes: 2048,
+      },
+      'token',
+    );
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/attachments/production-scan3d/confirm',
+      expect.objectContaining({ uploadId: 'upload_123' }),
+      'token',
+    );
+  });
+
+  it('requests production scan download url through API', async () => {
+    apiPost.mockResolvedValueOnce({
+      downloadUrl: 'https://s3.test/download',
+      expiresAt: '2026-07-01T00:05:00.000Z',
+    });
+
+    await createProductionScanDownloadUrl('order-1', 'upload_123', 'token');
+
+    expect(apiPost).toHaveBeenCalledWith(
+      '/v1/orders/order-1/attachments/production-scan3d/download-url',
+      { fileRefId: 'upload_123' },
+      'token',
     );
   });
 
