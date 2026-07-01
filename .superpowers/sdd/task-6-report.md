@@ -45,3 +45,9 @@ Implemented Task 6 in the dentist production flow.
 - Added a hard session guard to the dentist production scan upload so missing `orderId` or `token` shows a retry prompt, clears the draft attachment fields, and never calls the upload gateway fallback.
 - Added a focused regression test in `src/pages/painel/ProducaoDentista/index.test.tsx` that verifies a missing session token leaves `scan3dFileRef` unset and keeps completion disabled.
 - Re-ran the mojibake scan after the edits and checked for common broken accent and quote markers without finding any regressions in the touched source files.
+
+## Follow-up Note
+
+- Added a stale-result guard to `src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx` so a removed or replaced scan upload cannot resurrect an old `scan3dFileRef`, and stale `finally` handlers no longer clear the active upload state for a newer request.
+- Added a regression test in `src/pages/painel/ProducaoDentista/index.test.tsx` that holds two uploads in flight, resolves the first late, and confirms the second upload remains the active attachment before completion becomes enabled.
+- Verified the focused Vitest target and `npm run typecheck` after the change.

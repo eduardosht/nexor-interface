@@ -131,6 +131,7 @@ export function ProductionRequestFields({
 }: ProductionRequestFieldsProps) {
   const [uploadErrors, setUploadErrors] = useState<Partial<Record<ExternalUploadPurpose, UploadFieldFile>>>({});
   const [uploadStatus, setUploadStatus] = useState<Partial<Record<ExternalUploadPurpose, 'uploading' | 'uploaded'>>>({});
+  const uploadSequenceRef = useRef(0);
   const purchaseConfiguration = draft.purchaseConfiguration;
   const productionRequestSummaryField = useDebouncedDraftText(draft.productionRequestSummary, (value) =>
     onChange({ productionRequestSummary: value })
@@ -141,12 +142,22 @@ export function ProductionRequestFields({
     dentistRecommendedPurchaseConfiguration &&
     !isSamePurchaseConfiguration(purchaseConfiguration, dentistRecommendedPurchaseConfiguration);
 
+  function invalidateCurrentUpload() {
+    uploadSequenceRef.current += 1;
+    return uploadSequenceRef.current;
+  }
+
+  function isCurrentUpload(uploadSequence: number) {
+    return uploadSequenceRef.current === uploadSequence;
+  }
+
   async function handleProductionFileChange(purpose: ExternalUploadPurpose, files: File[]) {
     const file = files[0];
     const nameKey = 'scan3dFileName';
     const refKey = 'scan3dFileRef';
 
     if (!file) {
+      invalidateCurrentUpload();
       setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
       onChange({ [nameKey]: '', [refKey]: null });
@@ -157,6 +168,7 @@ export function ProductionRequestFields({
     const validation = validateProductionRequestFile(file, purpose);
 
     if (!validation.valid) {
+      invalidateCurrentUpload();
       setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({
         ...current,
@@ -173,6 +185,7 @@ export function ProductionRequestFields({
     }
 
     if (!orderId || !token) {
+      invalidateCurrentUpload();
       setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({
         ...current,
@@ -188,6 +201,7 @@ export function ProductionRequestFields({
       return;
     }
 
+    const uploadSequence = invalidateCurrentUpload();
     onUploadStateChange?.(true);
     setUploadStatus((current) => ({ ...current, [purpose]: 'uploading' }));
     setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
@@ -202,10 +216,16 @@ export function ProductionRequestFields({
         createIntent: createProductionScanUploadIntent,
         confirmUpload: confirmProductionScanUpload,
       });
+      if (!isCurrentUpload(uploadSequence)) {
+        return;
+      }
       setUploadStatus((current) => ({ ...current, [purpose]: 'uploaded' }));
       setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
       onChange({ [nameKey]: file.name, [refKey]: fileRef });
     } catch (error) {
+      if (!isCurrentUpload(uploadSequence)) {
+        return;
+      }
       setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({
         ...current,
@@ -218,7 +238,9 @@ export function ProductionRequestFields({
       }));
       onChange({ [nameKey]: '', [refKey]: null });
     } finally {
-      onUploadStateChange?.(false);
+      if (isCurrentUpload(uploadSequence)) {
+        onUploadStateChange?.(false);
+      }
     }
   }
 

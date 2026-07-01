@@ -20,6 +20,7 @@ const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
 }));
 
 const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
+const PRIVATE_STORAGE_PENDING = 'Enviando arquivo para o armazenamento privado.';
 const SESSION_UPLOAD_ERROR = 'Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.';
 
 function readSourceFiles(root: string): string[] {
@@ -1799,6 +1800,90 @@ describe('ProducaoDentista', () => {
       expect.anything(),
       expect.anything()
     );
+  });
+
+  it('ignores a stale production scan upload after the file is replaced before confirmation', async () => {
+    const user = userEvent.setup();
+    const { onUploadStateChange } = renderProductionRequestFields();
+    const uploadResolvers = new Map<string, () => void>();
+    let uploadIntentCount = 0;
+
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent') {
+        uploadIntentCount += 1;
+        const uploadUrl = `https://private-upload.example/upload-${uploadIntentCount}`;
+
+        return Promise.resolve({
+          uploadId: `upload-${uploadIntentCount}`,
+          objectKey: `orders/BP-DEMO-004/${typeof payload?.fileName === 'string' ? payload.fileName : `scan-${uploadIntentCount}.stl`}`,
+          uploadUrl,
+          requiredHeaders: { 'x-amz-acl': 'private' },
+          expiresAt: '2026-05-08T12:15:00.000Z',
+        });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm') {
+        const fileName = typeof payload?.fileName === 'string' ? payload.fileName : 'scan.stl';
+
+        return Promise.resolve({
+          fileRef: {
+            id: `ref-${fileName}`,
+            fileName,
+            provider: 'amazon-s3',
+            purpose: 'production_scan3d',
+            objectKey: `orders/BP-DEMO-004/${fileName}`,
+            mimeType: 'model/stl',
+            sizeBytes: 4,
+            scanStatus: 'not_scanned',
+            uploadedAt: '2026-05-08T12:00:00.000Z',
+          },
+        });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((requestUrl: RequestInfo | URL) => {
+        const resolvedUrl = String(requestUrl);
+
+        return new Promise<Response>((resolve) => {
+          uploadResolvers.set(resolvedUrl, () => resolve(new Response(null, { status: 200 })));
+        });
+      })
+    );
+
+    const input = screen.getByLabelText(/selecionar escaneamento 3d intraoral/i);
+
+    await user.upload(input, new File(['old'], 'scan-old.stl', { type: 'model/stl' }));
+    await screen.findByText(PRIVATE_STORAGE_PENDING);
+
+    await user.upload(input, new File(['new'], 'scan-new.stl', { type: 'model/stl' }));
+
+    const firstUploadUrl = 'https://private-upload.example/upload-1';
+    const secondUploadUrl = 'https://private-upload.example/upload-2';
+    const firstUpload = uploadResolvers.get(firstUploadUrl);
+    const secondUpload = uploadResolvers.get(secondUploadUrl);
+
+    expect(firstUpload).toBeDefined();
+    expect(secondUpload).toBeDefined();
+
+    await act(async () => {
+      firstUpload?.();
+    });
+
+    await waitFor(() => expect(onUploadStateChange).not.toHaveBeenCalledWith(false));
+    expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+
+    await act(async () => {
+      secondUpload?.();
+    });
+
+    await waitFor(() => expect(screen.getByTestId('scan-ref')).toHaveTextContent('ref-scan-new.stl'));
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
+    expect(onUploadStateChange).toHaveBeenLastCalledWith(false);
   });
 
   it('does not start PDF generation while completing the production request', async () => {
