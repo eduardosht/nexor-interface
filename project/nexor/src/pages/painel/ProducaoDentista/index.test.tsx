@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
@@ -15,6 +16,8 @@ const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
 }));
+
+const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
 
 function readSourceFiles(root: string): string[] {
   return readdirSync(root).flatMap((entry) => {
@@ -102,6 +105,39 @@ function createOrder(overrides: Record<string, unknown> = {}) {
     },
     ...overrides,
   };
+}
+
+function createUploadedScanFileRef(fileName = 'scan.stl') {
+  return {
+    id: `private-scan-${fileName}`,
+    fileName,
+    provider: 'private-s3',
+    mimeType: 'application/octet-stream',
+    sizeBytes: 4,
+    uploadedAt: '2026-05-08T12:00:00.000Z',
+  };
+}
+
+function defaultApiPostMock(url: string, payload?: Record<string, unknown>) {
+  if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent') {
+    return Promise.resolve({
+      uploadId: 'upload-1',
+      objectKey: 'orders/BP-DEMO-004/scan.stl',
+      uploadUrl: 'https://private-upload.example/upload-1',
+      requiredHeaders: { 'x-amz-acl': 'private' },
+      expiresAt: '2026-05-08T12:15:00.000Z',
+    });
+  }
+
+  if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm') {
+    return Promise.resolve({
+      fileRef: createUploadedScanFileRef(
+        typeof payload?.fileName === 'string' ? payload.fileName : 'scan.stl'
+      ),
+    });
+  }
+
+  return Promise.resolve({});
 }
 
 function sharedIntake(overrides: Record<string, unknown> = {}) {
@@ -456,13 +492,19 @@ async function fillProductionRequestUntilLabSelection() {
     target: { value: 'Solicitação preenchida.' },
   });
 
-  fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-    target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-  });
+  await uploadProductionScan();
   fireEvent.click(screen.getByRole('checkbox'));
   await clickWizardNextButton();
 
   fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+}
+
+async function uploadProductionScan(fileName = 'scan.stl', type = 'model/stl') {
+  fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+    target: { files: [new File(['scan'], fileName, { type })] },
+  });
+
+  await screen.findByText(PRIVATE_STORAGE_RECEIPT);
 }
 
 describe('ProducaoDentista', () => {
@@ -470,9 +512,16 @@ describe('ProducaoDentista', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) =>
+      defaultApiPostMock(url, payload)
+    );
     configureApiGet();
     MockPdfWorker.instances = [];
     vi.stubGlobal('Worker', MockPdfWorker);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 200 }))
+    );
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:anamnese-final'),
@@ -1432,13 +1481,31 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
 
     expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
     expect(getWizardNextButton()).toBeDisabled();
   });
+
+  it('waits for private S3 upload confirmation before enabling production request submission', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
+    await clickWizardNextButton();
+    await user.type(
+      await screen.findByLabelText(/solicitação de produção/i),
+      'Produzir Biteplaner com arquivo privado.'
+    );
+
+    const input = screen.getByLabelText(/escaneamento 3d intraoral/i);
+    await user.upload(input, new File(['scan'], 'scan.stl', { type: 'model/stl' }));
+
+    expect(await screen.findByText(PRIVATE_STORAGE_RECEIPT)).toBeInTheDocument();
+    expect(screen.queryByText(/arquivo verificado/i)).not.toBeInTheDocument();
+  }, 15000);
 
   it('requires purchase divergence confirmation before moving from production request to lab selection', async () => {
     configureApiGet({
@@ -1463,9 +1530,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.dcm', { type: 'application/dicom' })] },
-    });
+    await uploadProductionScan('scan.dcm', 'application/dicom');
     fireEvent.click(screen.getByRole('checkbox', { name: /guarda principal do registro clínico/i }));
 
     await act(async () => {
@@ -1494,9 +1559,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/observações para o laboratório/i), {
       target: { value: 'Observações operacionais.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     await waitFor(() => expect(screen.getByText('scan.stl')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('checkbox'));
 
@@ -1576,12 +1639,22 @@ describe('ProducaoDentista', () => {
 
   it('submits the production request successfully when all required fields are filled', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({
-      order: createOrder({
-        status: 'lab_processing',
-        statusLabel: 'Em processo - Laboratório',
-        stage: 'lab_production',
-      }),
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({
+          order: createOrder({
+            status: 'lab_processing',
+            statusLabel: 'Em processo - Laboratório',
+            stage: 'lab_production',
+          }),
+        });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
     });
 
     renderPage();
@@ -1595,9 +1668,7 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 
@@ -1624,8 +1695,8 @@ describe('ProducaoDentista', () => {
             productionRequestSummary: 'Solicitação preenchida.',
             scan3dFileName: 'scan.stl',
             scan3dFileRef: expect.objectContaining({
-              id: expect.stringContaining('ext_scan3d-scan.stl'),
-              provider: 'simulated-external-storage',
+              id: expect.stringContaining('private-scan-scan.stl'),
+              provider: 'private-s3',
             }),
             lgpdConfirmed: true,
             selectedLabId: 'profile-lab-edu',
@@ -1639,8 +1710,17 @@ describe('ProducaoDentista', () => {
 
   it('does not start PDF generation while completing the production request', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1661,8 +1741,17 @@ describe('ProducaoDentista', () => {
 
   it('does not show a PDF snackbar while completing the production request', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1690,8 +1779,17 @@ describe('ProducaoDentista', () => {
 
     vi.stubGlobal('Worker', BrokenPdfWorker);
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1722,9 +1820,7 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 
@@ -1745,9 +1841,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 

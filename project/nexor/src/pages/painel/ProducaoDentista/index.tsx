@@ -649,6 +649,7 @@ export function ProducaoDentista() {
   const [notice, setNotice] = useState('');
   const [pdfNotice, setPdfNotice] = useState('');
   const [pdfError, setPdfError] = useState('');
+  const [productionAttachmentUploading, setProductionAttachmentUploading] = useState(false);
   const [draft, setDraft] = useState<ProductionRequestDraft>(EMPTY_DRAFT);
   const [currentStep, setCurrentStep] = useState(0);
   const [labCep, setLabCep] = useState('01310-100');
@@ -943,6 +944,8 @@ export function ProducaoDentista() {
   const productionRequestCompleted = draft.productionRequestSummary.trim().length > 0;
   const attachmentsCompleted =
     draft.scan3dFileName.trim().length > 0 &&
+    Boolean(draft.scan3dFileRef) &&
+    !productionAttachmentUploading &&
     draft.lgpdConfirmed;
   const purchaseDivergenceRequiresConfirmation = hasPurchaseConfigurationDivergence(
     draft.purchaseConfiguration,
@@ -1474,7 +1477,10 @@ export function ProducaoDentista() {
                 {currentStep === 2 ? (
                   <ProductionRequestFields
                     draft={draft}
+                    orderId={orderId}
+                    token={session?.access_token}
                     dentistRecommendedPurchaseConfiguration={order?.dentistRecommendedPurchaseConfiguration ?? null}
+                    onUploadStateChange={setProductionAttachmentUploading}
                     onChange={updateDraft}
                   />
                 ) : null}
