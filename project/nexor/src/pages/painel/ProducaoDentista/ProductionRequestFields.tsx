@@ -310,6 +310,7 @@ export function ProductionRequestFields({
             void handleProductionFileChange('scan3d', files);
           }}
           onRemoveFile={() => {
+            invalidateCurrentUpload();
             setUploadStatus((current) => ({ ...current, scan3d: undefined }));
             setUploadErrors((current) => ({ ...current, scan3d: undefined }));
             onChange({ scan3dFileName: '', scan3dFileRef: null });
