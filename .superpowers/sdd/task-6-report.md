@@ -29,7 +29,7 @@ Implemented Task 6 in the dentist production flow.
 - `npm run typecheck`
   - Result: passed
 - Mojibake scan on touched files
-  - Markers checked: `Ã`, `Â`, `�`, `â€™`, `â€œ`, `â€`, `â€“`, `â€”`
+  - Markers checked: common mojibake accent and quote sequences
   - Result: no matches
 
 ## Concerns
@@ -39,3 +39,9 @@ Implemented Task 6 in the dentist production flow.
 ## Follow-up Note
 
 - Aligned the production scan confirmation mock in `src/pages/painel/ProducaoDentista/index.test.tsx` with the backend-confirmed S3 shape by using `provider: 'amazon-s3'` and including `purpose: 'production_scan3d'`, `objectKey`, and `scanStatus: 'not_scanned'`.
+
+## Follow-up Note
+
+- Added a hard session guard to the dentist production scan upload so missing `orderId` or `token` shows a retry prompt, clears the draft attachment fields, and never calls the upload gateway fallback.
+- Added a focused regression test in `src/pages/painel/ProducaoDentista/index.test.tsx` that verifies a missing session token leaves `scan3dFileRef` unset and keeps completion disabled.
+- Re-ran the mojibake scan after the edits and checked for common broken accent and quote markers without finding any regressions in the touched source files.

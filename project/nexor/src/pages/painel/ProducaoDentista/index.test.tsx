@@ -2,12 +2,14 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
+import type { ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 import { getWorkflowFormDictionary } from '../components/workflowFormFieldDictionary';
 
@@ -18,6 +20,7 @@ const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
 }));
 
 const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
+const SESSION_UPLOAD_ERROR = 'Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.';
 
 function readSourceFiles(root: string): string[] {
   return readdirSync(root).flatMap((entry) => {
@@ -65,6 +68,7 @@ vi.mock('react-leaflet', () => ({
 }));
 
 import { ProducaoDentista } from './index';
+import { ProductionRequestFields } from './ProductionRequestFields';
 
 class MockPdfWorker {
   static instances: MockPdfWorker[] = [];
@@ -342,6 +346,64 @@ function renderPage(path = '/painel/dentista/producao/BP-DEMO-004') {
       </ThemeProvider>
     </MemoryRouter>
   );
+}
+
+function createProductionRequestDraft(overrides: Partial<ProductionRequestDraft> = {}): ProductionRequestDraft {
+  return {
+    anamnesisSummary: 'Resumo clínico completo.',
+    anamnesisDownloaded: false,
+    productionRequestSummary: 'Solicitação preenchida.',
+    labNotes: '',
+    scan3dFileName: '',
+    scan3dFileRef: null,
+    lgpdConfirmed: true,
+    selectedLabId: 'profile-lab-edu',
+    purchaseConfiguration: null,
+    purchaseDivergenceConfirmed: false,
+    ...overrides,
+  };
+}
+
+function renderProductionRequestFields(
+  options: {
+    orderId?: string | undefined;
+    token?: string | undefined;
+  } = {}
+) {
+  const resolvedOrderId = Object.prototype.hasOwnProperty.call(options, 'orderId') ? options.orderId : 'BP-DEMO-004';
+  const resolvedToken = Object.prototype.hasOwnProperty.call(options, 'token') ? options.token : 'tok';
+  const onChange = vi.fn();
+  const onUploadStateChange = vi.fn();
+
+  function Harness() {
+    const [draft, setDraft] = useState<ProductionRequestDraft>(createProductionRequestDraft());
+
+    return (
+      <ThemeProvider theme={lightTheme}>
+        <ProductionRequestFields
+          draft={draft}
+          orderId={resolvedOrderId}
+          token={resolvedToken}
+          dentistRecommendedPurchaseConfiguration={null}
+          onChange={(patch) => {
+            setDraft((current) => ({ ...current, ...patch }));
+            onChange(patch);
+          }}
+          onUploadStateChange={onUploadStateChange}
+        />
+        <button type="button" disabled={!draft.scan3dFileRef || !draft.selectedLabId || !draft.lgpdConfirmed}>
+          Finalizar
+        </button>
+        <output data-testid="scan-ref">{draft.scan3dFileRef?.id ?? 'none'}</output>
+      </ThemeProvider>
+    );
+  }
+
+  render(
+    <Harness />
+  );
+
+  return { onChange, onUploadStateChange };
 }
 
 async function goToDentistComplement() {
@@ -1713,6 +1775,29 @@ describe('ProducaoDentista', () => {
         },
         'tok'
       )
+    );
+  });
+
+  it('blocks production scan upload when the session token is missing', async () => {
+    const { onUploadStateChange } = renderProductionRequestFields({ token: undefined });
+
+    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
+    });
+
+    expect(await screen.findByText(SESSION_UPLOAD_ERROR)).toBeInTheDocument();
+    expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+    expect(onUploadStateChange).toHaveBeenCalledWith(false);
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm',
+      expect.anything(),
+      expect.anything()
     );
   });
 

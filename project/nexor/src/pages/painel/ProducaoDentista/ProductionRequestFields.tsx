@@ -18,6 +18,7 @@ type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
 const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
 const PRIVATE_STORAGE_PENDING = 'Enviando arquivo para o armazenamento privado.';
 const DEFAULT_UPLOAD_ERROR = 'Não foi possível anexar o arquivo.';
+const SESSION_UPLOAD_ERROR = 'Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.';
 
 function fileListFromName(fileName: string, fileId?: string | null, sizeLabel?: string): UploadFieldFile[] {
   if (!fileName.trim()) {
@@ -164,6 +165,22 @@ export function ProductionRequestFields({
           name: file.name,
           status: 'error',
           errorMessage: validation.message,
+        },
+      }));
+      onChange({ [nameKey]: '', [refKey]: null });
+      onUploadStateChange?.(false);
+      return;
+    }
+
+    if (!orderId || !token) {
+      setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
+      setUploadErrors((current) => ({
+        ...current,
+        [purpose]: {
+          id: `error-${purpose}-${file.name}-${file.lastModified}`,
+          name: file.name,
+          status: 'error',
+          errorMessage: SESSION_UPLOAD_ERROR,
         },
       }));
       onChange({ [nameKey]: '', [refKey]: null });
