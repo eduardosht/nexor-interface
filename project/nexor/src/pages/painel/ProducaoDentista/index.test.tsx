@@ -108,12 +108,17 @@ function createOrder(overrides: Record<string, unknown> = {}) {
 }
 
 function createUploadedScanFileRef(fileName = 'scan.stl') {
+  const objectKey = `orders/BP-DEMO-004/${fileName}`;
+
   return {
-    id: `private-scan-${fileName}`,
+    id: 'upload-1',
     fileName,
-    provider: 'private-s3',
+    provider: 'amazon-s3',
+    purpose: 'production_scan3d',
+    objectKey,
     mimeType: 'application/octet-stream',
     sizeBytes: 4,
+    scanStatus: 'not_scanned',
     uploadedAt: '2026-05-08T12:00:00.000Z',
   };
 }
@@ -1695,8 +1700,11 @@ describe('ProducaoDentista', () => {
             productionRequestSummary: 'Solicitação preenchida.',
             scan3dFileName: 'scan.stl',
             scan3dFileRef: expect.objectContaining({
-              id: expect.stringContaining('private-scan-scan.stl'),
-              provider: 'private-s3',
+              id: 'upload-1',
+              provider: 'amazon-s3',
+              purpose: 'production_scan3d',
+              objectKey: 'orders/BP-DEMO-004/scan.stl',
+              scanStatus: 'not_scanned',
             }),
             lgpdConfirmed: true,
             selectedLabId: 'profile-lab-edu',

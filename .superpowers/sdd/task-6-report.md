@@ -35,3 +35,7 @@ Implemented Task 6 in the dentist production flow.
 ## Concerns
 
 - The required Vitest file still contains 2 failing assertions that appear unrelated to Task 6 and were not touched by this upload integration work.
+
+## Follow-up Note
+
+- Aligned the production scan confirmation mock in `src/pages/painel/ProducaoDentista/index.test.tsx` with the backend-confirmed S3 shape by using `provider: 'amazon-s3'` and including `purpose: 'production_scan3d'`, `objectKey`, and `scanStatus: 'not_scanned'`.
