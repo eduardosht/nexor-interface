@@ -128,7 +128,7 @@ export function uploadProductionRequestFile(
   }
 
   if (!input.orderId || !input.token || !input.createIntent || !input.confirmUpload) {
-    return createSimulatedFileReference(input.file, input.purpose);
+    return Promise.resolve(createSimulatedFileReference(input.file, input.purpose));
   }
 
   const mimeType = input.file.type || 'application/octet-stream';
