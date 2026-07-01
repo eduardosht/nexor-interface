@@ -487,6 +487,50 @@ export function orderHandlers(server: Server) {
     )
   ));
 
+  server.post('/v1/orders/:orderId/attachments/production-scan3d/upload-intent', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+    const fileName = typeof body.fileName === 'string' ? body.fileName : 'scan.stl';
+    const uploadId = `upload_demo_${Date.now()}`;
+
+    return new Response(200, {}, {
+      uploadId,
+      objectKey: `biteplaner/production-scans/${request.params.orderId}/${uploadId}/${fileName}`,
+      uploadUrl: `https://s3.demo.local/${uploadId}`,
+      requiredHeaders: {
+        'Content-Type': typeof body.mimeType === 'string' ? body.mimeType : 'application/octet-stream'
+      },
+      expiresAt: new Date(Date.now() + 600000).toISOString()
+    });
+  }));
+
+  server.post('/v1/orders/:orderId/attachments/production-scan3d/confirm', withDemoErrors((_schema, request) => {
+    const body = parseBody(request);
+
+    return new Response(200, {}, {
+      fileRef: {
+        id: typeof body.uploadId === 'string' ? body.uploadId : 'upload_demo',
+        provider: 'amazon-s3',
+        purpose: 'production_scan3d',
+        objectKey:
+          typeof body.objectKey === 'string'
+            ? body.objectKey
+            : `biteplaner/production-scans/${request.params.orderId}/upload_demo/scan.stl`,
+        fileName: typeof body.fileName === 'string' ? body.fileName : 'scan.stl',
+        mimeType: typeof body.mimeType === 'string' ? body.mimeType : 'application/octet-stream',
+        sizeBytes: typeof body.sizeBytes === 'number' ? body.sizeBytes : 1,
+        scanStatus: 'not_scanned',
+        uploadedAt: new Date().toISOString()
+      }
+    });
+  }));
+
+  server.post('/v1/orders/:orderId/attachments/production-scan3d/download-url', withDemoErrors((_schema, _request) =>
+    new Response(200, {}, {
+      downloadUrl: 'https://s3.demo.local/download/scan.stl',
+      expiresAt: new Date(Date.now() + 300000).toISOString()
+    })
+  ));
+
   server.post('/v1/orders/:orderId/production-request/draft', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 
