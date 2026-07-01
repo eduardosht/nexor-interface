@@ -10,12 +10,13 @@ describe('externalUploadGateway', () => {
     const scan = new File(['scan'], 'scan.stl', { type: 'model/stl', lastModified: 0 });
 
     expect(validateProductionRequestFile(scan, 'scan3d')).toEqual({ valid: true, message: null });
-    await expect(
-      uploadProductionRequestFile({
-        file: scan,
-        purpose: 'scan3d',
-      })
-    ).resolves.toEqual(
+    const fallbackUpload = uploadProductionRequestFile({
+      file: scan,
+      purpose: 'scan3d',
+    });
+
+    expect(fallbackUpload).toBeInstanceOf(Promise);
+    await expect(fallbackUpload).resolves.toEqual(
       expect.objectContaining({
         id: 'ext_scan3d-scan.stl-4-0',
         fileName: 'scan.stl',
@@ -31,12 +32,13 @@ describe('externalUploadGateway', () => {
 
     expect(PRODUCTION_UPLOAD_POLICIES.scan3d.accept).toContain('.pdf');
     expect(validateProductionRequestFile(scanPdf, 'scan3d')).toEqual({ valid: true, message: null });
-    await expect(
-      uploadProductionRequestFile({
-        file: scanPdf,
-        purpose: 'scan3d',
-      })
-    ).resolves.toEqual(
+    const fallbackUpload = uploadProductionRequestFile({
+      file: scanPdf,
+      purpose: 'scan3d',
+    });
+
+    expect(fallbackUpload).toBeInstanceOf(Promise);
+    await expect(fallbackUpload).resolves.toEqual(
       expect.objectContaining({
         id: 'ext_scan3d-escaneamento.pdf-3-0',
         fileName: 'escaneamento.pdf',

@@ -31,7 +31,7 @@ Completed.
 
 - `npx vitest run src/features/biteplaner/orders/orders.api.test.ts src/features/demo/externalUploadGateway.test.ts`
 - `npm run typecheck`
-- Searched touched files for mojibake markers (`Ã`, `Â`, smart-quote corruption patterns, replacement characters) and found no matches after edits.
+- Searched touched files for mojibake markers and found no matches after edits.
 
 ## Constraints checked
 
@@ -52,3 +52,14 @@ Completed.
 ## Concerns
 
 - The current UI still uses the legacy synchronous upload path. I preserved that path intentionally so Task 6 can wire the new async upload flow without breaking the current screen in the meantime.
+
+## Review follow-up
+
+- Updated `uploadProductionRequestFile(input)` so every object-input path now returns `Promise<ExternalFileReference>`, including the simulated fallback branch.
+- Left the legacy `(file, purpose)` overload synchronous for the existing UI call site.
+- Updated the gateway tests to assert the object-input fallback with `await`/`resolves` instead of relying on synchronous return behavior.
+
+## Follow-up fix notes
+
+- Tightened `uploadProductionRequestFile(input)` so the object-input fallback path is explicitly Promise-based, matching the advertised `Promise<ExternalFileReference>` contract while preserving the legacy synchronous `(file, purpose)` overload.
+- Updated the object-input tests to assert the fallback returns a Promise before awaiting it, and kept the rejection path async.
