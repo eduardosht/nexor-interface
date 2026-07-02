@@ -46,9 +46,17 @@ Frontend files:
 - Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/project/nexor/src/mocks/handlers/orders.ts`
   Mirage upload confirmation returns confirmed keys, not temporary keys.
 
-Operational docs:
-- Create `C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/docs/operations/s3-production-scan-lifecycle.md`
-  Document the S3 Lifecycle rule and why only `tmp/` is expired.
+Nexor Docs files:
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/09-changelogs/README.md`
+  Add a changelog entry describing the S3 private upload flow, deferred upload, `tmp/confirmed` separation, and lifecycle cleanup.
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/10-roadmap/README.md`
+  Remove "Integração com Amazon S3" from roadmap because it is no longer pending after implementation.
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/README.md`
+  Add a link to the detailed Amazon S3 integration document.
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracoes.md`
+  Cross-link from the Amazon S3 overview to the detailed technical flow document.
+- Create `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracao-amazon-s3.md`
+  Document the relationship between Nexor APIs and Amazon S3 in detail, including functions, endpoints, temporary objects, confirmed objects, failure handling, lifecycle rule, and what makes an object orphaned.
 
 ---
 
@@ -534,77 +542,226 @@ git commit -m "test: align production scan mocks with confirmed s3 keys"
 
 ---
 
-### Task 5: Document and Configure S3 Lifecycle for Tmp Prefix
+### Task 5: Update Nexor Docs with S3 Integration, Changelog, and Roadmap
 
 **Files:**
-- Create `C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/docs/operations/s3-production-scan-lifecycle.md`
-- Optionally modify backend `.env.example` comments if the prefix naming needs clarification.
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/09-changelogs/README.md`
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/10-roadmap/README.md`
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/README.md`
+- Modify `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracoes.md`
+- Create `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracao-amazon-s3.md`
 
 **Interfaces:**
 - Consumes `tmp/` and `confirmed/` prefixes from Tasks 2 and 3.
-- Produces operational documentation for the AWS Console lifecycle rule.
+- Produces product-visible changelog, roadmap cleanup, and a detailed system document explaining the Amazon S3 external API integration.
 
-- [ ] **Step 1: Create operations doc**
+- [ ] **Step 1: Add changelog entry**
 
-Create the doc with:
+In `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/09-changelogs/README.md`, add a new section above `## 29/06/2026`.
+
+Use the implementation date for the heading. If executing on 2026-07-02, use:
 
 ```md
-# S3 Production Scan Lifecycle
+## 02/07/2026
 
-Production scan uploads use two prefixes:
+### Nexor Interface
 
-- `biteplaner/production-scans/tmp/`: temporary objects uploaded by browser PUT before the production request is durably linked.
-- `biteplaner/production-scans/confirmed/`: objects copied by the backend after upload confirmation and referenced by `scan3dFileRef.objectKey`.
+| Tipo | Mudança |
+| --- | --- |
+| <span className="badge badge--success">feature</span> | Integração do fluxo de anexo do dentista com armazenamento privado no Amazon S3, mantendo o arquivo local até a finalização da solicitação de produção. |
+| <span className="badge badge--warning">melhoria</span> | Troca ou remoção de arquivo no formulário de produção deixa de gerar uploads desnecessários no S3 antes do envio final. |
 
-An object is orphaned when it exists in S3 but no saved production request points to it through `scan3dFileRef.objectKey`.
+### Nexor Backend
 
-Configure S3 Lifecycle only for:
+| Tipo | Mudança |
+| --- | --- |
+| <span className="badge badge--success">feature</span> | Backend passa a gerar URLs pré-assinadas para upload/download privado de escaneamentos 3D no Amazon S3. |
+| <span className="badge badge--warning">melhoria</span> | Separação dos uploads em prefixos temporários e confirmados no S3, permitindo expurgo seguro de objetos órfãos por lifecycle. |
+```
 
-`biteplaner/production-scans/tmp/`
+- [ ] **Step 2: Remove S3 from roadmap**
 
-Recommended rule:
+In `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/10-roadmap/README.md`, remove this row from `## Prioridade Crítica`:
+
+```md
+| Integração com Amazon S3 | Implementar armazenamento privado para arquivos do Biteplaner, especialmente scans 3D e anexos operacionais, com acesso seguro, URLs temporárias e separação entre metadados e arquivos. |
+```
+
+Do not remove unrelated roadmap items.
+
+- [ ] **Step 3: Create detailed Amazon S3 integration doc**
+
+Create `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracao-amazon-s3.md` with this structure and level of detail:
+
+```md
+---
+titulo: Integração Amazon S3
+status: oficial
+tipo: técnico
+publico: Engenharia, Operação, Segurança, Produto
+classificacao: interno
+responsavel: Tech Lead
+ultima_atualizacao: 2026-07-02
+---
+
+# Integração Amazon S3
+
+## Objetivo
+
+Explicar como o Nexor/Biteplaner usa o Amazon S3 para armazenar anexos privados de produção, especialmente o escaneamento 3D enviado pelo dentista no fluxo de solicitação de produção.
+
+## Resumo da arquitetura
+
+- O frontend nunca recebe credenciais AWS.
+- O backend é a autoridade para autorização, geração de object keys, URLs pré-assinadas, confirmação de upload, validação de referência e geração de URL temporária de download.
+- O browser faz PUT direto no S3 usando uma URL pré-assinada.
+- O formulário final salva apenas uma referência privada (`scan3dFileRef`) e nunca salva URL pública, URL assinada ou segredo AWS.
+- Objetos começam em `tmp/` e só viram referência válida depois que o backend copia para `confirmed/`.
+
+## Prefixos usados no S3
+
+| Prefixo | Função | Pode ser apagado automaticamente? |
+| --- | --- | --- |
+| `biteplaner/production-scans/tmp/` | Objetos enviados pelo navegador antes de vínculo durável com a solicitação de produção. | Sim, por lifecycle após 7 dias. |
+| `biteplaner/production-scans/confirmed/` | Objetos confirmados pelo backend e referenciados por `scan3dFileRef.objectKey`. | Não pela regra de órfãos temporários. |
+
+## O que é o parent do arquivo
+
+O S3 não conhece pedido, formulário ou usuário. Para o S3, o arquivo é apenas um objeto identificado por uma key.
+
+No Nexor, o parent funcional do arquivo é a solicitação de produção ligada à ordem Biteplaner. A ligação acontece quando o payload salvo contém:
+
+```ts
+scan3dFileRef.objectKey
+```
+
+Se o objeto existe no S3, mas nenhuma solicitação de produção salva aponta para aquele `objectKey`, ele é considerado órfão.
+
+## Fluxo de upload no formulário do dentista
+
+1. O dentista seleciona um arquivo em `/painel/dentista/producao/:orderId`.
+2. `ProductionRequestFields` valida extensão, MIME type e tamanho com `validateProductionRequestFile`.
+3. O arquivo fica apenas em estado local na página via `onScan3dFileChange`.
+4. Se o dentista remove ou troca o arquivo, o estado local é limpo ou substituído; nada é enviado ao S3 nesse momento.
+5. Ao clicar em Finalizar, `handleComplete` chama `ensureProductionScanFileRef`.
+6. Se já existe `draft.scan3dFileRef`, o fluxo reutiliza essa referência e não faz novo upload.
+7. Se não existe referência confirmada, `ensureProductionScanFileRef` chama `uploadProductionRequestFile`.
+
+## Chamadas de frontend
+
+O helper `uploadProductionRequestFile` executa:
+
+1. `createProductionScanUploadIntent(orderId, payload, token)`
+2. `fetch(uploadUrl, { method: 'PUT', headers: requiredHeaders, body: file })`
+3. `confirmProductionScanUpload(orderId, payload, token)`
+
+Depois disso, retorna `fileRef` para o formulário final.
+
+## Endpoints do backend
+
+| Endpoint | Função |
+| --- | --- |
+| `POST /v1/orders/:orderId/attachments/production-scan3d/upload-intent` | Valida ator, ordem, política de arquivo e cria URL pré-assinada de PUT para `tmp/`. |
+| `POST /v1/orders/:orderId/attachments/production-scan3d/confirm` | Confirma objeto temporário, copia para `confirmed/`, valida existência e retorna `scan3dFileRef`. |
+| `POST /v1/orders/:orderId/attachments/production-scan3d/download-url` | Gera URL pré-assinada temporária de download para usuários autorizados. |
+
+## Funções backend envolvidas
+
+| Função/Classe | Responsabilidade |
+| --- | --- |
+| `ProductionAttachmentService.createUploadIntent` | Cria `uploadId`, monta object key em `tmp/`, gera URL pré-assinada e registra evento de intenção. |
+| `S3ObjectStorageGateway.createPresignedPutObjectUrl` | Usa AWS SDK para gerar URL temporária de PUT. |
+| `ProductionAttachmentService.confirmUpload` | Verifica se houve intenção prévia, valida prefixo `tmp/`, checa existência do objeto, copia para `confirmed/`, verifica a cópia e retorna `fileRef`. |
+| `S3ObjectStorageGateway.objectExists` | Usa `HeadObject` para confirmar existência do objeto. |
+| `S3ObjectStorageGateway.copyObject` | Usa `CopyObject` para promover objeto de `tmp/` para `confirmed/`. |
+| `OrderService` | Valida que o `scan3dFileRef` salvo no formulário corresponde a um upload confirmado no timeline da ordem. |
+| `ProductionRequestApplication` | Rejeita refs simuladas, refs públicas e object keys fora de `confirmed/{orderId}/`. |
+
+## Estados de falha
+
+| Momento da falha | Resultado esperado |
+| --- | --- |
+| Falha antes ou durante PUT para S3 | Formulário não é salvo. Arquivo permanece selecionado localmente para retry. |
+| PUT conclui, mas `confirm` falha | Formulário não é salvo. Retry pode gerar novo upload. Objeto temporário antigo será limpo por lifecycle. |
+| `confirm` conclui, mas salvar formulário falha | `scan3dFileRef` confirmado fica no estado da tela. Retry reutiliza a referência e não reenvia o arquivo. |
+| Usuário abandona após upload temporário | Objeto em `tmp/` expira pela regra lifecycle. |
+
+## Lifecycle no S3
+
+Configurar uma regra somente para:
+
+```text
+biteplaner/production-scans/tmp/
+```
+
+Configuração recomendada:
 
 - Rule name: `expire-biteplaner-production-scan-tmp`
 - Scope: prefix `biteplaner/production-scans/tmp/`
 - Action: expire current versions of objects
 - Days after object creation: `7`
-- Also enable: delete incomplete multipart uploads after `1` day
+- Also enable: delete incomplete multipart uploads after `1` day.
 
-Do not expire `biteplaner/production-scans/confirmed/` with this rule.
+Nunca aplicar essa regra em:
+
+```text
+biteplaner/production-scans/confirmed/
 ```
 
-- [ ] **Step 2: Add AWS Console checklist**
+## Passo a passo no Console da AWS
 
-Add:
+1. Abrir o S3 Console.
+2. Selecionar o bucket privado de uploads.
+3. Abrir a aba Management.
+4. Entrar em Lifecycle rules.
+5. Criar uma rule.
+6. Definir o prefixo `biteplaner/production-scans/tmp/`.
+7. Marcar expiração de current versions após 7 dias.
+8. Marcar remoção de incomplete multipart uploads após 1 dia.
+9. Revisar se `confirmed/` não está incluído.
+10. Criar a rule.
+
+## Segurança e LGPD
+
+- Bucket privado.
+- Block Public Access ligado.
+- URLs pré-assinadas curtas.
+- Sem persistência de URL assinada.
+- Sem promessa de antivírus ou arquivo verificado.
+- Logs/auditoria registram fingerprints e metadados necessários, não URLs assinadas.
+- Laboratório acessa download temporário mediado pelo backend.
+```
+
+- [ ] **Step 4: Link the detailed S3 doc from technology docs**
+
+In `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/README.md`, add:
 
 ```md
-1. Open S3 Console.
-2. Select the private upload bucket.
-3. Open Management.
-4. Choose Lifecycle rules.
-5. Create rule.
-6. Set prefix to `biteplaner/production-scans/tmp/`.
-7. Select Expire current versions of objects after 7 days.
-8. Select Delete incomplete multipart uploads after 1 day.
-9. Review that `confirmed/` is not included.
-10. Create rule.
+- [Integração Amazon S3](integracao-amazon-s3.md)
 ```
 
-- [ ] **Step 3: Run doc encoding scan**
+In `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracoes.md`, under `## Amazon S3`, add a short pointer:
+
+```md
+Para o fluxo técnico detalhado de upload, confirmação, prefixos `tmp/` e `confirmed/`, lifecycle e relação entre APIs Nexor e S3, consulte [Integração Amazon S3](integracao-amazon-s3.md).
+```
+
+- [ ] **Step 5: Run docs validation and encoding scan**
 
 Run:
 
 ```powershell
-rg -n 'Ã|Â|�|â' docs/operations/s3-production-scan-lifecycle.md
+npm run build
+rg -n 'Ã|Â|�|â' docs/03-tecnologia/integracao-amazon-s3.md docs/09-changelogs/README.md docs/10-roadmap/README.md docs/03-tecnologia/README.md docs/03-tecnologia/integracoes.md
 ```
 
-Expected: no matches.
+Expected: Docusaurus build passes. Encoding scan may show existing mojibake in unchanged lines; fix any new mojibake introduced by this task and preserve Portuguese accents as real UTF-8.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit nexor-docs changes**
 
 ```powershell
-git add docs/operations/s3-production-scan-lifecycle.md
-git commit -m "docs: document s3 production scan lifecycle"
+git add docs/09-changelogs/README.md docs/10-roadmap/README.md docs/03-tecnologia/README.md docs/03-tecnologia/integracoes.md docs/03-tecnologia/integracao-amazon-s3.md
+git commit -m "docs: document amazon s3 production scan integration"
 ```
 
 ---
@@ -654,12 +811,22 @@ Expected: PASS.
 - [ ] **Step 5: Scan touched text files for mojibake**
 
 ```powershell
-rg -n 'Ã|Â|�|â' C:/Users/Pichau/Projetos/NexorProjects/nexor-backend/project/api/src C:/Users/Pichau/Projetos/NexorProjects/nexor-backend/project/api/tests C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/project/nexor/src C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/docs/operations
+rg -n 'Ã|Â|�|â' C:/Users/Pichau/Projetos/NexorProjects/nexor-backend/project/api/src C:/Users/Pichau/Projetos/NexorProjects/nexor-backend/project/api/tests C:/Users/Pichau/Projetos/NexorProjects/nexor-interface/project/nexor/src C:/Users/Pichau/Projetos/NexorProjects/nexor-docs/docs/03-tecnologia/integracao-amazon-s3.md
 ```
 
 Expected: no new matches in touched files. If existing unrelated matches appear, list them separately and do not change unrelated files.
 
-- [ ] **Step 6: Commit any verification fixes**
+- [ ] **Step 6: Run nexor-docs build after documentation changes**
+
+From `C:/Users/Pichau/Projetos/NexorProjects/nexor-docs`, run:
+
+```powershell
+npm run build
+```
+
+Expected: PASS.
+
+- [ ] **Step 7: Commit any verification fixes**
 
 If verification required fixes:
 
@@ -674,6 +841,6 @@ If no fixes are required, do not create an empty commit.
 
 ## Self-Review Notes
 
-- Spec coverage: tmp upload, confirmed finalization, backend rejection of tmp refs, frontend/mocks alignment, lifecycle documentation, and verification are covered.
+- Spec coverage: tmp upload, confirmed finalization, backend rejection of tmp refs, frontend/mocks alignment, nexor-docs changelog, roadmap cleanup, detailed S3 integration documentation, lifecycle documentation, and verification are covered.
 - Placeholder scan: no TBD/TODO placeholders remain.
 - Type consistency: `copyObject`, `deleteObject`, `tmp`, `confirmed`, `scan3dFileRef.objectKey`, and `objectKeyFingerprint` are used consistently across tasks.
