@@ -15,6 +15,8 @@ import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   completeProductionRequest,
+  confirmProductionScanUpload,
+  createProductionScanUploadIntent,
   fetchOrder,
   fetchOrderForm,
   fetchOrderForms,
@@ -30,6 +32,7 @@ import {
   type DemoWorkflowForm,
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
+import { uploadProductionRequestFile } from '../../../features/demo/externalUploadGateway';
 import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
 import type {
   DemoLicensedLabSelection,
@@ -650,6 +653,7 @@ export function ProducaoDentista() {
   const [pdfNotice, setPdfNotice] = useState('');
   const [pdfError, setPdfError] = useState('');
   const [productionAttachmentUploading, setProductionAttachmentUploading] = useState(false);
+  const [selectedProductionScanFile, setSelectedProductionScanFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<ProductionRequestDraft>(EMPTY_DRAFT);
   const [currentStep, setCurrentStep] = useState(0);
   const [labCep, setLabCep] = useState('01310-100');
@@ -942,9 +946,10 @@ export function ProducaoDentista() {
   const dentistReviewCompleted = hasDentistComplement(intakeForm) && dentistPendingRequiredFields.length === 0;
   const anamnesisCompleted = dentistReviewCompleted;
   const productionRequestCompleted = draft.productionRequestSummary.trim().length > 0;
+  const productionScanSelected = Boolean(draft.scan3dFileRef) || selectedProductionScanFile !== null;
   const attachmentsCompleted =
     draft.scan3dFileName.trim().length > 0 &&
-    Boolean(draft.scan3dFileRef) &&
+    productionScanSelected &&
     !productionAttachmentUploading &&
     draft.lgpdConfirmed;
   const purchaseDivergenceRequiresConfirmation = hasPurchaseConfigurationDivergence(
@@ -1183,6 +1188,38 @@ export function ProducaoDentista() {
     );
   }
 
+  async function ensureProductionScanFileRef(): Promise<NonNullable<ProductionRequestDraft['scan3dFileRef']>> {
+    if (draftRef.current.scan3dFileRef) {
+      return draftRef.current.scan3dFileRef;
+    }
+
+    if (!selectedProductionScanFile) {
+      throw new Error('Anexe o escaneamento 3D intraoral antes de finalizar.');
+    }
+
+    if (!orderId || !token) {
+      throw new Error('Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.');
+    }
+
+    setProductionAttachmentUploading(true);
+
+    try {
+      const fileRef = await uploadProductionRequestFile({
+        file: selectedProductionScanFile,
+        purpose: 'scan3d',
+        orderId,
+        token,
+        createIntent: createProductionScanUploadIntent,
+        confirmUpload: confirmProductionScanUpload,
+      });
+      updateDraft({ scan3dFileName: selectedProductionScanFile.name, scan3dFileRef: fileRef });
+      setSelectedProductionScanFile(null);
+      return fileRef;
+    } finally {
+      setProductionAttachmentUploading(false);
+    }
+  }
+
   async function handleComplete() {
     if (!token || !orderId || !canComplete) {
       return;
@@ -1194,8 +1231,15 @@ export function ProducaoDentista() {
     setPdfError('');
 
     try {
+      const scan3dFileRef = await ensureProductionScanFileRef();
+      const productionDraft = {
+        ...draftRef.current,
+        scan3dFileName: draftRef.current.scan3dFileName || scan3dFileRef.fileName,
+        scan3dFileRef,
+      };
+
       await registerClinicalDecision(orderId, 'eligible', token);
-      await completeProductionRequest(orderId, draft, token);
+      await completeProductionRequest(orderId, productionDraft, token);
       await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orderForms(orderId) });
       await queryClient.invalidateQueries({ queryKey: biteplanerQueryKeys.orders('dentist', queryOwnerId) });
       navigate('/painel/biteplaner?mode=dentist', {
@@ -1204,8 +1248,8 @@ export function ProducaoDentista() {
           notice: `Solicitação de produção da ordem ${getOrderDisplayId(order)} concluída e enviada ao laboratório.`,
         },
       });
-    } catch {
-      setActionError('Não foi possível concluir o envio ao laboratório.');
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Não foi possível concluir o envio ao laboratório.');
     } finally {
       setCompleting(false);
     }
@@ -1477,10 +1521,9 @@ export function ProducaoDentista() {
                 {currentStep === 2 ? (
                   <ProductionRequestFields
                     draft={draft}
-                    orderId={orderId}
-                    token={session?.access_token}
                     dentistRecommendedPurchaseConfiguration={order?.dentistRecommendedPurchaseConfiguration ?? null}
                     onUploadStateChange={setProductionAttachmentUploading}
+                    onScan3dFileChange={setSelectedProductionScanFile}
                     onChange={updateDraft}
                   />
                 ) : null}

@@ -2,12 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { CheckboxField, Field, UploadField, type UploadFieldFile } from '@nexor/design-system';
 import type { BiteplanerPurchaseConfiguration, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
 import {
-  confirmProductionScanUpload,
-  createProductionScanUploadIntent,
-} from '../../../features/biteplaner/orders/orders.api';
-import {
   PRODUCTION_UPLOAD_POLICIES,
-  uploadProductionRequestFile,
   validateProductionRequestFile,
   type ExternalUploadPurpose,
 } from '../../../features/demo/externalUploadGateway';
@@ -16,9 +11,7 @@ import * as S from './styles';
 
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
 const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
-const PRIVATE_STORAGE_PENDING = 'Enviando arquivo para o armazenamento privado.';
-const DEFAULT_UPLOAD_ERROR = 'Não foi possível anexar o arquivo.';
-const SESSION_UPLOAD_ERROR = 'Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.';
+const LOCAL_FILE_READY = 'Arquivo selecionado para envio ao finalizar.';
 
 function fileListFromName(fileName: string, fileId?: string | null, sizeLabel?: string): UploadFieldFile[] {
   if (!fileName.trim()) {
@@ -37,11 +30,10 @@ function fileListFromName(fileName: string, fileId?: string | null, sizeLabel?: 
 
 type ProductionRequestFieldsProps = {
   draft: ProductionRequestDraft;
-  orderId?: string | undefined;
-  token?: string | undefined;
   dentistRecommendedPurchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
   onChange: (patch: Partial<ProductionRequestDraft>) => void;
   onUploadStateChange?: (uploading: boolean) => void;
+  onScan3dFileChange?: (file: File | null) => void;
 };
 
 function useDebouncedDraftText(value: string, onCommit: (value: string) => void, delayMs = 300) {
@@ -123,14 +115,12 @@ const isSamePurchaseConfiguration = (
 
 export function ProductionRequestFields({
   draft,
-  orderId,
-  token,
   dentistRecommendedPurchaseConfiguration,
   onChange,
   onUploadStateChange,
+  onScan3dFileChange,
 }: ProductionRequestFieldsProps) {
   const [uploadErrors, setUploadErrors] = useState<Partial<Record<ExternalUploadPurpose, UploadFieldFile>>>({});
-  const [uploadStatus, setUploadStatus] = useState<Partial<Record<ExternalUploadPurpose, 'uploading' | 'uploaded'>>>({});
   const uploadSequenceRef = useRef(0);
   const purchaseConfiguration = draft.purchaseConfiguration;
   const productionRequestSummaryField = useDebouncedDraftText(draft.productionRequestSummary, (value) =>
@@ -147,19 +137,15 @@ export function ProductionRequestFields({
     return uploadSequenceRef.current;
   }
 
-  function isCurrentUpload(uploadSequence: number) {
-    return uploadSequenceRef.current === uploadSequence;
-  }
-
-  async function handleProductionFileChange(purpose: ExternalUploadPurpose, files: File[]) {
+  function handleProductionFileChange(purpose: ExternalUploadPurpose, files: File[]) {
     const file = files[0];
     const nameKey = 'scan3dFileName';
     const refKey = 'scan3dFileRef';
 
     if (!file) {
       invalidateCurrentUpload();
-      setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
+      onScan3dFileChange?.(null);
       onChange({ [nameKey]: '', [refKey]: null });
       onUploadStateChange?.(false);
       return;
@@ -169,7 +155,6 @@ export function ProductionRequestFields({
 
     if (!validation.valid) {
       invalidateCurrentUpload();
-      setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
       setUploadErrors((current) => ({
         ...current,
         [purpose]: {
@@ -179,69 +164,17 @@ export function ProductionRequestFields({
           errorMessage: validation.message,
         },
       }));
+      onScan3dFileChange?.(null);
       onChange({ [nameKey]: '', [refKey]: null });
       onUploadStateChange?.(false);
       return;
     }
 
-    if (!orderId || !token) {
-      invalidateCurrentUpload();
-      setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
-      setUploadErrors((current) => ({
-        ...current,
-        [purpose]: {
-          id: `error-${purpose}-${file.name}-${file.lastModified}`,
-          name: file.name,
-          status: 'error',
-          errorMessage: SESSION_UPLOAD_ERROR,
-        },
-      }));
-      onChange({ [nameKey]: '', [refKey]: null });
-      onUploadStateChange?.(false);
-      return;
-    }
-
-    const uploadSequence = invalidateCurrentUpload();
-    onUploadStateChange?.(true);
-    setUploadStatus((current) => ({ ...current, [purpose]: 'uploading' }));
+    invalidateCurrentUpload();
     setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
-    onChange({ [nameKey]: '', [refKey]: null });
-
-    try {
-      const fileRef = await uploadProductionRequestFile({
-        file,
-        purpose,
-        orderId,
-        token,
-        createIntent: createProductionScanUploadIntent,
-        confirmUpload: confirmProductionScanUpload,
-      });
-      if (!isCurrentUpload(uploadSequence)) {
-        return;
-      }
-      setUploadStatus((current) => ({ ...current, [purpose]: 'uploaded' }));
-      setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
-      onChange({ [nameKey]: file.name, [refKey]: fileRef });
-    } catch (error) {
-      if (!isCurrentUpload(uploadSequence)) {
-        return;
-      }
-      setUploadStatus((current) => ({ ...current, [purpose]: undefined }));
-      setUploadErrors((current) => ({
-        ...current,
-        [purpose]: {
-          id: `error-${purpose}-${file.name}-${file.lastModified}`,
-          name: file.name,
-          status: 'error',
-          errorMessage: error instanceof Error ? error.message : DEFAULT_UPLOAD_ERROR,
-        },
-      }));
-      onChange({ [nameKey]: '', [refKey]: null });
-    } finally {
-      if (isCurrentUpload(uploadSequence)) {
-        onUploadStateChange?.(false);
-      }
-    }
+    onScan3dFileChange?.(file);
+    onChange({ [nameKey]: file.name, [refKey]: null });
+    onUploadStateChange?.(false);
   }
 
   return (
@@ -303,23 +236,24 @@ export function ProductionRequestFields({
             uploadErrors.scan3d
               ? [uploadErrors.scan3d]
               : draft.scan3dFileName.trim()
-                ? fileListFromName(draft.scan3dFileName, draft.scan3dFileRef?.id, PRIVATE_STORAGE_RECEIPT)
+                ? fileListFromName(
+                  draft.scan3dFileName,
+                  draft.scan3dFileRef?.id,
+                  draft.scan3dFileRef ? PRIVATE_STORAGE_RECEIPT : LOCAL_FILE_READY
+                )
                 : []
           }
           onFilesChange={(files) => {
-            void handleProductionFileChange('scan3d', files);
+            handleProductionFileChange('scan3d', files);
           }}
           onRemoveFile={() => {
             invalidateCurrentUpload();
-            setUploadStatus((current) => ({ ...current, scan3d: undefined }));
             setUploadErrors((current) => ({ ...current, scan3d: undefined }));
+            onScan3dFileChange?.(null);
             onChange({ scan3dFileName: '', scan3dFileRef: null });
             onUploadStateChange?.(false);
           }}
         />
-        {uploadStatus.scan3d === 'uploading' ? (
-          <S.AttachmentStatusMessage role="status">{PRIVATE_STORAGE_PENDING}</S.AttachmentStatusMessage>
-        ) : null}
       </S.AttachmentGrid>
 
       <CheckboxField

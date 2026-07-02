@@ -19,9 +19,8 @@ const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockApiPost: vi.fn(),
 }));
 
+const LOCAL_FILE_READY = 'Arquivo selecionado para envio ao finalizar.';
 const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
-const PRIVATE_STORAGE_PENDING = 'Enviando arquivo para o armazenamento privado.';
-const SESSION_UPLOAD_ERROR = 'Não foi possível anexar o arquivo. Atualize a sessão e tente novamente.';
 
 function readSourceFiles(root: string): string[] {
   return readdirSync(root).flatMap((entry) => {
@@ -365,37 +364,39 @@ function createProductionRequestDraft(overrides: Partial<ProductionRequestDraft>
   };
 }
 
-function renderProductionRequestFields(
-  options: {
-    orderId?: string | undefined;
-    token?: string | undefined;
-  } = {}
-) {
-  const resolvedOrderId = Object.prototype.hasOwnProperty.call(options, 'orderId') ? options.orderId : 'BP-DEMO-004';
-  const resolvedToken = Object.prototype.hasOwnProperty.call(options, 'token') ? options.token : 'tok';
+function renderProductionRequestFields() {
   const onChange = vi.fn();
   const onUploadStateChange = vi.fn();
 
   function Harness() {
     const [draft, setDraft] = useState<ProductionRequestDraft>(createProductionRequestDraft());
+    const [selectedScanFile, setSelectedScanFile] = useState<File | null>(null);
 
     return (
       <ThemeProvider theme={lightTheme}>
         <ProductionRequestFields
           draft={draft}
-          orderId={resolvedOrderId}
-          token={resolvedToken}
           dentistRecommendedPurchaseConfiguration={null}
           onChange={(patch) => {
             setDraft((current) => ({ ...current, ...patch }));
             onChange(patch);
           }}
           onUploadStateChange={onUploadStateChange}
+          onScan3dFileChange={setSelectedScanFile}
         />
-        <button type="button" disabled={!draft.scan3dFileRef || !draft.selectedLabId || !draft.lgpdConfirmed}>
+        <button
+          type="button"
+          disabled={
+            (!draft.scan3dFileRef && !selectedScanFile) ||
+            !draft.scan3dFileName ||
+            !draft.selectedLabId ||
+            !draft.lgpdConfirmed
+          }
+        >
           Finalizar
         </button>
         <output data-testid="scan-ref">{draft.scan3dFileRef?.id ?? 'none'}</output>
+        <output data-testid="scan-name">{draft.scan3dFileName || 'none'}</output>
       </ThemeProvider>
     );
   }
@@ -572,7 +573,7 @@ async function uploadProductionScan(fileName = 'scan.stl', type = 'model/stl') {
     target: { files: [new File(['scan'], fileName, { type })] },
   });
 
-  await screen.findByText(PRIVATE_STORAGE_RECEIPT);
+  await screen.findByText(LOCAL_FILE_READY);
 }
 
 describe('ProducaoDentista', () => {
@@ -1555,7 +1556,7 @@ describe('ProducaoDentista', () => {
     expect(getWizardNextButton()).toBeDisabled();
   });
 
-  it('waits for private S3 upload confirmation before enabling production request submission', async () => {
+  it('keeps the intraoral scan selected locally before production request submission', async () => {
     const user = userEvent.setup();
 
     renderPage();
@@ -1571,8 +1572,14 @@ describe('ProducaoDentista', () => {
     const input = screen.getByLabelText(/escaneamento 3d intraoral/i);
     await user.upload(input, new File(['scan'], 'scan.stl', { type: 'model/stl' }));
 
-    expect(await screen.findByText(PRIVATE_STORAGE_RECEIPT)).toBeInTheDocument();
+    expect(await screen.findByText(LOCAL_FILE_READY)).toBeInTheDocument();
+    expect(screen.queryByText(PRIVATE_STORAGE_RECEIPT)).not.toBeInTheDocument();
     expect(screen.queryByText(/arquivo verificado/i)).not.toBeInTheDocument();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
   }, 15000);
 
   it('requires purchase divergence confirmation before moving from production request to lab selection', async () => {
@@ -1779,17 +1786,18 @@ describe('ProducaoDentista', () => {
     );
   });
 
-  it('blocks production scan upload when the session token is missing', async () => {
-    const { onUploadStateChange } = renderProductionRequestFields({ token: undefined });
+  it('keeps the selected production scan local until the form is submitted', async () => {
+    const { onUploadStateChange } = renderProductionRequestFields();
 
     fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
       target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
     });
 
-    expect(await screen.findByText(SESSION_UPLOAD_ERROR)).toBeInTheDocument();
+    expect(await screen.findByText(LOCAL_FILE_READY)).toBeInTheDocument();
+    expect(screen.getByTestId('scan-name')).toHaveTextContent('scan.stl');
     expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
-    expect(onUploadStateChange).toHaveBeenCalledWith(false);
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
+    expect(onUploadStateChange).not.toHaveBeenCalledWith(true);
     expect(mockApiPost).not.toHaveBeenCalledWith(
       '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
       expect.anything(),
@@ -1802,10 +1810,8 @@ describe('ProducaoDentista', () => {
     );
   });
 
-  it('ignores a stale production scan upload after the file is replaced before confirmation', async () => {
+  it('uploads only the latest selected production scan when completing the form', async () => {
     const user = userEvent.setup();
-    const { onUploadStateChange } = renderProductionRequestFields();
-    const uploadResolvers = new Map<string, () => void>();
     let uploadIntentCount = 0;
 
     mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
@@ -1843,47 +1849,136 @@ describe('ProducaoDentista', () => {
       return defaultApiPostMock(url, payload);
     });
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((requestUrl: RequestInfo | URL) => {
-        const resolvedUrl = String(requestUrl);
-
-        return new Promise<Response>((resolve) => {
-          uploadResolvers.set(resolvedUrl, () => resolve(new Response(null, { status: 200 })));
-        });
-      })
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 200 })
     );
+    vi.stubGlobal('fetch', putFile);
+
+    renderPage();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
+    await clickWizardNextButton();
+
+    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
+      target: { value: 'Solicitação preenchida.' },
+    });
 
     const input = screen.getByLabelText(/selecionar escaneamento 3d intraoral/i);
-
     await user.upload(input, new File(['old'], 'scan-old.stl', { type: 'model/stl' }));
-    await screen.findByText(PRIVATE_STORAGE_PENDING);
+    await screen.findByText(LOCAL_FILE_READY);
 
     await user.upload(input, new File(['new'], 'scan-new.stl', { type: 'model/stl' }));
+    await screen.findByText('scan-new.stl');
 
-    const firstUploadUrl = 'https://private-upload.example/upload-1';
-    const secondUploadUrl = 'https://private-upload.example/upload-2';
-    const firstUpload = uploadResolvers.get(firstUploadUrl);
-    const secondUpload = uploadResolvers.get(secondUploadUrl);
+    expect(putFile).not.toHaveBeenCalled();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
 
-    expect(firstUpload).toBeDefined();
-    expect(secondUpload).toBeDefined();
+    fireEvent.click(screen.getByRole('checkbox'));
+    await clickWizardNextButton();
+    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
-    await act(async () => {
-      firstUpload?.();
+    await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
+    expect(putFile.mock.calls[0]?.[0]).toBe('https://private-upload.example/upload-1');
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.objectContaining({ fileName: 'scan-new.stl' }),
+      'tok'
+    );
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        {
+          payload: expect.objectContaining({
+            scan3dFileName: 'scan-new.stl',
+            scan3dFileRef: expect.objectContaining({
+              id: 'ref-scan-new.stl',
+              objectKey: 'orders/BP-DEMO-004/scan-new.stl',
+            }),
+          }),
+        },
+        'tok'
+      )
+    );
+  });
+
+  it('does not save the production request when the S3 upload fails', async () => {
+    configureApiGet();
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 500 })
+    );
+    vi.stubGlobal('fetch', putFile);
+
+    renderPage();
+
+    await fillProductionRequestUntilLabSelection();
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/não foi possível enviar o arquivo para o armazenamento privado/i)).toBeInTheDocument();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/clinical-evaluation',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/forms/production-request',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('reuses a confirmed production scan when final form submission fails and is retried', async () => {
+    configureApiGet();
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 200 })
+    );
+    vi.stubGlobal('fetch', putFile);
+    let productionFormAttempts = 0;
+
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        productionFormAttempts += 1;
+
+        if (productionFormAttempts === 1) {
+          return Promise.reject(new Error('temporary backend failure'));
+        }
+
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
     });
 
-    await waitFor(() => expect(onUploadStateChange).not.toHaveBeenCalledWith(false));
-    expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+    renderPage();
 
-    await act(async () => {
-      secondUpload?.();
-    });
+    await fillProductionRequestUntilLabSelection();
+    const concludeButton = screen.getByRole('button', { name: /finalizar/i });
 
-    await waitFor(() => expect(screen.getByTestId('scan-ref')).toHaveTextContent('ref-scan-new.stl'));
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
-    expect(onUploadStateChange).toHaveBeenLastCalledWith(false);
+    fireEvent.click(concludeButton);
+
+    await waitFor(() => expect(productionFormAttempts).toBe(1));
+    expect(await screen.findByText(/temporary backend failure/i)).toBeInTheDocument();
+    expect(putFile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() => expect(productionFormAttempts).toBe(2));
+    expect(putFile).toHaveBeenCalledTimes(1);
+    expect(
+      mockApiPost.mock.calls.filter(([url]) => url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent')
+    ).toHaveLength(1);
+    expect(
+      mockApiPost.mock.calls.filter(([url]) => url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm')
+    ).toHaveLength(1);
   });
 
   it('does not start PDF generation while completing the production request', async () => {
