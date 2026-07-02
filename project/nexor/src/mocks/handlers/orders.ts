@@ -494,7 +494,7 @@ export function orderHandlers(server: Server) {
 
     return new Response(200, {}, {
       uploadId,
-      objectKey: `biteplaner/production-scans/${request.params.orderId}/${uploadId}/${fileName}`,
+      objectKey: `biteplaner/production-scans/tmp/${request.params.orderId}/${uploadId}/${fileName}`,
       uploadUrl: `https://s3.demo.local/${uploadId}`,
       requiredHeaders: {
         'Content-Type': typeof body.mimeType === 'string' ? body.mimeType : 'application/octet-stream'
@@ -513,8 +513,8 @@ export function orderHandlers(server: Server) {
         purpose: 'production_scan3d',
         objectKey:
           typeof body.objectKey === 'string'
-            ? body.objectKey
-            : `biteplaner/production-scans/${request.params.orderId}/upload_demo/scan.stl`,
+            ? body.objectKey.replace('/tmp/', '/confirmed/')
+            : `biteplaner/production-scans/confirmed/${request.params.orderId}/upload_demo/scan.stl`,
         fileName: typeof body.fileName === 'string' ? body.fileName : 'scan.stl',
         mimeType: typeof body.mimeType === 'string' ? body.mimeType : 'application/octet-stream',
         sizeBytes: typeof body.sizeBytes === 'number' ? body.sizeBytes : 1,

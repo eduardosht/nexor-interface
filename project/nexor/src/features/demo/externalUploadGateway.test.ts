@@ -67,7 +67,7 @@ describe('externalUploadGateway', () => {
   it('uploads scan files through presigned S3 flow when order and token are provided', async () => {
     const createIntent = vi.fn(async () => ({
       uploadId: 'upload_123',
-      objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+      objectKey: 'biteplaner/production-scans/tmp/order-1/upload_123/scan.stl',
       uploadUrl: 'https://s3.test/upload',
       requiredHeaders: { 'Content-Type': 'model/stl' },
       expiresAt: '2026-07-01T00:10:00.000Z',
@@ -78,7 +78,7 @@ describe('externalUploadGateway', () => {
         fileName: 'scan.stl',
         provider: 'amazon-s3' as const,
         purpose: 'production_scan3d' as const,
-        objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+        objectKey: 'biteplaner/production-scans/confirmed/order-1/upload_123/scan.stl',
         mimeType: 'model/stl',
         sizeBytes: 4,
         scanStatus: 'not_scanned' as const,

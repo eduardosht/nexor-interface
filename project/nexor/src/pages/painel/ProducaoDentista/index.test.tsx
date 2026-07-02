@@ -112,7 +112,7 @@ function createOrder(overrides: Record<string, unknown> = {}) {
 }
 
 function createUploadedScanFileRef(fileName = 'scan.stl') {
-  const objectKey = `orders/BP-DEMO-004/${fileName}`;
+  const objectKey = `biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/${fileName}`;
 
   return {
     id: 'upload-1',
@@ -131,7 +131,7 @@ function defaultApiPostMock(url: string, payload?: Record<string, unknown>) {
   if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent') {
     return Promise.resolve({
       uploadId: 'upload-1',
-      objectKey: 'orders/BP-DEMO-004/scan.stl',
+      objectKey: 'biteplaner/production-scans/tmp/BP-DEMO-004/upload-1/scan.stl',
       uploadUrl: 'https://private-upload.example/upload-1',
       requiredHeaders: { 'x-amz-acl': 'private' },
       expiresAt: '2026-05-08T12:15:00.000Z',
@@ -1773,7 +1773,7 @@ describe('ProducaoDentista', () => {
               id: 'upload-1',
               provider: 'amazon-s3',
               purpose: 'production_scan3d',
-              objectKey: 'orders/BP-DEMO-004/scan.stl',
+              objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/scan.stl',
               scanStatus: 'not_scanned',
             }),
             lgpdConfirmed: true,
@@ -1821,7 +1821,7 @@ describe('ProducaoDentista', () => {
 
         return Promise.resolve({
           uploadId: `upload-${uploadIntentCount}`,
-          objectKey: `orders/BP-DEMO-004/${typeof payload?.fileName === 'string' ? payload.fileName : `scan-${uploadIntentCount}.stl`}`,
+          objectKey: `biteplaner/production-scans/tmp/BP-DEMO-004/upload-${uploadIntentCount}/${typeof payload?.fileName === 'string' ? payload.fileName : `scan-${uploadIntentCount}.stl`}`,
           uploadUrl,
           requiredHeaders: { 'x-amz-acl': 'private' },
           expiresAt: '2026-05-08T12:15:00.000Z',
@@ -1837,7 +1837,7 @@ describe('ProducaoDentista', () => {
             fileName,
             provider: 'amazon-s3',
             purpose: 'production_scan3d',
-            objectKey: `orders/BP-DEMO-004/${fileName}`,
+            objectKey: `biteplaner/production-scans/confirmed/BP-DEMO-004/upload-${uploadIntentCount}/${fileName}`,
             mimeType: 'model/stl',
             sizeBytes: 4,
             scanStatus: 'not_scanned',
@@ -1897,7 +1897,7 @@ describe('ProducaoDentista', () => {
             scan3dFileName: 'scan-new.stl',
             scan3dFileRef: expect.objectContaining({
               id: 'ref-scan-new.stl',
-              objectKey: 'orders/BP-DEMO-004/scan-new.stl',
+              objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/scan-new.stl',
             }),
           }),
         },

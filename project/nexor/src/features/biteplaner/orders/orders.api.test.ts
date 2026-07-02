@@ -100,7 +100,7 @@ describe('orders api module', () => {
   it('creates production scan upload intent through API', async () => {
     apiPost.mockResolvedValueOnce({
       uploadId: 'upload_123',
-      objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+      objectKey: 'biteplaner/production-scans/tmp/order-1/upload_123/scan.stl',
       uploadUrl: 'https://s3.test/upload',
       requiredHeaders: { 'Content-Type': 'model/stl' },
       expiresAt: '2026-07-01T00:10:00.000Z',
@@ -130,7 +130,7 @@ describe('orders api module', () => {
       'order-1',
       {
         uploadId: 'upload_123',
-        objectKey: 'biteplaner/production-scans/order-1/upload_123/scan.stl',
+        objectKey: 'biteplaner/production-scans/tmp/order-1/upload_123/scan.stl',
         fileName: 'scan.stl',
         mimeType: 'model/stl',
         sizeBytes: 2048,
