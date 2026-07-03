@@ -559,7 +559,7 @@ export function PartnerReferralPage() {
               <S.ReferralInviteActionLink
                 href={whatsappHref}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 $variant="whatsapp"
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}

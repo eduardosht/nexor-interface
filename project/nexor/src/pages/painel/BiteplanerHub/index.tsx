@@ -3467,7 +3467,7 @@ export function BiteplanerHub() {
                   <S.DocumentationIconLink
                     href={selectedAdaptationWhatsAppUrl}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     title="Abrir WhatsApp"
                     aria-label="Abrir WhatsApp para agendar retorno"
                   >
@@ -3734,7 +3734,7 @@ export function BiteplanerHub() {
                 <Mail size={14} aria-hidden />
                 Enviar por e-mail
               </S.ActionHref>
-              <S.ActionHref href={whatsappHref} target="_blank" rel="noreferrer" $variant="whatsapp">
+              <S.ActionHref href={whatsappHref} target="_blank" rel="noopener noreferrer" $variant="whatsapp">
                 <MessageCircle size={14} aria-hidden />
                 Enviar por WhatsApp
               </S.ActionHref>

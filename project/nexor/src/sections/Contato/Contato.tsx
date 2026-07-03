@@ -100,7 +100,7 @@ export function Contato() {
               </S.ContactLink>
             )}
             {contactWhatsapp && (
-              <S.ContactLink href={contactWhatsapp} data-testid="contact-whatsapp" rel="noreferrer">
+              <S.ContactLink href={contactWhatsapp} data-testid="contact-whatsapp" rel="noopener noreferrer">
                 <S.IconBox>💬</S.IconBox>
                 WhatsApp
               </S.ContactLink>
