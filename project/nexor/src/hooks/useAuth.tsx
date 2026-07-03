@@ -10,7 +10,11 @@ import {
 } from 'react';
 import { env } from '../config/env';
 import { api, ApiError } from '../lib/api';
-import { clearPendingRegistration, loadPendingRegistration } from '../lib/pending-registration';
+import {
+  clearPendingRegistration,
+  loadLegacyPendingRegistrationForMigration,
+  loadPendingRegistration,
+} from '../lib/pending-registration';
 import { supabase } from '../lib/supabase';
 import {
   clearActiveDemoPersona,
@@ -128,31 +132,35 @@ async function fetchBackendUser(accessToken: string): Promise<BackendUser> {
 }
 
 async function reconcilePendingRegistration(session: AuthSession) {
-  const pending = loadPendingRegistration();
+  const legacyPending = loadLegacyPendingRegistrationForMigration();
+  const pending = legacyPending ?? loadPendingRegistration();
 
   if (!pending) {
     return;
   }
 
   if (pending.email.toLowerCase() !== (session.user.email ?? '').toLowerCase()) {
+    clearPendingRegistration();
     return;
   }
 
-  try {
-    await api.post(
-      '/v1/auth/profile',
-      {
-        fullName: pending.fullName,
-        role: pending.role,
-        documentType: pending.documentType,
-        documentNumber: pending.documentNumber,
-        companyName: pending.companyName
-      },
-      session.access_token
-    );
-  } catch (error) {
-    if (!(error instanceof ApiError) || (error.status !== 403 && error.status !== 409)) {
-      throw error;
+  if (legacyPending) {
+    try {
+      await api.post(
+        '/v1/auth/profile',
+        {
+          fullName: legacyPending.fullName,
+          role: legacyPending.role,
+          documentType: legacyPending.documentType,
+          documentNumber: legacyPending.documentNumber,
+          companyName: legacyPending.companyName
+        },
+        session.access_token
+      );
+    } catch (error) {
+      if (!(error instanceof ApiError) || (error.status !== 403 && error.status !== 409)) {
+        throw error;
+      }
     }
   }
 
