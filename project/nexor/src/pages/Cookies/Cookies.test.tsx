@@ -35,6 +35,7 @@ describe('Cookies (Nexor)', () => {
     expect(screen.getAllByText(/sessionStorage/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/nexor-cookie-consent/i)).toBeInTheDocument();
     expect(screen.getByText(/nexor_pending_registration/i)).toBeInTheDocument();
+    expect(screen.getByText(/não armazena CPF ou CNPJ/i)).toBeInTheDocument();
     expect(screen.getByText(/nexor_partner_invite/i)).toBeInTheDocument();
     expect(screen.getByText(/30 dias/i)).toBeInTheDocument();
   });

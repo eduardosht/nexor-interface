@@ -54,7 +54,7 @@ export function Cookies() {
           <LegalSectionTitle>3. Inventário técnico atual</LegalSectionTitle>
           <LegalList>
             <li>localStorage <code>nexor-cookie-consent</code>: registra versão, data e escolhas de cookies necessários, preferências e analytics.</li>
-            <li>sessionStorage <code>nexor_pending_registration</code>: preserva dados mínimos do cadastro pendente somente durante a sessão do navegador.</li>
+            <li>sessionStorage <code>nexor_pending_registration</code>: preserva estado temporário mínimo do cadastro pendente, como e-mail, nome, papel e consentimentos; não armazena CPF ou CNPJ.</li>
             <li>Cookie <code>nexor_partner_invite</code>: preserva token de convite de parceiro por até 30 dias para concluir cadastro vinculado.</li>
             <li>localStorage de interface: pode guardar preferências operacionais, como estado de menu, persona de demonstração ou continuidade de cadastro.</li>
             <li>Tokens e dados de autenticação podem ser mantidos por provedores de autenticação e infraestrutura para manter sessão, segurança e auditoria.</li>
