@@ -49,13 +49,20 @@ function renderPage(initialEntry = '/painel/confirmacao-compra') {
 }
 
 describe('Compra', () => {
+  let openSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
-  it('renders the purchase confirmation screen without Stripe checkout copy', async () => {
+  afterEach(() => {
+    openSpy.mockRestore();
+  });
+
+  it('renders the purchase confirmation screen with hosted Pagar.me checkout copy', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
@@ -75,14 +82,14 @@ describe('Compra', () => {
     await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
 
     expect(screen.getByRole('heading', { name: /confirmação de compra/i })).toBeInTheDocument();
-    expect(screen.getByText(/enviaremos o link de pagamento por e-mail e celular/i)).toBeInTheDocument();
-    expect(screen.getByText((_content, element) => element?.textContent === 'R$ 1.370,00/unidade')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /enviar ordem de compra/i })).toHaveAttribute('data-tone', 'success');
-    expect(screen.queryByText(/stripe/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /concluir pagamento/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/checkout seguro do Pagar\.me/i)).toBeInTheDocument();
+    expect(screen.getByText((_content, element) => element?.textContent?.replace(/\s/g, ' ') === 'R$ 1.370,00/unidade')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ir para pagamento pagar\.me/i })).toHaveAttribute('data-tone', 'success');
+    expect(screen.queryByText(/enviaremos o link de pagamento por e-mail e celular/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /enviar ordem de compra/i })).not.toBeInTheDocument();
   });
 
-  it('confirms the purchase internally and keeps the customer waiting for the payment link', async () => {
+  it('creates a hosted Pagar.me checkout link and opens it in the current tab', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
         {
@@ -96,42 +103,22 @@ describe('Compra', () => {
         },
       ],
     });
-    mockApiPost.mockResolvedValueOnce({
-      order: {
-        id: '11111111-1111-4111-8111-111111111003',
-        displayId: 'BP-DEMO-003',
-        status: 'awaiting_payment',
-        statusLabel: 'Aguardando pagamento',
-        stage: 'awaiting_payment',
-        created_at: '2026-05-01T10:00:00.000Z',
-        customer: { full_name: 'João Demo', email: 'joao@nexor.dev', phone: null },
-        purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 2 },
-        paymentRequest: { status: 'pending_admin_message' },
-      },
-    });
+    mockApiPost.mockResolvedValueOnce({ url: 'https://checkout.pagar.me/test-link' });
 
     renderPage();
 
     await waitFor(() => expect(screen.getByText('BP-DEMO-003')).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText(/quantidade/i), { target: { value: '2' } });
-    fireEvent.click(screen.getByRole('button', { name: /enviar ordem de compra/i }));
+    fireEvent.click(screen.getByRole('button', { name: /ir para pagamento pagar\.me/i }));
 
     await waitFor(() =>
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/orders/11111111-1111-4111-8111-111111111003/purchase-confirmation',
+        '/v1/orders/11111111-1111-4111-8111-111111111003/payment-link',
         { model: 'impacto', color: 'preto', quantity: 2 },
         'tok'
       )
     );
-    const confirmationNotice = screen
-      .getAllByRole('status')
-      .find((element) => /compra confirmada/i.test(element.textContent ?? ''));
-
-    expect(confirmationNotice).toHaveTextContent(/compra confirmada/i);
-    expect(confirmationNotice).toHaveTextContent(/nossa equipe vai enviar o link de pagamento/i);
-    expect(screen.getByText(/ordem de compra enviada/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/em breve você receberá o link de pagamento por e-mail e celular/i).length).toBeGreaterThan(0);
-    expect(screen.queryByRole('button', { name: /enviar ordem de compra/i })).not.toBeInTheDocument();
+    expect(openSpy).toHaveBeenCalledWith('https://checkout.pagar.me/test-link', '_self', 'noopener');
   });
 
   it('prefills Biteplaner configuration from dentist recommendation and recalculates total by quantity', async () => {

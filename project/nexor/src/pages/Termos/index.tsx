@@ -75,7 +75,7 @@ export function Termos() {
         <LegalSection>
           <LegalSectionTitle>5. Pagamentos, planos e cancelamento</LegalSectionTitle>
           <LegalBody>
-            Pagamentos, cobranças, assinaturas, reembolsos e registros transacionais podem ser processados pela Stripe ou por
+            Pagamentos, cobranças, assinaturas, reembolsos e registros transacionais podem ser processados pelo Pagar.me ou por
             outro provedor contratado. Condições comerciais, preços, prazos, elegibilidade, cancelamento e reembolso devem ser
             apresentados no fluxo de contratação, pedido, proposta ou documento comercial correspondente.
           </LegalBody>

@@ -28,6 +28,7 @@ export interface BackendUser {
   id: string;
   authUserId: string;
   email?: string;
+  phone?: string | null;
   profileId?: string;
   roles: string[];
   productRoles?: Array<{

@@ -60,6 +60,10 @@ import {
 import {
   fetchAccessOptions,
 } from '../../../features/biteplaner/licensing/licensing.api';
+import {
+  getFinancialOnboarding,
+  type FinancialRecipientStatusRecord,
+} from '../../../features/financialOnboarding/pagarmeRecipient.api';
 import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
 import {
   PartnerDashboardChart,
@@ -372,7 +376,7 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   clinical_eligibility_confirmed:
     'Dentista declarou o cliente apto para seguir com o Biteplaner.',
   payment_confirmed: 'Pagamento confirmado pela operação.',
-  stripe_checkout_completed: 'Pagamento confirmado pelo checkout.',
+  pagarme_payment_completed: 'Pagamento confirmado pelo Pagar.me.',
   production_request_created: 'Dentista criou a solicitação de produção.',
   product_received: 'Produto recebido pelo dentista ou local de atendimento.',
   adaptation_completed: 'Adaptação concluída e ordem finalizada.',
@@ -1310,6 +1314,7 @@ export function BiteplanerHub() {
   const [productionRequestLoading, setProductionRequestLoading] = useState(false);
   const [productionRequestError, setProductionRequestError] = useState('');
   const [partnerDashboardPeriod, setPartnerDashboardPeriod] = useState<PartnerDashboardPeriod>('month');
+  const [financialRecipients, setFinancialRecipients] = useState<FinancialRecipientStatusRecord[]>([]);
 
   const requestedMode = searchParams.get('mode');
   const fallbackMode = demoPersona ? PERSONA_MODE[demoPersona] : null;
@@ -1527,6 +1532,35 @@ export function BiteplanerHub() {
       active = false;
     };
     }, [selectedMode, token, dentistDateRange, labDateRange]);
+
+  useEffect(() => {
+    if (!token || (selectedMode !== 'dentist' && selectedMode !== 'lab')) {
+      setFinancialRecipients([]);
+      return;
+    }
+
+    let active = true;
+
+    async function loadFinancialOnboarding() {
+      try {
+        const response = await getFinancialOnboarding(token);
+
+        if (active) {
+          setFinancialRecipients(Array.isArray(response.recipients) ? response.recipients : []);
+        }
+      } catch {
+        if (active) {
+          setFinancialRecipients([]);
+        }
+      }
+    }
+
+    void loadFinancialOnboarding();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedMode, token]);
 
   useEffect(() => {
     const productionRequestOrderId = selectedDocumentationOrderId ?? selectedAdjustmentOrderId;
@@ -1909,9 +1943,14 @@ export function BiteplanerHub() {
   const licenseeNoun = getLicenseeNoun(selectedMode);
   const licenseePlural = getLicenseePlural(selectedMode);
   const dentistWorkspaceLoading = isLicensingActorMode && loading;
+  const currentFinancialRecipient = financialRecipients.find((recipient) => recipient.role === selectedMode) ?? null;
+  const showFinancialOnboardingNotice =
+    isLicensingActorMode &&
+    (currentFinancialRecipient?.status === 'pending_data' ||
+      currentFinancialRecipient?.status === 'creation_failed');
   const showDentistLockedPanel = isLicensingActorMode && !dentistWorkspaceLoading && !operationalAccessApproved;
   const showOperationalPanel =
-    isLicensingActorMode && !dentistWorkspaceLoading && operationalAccessApproved;
+    isLicensingActorMode && !dentistWorkspaceLoading && operationalAccessApproved && !showFinancialOnboardingNotice;
   const dentistStatusLabel = operationalAccessApproved ? 'Licenciado' : 'Cadastro pendente';
   const dentistStatusTone = operationalAccessApproved ? 'success' : 'warning';
   const currentAccessMode = access?.modes.find((mode) => mode.key === selectedMode);
@@ -2981,6 +3020,32 @@ export function BiteplanerHub() {
             />
           ) : null}
         </SnackbarStack>
+      ) : null}
+
+      {showFinancialOnboardingNotice ? (
+        <S.FinancialOnboardingNotice
+          $tone={currentFinancialRecipient.status === 'creation_failed' ? 'error' : 'warning'}
+          role="status"
+        >
+          <S.FinancialOnboardingIcon aria-hidden>
+            <AlertTriangle size={18} />
+          </S.FinancialOnboardingIcon>
+          <S.FinancialOnboardingContent>
+            <S.FinancialOnboardingTitle>
+              {currentFinancialRecipient.status === 'creation_failed'
+                ? 'Corrija seu cadastro financeiro'
+                : 'Complete seu cadastro financeiro'}
+            </S.FinancialOnboardingTitle>
+            <S.FinancialOnboardingText>
+              Para receber a porcentagem da sua parte no fluxo Biteplaner, complete a Parte 2 com os dados financeiros.
+              Não salvamos dados bancários na plataforma; eles são enviados de forma transiente ao Pagar.me.
+            </S.FinancialOnboardingText>
+          </S.FinancialOnboardingContent>
+          <S.FinancialOnboardingLink to={`/painel/biteplaner/financeiro?role=${selectedMode}`}>
+            Completar Parte 2
+            <ChevronRight size={16} aria-hidden />
+          </S.FinancialOnboardingLink>
+        </S.FinancialOnboardingNotice>
       ) : null}
 
       {selectedMode ? (

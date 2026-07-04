@@ -44,7 +44,7 @@ describe('Privacidade (Nexor)', () => {
     render(<Privacidade />, { wrapper: Wrapper });
 
     expect(screen.getByText(/cpf, cnpj, razão social/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/stripe/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/pagar\.me/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/dados clínicos e de saúde/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/leitura de notificações/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/formulários clínicos do biteplaner/i)).toBeInTheDocument();

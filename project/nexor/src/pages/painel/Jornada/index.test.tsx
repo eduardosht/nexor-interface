@@ -1043,7 +1043,7 @@ describe('Jornada', () => {
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
             payment: {
               status: 'paid',
-              provider: 'stripe',
+              provider: 'pagarme',
               amountCents: 548000,
               method: 'card',
               paidAt: '2026-05-02T15:56:00.000Z',

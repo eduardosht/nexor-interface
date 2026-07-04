@@ -84,7 +84,7 @@ export function Privacidade() {
           </LegalBody>
           <LegalList>
             <li>Supabase: autenticação, banco de dados, armazenamento, funções de backend, segurança e registros técnicos.</li>
-            <li>Stripe: pagamentos, cobranças, assinaturas, reembolsos e registros transacionais.</li>
+            <li>Pagar.me: pagamentos, cobranças, assinaturas, reembolsos, split de pagamentos e registros transacionais.</li>
             <li>Resend e provedores de e-mail: mensagens transacionais, notificações, suporte e comunicações autorizadas.</li>
             <li>Perfis autorizados do Biteplaner: clientes, dentistas, parceiros, laboratórios e administradores, conforme papel, permissão e finalidade.</li>
             <li>Autoridades, consultores, defesa técnica ou terceiros quando houver obrigação legal, ordem válida ou necessidade de defesa de direitos.</li>

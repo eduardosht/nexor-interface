@@ -4,6 +4,7 @@ export { CadastroPerfilBiteplaner } from './CadastroPerfilBiteplaner';
 export { Compra } from './Compra';
 export { ConsultaInicial } from './ConsultaInicial';
 export { Jornada } from './Jornada';
+export { FinanceiroRecebedor } from './FinanceiroRecebedor';
 export { MinhaConta } from './MinhaConta';
 export { PainelHome } from './PainelHome';
 export { PartnerReferralPage } from './PartnerReferralPage';

@@ -20,6 +20,10 @@
     "@types/node": "^25.6.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "esbuild": "0.28.1",
     "storybook": "^10.4.4"
+  },
+  "overrides": {
+    "esbuild": "0.28.1"
   }
 }

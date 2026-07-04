@@ -1361,14 +1361,22 @@ describe('BiteplanerHub', () => {
   });
 
   it('opens the pre-consultation review after both appointment confirmations for licensed dentists', async () => {
-    mockApiGet
-      .mockResolvedValueOnce({
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/products/biteplaner/access-options') {
+        return Promise.resolve({
         productKey: 'biteplaner',
         defaultMode: 'dentist',
         enrollment: null,
         modes: [{ key: 'dentist', label: 'Dentista', description: '', allowed: true, highlighted: true, reason: null }],
-      })
-      .mockResolvedValueOnce({
+        });
+      }
+
+      if (path === '/v1/account/products/biteplaner/financial-onboarding') {
+        return Promise.resolve({ recipients: [] });
+      }
+
+      if (path.startsWith('/v1/orders?as=dentist')) {
+        return Promise.resolve({
         orders: [
           {
             id: 'BP-DEMO-CHECK',
@@ -1395,9 +1403,11 @@ describe('BiteplanerHub', () => {
             customer: { full_name: 'Cliente Legado', email: 'legado@nexor.dev', phone: null },
           },
         ],
-      })
-      .mockResolvedValueOnce({
-        appointments: [
+        });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-CHECK/appointments') {
+        return Promise.resolve({ appointments: [
           {
             id: 'appointment-check',
             order_id: 'BP-DEMO-CHECK',
@@ -1407,10 +1417,11 @@ describe('BiteplanerHub', () => {
             user_confirmed_at: '2026-05-07T11:00:00.000Z',
             dentist_confirmed_at: null,
           },
-        ],
-      })
-      .mockResolvedValueOnce({
-        appointments: [
+        ] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-CLINICAL/appointments') {
+        return Promise.resolve({ appointments: [
           {
             id: 'appointment-clinical',
             order_id: 'BP-DEMO-CLINICAL',
@@ -1420,10 +1431,11 @@ describe('BiteplanerHub', () => {
             user_confirmed_at: '2026-05-07T13:00:00.000Z',
             dentist_confirmed_at: '2026-05-07T13:05:00.000Z',
           },
-        ],
-      })
-      .mockResolvedValueOnce({
-        appointments: [
+        ] });
+      }
+
+      if (path === '/v1/orders/BP-DEMO-STALE/appointments') {
+        return Promise.resolve({ appointments: [
           {
             id: 'appointment-stale',
             order_id: 'BP-DEMO-STALE',
@@ -1433,13 +1445,19 @@ describe('BiteplanerHub', () => {
             user_confirmed_at: '2026-05-07T15:00:00.000Z',
             dentist_confirmed_at: '2026-05-07T15:05:00.000Z',
           },
-        ],
-      })
-      .mockResolvedValueOnce({ events: [] })
-      .mockResolvedValueOnce({ events: [] })
-      .mockResolvedValueOnce({ events: [] })
-      .mockResolvedValueOnce({ forms: [] })
-      .mockResolvedValueOnce({ forms: [] })
+        ] });
+      }
+
+      if (path.includes('/timeline')) {
+        return Promise.resolve({ events: [] });
+      }
+
+      if (path.includes('/forms')) {
+        return Promise.resolve({ forms: [] });
+      }
+
+      return Promise.resolve({});
+    });
 
     renderPage('/painel/biteplaner?mode=dentist', {
       demoPersona: 'dentistLicensed',

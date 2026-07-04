@@ -5,9 +5,10 @@ import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, 
 import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
+import { appVersion } from '../../../config/appVersion';
 import { hasAdministrativeRole } from '../../../features/auth/adminRoles';
 import { accountQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
-import { getNotificationAction } from '../../../features/account/notificationActions';
+import { getNotificationAction, getNotificationCardAction } from '../../../features/account/notificationActions';
 import * as S from './styles';
 import { usePortalUiStore } from './portalUiStore';
 
@@ -336,6 +337,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
   );
   const visibleNotifications = notificationsFilter === 'unread' ? unreadNotifications : notifications.slice(0, 10);
   const hasUnreadNotifications = unreadNotifications.length > 0;
+  const selectedNotificationAction = selectedNotification ? getNotificationAction(selectedNotification) : null;
   const markNotificationRead = useMutation({
     mutationFn: (notification: MockNotification) =>
       api.patch<{ notification: AccountNotificationResponse }>(
@@ -556,6 +558,17 @@ export function PortalLayout({ children }: { children: ReactNode }) {
               <X size={16} />
             </S.CloseBtn>
             <S.NotificationModalMessage>{selectedNotification.message}</S.NotificationModalMessage>
+            {selectedNotificationAction ? (
+              <S.NotificationActionButton
+                type="button"
+                onClick={() => {
+                  setSelectedNotification(null);
+                  void navigate(selectedNotificationAction.path);
+                }}
+              >
+                {selectedNotificationAction.label}
+              </S.NotificationActionButton>
+            ) : null}
           </S.NotificationModalBox>
         </S.Overlay>
       ) : null}
@@ -769,6 +782,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
         </S.NavSection>
 
         <S.SidebarFooter>
+          <S.SidebarVersion $collapsed={collapsed}>{appVersion}</S.SidebarVersion>
           {collapsed ? (
             <S.SidebarAvatarCollapsed $collapsed={collapsed} title={displayName}>
               <S.Avatar>{initials}</S.Avatar>
@@ -865,7 +879,7 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                       </S.NotificationsEmpty>
                     ) : (
                       visibleNotifications.map((notification) => {
-                        const notificationAction = getNotificationAction(notification);
+                        const notificationCardAction = getNotificationCardAction(notification);
 
                         return (
                           <S.NotificationItem
@@ -890,18 +904,18 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                               <S.NotificationStatus $unread={!notification.read}>
                                 {notification.read ? 'Lida' : 'Não lida'}
                               </S.NotificationStatus>
-                              <ChevronRight size={18} aria-hidden />
-                              {notificationAction ? (
+                              {notificationCardAction ? (
                                 <S.NotificationActionButton
                                   type="button"
                                   onClick={() => {
                                     setNotificationsOpen(false);
-                                    void navigate(notificationAction.path);
+                                    void navigate(notificationCardAction.path);
                                   }}
                                 >
-                                  {notificationAction.label}
+                                  {notificationCardAction.label}
                                 </S.NotificationActionButton>
                               ) : null}
+                              <ChevronRight size={18} aria-hidden />
                             </S.NotificationItemMeta>
                           </S.NotificationItem>
                         );

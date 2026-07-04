@@ -541,6 +541,17 @@ export const SidebarFooter = styled.div`
   flex-shrink: 0;
 `;
 
+export const SidebarVersion = styled.div<{ $collapsed: boolean }>`
+  padding: ${({ $collapsed }) => ($collapsed ? '6px 0 4px' : '6px 16px 8px')};
+  text-align: center;
+  color: ${({ theme }) => theme.colors.textMuted};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+`;
+
 export const LogoutBtn = styled.button<{ $collapsed: boolean }>`
   display: flex;
   align-items: center;

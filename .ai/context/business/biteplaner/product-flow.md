@@ -42,9 +42,9 @@ Labels internas de preenchimento operacional, confirmação transitória de paga
 8. Dentista responde `Cliente está apto para uso do Biteplaner?` e, se marcar `Sim`, preenche a seção `Pedido biteplaner` no complemento do dentista com modelo (`impacto` ou `esportes`), cor (`preto` ou `branco`) e quantidade de 1 a 10.
 9. Se a resposta for `Sim`, a ordem vai para `Aguardando pagamento` e o cliente acessa a etapa `Compra`.
 10. A página de compra carrega modelo, cor e quantidade recomendados pelo dentista, mas permite que o cliente altere esses campos antes do pagamento.
-11. Backend valida e persiste a configuração final comprada antes de criar o Stripe Checkout.
-12. Cliente paga via Stripe Checkout calculado com o Price ID do modelo/cor selecionado e a quantidade escolhida.
-13. A confirmação de pagamento é recebida pelo backend por webhook Stripe, registra os dados do pagamento e libera a ordem para o dentista finalizar a solicitação de produção.
+11. Backend valida e persiste a configuração final comprada antes de criar o checkout Pagar.me com split para dentista e laboratório.
+12. Cliente paga via checkout Pagar.me calculado a partir do modelo/cor selecionado, quantidade escolhida e recebedores ativos.
+13. A confirmação de pagamento é recebida pelo backend por webhook Pagar.me, registra os dados do pagamento e libera a ordem para o dentista finalizar a solicitação de produção.
 14. Dentista preenche a solicitação de produção, anexa os arquivos obrigatórios, confere a configuração final comprada e consegue ver se o cliente manteve ou alterou o pedido recomendado na consulta.
 15. Laboratório recebe a ordem com a configuração comprada e executa a produção.
 16. Cliente segue para adaptação, consulta de retorno e acompanhamento.
@@ -76,22 +76,24 @@ O formulário é compartilhado entre cliente e dentista:
 - após concluir o complemento, a tela deve parar no `Resumo anamnese` e a ordem deve ir para pagamento se o cliente estiver apto;
 - se a tela não tiver dados carregados, deve exibir aviso de processamento/carregamento em vez de mostrar vários campos como `Não informado` sem ação.
 
-## Pagamento Stripe
+## Pagamento Pagar.me
 
-O pagamento real deve acontecer via Stripe Checkout hospedado pela Stripe.
+O pagamento real deve acontecer via checkout Pagar.me. Para compras Biteplaner com dentista e laboratório vinculados, o backend deve usar split por recebedor, evitando que a plataforma concentre o repasse tributável das duas partes.
 
 Regras:
 
 - a tela `/painel/compra` inicia o checkout somente quando a ordem está em `Aguardando pagamento`;
 - antes de iniciar o checkout, a tela deve exigir modelo, quantidade e cor do Biteplaner;
 - a tela deve pré-preencher esses campos a partir de `dentist_recommended_purchase_configuration`, quando existir;
-- o backend deve validar modelo, quantidade e cor contra o catálogo ativo de variações, selecionar o Price ID Stripe correto de modelo/cor e enviar `quantity` em `line_items`;
+- o backend deve validar modelo, quantidade e cor contra o catálogo ativo de variações e calcular o valor final antes de criar o link Pagar.me;
+- o backend deve resolver os recebedores Pagar.me ativos do dentista e do laboratório antes de criar o checkout;
+- se dentista ou laboratório não tiver recebedor ativo, o checkout deve ser bloqueado até concluir o onboarding financeiro;
 - a configuração final comprada deve ser persistida em `purchase_configuration` antes do redirecionamento e também registrada no pagamento para reconciliação;
-- a metadata da Stripe deve incluir `orderId`, `productKey`, `biteplanerModel`, `biteplanerColor` e `biteplanerQuantity`, mas a fonte operacional para produção é o dado salvo no backend;
+- a metadata do Pagar.me deve incluir `orderId`, `productKey`, `biteplanerModel`, `biteplanerColor` e `biteplanerQuantity`, mas a fonte operacional para produção é o dado salvo no backend;
 - o sucesso retorna para `/painel/compra?checkout=success`;
 - a URL de sucesso não é fonte de verdade do pagamento, apenas feedback visual;
-- a confirmação oficial vem por webhook Stripe;
-- o backend deve salvar sessão, payment intent, Price ID, quantidade, cor, valor, moeda, status, método de pagamento, cupom/desconto quando houver, e dados de recibo quando enviados pela Stripe;
+- a confirmação oficial vem por webhook Pagar.me;
+- o backend deve salvar IDs técnicos do pedido/cobrança/transação Pagar.me, quantidade, cor, valor, moeda, status, método de pagamento, cupom/desconto quando houver, e dados de recibo quando enviados pelo provedor;
 - depois do webhook de sucesso, o status `payment_confirmed` é transitório e a ordem deve seguir para o dentista finalizar a solicitação de produção;
 - para o dentista, a ordem deve aparecer com ação operacional de envio ao laboratório, não parada em `Pagamento confirmado`.
 
@@ -105,7 +107,7 @@ Regras:
 | `awaiting_clinical_decision` | Decisão clínica | Dentista deve revisar anamnese e decidir aptidão. |
 | `ineligible_reassessment` | Inaptidão | Cliente pode marcar nova consulta; não usar refund. |
 | `awaiting_payment` | Compra | Cliente apto deve pagar o Biteplaner. |
-| `payment_confirmed` | Compra | Estado transitório após webhook Stripe. |
+| `payment_confirmed` | Compra | Estado transitório após webhook Pagar.me. |
 | `awaiting_dentist_forms` | Decisão clínica | Dentista deve finalizar solicitação de produção para envio ao laboratório. Label operacional recomendada: `Aguardando envio ao laboratório`. |
 | `lab_selection_pending` | Laboratório | Dentista deve escolher laboratório se ainda não escolheu. |
 | `sent_to_lab` | Laboratório | Ordem enviada ao laboratório. |
@@ -135,4 +137,4 @@ Parceiro, dentista e laboratório têm cadastro complementar próprio, com dados
 
 ## Rastreabilidade
 
-Cada transição relevante deve registrar ator, papel, data/hora, status anterior, status novo, formulário/versão quando aplicável e origem da ação. Pagamentos devem registrar IDs Stripe, Price ID, modelo, quantidade e cor para reconciliação.
+Cada transição relevante deve registrar ator, papel, data/hora, status anterior, status novo, formulário/versão quando aplicável e origem da ação. Pagamentos devem registrar IDs Pagar.me, recebedores envolvidos, regras de split, modelo, quantidade e cor para reconciliação.

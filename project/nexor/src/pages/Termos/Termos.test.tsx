@@ -32,7 +32,7 @@ describe('Termos (Nexor)', () => {
     render(<Termos />, { wrapper: Wrapper });
 
     expect(screen.getAllByText(/clientes, dentistas, parceiros, laboratórios e administradores/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/stripe/i)).toBeInTheDocument();
+    expect(screen.getByText(/pagar\.me/i)).toBeInTheDocument();
     expect(screen.getAllByText(/cancelamento/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/suspender ou bloquear/i)).toBeInTheDocument();
     expect(screen.getByText(/foro legalmente competente/i)).toBeInTheDocument();

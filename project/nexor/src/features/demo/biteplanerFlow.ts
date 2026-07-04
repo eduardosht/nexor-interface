@@ -1010,12 +1010,12 @@ export async function markPaymentMessageSent(orderId: string, token?: string) {
   return api.post<{ order: DemoOrderSummary }>(`/v1/admin/orders/${orderId}/payment-message-sent`, {}, token);
 }
 export async function createCheckoutSession(orderId: string, payload: CheckoutSessionRequest, token?: string) {
-  return api.post<{ url: string }>(`/v1/orders/${orderId}/checkout-session`, payload, token);
+  return api.post<{ url: string }>(`/v1/orders/${orderId}/payment-link`, payload, token);
 }
 
 export async function reconcileCheckoutSession(orderId: string, sessionId: string, token?: string) {
   return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/checkout-session/${sessionId}/reconcile`,
+    `/v1/orders/${orderId}/payment-link/${sessionId}/reconcile`,
     {},
     token
   );

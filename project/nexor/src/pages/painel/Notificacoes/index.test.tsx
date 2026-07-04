@@ -85,7 +85,7 @@ describe('Notificacoes', () => {
     expect(screen.getByText(/página 2 de 2/i)).toBeInTheDocument();
   });
 
-  it('navigates action-required notifications to the matching workflow area', async () => {
+  it('keeps order actions inside the notification modal instead of the notification card', async () => {
     mockApiGet.mockResolvedValue({
       unreadCount: 3,
       notifications: [
@@ -121,14 +121,56 @@ describe('Notificacoes', () => {
 
     renderPage();
 
+    expect(await screen.findByText(/ação necessária no pedido/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ir para jornada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver ordens do laboratório/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária no pedido/i }));
+    expect(await screen.findByRole('dialog', { name: /ação necessária no pedido/i })).toHaveTextContent(/cliente precisa avançar/i);
     fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
+
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
 
-    fireEvent.click(screen.getByRole('button', { name: /ver ordens do dentista/i }));
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do dentista/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
 
-    fireEvent.click(screen.getByRole('button', { name: /ver ordens do laboratório/i }));
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do laboratório/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do laboratório/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
+  });
+
+  it('shows the financial onboarding action in the notification card', async () => {
+    mockApiGet.mockResolvedValue({
+      unreadCount: 1,
+      notifications: [
+        {
+          id: 'financial-onboarding',
+          title: 'Cadastro financeiro pendente',
+          message:
+            'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 com os dados bancários pelo Pagar.me.',
+          type: 'biteplaner_dentist_licensing_approved',
+          metadata: {
+            financialOnboardingRequired: true,
+            financialOnboardingPath: '/painel/biteplaner/financeiro?role=dentist',
+          },
+          read: false,
+          createdAt: '2026-07-03T09:30:00.000Z',
+        },
+      ],
+    });
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: /completar cadastro financeiro/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/financeiro?role=dentist');
+    expect(screen.queryByRole('dialog', { name: /cadastro financeiro pendente/i })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação cadastro financeiro pendente/i }));
+
+    expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados bancários/i);
   });
 
   it('opens a modal with the notification message when clicking a notification', async () => {
@@ -165,7 +207,7 @@ describe('Notificacoes', () => {
     expect(screen.queryByRole('dialog', { name: /atualização operacional/i })).not.toBeInTheDocument();
   });
 
-  it('does not open the message modal when clicking a notification workflow action', async () => {
+  it('opens the message modal before navigating through a notification workflow action', async () => {
     mockApiGet.mockResolvedValue({
       unreadCount: 1,
       notifications: [
@@ -183,6 +225,9 @@ describe('Notificacoes', () => {
 
     renderPage();
 
+    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação ação necessária no pedido/i }));
+
+    expect(screen.getByRole('dialog', { name: /ação necessária no pedido/i })).toHaveTextContent(/cliente precisa avançar/i);
     fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');

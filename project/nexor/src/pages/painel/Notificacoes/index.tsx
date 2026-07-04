@@ -5,7 +5,7 @@ import { Bell, CheckCircle2, Circle, ChevronLeft, ChevronRight, X } from 'lucide
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { accountQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
-import { getNotificationAction } from '../../../features/account/notificationActions';
+import { getNotificationAction, getNotificationCardAction } from '../../../features/account/notificationActions';
 import * as S from './styles';
 
 interface AccountNotificationResponse {
@@ -154,6 +154,7 @@ export function Notificacoes() {
     () => notifications.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
     [currentPage, notifications]
   );
+  const selectedNotificationAction = selectedNotification ? getNotificationAction(selectedNotification) : null;
 
   return (
     <S.Page>
@@ -191,7 +192,7 @@ export function Notificacoes() {
         ) : (
           <S.NotificationList aria-label="Lista de notificações">
             {pageNotifications.map((notification) => {
-              const notificationAction = getNotificationAction(notification);
+              const notificationCardAction = getNotificationCardAction(notification);
 
               return (
                 <S.NotificationItem
@@ -220,15 +221,15 @@ export function Notificacoes() {
                     </S.NotificationRow>
                     <S.NotificationMessage>{notification.message}</S.NotificationMessage>
                     <S.NotificationDate>{formatNotificationDate(notification.createdAt)}</S.NotificationDate>
-                    {notificationAction ? (
+                    {notificationCardAction ? (
                       <S.NotificationActionButton
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          void navigate(notificationAction.path);
+                          void navigate(notificationCardAction.path);
                         }}
                       >
-                        {notificationAction.label}
+                        {notificationCardAction.label}
                       </S.NotificationActionButton>
                     ) : null}
                   </S.NotificationBody>
@@ -255,6 +256,17 @@ export function Notificacoes() {
             </S.ModalHeader>
             <S.ModalDate>{formatNotificationDate(selectedNotification.createdAt)}</S.ModalDate>
             <S.ModalMessage>{selectedNotification.message}</S.ModalMessage>
+            {selectedNotificationAction ? (
+              <S.NotificationActionButton
+                type="button"
+                onClick={() => {
+                  setSelectedNotification(null);
+                  void navigate(selectedNotificationAction.path);
+                }}
+              >
+                {selectedNotificationAction.label}
+              </S.NotificationActionButton>
+            ) : null}
           </S.NotificationModal>
         </S.ModalBackdrop>
       ) : null}

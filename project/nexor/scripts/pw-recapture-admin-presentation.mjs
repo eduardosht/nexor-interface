@@ -19,7 +19,7 @@ const captures = [
   { persona: 'athleteScheduling', route: '/painel/consulta-inicial', file: '10-cliente-selecao-clinica.png' },
   { persona: 'athletePreConsultation', route: '/painel/biteplaner/jornada', file: '11-cliente-pre-consulta-clinica.png' },
   { persona: 'athletePayment', route: '/painel/compra', file: '12-cliente-compra-biteplanner.png' },
-  { persona: 'athletePayment', route: '/painel/compra?checkout=success&session_id=cs_test_doc', file: '12b-cliente-compra-sucesso-stripe.png' },
+  { persona: 'athletePayment', route: '/painel/compra?checkout=success&session_id=cs_test_doc', file: '12b-cliente-compra-sucesso-pagarme.png' },
   { persona: 'athletePayment', route: '/painel/biteplaner/jornada', file: '13-cliente-jornada-pagamento-detalhes.png' },
   { persona: 'athleteLabProduction', route: '/painel/biteplaner/jornada', file: '14-cliente-jornada-laboratorio.png' },
   { persona: 'athleteAdaptation', route: '/painel/biteplaner/jornada', file: '15-cliente-jornada-adaptacao.png' },

@@ -213,6 +213,19 @@ describe('PortalLayout navigation', () => {
     );
   });
 
+  it('shows the application version above the sidebar user identity', () => {
+    renderLayout('/painel/admin/home', {
+      backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
+      demoPersona: 'admin',
+    });
+
+    const version = screen.getByText('v1.0.0');
+    const profileName = screen.getByText('admin');
+
+    expect(version).toBeInTheDocument();
+    expect(version.compareDocumentPosition(profileName) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('renders report navigation for administrative roles without Biteplaner product access', () => {
     renderLayout('/painel/admin/home', {
       backendUser: { email: 'financeiro@nexor.dev', roles: ['finance'], productRoles: [] },
@@ -288,7 +301,7 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByRole('link', { name: /dados da conta/i })).toHaveAttribute('href', '/painel/conta#dados-da-conta');
     expect(screen.getByRole('link', { name: /privacidade e lgpd/i })).toHaveAttribute('href', '/painel/conta#privacidade-lgpd');
     expect(screen.getByRole('link', { name: /excluir conta/i })).toHaveAttribute('href', '/painel/conta#excluir-conta');
-    expect(screen.getByRole('link', { name: /preferências de comunicação/i }).querySelector('svg')).toBeNull();
+    expect(screen.queryByRole('link', { name: /preferências de comunicação/i })).not.toBeInTheDocument();
   });
 
   it('hides Minha Conta submenus outside the account page', () => {
@@ -569,7 +582,7 @@ describe('PortalLayout navigation', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/painel/notificacoes');
   });
 
-  it('shows contextual action buttons for customer, dentist and lab notifications', async () => {
+  it('keeps contextual order actions inside the notification modal', async () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/account/notifications') {
         return Promise.resolve({
@@ -613,16 +626,65 @@ describe('PortalLayout navigation', () => {
 
     fireEvent.click(screen.getByLabelText('Notificações'));
 
+    expect(await screen.findByText(/ação necessária no pedido/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ir para jornada/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ver ordens do laboratório/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária no pedido/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/jornada');
 
     fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do dentista/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
 
     fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do laboratório/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ver ordens do laboratório/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
+  });
+
+  it('shows the financial onboarding action in the notifications box', async () => {
+    mockApiGet.mockImplementation((path: string) => {
+      if (path === '/v1/account/notifications') {
+        return Promise.resolve({
+          notifications: [
+            {
+              id: 'financial-onboarding',
+              title: 'Cadastro financeiro pendente',
+              message:
+                'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 com os dados bancários pelo Pagar.me.',
+              type: 'biteplaner_dentist_licensing_approved',
+              metadata: {
+                financialOnboardingRequired: true,
+                financialOnboardingPath: '/painel/biteplaner/financeiro?role=dentist',
+              },
+              read: false,
+              createdAt: '2026-07-03T09:30:00.000Z',
+            },
+          ],
+          unreadCount: 1,
+        });
+      }
+
+      return Promise.resolve({ modes: [] });
+    });
+
+    renderLayout('/painel/home');
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(await screen.findByRole('button', { name: /completar cadastro financeiro/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/financeiro?role=dentist');
+    expect(screen.queryByRole('dialog', { name: /cadastro financeiro pendente/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Notificações'));
+    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação cadastro financeiro pendente/i }));
+
+    expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados bancários/i);
   });
 
   it('shows an empty state when no notifications are available', async () => {

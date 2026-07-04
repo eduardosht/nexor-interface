@@ -1,8 +1,8 @@
 // Stable key for the login/auth demo flow. Mock handlers read this directly so
 // the UI can switch personas without inventing a parallel session contract.
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
-const DEMO_STRIPE_CHECKOUT_ORDER_ID =
-  import.meta.env.VITE_DEMO_STRIPE_CHECKOUT_ORDER_ID?.trim() || '00000000-0000-4000-8000-000000000005';
+const DEMO_PAGARME_PAYMENT_ORDER_ID =
+  import.meta.env.VITE_DEMO_PAGARME_PAYMENT_ORDER_ID?.trim() || '00000000-0000-4000-8000-000000000005';
 
 export type DemoPersona =
   | 'athleteRegistered'
@@ -432,7 +432,7 @@ type OrderStatusAction =
         marketing: boolean;
       };
     }
-  | { type: 'create-checkout-session'; model: string; color: string; quantity: number }
+  | { type: 'create-payment-link'; model: string; color: string; quantity: number }
   | { type: 'confirm-purchase-request'; model: string; color: string; quantity: number }
   | { type: 'mark-payment-message-sent' }
   | { type: 'confirm-payment' }
@@ -1508,7 +1508,7 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-005',
-      checkoutOrderId: DEMO_STRIPE_CHECKOUT_ORDER_ID,
+      checkoutOrderId: DEMO_PAGARME_PAYMENT_ORDER_ID,
       status: 'awaiting_payment',
       statusLabel: 'Aguardando pagamento',
       stage: 'awaiting_payment',
@@ -5215,7 +5215,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'create-checkout-session') {
+  if (action.type === 'create-payment-link') {
     const order = getOrderOrThrow(orderId);
     const quantity = Number.isFinite(action.quantity) ? Math.max(1, Math.min(10, Math.trunc(action.quantity))) : 1;
     const model = action.model.trim();

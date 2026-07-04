@@ -56,6 +56,78 @@ export function productHandlers(server: Server) {
     getAccessOptions({ requestHeaders: request.requestHeaders })
   );
 
+  server.get('/v1/account/products/biteplaner/financial-onboarding', () => {
+    return new Response(200, {}, {
+      recipients: [
+        {
+          id: 'demo-pagarme-recipient-dentist',
+          role: 'dentist',
+          documentType: 'cpf',
+          documentNumber: '52998224725',
+          legalName: 'Dentista Demo',
+          status: 'pending_data',
+          providerStatus: null,
+          providerErrorCode: null,
+          providerErrorMessage: null,
+          termsVersion: null,
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    });
+  });
+
+  server.post('/v1/account/products/biteplaner/financial-onboarding/pagarme-recipient', (_schema, request) => {
+    const payload = JSON.parse(request.requestBody || '{}') as {
+      role?: string;
+      documentType?: 'cpf' | 'cnpj';
+      documentNumber?: string;
+      legalName?: string;
+      termsVersion?: string;
+    };
+
+    return new Response(200, {}, {
+      recipient: {
+        id: `demo-pagarme-recipient-${payload.role ?? 'dentist'}`,
+        role: payload.role ?? 'dentist',
+        documentType: payload.documentType ?? 'cpf',
+        documentNumber: payload.documentNumber ?? '52998224725',
+        legalName: payload.legalName ?? 'Recebedor Demo',
+        status: 'active',
+        providerStatus: 'active',
+        providerErrorCode: null,
+        providerErrorMessage: null,
+        termsVersion: payload.termsVersion ?? 'financial-v1',
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  });
+
+  server.post('/v1/account/products/biteplaner/financial-onboarding/pagarme-recipient/retry', (_schema, request) => {
+    const payload = JSON.parse(request.requestBody || '{}') as {
+      role?: string;
+      documentType?: 'cpf' | 'cnpj';
+      documentNumber?: string;
+      legalName?: string;
+      termsVersion?: string;
+    };
+
+    return new Response(200, {}, {
+      recipient: {
+        id: `demo-pagarme-recipient-${payload.role ?? 'dentist'}`,
+        role: payload.role ?? 'dentist',
+        documentType: payload.documentType ?? 'cpf',
+        documentNumber: payload.documentNumber ?? '52998224725',
+        legalName: payload.legalName ?? 'Recebedor Demo',
+        status: 'active',
+        providerStatus: 'active',
+        providerErrorCode: null,
+        providerErrorMessage: null,
+        termsVersion: payload.termsVersion ?? 'financial-v1',
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  });
+
   server.post('/v1/products/biteplaner/enroll', (_schema, request) => {
     const enrollment = getEnrollment({ requestHeaders: request.requestHeaders });
     return new Response(200, {}, { enrollment });

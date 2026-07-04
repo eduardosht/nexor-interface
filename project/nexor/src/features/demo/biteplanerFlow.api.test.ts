@@ -64,21 +64,21 @@ describe('biteplanerFlow backend route adapters', () => {
     );
   });
 
-  it('creates a Stripe checkout session through the order checkout route', async () => {
-    apiPost.mockResolvedValue({ url: 'https://checkout.stripe.test/session' });
+  it('creates a Pagar.me payment link through the order payment route', async () => {
+    apiPost.mockResolvedValue({ url: 'https://checkout.pagar.me/test-link' });
 
     await expect(createCheckoutSession(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
-      url: 'https://checkout.stripe.test/session',
+      url: 'https://checkout.pagar.me/test-link',
     });
 
     expect(apiPost).toHaveBeenCalledWith(
-      '/v1/orders/order-1/checkout-session',
+      '/v1/orders/order-1/payment-link',
       { model: 'impacto', color: 'preto', quantity: 2 },
       'token'
     );
   });
 
-  it('confirms a purchase request without creating a Stripe checkout session', async () => {
+  it('confirms a purchase request without creating a Pagar.me payment link', async () => {
     apiPost.mockResolvedValue({ order: { ...order, status: 'awaiting_payment' } });
 
     await expect(confirmPurchaseRequest(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
@@ -132,7 +132,7 @@ describe('biteplanerFlow backend route adapters', () => {
     );
   });
 
-  it('reconciles a Stripe checkout session through the order checkout route', async () => {
+  it('reconciles a Pagar.me payment link through the order payment route', async () => {
     apiPost.mockResolvedValue({ order: { id: order.id, status: 'payment_confirmed' } });
 
     await expect(reconcileCheckoutSession(order.id, 'cs_test_123', 'token')).resolves.toEqual({
@@ -140,7 +140,7 @@ describe('biteplanerFlow backend route adapters', () => {
     });
 
     expect(apiPost).toHaveBeenCalledWith(
-      '/v1/orders/order-1/checkout-session/cs_test_123/reconcile',
+      '/v1/orders/order-1/payment-link/cs_test_123/reconcile',
       {},
       'token'
     );

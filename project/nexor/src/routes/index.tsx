@@ -29,6 +29,7 @@ const PreRequisito = lazy(() => import('../pages/painel/PreRequisito').then(({ P
 const ConsultaInicial = lazy(() => import('../pages/painel/ConsultaInicial').then(({ ConsultaInicial }) => ({ default: ConsultaInicial })));
 const Compra = lazy(() => import('../pages/painel/Compra').then(({ Compra }) => ({ default: Compra })));
 const BiteplanerHub = lazy(() => import('../pages/painel/BiteplanerHub').then(({ BiteplanerHub }) => ({ default: BiteplanerHub })));
+const FinanceiroRecebedor = lazy(() => import('../pages/painel/FinanceiroRecebedor').then(({ FinanceiroRecebedor }) => ({ default: FinanceiroRecebedor })));
 const PartnerReferralPage = lazy(() => import('../pages/painel/PartnerReferralPage').then(({ PartnerReferralPage }) => ({ default: PartnerReferralPage })));
 const Avaliacoes = lazy(() => import('../pages/painel/Avaliacoes').then(({ Avaliacoes }) => ({ default: Avaliacoes })));
 const Jornada = lazy(() => import('../pages/painel/Jornada').then(({ Jornada }) => ({ default: Jornada })));
@@ -157,6 +158,7 @@ export const router = createBrowserRouter([
   { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
   { path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
   { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
+  { path: '/painel/biteplaner/financeiro', element: <PainelRoute><FinanceiroRecebedor /></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },
   { path: '/painel/biteplaner/avaliacoes', element: <PainelRoute><Avaliacoes /></PainelRoute> },
   { path: '/painel/biteplaner/jornada', element: <PainelRoute><Jornada /></PainelRoute> },

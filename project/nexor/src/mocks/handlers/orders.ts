@@ -397,7 +397,7 @@ export function orderHandlers(server: Server) {
     );
   }));
 
-  server.post('/v1/orders/:orderId/checkout-session', withDemoErrors((_schema, request) => {
+  server.post('/v1/orders/:orderId/payment-link', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
     const model = typeof body.model === 'string' ? body.model : 'impacto';
     const color = typeof body.color === 'string' ? body.color : 'preto';
@@ -406,7 +406,7 @@ export function orderHandlers(server: Server) {
     applyOrderAction(
       request.params.orderId,
       {
-        type: 'create-checkout-session',
+        type: 'create-payment-link',
         model,
         color,
         quantity,
@@ -418,7 +418,7 @@ export function orderHandlers(server: Server) {
       200,
       {},
       {
-        url: 'https://checkout.stripe.test/session'
+        url: 'https://checkout.pagar.me/test-link'
       }
     );
   }));

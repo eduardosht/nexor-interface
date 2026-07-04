@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Select, Snackbar, SnackbarStack } from '@nexor/design-system';
-import { CheckCircle2, Clock3, Hourglass, PartyPopper, Send, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock3, CreditCard, Hourglass, PartyPopper, ShieldCheck } from 'lucide-react';
 import * as S from './styles';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
-  confirmPurchaseRequest,
+  createCheckoutSession,
   fetchOrders,
   getAuthToken,
   type DemoOrderSummary,
@@ -15,12 +15,12 @@ import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
 
 const NEXT_STEPS = [
   {
-    title: 'Cliente confirma a compra',
-    status: 'Aguardando',
+    title: 'Cliente revisa a compra',
+    status: 'Atual',
     Icon: Hourglass,
   },
   {
-    title: 'Nexor envia o link de pagamento por e-mail e celular',
+    title: 'Pagamento seguro no checkout Pagar.me',
     status: 'Pendente',
     Icon: Clock3,
   },
@@ -113,10 +113,9 @@ function getPurchaseSteps(purchaseConfirmed: boolean, messageSent: boolean, paym
 type CompraProps = {
   embedded?: boolean;
   initialOrder?: DemoOrderSummary | null;
-  onOrderChange?: (order: DemoOrderSummary) => void;
 };
 
-export function Compra({ embedded = false, initialOrder = null, onOrderChange }: CompraProps) {
+export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const { session } = useAuth();
   const token = getAuthToken(session);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
@@ -187,8 +186,8 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
   }, [orderConfiguration]);
 
   const ctaDisabled = useMemo(
-    () => submitting || !order || order.status !== 'awaiting_payment' || quantity < 1 || purchaseConfirmed,
-    [order, purchaseConfirmed, quantity, submitting]
+    () => submitting || !order || order.status !== 'awaiting_payment' || quantity < 1,
+    [order, quantity, submitting]
   );
 
   async function handleConfirmPurchase() {
@@ -202,16 +201,15 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
 
     try {
       const checkoutOrderId = order.checkoutOrderId ?? order.id;
-      const response = await confirmPurchaseRequest(
+      const response = await createCheckoutSession(
         checkoutOrderId,
         { model: selectedModel, color: selectedColor, quantity },
         token
       );
-      setOrder(response.order);
-      onOrderChange?.(response.order);
-      setNotice('Compra confirmada. Nossa equipe vai enviar o link de pagamento por e-mail e celular em poucos momentos.');
+      setNotice('Checkout Pagar.me criado. Redirecionando para o pagamento seguro.');
+      window.open(response.url, '_self', 'noopener');
     } catch {
-      setError('Não foi possível confirmar a compra agora. Tente novamente em alguns instantes.');
+      setError('Não foi possível abrir o checkout Pagar.me agora. Tente novamente em alguns instantes.');
     } finally {
       setSubmitting(false);
     }
@@ -234,7 +232,7 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
       {!embedded && !paymentCompleted ? (
         <OrderStepHeader
           title="Confirmação de compra"
-          description="Confira modelo, cor e quantidade. Ao confirmar, a compra será enviada ao nosso sistema e enviaremos o link de pagamento por e-mail e celular em poucos momentos."
+          description="Confira modelo, cor e quantidade. Ao continuar, você será direcionado ao checkout seguro do Pagar.me para concluir o pagamento."
           currentStep="purchase"
           order={order}
           orderHelpText="Este pedido está na etapa financeira antes da liberação operacional para produção."
@@ -288,9 +286,9 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
                 <JourneyNoticeCard
                   tone="success"
                   icon={<ShieldCheck size={18} strokeWidth={2.1} />}
-                  title="Link de pagamento enviado pela Nexor"
-                  description="A compra será registrada em nosso sistema e nossa equipe enviará o link de pagamento por e-mail e celular em poucos momentos."
-                  testId="manual-payment-link-card"
+                  title="Checkout seguro Pagar.me"
+                  description="O pagamento acontece no ambiente hospedado do Pagar.me. A Nexor recebe a confirmação automaticamente para liberar a produção."
+                  testId="pagarme-checkout-card"
                 />
               ) : (
                 <S.SuccessFooter>
@@ -368,18 +366,16 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
                     </S.PaymentApprovedBox>
                     <S.DetailsLink to="/painel/biteplaner/jornada">Acompanhar jornada</S.DetailsLink>
                   </>
-                ) : purchaseConfirmed ? (
-                  <S.PurchaseSentBox role="status">
-                    <ShieldCheck size={24} aria-hidden />
-                    <span>
-                      <strong>Ordem de compra enviada</strong>
-                      Em breve você receberá o link de pagamento por e-mail e celular.
-                    </span>
-                  </S.PurchaseSentBox>
                 ) : (
                   <S.CheckoutButton onClick={handleConfirmPurchase} disabled={ctaDisabled} data-tone="success">
-                    <Send size={18} aria-hidden />
-                    <span>{submitting ? 'Enviando ordem...' : 'Enviar ordem de compra'}</span>
+                    <CreditCard size={18} aria-hidden />
+                    <span>
+                      {submitting
+                        ? 'Abrindo checkout...'
+                        : purchaseConfirmed
+                          ? 'Reabrir pagamento Pagar.me'
+                          : 'Ir para pagamento Pagar.me'}
+                    </span>
                   </S.CheckoutButton>
                 )}
               </S.SummaryCard>
@@ -391,8 +387,8 @@ export function Compra({ embedded = false, initialOrder = null, onOrderChange }:
         <SnackbarStack>
           <Snackbar
             tone="success"
-            title="Compra confirmada"
-            message="Sua ordem foi enviada para a Nexor. Em breve você receberá o link de pagamento por e-mail e celular."
+            title="Checkout Pagar.me criado"
+            message="Você será redirecionado para concluir o pagamento no ambiente seguro do Pagar.me."
             onClose={() => {
               setNotice('');
             }}
