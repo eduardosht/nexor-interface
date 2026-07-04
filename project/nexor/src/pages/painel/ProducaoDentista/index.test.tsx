@@ -1,12 +1,15 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
 import { createTestQueryClient, TestQueryClientProvider } from '../../../test/renderWithQueryClient';
+import type { ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
 import { getWorkflowFormDictionary } from '../components/workflowFormFieldDictionary';
 
@@ -15,6 +18,9 @@ const { mockUseAuth, mockApiGet, mockApiPost } = vi.hoisted(() => ({
   mockApiGet: vi.fn(),
   mockApiPost: vi.fn(),
 }));
+
+const LOCAL_FILE_READY = 'Arquivo selecionado para envio ao finalizar.';
+const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
 
 function readSourceFiles(root: string): string[] {
   return readdirSync(root).flatMap((entry) => {
@@ -62,6 +68,7 @@ vi.mock('react-leaflet', () => ({
 }));
 
 import { ProducaoDentista } from './index';
+import { ProductionRequestFields } from './ProductionRequestFields';
 
 class MockPdfWorker {
   static instances: MockPdfWorker[] = [];
@@ -102,6 +109,44 @@ function createOrder(overrides: Record<string, unknown> = {}) {
     },
     ...overrides,
   };
+}
+
+function createUploadedScanFileRef(fileName = 'scan.stl') {
+  const objectKey = `biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/${fileName}`;
+
+  return {
+    id: 'upload-1',
+    fileName,
+    provider: 'amazon-s3',
+    purpose: 'production_scan3d',
+    objectKey,
+    mimeType: 'application/octet-stream',
+    sizeBytes: 4,
+    scanStatus: 'not_scanned',
+    uploadedAt: '2026-05-08T12:00:00.000Z',
+  };
+}
+
+function defaultApiPostMock(url: string, payload?: Record<string, unknown>) {
+  if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent') {
+    return Promise.resolve({
+      uploadId: 'upload-1',
+      objectKey: 'biteplaner/production-scans/tmp/BP-DEMO-004/upload-1/scan.stl',
+      uploadUrl: 'https://private-upload.example/upload-1',
+      requiredHeaders: { 'x-amz-acl': 'private' },
+      expiresAt: '2026-05-08T12:15:00.000Z',
+    });
+  }
+
+  if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm') {
+    return Promise.resolve({
+      fileRef: createUploadedScanFileRef(
+        typeof payload?.fileName === 'string' ? payload.fileName : 'scan.stl'
+      ),
+    });
+  }
+
+  return Promise.resolve({});
 }
 
 function sharedIntake(overrides: Record<string, unknown> = {}) {
@@ -303,6 +348,66 @@ function renderPage(path = '/painel/dentista/producao/BP-DEMO-004') {
   );
 }
 
+function createProductionRequestDraft(overrides: Partial<ProductionRequestDraft> = {}): ProductionRequestDraft {
+  return {
+    anamnesisSummary: 'Resumo clínico completo.',
+    anamnesisDownloaded: false,
+    productionRequestSummary: 'Solicitação preenchida.',
+    labNotes: '',
+    scan3dFileName: '',
+    scan3dFileRef: null,
+    lgpdConfirmed: true,
+    selectedLabId: 'profile-lab-edu',
+    purchaseConfiguration: null,
+    purchaseDivergenceConfirmed: false,
+    ...overrides,
+  };
+}
+
+function renderProductionRequestFields() {
+  const onChange = vi.fn();
+  const onUploadStateChange = vi.fn();
+
+  function Harness() {
+    const [draft, setDraft] = useState<ProductionRequestDraft>(createProductionRequestDraft());
+    const [selectedScanFile, setSelectedScanFile] = useState<File | null>(null);
+
+    return (
+      <ThemeProvider theme={lightTheme}>
+        <ProductionRequestFields
+          draft={draft}
+          dentistRecommendedPurchaseConfiguration={null}
+          onChange={(patch) => {
+            setDraft((current) => ({ ...current, ...patch }));
+            onChange(patch);
+          }}
+          onUploadStateChange={onUploadStateChange}
+          onScan3dFileChange={setSelectedScanFile}
+        />
+        <button
+          type="button"
+          disabled={
+            (!draft.scan3dFileRef && !selectedScanFile) ||
+            !draft.scan3dFileName ||
+            !draft.selectedLabId ||
+            !draft.lgpdConfirmed
+          }
+        >
+          Finalizar
+        </button>
+        <output data-testid="scan-ref">{draft.scan3dFileRef?.id ?? 'none'}</output>
+        <output data-testid="scan-name">{draft.scan3dFileName || 'none'}</output>
+      </ThemeProvider>
+    );
+  }
+
+  render(
+    <Harness />
+  );
+
+  return { onChange, onUploadStateChange };
+}
+
 async function goToDentistComplement() {
   for (let index = 0; index < 8 && !screen.queryByRole('button', { name: /salvar complemento do dentista/i }); index += 1) {
     fireEvent.click(await screen.findByRole('button', { name: /próxima etapa/i }));
@@ -456,13 +561,19 @@ async function fillProductionRequestUntilLabSelection() {
     target: { value: 'Solicitação preenchida.' },
   });
 
-  fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-    target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-  });
+  await uploadProductionScan();
   fireEvent.click(screen.getByRole('checkbox'));
   await clickWizardNextButton();
 
   fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+}
+
+async function uploadProductionScan(fileName = 'scan.stl', type = 'model/stl') {
+  fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+    target: { files: [new File(['scan'], fileName, { type })] },
+  });
+
+  await screen.findByText(LOCAL_FILE_READY);
 }
 
 describe('ProducaoDentista', () => {
@@ -470,9 +581,16 @@ describe('ProducaoDentista', () => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) =>
+      defaultApiPostMock(url, payload)
+    );
     configureApiGet();
     MockPdfWorker.instances = [];
     vi.stubGlobal('Worker', MockPdfWorker);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(null, { status: 200 }))
+    );
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
       value: vi.fn(() => 'blob:anamnese-final'),
@@ -1432,13 +1550,37 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
 
     expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
     expect(getWizardNextButton()).toBeDisabled();
   });
+
+  it('keeps the intraoral scan selected locally before production request submission', async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
+    await clickWizardNextButton();
+    await user.type(
+      await screen.findByLabelText(/solicitação de produção/i),
+      'Produzir Biteplaner com arquivo privado.'
+    );
+
+    const input = screen.getByLabelText(/escaneamento 3d intraoral/i);
+    await user.upload(input, new File(['scan'], 'scan.stl', { type: 'model/stl' }));
+
+    expect(await screen.findByText(LOCAL_FILE_READY)).toBeInTheDocument();
+    expect(screen.queryByText(PRIVATE_STORAGE_RECEIPT)).not.toBeInTheDocument();
+    expect(screen.queryByText(/arquivo verificado/i)).not.toBeInTheDocument();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
+  }, 15000);
 
   it('requires purchase divergence confirmation before moving from production request to lab selection', async () => {
     configureApiGet({
@@ -1463,9 +1605,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.dcm', { type: 'application/dicom' })] },
-    });
+    await uploadProductionScan('scan.dcm', 'application/dicom');
     fireEvent.click(screen.getByRole('checkbox', { name: /guarda principal do registro clínico/i }));
 
     await act(async () => {
@@ -1494,9 +1634,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/observações para o laboratório/i), {
       target: { value: 'Observações operacionais.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     await waitFor(() => expect(screen.getByText('scan.stl')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('checkbox'));
 
@@ -1576,12 +1714,22 @@ describe('ProducaoDentista', () => {
 
   it('submits the production request successfully when all required fields are filled', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({
-      order: createOrder({
-        status: 'lab_processing',
-        statusLabel: 'Em processo - Laboratório',
-        stage: 'lab_production',
-      }),
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({
+          order: createOrder({
+            status: 'lab_processing',
+            statusLabel: 'Em processo - Laboratório',
+            stage: 'lab_production',
+          }),
+        });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
     });
 
     renderPage();
@@ -1595,9 +1743,7 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 
@@ -1624,8 +1770,11 @@ describe('ProducaoDentista', () => {
             productionRequestSummary: 'Solicitação preenchida.',
             scan3dFileName: 'scan.stl',
             scan3dFileRef: expect.objectContaining({
-              id: expect.stringContaining('ext_scan3d-scan.stl'),
-              provider: 'simulated-external-storage',
+              id: 'upload-1',
+              provider: 'amazon-s3',
+              purpose: 'production_scan3d',
+              objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/scan.stl',
+              scanStatus: 'not_scanned',
             }),
             lgpdConfirmed: true,
             selectedLabId: 'profile-lab-edu',
@@ -1637,10 +1786,214 @@ describe('ProducaoDentista', () => {
     );
   });
 
+  it('keeps the selected production scan local until the form is submitted', async () => {
+    const { onUploadStateChange } = renderProductionRequestFields();
+
+    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
+      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
+    });
+
+    expect(await screen.findByText(LOCAL_FILE_READY)).toBeInTheDocument();
+    expect(screen.getByTestId('scan-name')).toHaveTextContent('scan.stl');
+    expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
+    expect(onUploadStateChange).not.toHaveBeenCalledWith(true);
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('uploads only the latest selected production scan when completing the form', async () => {
+    const user = userEvent.setup();
+    let uploadIntentCount = 0;
+
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent') {
+        uploadIntentCount += 1;
+        const uploadUrl = `https://private-upload.example/upload-${uploadIntentCount}`;
+
+        return Promise.resolve({
+          uploadId: `upload-${uploadIntentCount}`,
+          objectKey: `biteplaner/production-scans/tmp/BP-DEMO-004/upload-${uploadIntentCount}/${typeof payload?.fileName === 'string' ? payload.fileName : `scan-${uploadIntentCount}.stl`}`,
+          uploadUrl,
+          requiredHeaders: { 'x-amz-acl': 'private' },
+          expiresAt: '2026-05-08T12:15:00.000Z',
+        });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm') {
+        const fileName = typeof payload?.fileName === 'string' ? payload.fileName : 'scan.stl';
+
+        return Promise.resolve({
+          fileRef: {
+            id: `ref-${fileName}`,
+            fileName,
+            provider: 'amazon-s3',
+            purpose: 'production_scan3d',
+            objectKey: `biteplaner/production-scans/confirmed/BP-DEMO-004/upload-${uploadIntentCount}/${fileName}`,
+            mimeType: 'model/stl',
+            sizeBytes: 4,
+            scanStatus: 'not_scanned',
+            uploadedAt: '2026-05-08T12:00:00.000Z',
+          },
+        });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
+
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 200 })
+    );
+    vi.stubGlobal('fetch', putFile);
+
+    renderPage();
+    await screen.findByTestId('athlete-order-card');
+    await ensureAnamnesisSummaryStep();
+    await clickWizardNextButton();
+
+    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
+      target: { value: 'Solicitação preenchida.' },
+    });
+
+    const input = screen.getByLabelText(/selecionar escaneamento 3d intraoral/i);
+    await user.upload(input, new File(['old'], 'scan-old.stl', { type: 'model/stl' }));
+    await screen.findByText(LOCAL_FILE_READY);
+
+    await user.upload(input, new File(['new'], 'scan-new.stl', { type: 'model/stl' }));
+    await screen.findByText('scan-new.stl');
+
+    expect(putFile).not.toHaveBeenCalled();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.anything(),
+      expect.anything()
+    );
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    await clickWizardNextButton();
+    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
+    expect(putFile.mock.calls[0]?.[0]).toBe('https://private-upload.example/upload-1');
+    expect(mockApiPost).toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
+      expect.objectContaining({ fileName: 'scan-new.stl' }),
+      'tok'
+    );
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-004/forms/production-request',
+        {
+          payload: expect.objectContaining({
+            scan3dFileName: 'scan-new.stl',
+            scan3dFileRef: expect.objectContaining({
+              id: 'ref-scan-new.stl',
+              objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-004/upload-1/scan-new.stl',
+            }),
+          }),
+        },
+        'tok'
+      )
+    );
+  });
+
+  it('does not save the production request when the S3 upload fails', async () => {
+    configureApiGet();
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 500 })
+    );
+    vi.stubGlobal('fetch', putFile);
+
+    renderPage();
+
+    await fillProductionRequestUntilLabSelection();
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
+    expect(await screen.findByText(/não foi possível enviar o arquivo para o armazenamento privado/i)).toBeInTheDocument();
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/clinical-evaluation',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockApiPost).not.toHaveBeenCalledWith(
+      '/v1/orders/BP-DEMO-004/forms/production-request',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('reuses a confirmed production scan when final form submission fails and is retried', async () => {
+    configureApiGet();
+    const putFile = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+      new Response(null, { status: 200 })
+    );
+    vi.stubGlobal('fetch', putFile);
+    let productionFormAttempts = 0;
+
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        productionFormAttempts += 1;
+
+        if (productionFormAttempts === 1) {
+          return Promise.reject(new Error('temporary backend failure'));
+        }
+
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
+
+    renderPage();
+
+    await fillProductionRequestUntilLabSelection();
+    const concludeButton = screen.getByRole('button', { name: /finalizar/i });
+
+    fireEvent.click(concludeButton);
+
+    await waitFor(() => expect(productionFormAttempts).toBe(1));
+    expect(await screen.findByText(/temporary backend failure/i)).toBeInTheDocument();
+    expect(putFile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
+
+    await waitFor(() => expect(productionFormAttempts).toBe(2));
+    expect(putFile).toHaveBeenCalledTimes(1);
+    expect(
+      mockApiPost.mock.calls.filter(([url]) => url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent')
+    ).toHaveLength(1);
+    expect(
+      mockApiPost.mock.calls.filter(([url]) => url === '/v1/orders/BP-DEMO-004/attachments/production-scan3d/confirm')
+    ).toHaveLength(1);
+  });
+
   it('does not start PDF generation while completing the production request', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1661,8 +2014,17 @@ describe('ProducaoDentista', () => {
 
   it('does not show a PDF snackbar while completing the production request', async () => {
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1690,8 +2052,17 @@ describe('ProducaoDentista', () => {
 
     vi.stubGlobal('Worker', BrokenPdfWorker);
     configureApiGet();
-    mockApiPost.mockResolvedValueOnce({ order: createOrder() });
-    mockApiPost.mockResolvedValueOnce({ id: 'form-production-1' });
+    mockApiPost.mockImplementation((url: string, payload?: Record<string, unknown>) => {
+      if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
+        return Promise.resolve({ order: createOrder() });
+      }
+
+      if (url === '/v1/orders/BP-DEMO-004/forms/production-request') {
+        return Promise.resolve({ id: 'form-production-1' });
+      }
+
+      return defaultApiPostMock(url, payload);
+    });
 
     renderPage();
 
@@ -1722,9 +2093,7 @@ describe('ProducaoDentista', () => {
       target: { value: 'Solicitação preenchida.' },
     });
 
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 
@@ -1745,9 +2114,7 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
-    fireEvent.change(screen.getByLabelText(/selecionar escaneamento 3d intraoral/i), {
-      target: { files: [new File(['scan'], 'scan.stl', { type: 'model/stl' })] },
-    });
+    await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
     await clickWizardNextButton();
 

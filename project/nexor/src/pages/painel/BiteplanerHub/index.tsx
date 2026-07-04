@@ -41,6 +41,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import * as S from './styles';
 import {
   completeLabProduction,
+  createProductionScanDownloadUrl,
   fetchAppointments,
   fetchOrderForm,
   fetchOrderForms,
@@ -1015,10 +1016,6 @@ function buildPartnerInviteLink(token: string) {
   return new URL(`/cadastro?invite=${encodeURIComponent(token)}`, window.location.origin).toString();
 }
 
-function buildProductionAttachmentHref(fileName: string) {
-  return `data:application/octet-stream;charset=utf-8,${encodeURIComponent(`Arquivo demo do Biteplaner: ${fileName}`)}#${encodeURIComponent(fileName)}`;
-}
-
 function getAttachmentFileName(fileName: string, fileRef?: ExternalFileReference | null) {
   return fileName || fileRef?.fileName || '';
 }
@@ -1730,6 +1727,23 @@ export function BiteplanerHub() {
       setError('Não foi possível salvar o retorno de adaptação agora.');
     } finally {
       setActiveAction('');
+    }
+  }
+
+  async function handleDownloadProductionScan(orderId: string, fileRefId: string) {
+    if (!token) {
+      return;
+    }
+
+    setNotice('');
+    setError('');
+
+    try {
+      const response = await createProductionScanDownloadUrl(orderId, fileRefId, token);
+      window.open(response.downloadUrl, '_blank', 'noopener,noreferrer');
+      setNotice('Download temporário gerado para o escaneamento 3D.');
+    } catch {
+      setError('Não foi possível gerar o download do escaneamento 3D agora.');
     }
   }
 
@@ -2858,8 +2872,9 @@ export function BiteplanerHub() {
   const selectedAdjustmentLabAddress = selectedAdjustmentLab
     ? [selectedAdjustmentLab.address, selectedAdjustmentLab.city, selectedAdjustmentLab.state].filter(Boolean).join(' - ')
     : '';
+  const productionScanFileRef = productionRequestDraft?.scan3dFileRef ?? null;
   const productionScanFileName = productionRequestDraft
-    ? getAttachmentFileName(productionRequestDraft.scan3dFileName, productionRequestDraft.scan3dFileRef)
+    ? getAttachmentFileName(productionRequestDraft.scan3dFileName, productionScanFileRef)
     : '';
   const productionPurchaseConfiguration =
     productionRequestDraft?.purchaseConfiguration ?? selectedDocumentationOrder?.purchaseConfiguration ?? null;
@@ -3452,7 +3467,7 @@ export function BiteplanerHub() {
                   <S.DocumentationIconLink
                     href={selectedAdaptationWhatsAppUrl}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     title="Abrir WhatsApp"
                     aria-label="Abrir WhatsApp para agendar retorno"
                   >
@@ -3719,7 +3734,7 @@ export function BiteplanerHub() {
                 <Mail size={14} aria-hidden />
                 Enviar por e-mail
               </S.ActionHref>
-              <S.ActionHref href={whatsappHref} target="_blank" rel="noreferrer" $variant="whatsapp">
+              <S.ActionHref href={whatsappHref} target="_blank" rel="noopener noreferrer" $variant="whatsapp">
                 <MessageCircle size={14} aria-hidden />
                 Enviar por WhatsApp
               </S.ActionHref>
@@ -3841,11 +3856,17 @@ export function BiteplanerHub() {
                   ) : null}
                   <S.DocumentationItem>
                     <S.DocumentationLabel>Escaneamento 3D</S.DocumentationLabel>
-                    {productionScanFileName ? (
+                    {productionScanFileName && productionScanFileRef?.id ? (
                       <S.DocumentationDownloadLink
-                        href={buildProductionAttachmentHref(productionScanFileName)}
-                        download={productionScanFileName}
+                        as="button"
+                        type="button"
                         aria-label={`Baixar Escaneamento 3D ${productionScanFileName}`}
+                        onClick={() =>
+                          void handleDownloadProductionScan(
+                            selectedDocumentationOrder.id,
+                            productionScanFileRef.id
+                          )
+                        }
                       >
                         <Download size={14} aria-hidden />
                         Baixar arquivo
@@ -3855,7 +3876,7 @@ export function BiteplanerHub() {
                     )}
                     {productionScanFileName ? (
                       <S.DocumentationValue>
-                        Tamanho: {formatAttachmentSize(productionRequestDraft.scan3dFileRef?.sizeBytes)}
+                        Tamanho: {formatAttachmentSize(productionScanFileRef?.sizeBytes)}
                       </S.DocumentationValue>
                     ) : null}
                   </S.DocumentationItem>

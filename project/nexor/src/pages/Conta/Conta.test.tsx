@@ -3,8 +3,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { vi } from 'vitest';
 import { useAuth } from '../../hooks/useAuth';
-import { lightTheme } from '../../styles/theme';
 import { clearPendingRegistration, savePendingRegistration } from '../../lib/pending-registration';
+import { lightTheme } from '../../styles/theme';
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: vi.fn()
@@ -12,9 +12,7 @@ vi.mock('../../hooks/useAuth', () => ({
 
 vi.mock('../../lib/api', () => ({
   api: {
-    get: vi.fn().mockResolvedValue({
-      profile: { full_name: 'Joao Silva', role: 'customer' }
-    }),
+    get: vi.fn(),
     post: vi.fn()
   }
 }));
@@ -41,21 +39,29 @@ function createAuthMock(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function renderConta() {
+  render(
+    <ThemeProvider theme={lightTheme}>
+      <MemoryRouter>
+        <Conta />
+      </MemoryRouter>
+    </ThemeProvider>
+  );
+}
+
 describe('Conta', () => {
   beforeEach(() => {
     clearPendingRegistration();
     vi.clearAllMocks();
+    (api.get as any).mockResolvedValue({
+      profile: { full_name: 'Joao Silva', role: 'customer' }
+    });
+    (api.post as any).mockResolvedValue({ ok: true });
     vi.mocked(useAuth).mockReturnValue(createAuthMock());
   });
 
   it('displays user name and product card linking to /painel/biteplaner', async () => {
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <MemoryRouter>
-          <Conta />
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+    renderConta();
 
     await waitFor(() => {
       expect(screen.getByText(/Joao Silva/i)).toBeInTheDocument();
@@ -71,13 +77,7 @@ describe('Conta', () => {
       profile: { full_name: 'Parceiro Nexor', role: 'partner' }
     });
 
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <MemoryRouter>
-          <Conta />
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+    renderConta();
 
     await waitFor(() => expect(screen.getByText(/Parceiro Nexor/i)).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /Escolher acesso ao Biteplaner/i })).toHaveAttribute(
@@ -86,38 +86,30 @@ describe('Conta', () => {
     );
   });
 
-  it('finalizes pending registration after confirmed session', async () => {
+  it('syncs safe pending registration consents without creating a profile from client storage', async () => {
     (api.get as any)
       .mockResolvedValueOnce({ user: { email: 'joao@example.com' } })
       .mockResolvedValueOnce({ user: { profileId: 'p1', roles: ['customer'] } });
-    (api.post as any)
-      .mockResolvedValueOnce({ id: 'p1' })
-      .mockResolvedValueOnce({ ok: true });
+
+    const consents = [
+      { type: 'terms' as const, accepted: true },
+      { type: 'privacy' as const, accepted: true },
+      { type: 'marketing' as const, accepted: false }
+    ];
 
     savePendingRegistration({
       email: 'joao@example.com',
       fullName: 'Joao Silva',
       role: 'customer',
-      documentType: 'cpf',
-      documentNumber: '52998224725',
-      consents: [
-        { type: 'terms', accepted: true },
-        { type: 'privacy', accepted: true },
-        { type: 'marketing', accepted: false }
-      ]
+      consents
     });
 
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <MemoryRouter>
-          <Conta />
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+    renderConta();
 
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalled();
+      expect(api.post).toHaveBeenCalledWith('/v1/account/consents', { consents }, 'tok');
     });
+    expect(api.post).not.toHaveBeenCalledWith('/v1/auth/profile', expect.anything(), expect.anything());
   });
 
   it('shows Biteplaner card for all accounts', async () => {
@@ -125,13 +117,7 @@ describe('Conta', () => {
       profile: { full_name: 'User Nexor', role: 'customer' }
     });
 
-    render(
-      <ThemeProvider theme={lightTheme}>
-        <MemoryRouter>
-          <Conta />
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+    renderConta();
 
     await waitFor(() => expect(screen.getByText(/User Nexor/i)).toBeInTheDocument());
     expect(screen.getByRole('link', { name: /Escolher acesso ao Biteplaner/i })).toHaveAttribute(

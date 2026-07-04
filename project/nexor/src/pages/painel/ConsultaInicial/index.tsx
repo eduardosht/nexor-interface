@@ -1120,7 +1120,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                     <S.DetailValue>{formatDistanceKm(activeDisplayedLocation.distanceKm)} km</S.DetailValue>
                   </S.DetailList>
                   {clinicSchedulingWhatsappHref ? (
-                    <S.WhatsappActionHref href={clinicSchedulingWhatsappHref} target="_blank" rel="noreferrer">
+                    <S.WhatsappActionHref href={clinicSchedulingWhatsappHref} target="_blank" rel="noopener noreferrer">
                       <MessageCircle size={16} aria-hidden data-testid="clinic-whatsapp-icon" />
                       Agendar pelo WhatsApp
                     </S.WhatsappActionHref>
@@ -1171,7 +1171,7 @@ export function ConsultaInicial({ embedded = false, initialOrder = null, onOrder
                 onChange={(event) => setDentistReferralMessage(event.target.value)}
               />
               <S.ReferralActions>
-                <S.WhatsappActionHref href={dentistReferralWhatsappHref} target="_blank" rel="noreferrer">
+                <S.WhatsappActionHref href={dentistReferralWhatsappHref} target="_blank" rel="noopener noreferrer">
                   <MessageCircle size={16} aria-hidden data-testid="referral-whatsapp-icon" />
                   Enviar por WhatsApp
                 </S.WhatsappActionHref>

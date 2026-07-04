@@ -1,12 +1,23 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
-const { mockGet, mockOnAuthStateChange } = vi.hoisted(() => ({
+const {
+  mockGet,
+  mockPost,
+  mockOnAuthStateChange,
+  mockLoadPendingRegistration,
+  mockLoadLegacyPendingRegistrationForMigration,
+  mockClearPendingRegistration,
+} = vi.hoisted(() => ({
   mockGet: vi.fn(),
-  mockOnAuthStateChange: vi.fn()
+  mockPost: vi.fn(),
+  mockOnAuthStateChange: vi.fn(),
+  mockLoadPendingRegistration: vi.fn(),
+  mockLoadLegacyPendingRegistrationForMigration: vi.fn(),
+  mockClearPendingRegistration: vi.fn(),
 }));
 vi.mock('../lib/api', () => ({
-  api: { get: mockGet, post: vi.fn(), patch: vi.fn() },
+  api: { get: mockGet, post: mockPost, patch: vi.fn() },
   ApiError: class ApiError extends Error {
     status: number;
 
@@ -19,8 +30,9 @@ vi.mock('../lib/api', () => ({
 }));
 
 vi.mock('../lib/pending-registration', () => ({
-  loadPendingRegistration: vi.fn().mockReturnValue(null),
-  clearPendingRegistration: vi.fn()
+  loadPendingRegistration: mockLoadPendingRegistration,
+  loadLegacyPendingRegistrationForMigration: mockLoadLegacyPendingRegistrationForMigration,
+  clearPendingRegistration: mockClearPendingRegistration,
 }));
 
 vi.mock('../lib/supabase', () => ({
@@ -66,10 +78,81 @@ function Consumer() {
 describe('useAuth backendUser', () => {
   beforeEach(() => {
     mockGet.mockReset();
+    mockPost.mockReset();
+    mockPost.mockResolvedValue({ ok: true });
+    mockLoadPendingRegistration.mockReset();
+    mockLoadPendingRegistration.mockReturnValue(null);
+    mockLoadLegacyPendingRegistrationForMigration.mockReset();
+    mockLoadLegacyPendingRegistrationForMigration.mockReturnValue(null);
+    mockClearPendingRegistration.mockReset();
     mockOnAuthStateChange.mockReset();
     mockOnAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: vi.fn() } }
     });
+  });
+
+
+  it('syncs safe pending registration consents without creating a profile from client storage', async () => {
+    mockLoadPendingRegistration.mockReturnValue({
+      email: 'a@b.com',
+      fullName: 'Ana Cliente',
+      role: 'customer',
+      consents: [
+        { type: 'terms', accepted: true },
+        { type: 'privacy', accepted: true },
+      ],
+    });
+    mockGet.mockResolvedValue({
+      user: { id: '1', authUserId: '1', email: 'a@b.com', roles: ['customer'], clinicIds: [] }
+    });
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('role')).toHaveTextContent('customer'));
+
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v1/account/consents',
+      {
+        consents: [
+          { type: 'terms', accepted: true },
+          { type: 'privacy', accepted: true },
+        ],
+      },
+      'tok'
+    );
+    expect(mockPost).not.toHaveBeenCalledWith(
+      '/v1/auth/profile',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(mockClearPendingRegistration).toHaveBeenCalled();
+  });
+
+  it('clears pending registration when it belongs to another email', async () => {
+    mockLoadPendingRegistration.mockReturnValue({
+      email: 'outra@example.com',
+      fullName: 'Outra Pessoa',
+      role: 'customer',
+      consents: [{ type: 'terms', accepted: true }],
+    });
+    mockGet.mockResolvedValue({
+      user: { id: '1', authUserId: '1', email: 'a@b.com', roles: ['customer'], clinicIds: [] }
+    });
+
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>
+    );
+
+    await waitFor(() => expect(screen.getByTestId('role')).toHaveTextContent('customer'));
+
+    expect(mockPost).not.toHaveBeenCalled();
+    expect(mockClearPendingRegistration).toHaveBeenCalled();
   });
 
   it('exposes backendUser from /v1/auth/me', async () => {

@@ -1849,6 +1849,15 @@ describe('BiteplanerHub', () => {
               productionRequestSummary: 'Protetor superior personalizado para alto impacto.',
               labNotes: 'Priorizar acabamento vestibular e conferir adaptação posterior.',
               scan3dFileName: 'marina-demo-arcada-superior.stl',
+              scan3dFileRef: {
+                id: 'upload_demo_marina_scan',
+                fileName: 'marina-demo-arcada-superior.stl',
+                provider: 'amazon-s3',
+                purpose: 'production_scan3d',
+                objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-005/upload_demo_marina_scan/marina-demo-arcada-superior.stl',
+                scanStatus: 'not_scanned',
+                uploadedAt: '2026-05-03T09:15:00.000Z',
+              },
               lgpdConfirmed: true,
               selectedLabId: 'lab-demo-001',
               purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 3 },
@@ -1874,6 +1883,15 @@ describe('BiteplanerHub', () => {
               productionRequestSummary: 'Protetor superior personalizado para alto impacto.',
               labNotes: 'Priorizar acabamento vestibular e conferir adaptação posterior.',
               scan3dFileName: 'marina-demo-arcada-superior.stl',
+              scan3dFileRef: {
+                id: 'upload_demo_marina_scan',
+                fileName: 'marina-demo-arcada-superior.stl',
+                provider: 'amazon-s3',
+                purpose: 'production_scan3d',
+                objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-005/upload_demo_marina_scan/marina-demo-arcada-superior.stl',
+                scanStatus: 'not_scanned',
+                uploadedAt: '2026-05-03T09:15:00.000Z',
+              },
               lgpdConfirmed: true,
               selectedLabId: 'lab-demo-001',
               purchaseConfiguration: { productKey: 'biteplaner', model: 'impacto', color: 'preto', quantity: 3 },
@@ -1953,11 +1971,9 @@ describe('BiteplanerHub', () => {
     expect(within(documentationDialog).queryByText(/paciente apta para biteplaner esportivo/i)).not.toBeInTheDocument();
     expect(within(documentationDialog).queryByText(/lgpd e retenção/i)).not.toBeInTheDocument();
     expect(within(documentationDialog).queryByText(/laboratório selecionado/i)).not.toBeInTheDocument();
-    const scanDownload = within(documentationDialog).getByRole('link', {
+    expect(within(documentationDialog).getByRole('button', {
       name: /baixar escaneamento 3d marina-demo-arcada-superior\.stl/i
-    });
-    expect(scanDownload).toHaveAttribute('download', 'marina-demo-arcada-superior.stl');
-    expect(scanDownload).toHaveAttribute('href', expect.stringContaining('marina-demo-arcada-superior.stl'));
+    })).toBeInTheDocument();
     expect(within(documentationDialog).getAllByText(/baixar arquivo/i)).toHaveLength(1);
     expect(within(documentationDialog).getAllByText(/tamanho não informado/i)).toHaveLength(1);
     expect(screen.queryByTestId('lab-order-action-start')).not.toBeInTheDocument();
@@ -2055,11 +2071,14 @@ describe('BiteplanerHub', () => {
             labNotes: 'Usar acabamento esportivo e conferir adaptação posterior.',
             scan3dFileName: '',
             scan3dFileRef: {
-              id: 'ext_scan_123',
+              id: 'upload_demo_scan_123',
               fileName: 'scan-real.stl',
-              provider: 'simulated-external-storage',
+              provider: 'amazon-s3',
+              purpose: 'production_scan3d',
+              objectKey: 'biteplaner/production-scans/confirmed/BP-DEMO-088/upload_demo_scan_123/scan-real.stl',
               mimeType: 'model/stl',
               sizeBytes: 123456,
+              scanStatus: 'not_scanned',
               uploadedAt: '2026-06-03T12:55:00.000Z',
             },
             lgpdConfirmed: true,
@@ -2070,6 +2089,11 @@ describe('BiteplanerHub', () => {
       }
 
       return Promise.reject(new Error(`Unhandled GET ${path}`));
+    });
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    mockApiPost.mockResolvedValueOnce({
+      downloadUrl: 'https://s3.demo.local/download/scan-real.stl',
+      expiresAt: '2026-06-03T13:05:00.000Z',
     });
 
     renderPage('/painel/biteplaner?mode=lab', {
@@ -2100,8 +2124,23 @@ describe('BiteplanerHub', () => {
     expect(within(documentationDialog).queryByText(/laboratório selecionado/i)).not.toBeInTheDocument();
     expect(within(documentationDialog).queryByText(/solicitação de produção enviada ao laboratório/i)).not.toBeInTheDocument();
     expect(within(documentationDialog).getByText(/usar acabamento esportivo/i)).toBeInTheDocument();
-    const scanDownload = within(documentationDialog).getByRole('link', { name: /baixar escaneamento 3d scan-real\.stl/i });
+    const scanDownload = within(documentationDialog).getByRole('button', { name: /baixar escaneamento 3d scan-real\.stl/i });
     expect(scanDownload).toHaveTextContent(/baixar arquivo/i);
+    expect(mockApiPost).not.toHaveBeenCalled();
+    fireEvent.click(scanDownload);
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/orders/BP-DEMO-088/attachments/production-scan3d/download-url',
+        { fileRefId: 'upload_demo_scan_123' },
+        'tok'
+      )
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://s3.demo.local/download/scan-real.stl',
+      '_blank',
+      'noopener,noreferrer'
+    );
+    expect(await screen.findByText(/download temporário gerado para o escaneamento 3d\./i)).toBeInTheDocument();
     expect(within(documentationDialog).getByText(/tamanho: 120,6 kb/i)).toBeInTheDocument();
     expect(within(documentationDialog).queryByText(/scan-real\.stl/i)).not.toBeInTheDocument();
     expect(within(documentationDialog).queryByText(/prescricao-real\.pdf/i)).not.toBeInTheDocument();

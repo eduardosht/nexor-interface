@@ -1611,15 +1611,15 @@ export function MinhaConta() {
                 <Download size={16} aria-hidden />
                 {privacyExportSubmitting ? 'Gerando exportação...' : 'Exportar meus dados'}
               </S.PrivacyActionButton>
-              <S.PrivacyActionLink to="/privacidade" target="_blank" rel="noreferrer">
+              <S.PrivacyActionLink to="/privacidade" target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={16} aria-hidden />
                 Política de Privacidade
               </S.PrivacyActionLink>
-              <S.PrivacyActionLink to="/cookies" target="_blank" rel="noreferrer">
+              <S.PrivacyActionLink to="/cookies" target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={16} aria-hidden />
                 Política de Cookies
               </S.PrivacyActionLink>
-              <S.PrivacyActionLink to="/?assunto=lgpd#contato" target="_blank" rel="noreferrer">
+              <S.PrivacyActionLink to="/?assunto=lgpd#contato" target="_blank" rel="noopener noreferrer">
                 <Mail size={16} aria-hidden />
                 Falar com o canal LGPD
               </S.PrivacyActionLink>

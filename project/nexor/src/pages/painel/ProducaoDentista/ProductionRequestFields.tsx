@@ -3,7 +3,6 @@ import { CheckboxField, Field, UploadField, type UploadFieldFile } from '@nexor/
 import type { BiteplanerPurchaseConfiguration, ProductionRequestDraft } from '../../../features/demo/biteplanerFlow';
 import {
   PRODUCTION_UPLOAD_POLICIES,
-  uploadProductionRequestFile,
   validateProductionRequestFile,
   type ExternalUploadPurpose,
 } from '../../../features/demo/externalUploadGateway';
@@ -11,8 +10,10 @@ import { FieldsGrid } from '../admin/styles';
 import * as S from './styles';
 
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
+const PRIVATE_STORAGE_RECEIPT = 'Arquivo recebido no armazenamento privado.';
+const LOCAL_FILE_READY = 'Arquivo selecionado para envio ao finalizar.';
 
-function fileListFromName(fileName: string, fileId?: string | null): UploadFieldFile[] {
+function fileListFromName(fileName: string, fileId?: string | null, sizeLabel?: string): UploadFieldFile[] {
   if (!fileName.trim()) {
     return [];
   }
@@ -22,6 +23,7 @@ function fileListFromName(fileName: string, fileId?: string | null): UploadField
       id: fileId ?? fileName,
       name: fileName,
       status: 'uploaded',
+      sizeLabel,
     },
   ];
 }
@@ -30,6 +32,8 @@ type ProductionRequestFieldsProps = {
   draft: ProductionRequestDraft;
   dentistRecommendedPurchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
   onChange: (patch: Partial<ProductionRequestDraft>) => void;
+  onUploadStateChange?: (uploading: boolean) => void;
+  onScan3dFileChange?: (file: File | null) => void;
 };
 
 function useDebouncedDraftText(value: string, onCommit: (value: string) => void, delayMs = 300) {
@@ -113,8 +117,11 @@ export function ProductionRequestFields({
   draft,
   dentistRecommendedPurchaseConfiguration,
   onChange,
+  onUploadStateChange,
+  onScan3dFileChange,
 }: ProductionRequestFieldsProps) {
   const [uploadErrors, setUploadErrors] = useState<Partial<Record<ExternalUploadPurpose, UploadFieldFile>>>({});
+  const uploadSequenceRef = useRef(0);
   const purchaseConfiguration = draft.purchaseConfiguration;
   const productionRequestSummaryField = useDebouncedDraftText(draft.productionRequestSummary, (value) =>
     onChange({ productionRequestSummary: value })
@@ -125,20 +132,29 @@ export function ProductionRequestFields({
     dentistRecommendedPurchaseConfiguration &&
     !isSamePurchaseConfiguration(purchaseConfiguration, dentistRecommendedPurchaseConfiguration);
 
+  function invalidateCurrentUpload() {
+    uploadSequenceRef.current += 1;
+    return uploadSequenceRef.current;
+  }
+
   function handleProductionFileChange(purpose: ExternalUploadPurpose, files: File[]) {
     const file = files[0];
     const nameKey = 'scan3dFileName';
     const refKey = 'scan3dFileRef';
 
     if (!file) {
+      invalidateCurrentUpload();
       setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
+      onScan3dFileChange?.(null);
       onChange({ [nameKey]: '', [refKey]: null });
+      onUploadStateChange?.(false);
       return;
     }
 
     const validation = validateProductionRequestFile(file, purpose);
 
     if (!validation.valid) {
+      invalidateCurrentUpload();
       setUploadErrors((current) => ({
         ...current,
         [purpose]: {
@@ -148,13 +164,17 @@ export function ProductionRequestFields({
           errorMessage: validation.message,
         },
       }));
+      onScan3dFileChange?.(null);
       onChange({ [nameKey]: '', [refKey]: null });
+      onUploadStateChange?.(false);
       return;
     }
 
-    const fileRef = uploadProductionRequestFile(file, purpose);
+    invalidateCurrentUpload();
     setUploadErrors((current) => ({ ...current, [purpose]: undefined }));
-    onChange({ [nameKey]: file.name, [refKey]: fileRef });
+    onScan3dFileChange?.(file);
+    onChange({ [nameKey]: file.name, [refKey]: null });
+    onUploadStateChange?.(false);
   }
 
   return (
@@ -215,12 +235,23 @@ export function ProductionRequestFields({
           files={
             uploadErrors.scan3d
               ? [uploadErrors.scan3d]
-              : fileListFromName(draft.scan3dFileName, draft.scan3dFileRef?.id)
+              : draft.scan3dFileName.trim()
+                ? fileListFromName(
+                  draft.scan3dFileName,
+                  draft.scan3dFileRef?.id,
+                  draft.scan3dFileRef ? PRIVATE_STORAGE_RECEIPT : LOCAL_FILE_READY
+                )
+                : []
           }
-          onFilesChange={(files) => handleProductionFileChange('scan3d', files)}
+          onFilesChange={(files) => {
+            handleProductionFileChange('scan3d', files);
+          }}
           onRemoveFile={() => {
+            invalidateCurrentUpload();
             setUploadErrors((current) => ({ ...current, scan3d: undefined }));
+            onScan3dFileChange?.(null);
             onChange({ scan3dFileName: '', scan3dFileRef: null });
+            onUploadStateChange?.(false);
           }}
         />
       </S.AttachmentGrid>

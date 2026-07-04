@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { api, ApiError } from '../../lib/api';
-import { clearPendingRegistration, loadPendingRegistration } from '../../lib/pending-registration';
+import {
+  clearPendingRegistration,
+  loadLegacyPendingRegistrationForMigration,
+  loadPendingRegistration,
+} from '../../lib/pending-registration';
 import { Alert, Description, Success, Title } from '../auth-shared';
 import { Hero, LogoutButton, Page, ProductCard, Shell } from './Conta.styles';
 
@@ -35,37 +39,33 @@ export function Conta() {
     let active = true;
 
     async function syncPendingRegistration(token: string, response: MeResponse) {
-      const pending = loadPendingRegistration();
+      const legacyPending = loadLegacyPendingRegistrationForMigration();
+      const pending = legacyPending ?? loadPendingRegistration();
 
       if (!pending) {
         return response;
       }
 
       if (pending.email.toLowerCase() !== (currentSession.user.email ?? '').toLowerCase()) {
+        clearPendingRegistration();
         return response;
       }
 
-      if (
-        !response.user?.profileId &&
-        !backendUser?.profileId &&
-        pending.documentType &&
-        pending.documentNumber &&
-        pending.role
-      ) {
+      if (!response.user?.profileId && !backendUser?.profileId && legacyPending) {
         try {
           await api.post(
             '/v1/auth/profile',
             {
-              fullName: pending.fullName,
-              role: pending.role,
-              documentType: pending.documentType,
-              documentNumber: pending.documentNumber,
-              companyName: pending.companyName
+              fullName: legacyPending.fullName,
+              role: legacyPending.role,
+              documentType: legacyPending.documentType,
+              documentNumber: legacyPending.documentNumber,
+              companyName: legacyPending.companyName
             },
             token
           );
         } catch (syncError) {
-          if (!(syncError instanceof ApiError) || syncError.status !== 403) {
+          if (!(syncError instanceof ApiError) || (syncError.status !== 403 && syncError.status !== 409)) {
             throw syncError;
           }
         }
@@ -74,7 +74,7 @@ export function Conta() {
       try {
         await api.post('/v1/account/consents', { consents: pending.consents }, token);
       } catch (syncError) {
-        if (!(syncError instanceof ApiError) || syncError.status !== 403) {
+        if (!(syncError instanceof ApiError) || (syncError.status !== 403 && syncError.status !== 409)) {
           throw syncError;
         }
       }
@@ -82,7 +82,11 @@ export function Conta() {
       clearPendingRegistration();
       await refreshBackendUser();
       if (active) {
-        setNotice('Sua conta foi confirmada e o perfil Nexor foi concluído automaticamente.');
+        setNotice(
+          legacyPending
+            ? 'Sua conta foi confirmada e o perfil Nexor foi concluído automaticamente.'
+            : 'Sua conta foi confirmada e seus consentimentos foram sincronizados.'
+        );
       }
 
       return api.get<MeResponse>('/v1/auth/me', token);

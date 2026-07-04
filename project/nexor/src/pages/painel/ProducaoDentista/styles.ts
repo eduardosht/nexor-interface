@@ -404,6 +404,13 @@ export const AttachmentGrid = styled.div`
   }
 `;
 
+export const AttachmentStatusMessage = styled.span`
+  margin-top: -4px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.5;
+`;
+
 export const MapViewport = styled.div`
   height: 420px;
   overflow: hidden;
