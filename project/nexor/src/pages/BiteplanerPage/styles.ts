@@ -106,13 +106,27 @@ export const ProductImageHero = styled.section`
 `;
 
 export const ProductHeroPicture = styled.picture`
-  display: block;
+  display: none;
   width: 100%;
+
+  @media (max-width: 720px) {
+    display: block;
+  }
 `;
 
 export const ProductHeroImage = styled.img`
   width: 100%;
   display: block;
+`;
+
+export const ProductHeroVideo = styled.video`
+  display: block;
+  width: 100%;
+  height: auto;
+
+  @media (max-width: 720px) {
+    display: none;
+  }
 `;
 
 export const HeroSection = styled.section`

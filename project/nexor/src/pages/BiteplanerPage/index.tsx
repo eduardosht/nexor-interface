@@ -21,6 +21,7 @@ import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
 import heroSectionProductMobile from '../../assets/backgrounds/hero-section-product-mobile.png';
 import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png';
+import heroBiteplanerVideo from '../../assets/backgrounds/hero-biteplaner-video.mp4';
 import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
@@ -317,6 +318,16 @@ export function BiteplanerPage() {
   return (
     <S.Page id="main-content" tabIndex={-1}>
       <S.ProductImageHero aria-label="Biteplaner em destaque">
+        <S.ProductHeroVideo
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          poster={heroSectionProduct}
+          aria-hidden="true"
+        >
+          <source src={heroBiteplanerVideo} type="video/mp4" media="(min-width: 721px)" />
+        </S.ProductHeroVideo>
         <S.ProductHeroPicture>
           <source media="(max-width: 720px)" srcSet={heroSectionProductMobile} />
           <S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />
