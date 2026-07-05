@@ -21,7 +21,7 @@ export const LegalProfileIntro = styled.p`
 
 export const LegalProfileGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
   gap: 12px;
   margin: 0 0 44px;
 

@@ -106,7 +106,9 @@ export function LegalDocumentPage({
               <div>
                 <LegalTitle as="h2">{selectedContent.title}</LegalTitle>
                 <LegalSubtitle>{selectedContent.subtitle}</LegalSubtitle>
-                <LegalUpdatedAt>{selectedContent.updatedAt}</LegalUpdatedAt>
+                <LegalUpdatedAt>
+                  {selectedContent.updatedAt} · {selectedContent.version}
+                </LegalUpdatedAt>
               </div>
               <LegalActions>
                 <LegalDownloadButton type="button" onClick={handleDownloadPdf} disabled={isDownloading}>

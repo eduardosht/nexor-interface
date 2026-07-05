@@ -49,6 +49,7 @@ function LegalPdfDocument({ content }: { content: LegalDocumentContent }) {
     <Document title={content.title}>
       <Page size="A4" style={styles.page}>
         <Text style={styles.eyebrow}>{content.updatedAt}</Text>
+        <Text style={styles.eyebrow}>{content.version}</Text>
         <Text style={styles.title}>{content.title}</Text>
         <Text style={styles.subtitle}>{content.subtitle}</Text>
 
