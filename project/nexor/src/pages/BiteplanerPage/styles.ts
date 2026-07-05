@@ -102,7 +102,7 @@ export const Page = styled.main`
 `;
 
 export const ProductImageHero = styled.section`
-  padding-top: 60px;
+  padding-top: var(--public-header-height);
 `;
 
 export const ProductHeroPicture = styled.picture`
@@ -122,7 +122,9 @@ export const ProductHeroImage = styled.img`
 export const ProductHeroVideo = styled.video`
   display: block;
   width: 100%;
-  height: auto;
+  height: calc(100vh - var(--public-header-height));
+  height: calc(100svh - var(--public-header-height));
+  object-fit: cover;
 
   @media (max-width: 720px) {
     display: none;

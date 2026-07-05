@@ -58,7 +58,11 @@ describe('BiteplanerPage', () => {
     expect(pageSource).toContain('<source media="(max-width: 720px)" srcSet={heroSectionProductMobile} />');
     expect(pageSource).toContain('<S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />');
     expect(stylesSource).toContain('export const ProductImageHero = styled.section');
+    expect(stylesSource).toContain('padding-top: var(--public-header-height);');
     expect(stylesSource).toContain('export const ProductHeroVideo = styled.video');
+    expect(stylesSource).toContain('height: calc(100vh - var(--public-header-height));');
+    expect(stylesSource).toContain('height: calc(100svh - var(--public-header-height));');
+    expect(stylesSource).toContain('object-fit: cover;');
     expect(stylesSource).toContain('export const ProductHeroPicture = styled.picture');
     expect(stylesSource).toContain('export const ProductHeroImage = styled.img');
   });
