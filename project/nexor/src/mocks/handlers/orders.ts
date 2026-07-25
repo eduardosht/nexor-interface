@@ -418,7 +418,7 @@ export function orderHandlers(server: Server) {
       200,
       {},
       {
-        url: 'https://checkout.pagar.me/test-link'
+      url: 'https://sandbox.asaas.com/checkout/test-link'
       }
     );
   }));

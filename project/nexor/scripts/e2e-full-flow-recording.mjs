@@ -867,25 +867,6 @@ async function submitPartnerRoleViaUi(page, partnerEmail, documentNumber) {
   logStep('Submitted partner registration through UI', { email: partnerEmail });
 }
 
-async function approvePartnerRequestViaUi(page, partnerRoleId) {
-  await gotoAndRecord(page, '/painel/admin/parceiros', 'admin-aprovacao-parceiros');
-  const table = page.getByTestId('admin-partner-requests-table');
-  await table.waitFor({ state: 'visible', timeout: 30000 });
-  const viewRequestButton = table.getByRole('button', { name: /visualizar solicita/i }).first();
-  await slowClick(viewRequestButton);
-  const dialog = page.getByRole('dialog', { name: /dados enviados pelo parceiro/i });
-  await dialog.waitFor({ state: 'visible', timeout: 30000 });
-  await setVideoStep(page, readableStepName('admin-aprovacao-parceiro-modal'), readableStepDescription('admin-aprovacao-parceiro-modal'));
-  await screenshot(page, 'admin-aprovacao-parceiro-modal');
-  await page.waitForTimeout(MODAL_PAUSE_MS);
-  await slowClick(dialog.getByRole('button', { name: /aprovar cadastro/i }));
-  await dialog.waitFor({ state: 'hidden', timeout: 30000 }).catch(() => undefined);
-  await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => undefined);
-  await setVideoStep(page, readableStepName('admin-aprovacao-parceiro-aprovado'), readableStepDescription('admin-aprovacao-parceiro-aprovado'));
-  await page.waitForTimeout(STEP_PAUSE_MS);
-  await screenshot(page, 'admin-aprovacao-parceiro-aprovado');
-  logStep('Approved partner product role through admin modal', { partnerProductRoleId: partnerRoleId });
-}
 
 async function createActorsAndRoles(page) {
   const admin = await signIn(ADMIN_EMAIL, ADMIN_PASSWORD);
@@ -910,9 +891,8 @@ async function createActorsAndRoles(page) {
     fullName: 'Dra. Helena E2E',
     croNumber: `CRO-E2E-${runId.slice(-6)}`,
     professionalSummary: 'Dentista licenciada para o fluxo E2E completo do Biteplaner.',
-    city: 'Sao Paulo',
-    state: 'SP',
-    practiceLocations: [location]
+    cnpj: cnpjFromSeed('dentist'),
+    cpf: '52998224725'
   });
   const labRole = await api(lab.token, 'POST', '/v1/account/products/biteplaner/roles/lab', {
     labName: `Laboratorio E2E ${entitySuffix}`,
@@ -925,11 +905,9 @@ async function createActorsAndRoles(page) {
   await gotoAndRecord(page, '/entrar', 'admin-login-antes-aprovacoes');
   await loginByUi(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
-  await approvePartnerRequestViaUi(page, partnerRole.id);
   await api(admin.token, 'POST', `/v1/admin/biteplaner/dentist-license-requests/${dentistRole.productRole.id}/approve`, {});
   await api(admin.token, 'POST', `/v1/admin/biteplaner/lab-license-requests/${labRole.productRole.id}/approve`, {});
-  logStep('Approved partner, dentist and lab product roles', {
-    partnerProductRoleId: partnerRole.id,
+  logStep('Approved dentist and lab product roles', {
     dentistProductRoleId: dentistRole.productRole.id,
     labProductRoleId: labRole.productRole.id
   });

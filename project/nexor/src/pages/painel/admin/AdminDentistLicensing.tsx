@@ -19,13 +19,9 @@ import {
   Eye,
   Filter,
   FileText,
-  HeartPulse,
-  MapPin,
-  Phone,
   Search,
   ShieldCheck,
   UserRoundCheck,
-  Clock3 as ClockIcon,
   XCircle,
 } from "lucide-react";
 import styled from "styled-components";
@@ -108,22 +104,6 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-function onlyDigits(value: string | undefined) {
-  return (value ?? "").replace(/\D/g, "");
-}
-
-function formatCpf(value: string | undefined) {
-  const digits = onlyDigits(value);
-  if (digits.length !== 11) return value?.trim() || "Não informado";
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function formatCnpj(value: string | undefined) {
-  const digits = onlyDigits(value);
-  if (digits.length !== 14) return value?.trim() || "Não informado";
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-}
-
 function canReviewRequest(request: DentistLicenseRequest) {
   return request.status === "pending";
 }
@@ -172,11 +152,7 @@ export function AdminDentistLicensing() {
 
     if (!query) return visibleByStatus;
 
-    return visibleByStatus.filter((request) =>
-      `${request.dentistName} ${request.croNumber} ${request.professionalSummary}`
-        .toLowerCase()
-        .includes(query),
-    );
+    return visibleByStatus.filter((request) => `${request.dentistName} ${request.croNumber}`.toLowerCase().includes(query));
   }, [debouncedSearch, requests, statusFilter]);
 
   const stats = useMemo(
@@ -265,9 +241,7 @@ export function AdminDentistLicensing() {
               <DentistName>
                 {request.dentistName || "Não informado"}
               </DentistName>
-              <DentistMeta>
-                {request.professionalSummary || "Resumo não informado"}
-              </DentistMeta>
+              <DentistMeta>{request.croNumber || "CRO não informado"}</DentistMeta>
             </DentistInfo>
           </DentistCell>
         ),
@@ -278,17 +252,6 @@ export function AdminDentistLicensing() {
         width: "13%",
         sortValue: (request) => request.croNumber,
         render: (request) => request.croNumber || "Não informado",
-      },
-      {
-        key: "clinics",
-        label: "Clínicas",
-        width: "10%",
-        sortValue: (request) => request.practiceLocations.length,
-        render: (request) => (
-          <ClinicCountValue>
-            {request.practiceLocations.length}
-          </ClinicCountValue>
-        ),
       },
       {
         key: "status",
@@ -351,9 +314,7 @@ export function AdminDentistLicensing() {
         <HeroCopy>
           <AdminTitle>Dentistas querendo se licenciar</AdminTitle>
           <AdminSubtitle>
-            Solicitações enviadas pelo cadastro do dentista para análise da
-            Nexor Admin antes do pagamento, contratos, curso, prova e liberação
-            operacional.
+            Solicitações enviadas por dentistas para análise da Nexor Admin. A aprovação libera a licença necessária para compra do Biteplaner.
           </AdminSubtitle>
         </HeroCopy>
       </AdminHero>
@@ -392,7 +353,7 @@ export function AdminDentistLicensing() {
                 <SearchInputWrap>
                   <SearchInput
                     aria-label="Buscar dentistas"
-                    placeholder="Buscar por nome, CRO ou resumo..."
+                    placeholder="Buscar por nome ou CRO..."
                     value={search}
                     onChange={(event) => updateSearch(event.target.value)}
                     autoComplete="off"
@@ -434,8 +395,7 @@ export function AdminDentistLicensing() {
                           {request.dentistName || "Não informado"}
                         </AdminMobileCardTitle>
                         <AdminMobileCardSubtitle>
-                          {request.professionalSummary ||
-                            "Resumo não informado"}
+                          {request.croNumber || "CRO não informado"}
                         </AdminMobileCardSubtitle>
                       </div>
                       <StatusPill $color={getStatusColor(request.status)}>
@@ -446,14 +406,8 @@ export function AdminDentistLicensing() {
                     <AdminMobileMetaGrid>
                       <AdminMobileMetaItem>
                         <AdminMobileMetaLabel>CRO</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>
+                      <AdminMobileMetaValue>
                           {request.croNumber || "Não informado"}
-                        </AdminMobileMetaValue>
-                      </AdminMobileMetaItem>
-                      <AdminMobileMetaItem>
-                        <AdminMobileMetaLabel>Clínicas</AdminMobileMetaLabel>
-                        <AdminMobileMetaValue>
-                          {request.practiceLocations.length}
                         </AdminMobileMetaValue>
                       </AdminMobileMetaItem>
                       <AdminMobileMetaItem>
@@ -494,8 +448,8 @@ export function AdminDentistLicensing() {
 
       <AdminModal
         open={Boolean(selectedRequest)}
-        title="Dados enviados pelo dentista"
-        ariaLabel="Dados enviados pelo dentista"
+        title="Revisar licenciamento do dentista"
+        ariaLabel="Revisar licenciamento do dentista"
         mobilePlacement="center"
         icon={<UserRoundCheck size={32} />}
         subtitle={
@@ -544,30 +498,21 @@ export function AdminDentistLicensing() {
       >
         {selectedRequest ? (
           <>
+            <ModalDecisionText>
+              Deseja aprovar ou recusar o licenciamento deste dentista?
+            </ModalDecisionText>
+
             <CompactModalPairGrid>
               <CompactModalDetailCard>
                 <CompactModalCardHeader>
                   <CompactModalDetailIcon aria-hidden>
                     <FileText size={18} />
                   </CompactModalDetailIcon>
-                  <CompactModalDetailLabel>CPF</CompactModalDetailLabel>
+                  <CompactModalDetailLabel>CRO</CompactModalDetailLabel>
                 </CompactModalCardHeader>
                 <CompactModalCardBody>
                   <CompactModalDetailValue>
-                    {formatCpf(selectedRequest.cpf)}
-                  </CompactModalDetailValue>
-                </CompactModalCardBody>
-              </CompactModalDetailCard>
-              <CompactModalDetailCard>
-                <CompactModalCardHeader>
-                  <CompactModalDetailIcon aria-hidden>
-                    <FileText size={18} />
-                  </CompactModalDetailIcon>
-                  <CompactModalDetailLabel>CNPJ</CompactModalDetailLabel>
-                </CompactModalCardHeader>
-                <CompactModalCardBody>
-                  <CompactModalDetailValue>
-                    {formatCnpj(selectedRequest.cnpj)}
+                    {selectedRequest.croNumber || "Não informado"}
                   </CompactModalDetailValue>
                 </CompactModalCardBody>
               </CompactModalDetailCard>
@@ -577,71 +522,16 @@ export function AdminDentistLicensing() {
                     <FileText size={18} />
                   </CompactModalDetailIcon>
                   <CompactModalDetailLabel>
-                    Resumo profissional
+                    Enviado em
                   </CompactModalDetailLabel>
                 </CompactModalCardHeader>
                 <CompactModalCardBody>
                   <CompactModalDetailValue>
-                    {selectedRequest.professionalSummary || "Não informado"}
+                    {formatDate(selectedRequest.submittedAt)}
                   </CompactModalDetailValue>
-                </CompactModalCardBody>
-              </CompactModalDetailCard>
-              <CompactModalDetailCard>
-                <CompactModalCardHeader>
-                  <CompactModalDetailIcon aria-hidden>
-                    <HeartPulse size={18} />
-                  </CompactModalDetailIcon>
-                  <CompactModalDetailLabel>
-                    Status do fluxo
-                  </CompactModalDetailLabel>
-                </CompactModalCardHeader>
-                <CompactModalCardBody>
-                  <StatusPill $color={getStatusColor(selectedRequest.status)}>
-                    <StatusDot
-                      $color={getStatusColor(selectedRequest.status)}
-                    />
-                    {workflowLabel[selectedRequest.workflowStatus] ??
-                      selectedRequest.workflowStatus}
-                  </StatusPill>
                 </CompactModalCardBody>
               </CompactModalDetailCard>
             </CompactModalPairGrid>
-
-            {selectedRequest.practiceLocations.map((clinic) => (
-              <ClinicDisclosure key={`${clinic.name}:${clinic.cep}`}>
-                <ClinicSummary>
-                  <CompactModalCardHeader>
-                    <CompactModalDetailIcon aria-hidden>
-                      <MapPin size={18} />
-                    </CompactModalDetailIcon>
-                    <CompactModalDetailLabel>
-                      {clinic.name}
-                    </CompactModalDetailLabel>
-                  </CompactModalCardHeader>
-                  <ClinicSummaryHint>Ver detalhes</ClinicSummaryHint>
-                </ClinicSummary>
-                <CompactModalCardBody>
-                  <CompactModalDetailValue>
-                    {clinic.address}
-                  </CompactModalDetailValue>
-                  <CompactModalDetailValue>
-                    {clinic.city} {clinic.state ? `- ${clinic.state}` : ""} -{" "}
-                    {clinic.cep}
-                  </CompactModalDetailValue>
-                  <ClinicMeta>
-                    <ClinicMetaItem>
-                      <Phone size={16} aria-hidden />
-                      {clinic.phone ?? "Telefone não informado"}
-                    </ClinicMetaItem>
-                    <InlineDot aria-hidden />
-                    <ClinicMetaItem>
-                      <ClockIcon size={16} aria-hidden />
-                      {clinic.serviceHours}
-                    </ClinicMetaItem>
-                  </ClinicMeta>
-                </CompactModalCardBody>
-              </ClinicDisclosure>
-            ))}
 
             <CompactModalTextAreaGroup>
               <CompactModalTextAreaLabel htmlFor="dentist-reject-reason">
@@ -888,6 +778,14 @@ const CompactFilterSelect = styled(Select)`
   width: 100%;
 `;
 
+const ModalDecisionText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 650;
+`;
+
 const CompactModalPairGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1020,49 +918,6 @@ const CompactModalButton = styled(Button) <{ $tone?: "success" }>`
   }
 `;
 
-const ClinicDisclosure = styled.details`
-  grid-column: 1 / -1;
-  min-width: 0;
-  padding: 7px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-
-  &[open] {
-    display: grid;
-    gap: 5px;
-  }
-
-  @media (max-width: 420px) {
-    padding: 6px;
-  }
-`;
-
-const ClinicSummary = styled.summary`
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-
-  &::-webkit-details-marker {
-    display: none;
-  }
-`;
-
-const ClinicSummaryHint = styled.span`
-  flex: 0 0 auto;
-  color: ${({ theme }) => theme.colors.green};
-  font-size: 10px;
-  font-weight: 700;
-
-  @media (min-width: 721px) {
-    font-size: 14px;
-  }
-`;
-
 const DentistCell = styled.div`
   display: flex;
   align-items: center;
@@ -1108,11 +963,6 @@ const DentistMeta = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-`;
-
-const ClinicCountValue = styled.span`
-  color: ${({ theme }) => theme.colors.green} !important;
-  font-weight: 700;
 `;
 
 const StatusPill = styled.span<{ $color: string }>`
@@ -1190,33 +1040,4 @@ const InlineDot = styled.span`
   flex: 0 0 auto;
   border-radius: 999px;
   background: ${({ theme }) => theme.colors.green};
-`;
-
-const ClinicMeta = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 11px;
-  line-height: 1.25;
-
-  @media (min-width: 721px) {
-    font-size: 14px;
-  }
-
-  @media (max-width: 680px) {
-    gap: 6px;
-    font-size: 11px;
-  }
-`;
-
-const ClinicMetaItem = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  svg {
-    color: ${({ theme }) => theme.colors.green};
-  }
 `;

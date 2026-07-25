@@ -107,15 +107,6 @@ describe('Notificacoes', () => {
           read: false,
           createdAt: '2026-05-12T09:20:00.000Z',
         },
-        {
-          id: 'lab-action',
-          title: 'Ação necessária do laboratório',
-          message: 'Laboratório precisa revisar a ordem.',
-          type: 'biteplaner_action_required',
-          metadata: { actionFor: 'lab' },
-          read: false,
-          createdAt: '2026-05-12T09:10:00.000Z',
-        },
       ],
     });
 
@@ -124,7 +115,6 @@ describe('Notificacoes', () => {
     expect(await screen.findByText(/ação necessária no pedido/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ir para jornada/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /ver ordens do laboratório/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária no pedido/i }));
     expect(await screen.findByRole('dialog', { name: /ação necessária no pedido/i })).toHaveTextContent(/cliente precisa avançar/i);
@@ -135,10 +125,6 @@ describe('Notificacoes', () => {
     fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do dentista/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
-
-    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do laboratório/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do laboratório/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
   });
 
   it('shows the financial onboarding action in the notification card', async () => {
@@ -149,7 +135,7 @@ describe('Notificacoes', () => {
           id: 'financial-onboarding',
           title: 'Cadastro financeiro pendente',
           message:
-            'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 com os dados bancários pelo Pagar.me.',
+            'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 no Asaas para configurar os dados financeiros.',
           type: 'biteplaner_dentist_licensing_approved',
           metadata: {
             financialOnboardingRequired: true,
@@ -170,7 +156,7 @@ describe('Notificacoes', () => {
     fireEvent.click(await screen.findByRole('button', { name: /abrir notificação cadastro financeiro pendente/i }));
 
     expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados bancários/i);
+    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados financeiros/i);
   });
 
   it('opens a modal with the notification message when clicking a notification', async () => {

@@ -472,17 +472,6 @@ export type DentistLicenseRequest = {
   cpf?: string;
   professionalSummary: string;
   submittedAt: string;
-  practiceLocations: Array<{
-    name: string;
-    address: string;
-    cep: string;
-    complement?: string;
-    phone?: string;
-    dentistName?: string;
-    serviceHours: string;
-    city?: string;
-    state?: string;
-  }>;
   metadata?: Record<string, unknown>;
 };
 
@@ -506,29 +495,6 @@ export type LabLicenseRequest = {
     city?: string;
     state?: string;
   }>;
-  metadata?: Record<string, unknown>;
-};
-
-export type PartnerRequest = {
-  id: string;
-  profileId: string;
-  status: 'pending' | 'active' | 'rejected' | 'suspended';
-  partnerName: string;
-  documentType: 'cpf' | 'cnpj' | string;
-  documentNumber: string;
-  partnerType?: string;
-  location?: {
-    cep?: string;
-    address?: string;
-    complement?: string;
-    city?: string;
-    state?: string;
-  } | null;
-  serviceLocations?: string[];
-  contactEmail: string;
-  cityState: string;
-  channels: string;
-  submittedAt: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -810,30 +776,6 @@ export async function approveLabLicenseRequest(productRoleId: string, token?: st
 export async function rejectLabLicenseRequest(productRoleId: string, reason: string, token?: string) {
   return api.post<{ request: LabLicenseRequest }>(
     `/v1/admin/biteplaner/laboratories/${productRoleId}/reject`,
-    { reason },
-    token
-  );
-}
-
-export async function fetchPartnerRequests(token?: string, status?: string) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : '';
-  return api.get<{ requests: PartnerRequest[] }>(
-    `/v1/admin/biteplaner/partner-requests${query}`,
-    token
-  );
-}
-
-export async function approvePartnerRequest(productRoleId: string, token?: string) {
-  return api.post<{ request: PartnerRequest }>(
-    `/v1/admin/biteplaner/partner-requests/${productRoleId}/approve`,
-    {},
-    token
-  );
-}
-
-export async function rejectPartnerRequest(productRoleId: string, reason: string, token?: string) {
-  return api.post<{ request: PartnerRequest }>(
-    `/v1/admin/biteplaner/partner-requests/${productRoleId}/reject`,
     { reason },
     token
   );

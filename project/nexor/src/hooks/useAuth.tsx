@@ -28,6 +28,7 @@ export interface BackendUser {
   id: string;
   authUserId: string;
   email?: string;
+  fullName?: string | null;
   phone?: string | null;
   profileId?: string;
   roles: string[];
@@ -43,7 +44,6 @@ export interface BackendUser {
   clinicIds: string[];
   dentistId?: string;
   partnerId?: string;
-  labId?: string;
 }
 
 type AuthSession = {
@@ -134,7 +134,11 @@ async function fetchBackendUser(accessToken: string): Promise<BackendUser> {
 
 async function reconcilePendingRegistration(session: AuthSession) {
   const legacyPending = loadLegacyPendingRegistrationForMigration();
-  const pending = legacyPending ?? loadPendingRegistration();
+  const pending = loadPendingRegistration();
+
+  if (legacyPending) {
+    clearPendingRegistration();
+  }
 
   if (!pending) {
     return;
@@ -143,26 +147,6 @@ async function reconcilePendingRegistration(session: AuthSession) {
   if (pending.email.toLowerCase() !== (session.user.email ?? '').toLowerCase()) {
     clearPendingRegistration();
     return;
-  }
-
-  if (legacyPending) {
-    try {
-      await api.post(
-        '/v1/auth/profile',
-        {
-          fullName: legacyPending.fullName,
-          role: legacyPending.role,
-          documentType: legacyPending.documentType,
-          documentNumber: legacyPending.documentNumber,
-          companyName: legacyPending.companyName
-        },
-        session.access_token
-      );
-    } catch (error) {
-      if (!(error instanceof ApiError) || (error.status !== 403 && error.status !== 409)) {
-        throw error;
-      }
-    }
   }
 
   try {

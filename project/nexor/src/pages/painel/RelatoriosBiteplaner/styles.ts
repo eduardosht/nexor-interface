@@ -1,3 +1,4 @@
+import { Select as FormSelect } from '@nexor/design-system';
 import styled from 'styled-components';
 
 export const Page = styled.main`
@@ -92,6 +93,10 @@ export const Input = styled.input`
   color: ${({ theme }) => theme.colors.textPrimary};
   padding: 0 12px;
   font: inherit;
+`;
+
+export const StatusSelect = styled(FormSelect)`
+  width: 100%;
 `;
 
 export const Select = styled.select`
@@ -210,6 +215,26 @@ export const Classification = styled.span<{ $tone: string }>`
   background: ${({ $tone }) => ($tone === 'sensitive' ? '#f8e8e5' : $tone === 'financial' ? '#f6edda' : $tone === 'personal' ? '#e8f1f8' : '#e6f3ec')};
 `;
 
+export const ReportStatusPill = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: ${({ $color }) => $color};
+  background: ${({ $color }) => `${$color}12`};
+  font-size: 12px;
+  line-height: 1.2;
+`;
+
+export const ReportStatusDot = styled.span<{ $color: string }>`
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: ${({ $color }) => $color};
+`;
 export const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;

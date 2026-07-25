@@ -62,8 +62,8 @@ import {
 } from '../../../features/biteplaner/licensing/licensing.api';
 import {
   getFinancialOnboarding,
-  type FinancialRecipientStatusRecord,
-} from '../../../features/financialOnboarding/pagarmeRecipient.api';
+  type FinancialAccountStatusRecord,
+} from '../../../features/financialOnboarding/asaasFinancialAccount.api';
 import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
 import {
   PartnerDashboardChart,
@@ -376,7 +376,7 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   clinical_eligibility_confirmed:
     'Dentista declarou o cliente apto para seguir com o Biteplaner.',
   payment_confirmed: 'Pagamento confirmado pela operação.',
-  pagarme_payment_completed: 'Pagamento confirmado pelo Pagar.me.',
+  asaas_payment_paid: 'Pagamento confirmado pelo Asaas.',
   production_request_created: 'Dentista criou a solicitação de produção.',
   product_received: 'Produto recebido pelo dentista ou local de atendimento.',
   adaptation_completed: 'Adaptação concluída e ordem finalizada.',
@@ -1314,7 +1314,7 @@ export function BiteplanerHub() {
   const [productionRequestLoading, setProductionRequestLoading] = useState(false);
   const [productionRequestError, setProductionRequestError] = useState('');
   const [partnerDashboardPeriod, setPartnerDashboardPeriod] = useState<PartnerDashboardPeriod>('month');
-  const [financialRecipients, setFinancialRecipients] = useState<FinancialRecipientStatusRecord[]>([]);
+  const [financialRecipients, setFinancialRecipients] = useState<FinancialAccountStatusRecord[]>([]);
 
   const requestedMode = searchParams.get('mode');
   const fallbackMode = demoPersona ? PERSONA_MODE[demoPersona] : null;
@@ -1546,7 +1546,7 @@ export function BiteplanerHub() {
         const response = await getFinancialOnboarding(token);
 
         if (active) {
-          setFinancialRecipients(Array.isArray(response.recipients) ? response.recipients : []);
+          setFinancialRecipients(Array.isArray(response.accounts) ? response.accounts : []);
         }
       } catch {
         if (active) {
@@ -1946,7 +1946,8 @@ export function BiteplanerHub() {
   const currentFinancialRecipient = financialRecipients.find((recipient) => recipient.role === selectedMode) ?? null;
   const showFinancialOnboardingNotice =
     isLicensingActorMode &&
-    (currentFinancialRecipient?.status === 'pending_data' ||
+    (currentFinancialRecipient?.status === 'pending_onboarding' ||
+      currentFinancialRecipient?.status === 'awaiting_approval' ||
       currentFinancialRecipient?.status === 'creation_failed');
   const showDentistLockedPanel = isLicensingActorMode && !dentistWorkspaceLoading && !operationalAccessApproved;
   const showOperationalPanel =
@@ -3038,7 +3039,7 @@ export function BiteplanerHub() {
             </S.FinancialOnboardingTitle>
             <S.FinancialOnboardingText>
               Para receber a porcentagem da sua parte no fluxo Biteplaner, complete a Parte 2 com os dados financeiros.
-              Não salvamos dados bancários na plataforma; eles são enviados de forma transiente ao Pagar.me.
+              Não salvamos dados bancários na plataforma; eles são preenchidos e validados no ambiente seguro do Asaas.
             </S.FinancialOnboardingText>
           </S.FinancialOnboardingContent>
           <S.FinancialOnboardingLink to={`/painel/biteplaner/financeiro?role=${selectedMode}`}>

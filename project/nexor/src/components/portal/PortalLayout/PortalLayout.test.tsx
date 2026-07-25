@@ -168,7 +168,7 @@ describe('PortalLayout navigation', () => {
       demoPersona: 'admin',
     });
 
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /ordens/i }).at(0)).toHaveAttribute('href', '/painel/admin/ordens');
     expect(screen.getAllByRole('link', { name: /relat.rio/i }).at(0)).toHaveAttribute('href', '/painel/admin/relatorios');
     expect(screen.queryByRole('dialog', { name: /selecionar acesso ao biteplaner/i })).not.toBeInTheDocument();
@@ -199,18 +199,18 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByLabelText(/campo em edi/i)).toHaveValue('dados temporários do cadastro');
   });
 
-  it('groups admin sidebar links by Biteplaner and system settings', () => {
+  it('renders the lean admin sidebar links', () => {
     renderLayout('/painel/admin/home', {
       backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
       demoPersona: 'admin',
     });
 
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
-    expect(screen.getByText('Sistema')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /config\. sistema/i })).toHaveAttribute(
-      'href',
-      '/painel/admin/configuracoes/sistema'
-    );
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/admin/home');
+    expect(screen.getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
+    expect(screen.getByRole('link', { name: /dentistas/i })).toHaveAttribute('href', '/painel/admin/dentistas');
+    expect(screen.getByRole('link', { name: /relat.rio/i })).toHaveAttribute('href', '/painel/admin/relatorios');
+    expect(screen.queryByRole('link', { name: /config\. sistema/i })).not.toBeInTheDocument();
   });
 
   it('shows the application version above the sidebar user identity', () => {
@@ -232,7 +232,7 @@ describe('PortalLayout navigation', () => {
       demoPersona: 'admin',
     });
 
-    expect(screen.getByText('Biteplaner')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /relat.rio/i }).at(0)).toHaveAttribute('href', '/painel/admin/relatorios');
     expect(screen.queryByRole('button', { name: /^biteplaner$/i })).not.toBeInTheDocument();
   });
@@ -247,7 +247,7 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByRole('button', { name: /abrir menu mobile/i })).toBeInTheDocument();
   });
 
-  it('opens mobile admin drawer with secondary admin destinations', () => {
+  it('opens mobile admin drawer with commerce admin destinations', () => {
     renderLayout('/painel/admin/home', {
       backendUser: { email: 'admin@nexor.dev', roles: ['admin'] },
       demoPersona: 'admin',
@@ -260,14 +260,12 @@ describe('PortalLayout navigation', () => {
     expect(drawer).toBeInTheDocument();
     expect(within(drawer).getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/painel/admin/home');
     expect(within(drawer).getByRole('link', { name: /ordens/i })).toHaveAttribute('href', '/painel/admin/ordens');
-    expect(within(drawer).getByRole('link', { name: /remoções/i })).toHaveAttribute('href', '/painel/admin/remocoes-conta');
-    expect(within(drawer).getByRole('link', { name: /relatórios/i })).toHaveAttribute('href', '/painel/admin/relatorios');
-    expect(within(drawer).getByRole('link', { name: /parceiros/i })).toHaveAttribute('href', '/painel/admin/parceiros');
+    expect(within(drawer).getByRole('link', { name: /relat.rio/i })).toHaveAttribute('href', '/painel/admin/relatorios');
     expect(within(drawer).getByRole('link', { name: /dentistas/i })).toHaveAttribute('href', '/painel/admin/dentistas');
-    expect(within(drawer).getByRole('link', { name: /laboratórios/i })).toHaveAttribute('href', '/painel/admin/laboratorios');
-    expect(within(drawer).getByRole('link', { name: /usuários/i })).toHaveAttribute('href', '/painel/admin/usuarios');
-    expect(within(drawer).getByRole('link', { name: /config. negócio/i })).toHaveAttribute('href', '/painel/admin/configuracoes/negocio');
-    expect(within(drawer).getByRole('link', { name: /config. sistema/i })).toHaveAttribute('href', '/painel/admin/configuracoes/sistema');
+    expect(within(drawer).queryByRole('link', { name: /pagamentos/i })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('link', { name: /remo/i })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('link', { name: /parceiros/i })).not.toBeInTheDocument();
+    expect(within(drawer).queryByRole('link', { name: /config/i })).not.toBeInTheDocument();
     expect(within(drawer).getByRole('button', { name: /^sair$/i })).toBeInTheDocument();
   });
 
@@ -605,17 +603,8 @@ describe('PortalLayout navigation', () => {
               read: false,
               createdAt: '2026-05-12T09:20:00.000Z',
             },
-            {
-              id: 'lab-action',
-              title: 'Ação necessária do laboratório',
-              message: 'Laboratório precisa revisar a ordem.',
-              type: 'biteplaner_action_required',
-              metadata: { actionFor: 'lab' },
-              read: false,
-              createdAt: '2026-05-12T09:10:00.000Z',
-            },
           ],
-          unreadCount: 3,
+          unreadCount: 2,
         });
       }
 
@@ -629,7 +618,6 @@ describe('PortalLayout navigation', () => {
     expect(await screen.findByText(/ação necessária no pedido/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ir para jornada/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /ver ordens do laboratório/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária no pedido/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ir para jornada/i }));
@@ -638,12 +626,7 @@ describe('PortalLayout navigation', () => {
     fireEvent.click(screen.getByLabelText('Notificações'));
     fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do dentista/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
-
-    fireEvent.click(screen.getByLabelText('Notificações'));
-    fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do laboratório/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /ver ordens do laboratório/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=lab');
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/ordens');
   });
 
   it('shows the financial onboarding action in the notifications box', async () => {
@@ -655,7 +638,7 @@ describe('PortalLayout navigation', () => {
               id: 'financial-onboarding',
               title: 'Cadastro financeiro pendente',
               message:
-                'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 com os dados bancários pelo Pagar.me.',
+                'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 no Asaas para configurar os dados financeiros.',
               type: 'biteplaner_dentist_licensing_approved',
               metadata: {
                 financialOnboardingRequired: true,
@@ -684,7 +667,7 @@ describe('PortalLayout navigation', () => {
     fireEvent.click(await screen.findByRole('button', { name: /abrir notificação cadastro financeiro pendente/i }));
 
     expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados bancários/i);
+    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados financeiros/i);
   });
 
   it('shows an empty state when no notifications are available', async () => {
@@ -810,7 +793,7 @@ describe('PortalLayout navigation', () => {
     );
   });
 
-  it('navigates directly to the Biteplaner page for non-admin users', () => {
+  it('points the Biteplaner menu to the Biteplaner home for active non-admin users', () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/products/biteplaner/access-options') {
         throw new Error('access options should not be requested from the sidebar');
@@ -819,11 +802,19 @@ describe('PortalLayout navigation', () => {
       return Promise.resolve({ notifications: [], unreadCount: 0 });
     });
 
-    renderLayout('/painel/home');
+    renderLayout('/painel/home', {
+      backendUser: {
+        email: 'dentista@nexor.dev',
+        roles: ['dentist'],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+      },
+      demoPersona: 'dentist',
+    });
 
-    fireEvent.click(screen.getByRole('button', { name: /biteplaner/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^biteplaner$/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner');
+    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner');
     expect(screen.queryByRole('dialog', { name: /selecionar acesso ao biteplaner/i })).not.toBeInTheDocument();
   });
 
@@ -839,7 +830,6 @@ describe('PortalLayout navigation', () => {
   it.each([
     ['partner', 'parceiro@nexor.dev'],
     ['dentist', 'dentista@nexor.dev'],
-    ['lab', 'laboratorio@nexor.dev'],
   ])('hides the Biteplaner menu for pending %s licensing access', (role, email) => {
     renderLayout('/painel/home', {
       backendUser: {
@@ -855,7 +845,6 @@ describe('PortalLayout navigation', () => {
   it.each([
     ['partner', 'parceiro@nexor.dev'],
     ['dentist', 'dentista@nexor.dev'],
-    ['lab', 'laboratorio@nexor.dev'],
   ])('shows the Biteplaner menu for active %s licensing access', (role, email) => {
     renderLayout('/painel/home', {
       backendUser: {
@@ -898,7 +887,7 @@ describe('PortalLayout navigation', () => {
       demoPersona: 'partner',
     });
 
-    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner?mode=partner');
+    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner');
     expect(screen.getByRole('link', { name: /indicar/i })).toHaveAttribute(
       'href',
       '/painel/biteplaner/indicar?mode=partner'
@@ -950,8 +939,26 @@ describe('PortalLayout navigation', () => {
     expect(screen.getByRole('link', { name: /^ordem$/i })).toHaveAttribute('href', '/painel/biteplaner/jornada');
   });
 
+  it('shows Biteplaner Home, Compra, Financeiro and Ordens submenus for active dentists', () => {
+    renderLayout('/painel/biteplaner', {
+      backendUser: {
+        email: 'dentista@nexor.dev',
+        roles: ['dentist'],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+      },
+      demoPersona: 'dentist',
+    });
+
+    expect(screen.getByRole('link', { name: /^home$/i })).toHaveAttribute('href', '/painel/biteplaner');
+    expect(screen.getByRole('link', { name: /^compra$/i })).toHaveAttribute('href', '/painel/compra');
+    expect(screen.getByRole('link', { name: /^financeiro$/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/financeiro?role=dentist'
+    );
+    expect(screen.getByRole('link', { name: /^ordens$/i })).toHaveAttribute('href', '/painel/biteplaner/ordens');
+  });
   it('shows dentist submenus without the deprecated licensing entry', () => {
-    renderLayout('/painel/biteplaner?mode=dentist', {
+    renderLayout('/painel/biteplaner', {
       backendUser: {
         email: 'dentista@nexor.dev',
         roles: ['dentist'],
@@ -969,8 +976,8 @@ describe('PortalLayout navigation', () => {
     expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
   });
 
-  it('shows the evaluations submenu for partner and lab access', () => {
-    renderLayout('/painel/biteplaner?mode=partner', {
+  it('shows the evaluations submenu for partner access only', () => {
+    renderLayout('/painel/biteplaner', {
       backendUser: {
         email: 'parceiro@nexor.dev',
         roles: ['partner'],
@@ -988,26 +995,12 @@ describe('PortalLayout navigation', () => {
       '/painel/biteplaner/avaliacoes?mode=partner'
     );
     expect(screen.queryByRole('link', { name: /^ordem$/i })).not.toBeInTheDocument();
-
-    renderLayout('/painel/biteplaner?mode=lab', {
-      backendUser: {
-        email: 'lab@nexor.dev',
-        roles: ['lab'],
-        productRoles: [{ productKey: 'biteplaner', role: 'lab', status: 'active' }],
-      },
-      demoPersona: 'lab',
-    });
-
-    expect(screen.getAllByRole('link', { name: /avaliações/i }).at(-1)).toHaveAttribute(
-      'href',
-      '/painel/biteplaner/avaliacoes?mode=lab'
-    );
   });
 
   it('hides the licensing MVP submenu when mock mode is disabled', () => {
     vi.stubEnv('VITE_MOCK', 'false');
 
-    renderLayout('/painel/biteplaner?mode=dentist', {
+    renderLayout('/painel/biteplaner', {
       backendUser: {
         email: 'dentista@nexor.dev',
         roles: ['dentist'],

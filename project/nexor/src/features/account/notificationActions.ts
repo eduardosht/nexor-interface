@@ -1,4 +1,4 @@
-export type NotificationActionRole = 'customer' | 'dentist' | 'lab';
+export type NotificationActionRole = 'customer' | 'dentist';
 export type NotificationActionKind = 'order' | 'financial_onboarding';
 
 export type ActionableNotification = {
@@ -50,10 +50,6 @@ function readMetadataRole(metadata?: Record<string, unknown> | null): Notificati
     return 'dentist';
   }
 
-  if (/(lab|laboratorio|laboratory)/.test(roleValue)) {
-    return 'lab';
-  }
-
   return null;
 }
 
@@ -67,10 +63,6 @@ function inferRole(notification: ActionableNotification): NotificationActionRole
 
   if (/(dentist|dentista)/.test(searchableText)) {
     return 'dentist';
-  }
-
-  if (/(lab|laboratorio|laboratory)/.test(searchableText)) {
-    return 'lab';
   }
 
   if (/(customer|client|cliente|atleta|usuario|usuário)/.test(searchableText)) {
@@ -137,11 +129,7 @@ export function getNotificationAction(notification: ActionableNotification): Not
   }
 
   if (role === 'dentist') {
-    return { role, kind: 'order', label: 'Ver ordens do dentista', path: '/painel/biteplaner?mode=dentist' };
-  }
-
-  if (role === 'lab') {
-    return { role, kind: 'order', label: 'Ver ordens do laboratório', path: '/painel/biteplaner?mode=lab' };
+    return { role, kind: 'order', label: 'Ver ordens do dentista', path: '/painel/biteplaner/ordens' };
   }
 
   return null;

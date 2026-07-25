@@ -64,11 +64,11 @@ describe('biteplanerFlow backend route adapters', () => {
     );
   });
 
-  it('creates a Pagar.me payment link through the order payment route', async () => {
-    apiPost.mockResolvedValue({ url: 'https://checkout.pagar.me/test-link' });
+  it('creates an Asaas checkout through the order payment route', async () => {
+    apiPost.mockResolvedValue({ url: 'https://sandbox.asaas.com/checkout/test-link' });
 
     await expect(createCheckoutSession(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
-      url: 'https://checkout.pagar.me/test-link',
+      url: 'https://sandbox.asaas.com/checkout/test-link',
     });
 
     expect(apiPost).toHaveBeenCalledWith(
@@ -78,7 +78,7 @@ describe('biteplanerFlow backend route adapters', () => {
     );
   });
 
-  it('confirms a purchase request without creating a Pagar.me payment link', async () => {
+  it('confirms a purchase request without creating an Asaas checkout', async () => {
     apiPost.mockResolvedValue({ order: { ...order, status: 'awaiting_payment' } });
 
     await expect(confirmPurchaseRequest(order.id, { model: 'impacto', color: 'preto', quantity: 2 }, 'token')).resolves.toEqual({
@@ -132,7 +132,7 @@ describe('biteplanerFlow backend route adapters', () => {
     );
   });
 
-  it('reconciles a Pagar.me payment link through the order payment route', async () => {
+  it('reconciles an Asaas checkout through the order payment route', async () => {
     apiPost.mockResolvedValue({ order: { id: order.id, status: 'payment_confirmed' } });
 
     await expect(reconcileCheckoutSession(order.id, 'cs_test_123', 'token')).resolves.toEqual({

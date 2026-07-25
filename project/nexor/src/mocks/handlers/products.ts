@@ -3,17 +3,14 @@ import type { Server } from 'miragejs';
 import {
   approveDentistLicenseRequest,
   approveLabLicenseRequest,
-  approvePartnerRequest,
   createProductRole,
   getAccessOptions,
   getEnrollment,
   getProductRoles,
   listDentistLicenseRequests,
   listLabLicenseRequests,
-  listPartnerRequests,
   rejectDentistLicenseRequest,
   rejectLabLicenseRequest,
-  rejectPartnerRequest
 } from '../demoState';
 import { DEMO_LAB_LOCATIONS } from '../../features/demo/labLocations';
 
@@ -58,15 +55,22 @@ export function productHandlers(server: Server) {
 
   server.get('/v1/account/products/biteplaner/financial-onboarding', () => {
     return new Response(200, {}, {
-      recipients: [
+      accounts: [
         {
-          id: 'demo-pagarme-recipient-dentist',
+          id: 'demo-asaas-account-dentist',
           role: 'dentist',
           documentType: 'cpf',
           documentNumber: '52998224725',
           legalName: 'Dentista Demo',
-          status: 'pending_data',
+          status: 'pending_onboarding',
+          asaasAccountId: 'acc_demo_dentist',
+          asaasWalletId: null,
           providerStatus: null,
+          commercialInfoStatus: null,
+          bankAccountInfoStatus: null,
+          documentationStatus: null,
+          generalStatus: null,
+          onboardingUrl: 'https://sandbox.asaas.com/onboarding/demo',
           providerErrorCode: null,
           providerErrorMessage: null,
           termsVersion: null,
@@ -76,24 +80,28 @@ export function productHandlers(server: Server) {
     });
   });
 
-  server.post('/v1/account/products/biteplaner/financial-onboarding/pagarme-recipient', (_schema, request) => {
+  server.post('/v1/account/products/biteplaner/financial-onboarding/asaas-account', (_schema, request) => {
     const payload = JSON.parse(request.requestBody || '{}') as {
       role?: string;
-      documentType?: 'cpf' | 'cnpj';
-      documentNumber?: string;
-      legalName?: string;
       termsVersion?: string;
     };
 
     return new Response(200, {}, {
-      recipient: {
-        id: `demo-pagarme-recipient-${payload.role ?? 'dentist'}`,
+      account: {
+        id: `demo-asaas-account-${payload.role ?? 'dentist'}`,
         role: payload.role ?? 'dentist',
-        documentType: payload.documentType ?? 'cpf',
-        documentNumber: payload.documentNumber ?? '52998224725',
-        legalName: payload.legalName ?? 'Recebedor Demo',
-        status: 'active',
-        providerStatus: 'active',
+        documentType: 'cpf',
+        documentNumber: '52998224725',
+        legalName: 'Conta Demo',
+        status: 'pending_onboarding',
+        asaasAccountId: `acc_demo_${payload.role ?? 'dentist'}`,
+        asaasWalletId: null,
+        providerStatus: 'pending_onboarding',
+        commercialInfoStatus: 'PENDING',
+        bankAccountInfoStatus: 'PENDING',
+        documentationStatus: 'PENDING',
+        generalStatus: 'PENDING',
+        onboardingUrl: 'https://sandbox.asaas.com/onboarding/demo',
         providerErrorCode: null,
         providerErrorMessage: null,
         termsVersion: payload.termsVersion ?? 'financial-v1',
@@ -102,28 +110,52 @@ export function productHandlers(server: Server) {
     });
   });
 
-  server.post('/v1/account/products/biteplaner/financial-onboarding/pagarme-recipient/retry', (_schema, request) => {
+  server.post('/v1/account/products/biteplaner/financial-onboarding/asaas-account/sync', (_schema, request) => {
     const payload = JSON.parse(request.requestBody || '{}') as {
       role?: string;
-      documentType?: 'cpf' | 'cnpj';
-      documentNumber?: string;
-      legalName?: string;
       termsVersion?: string;
     };
 
     return new Response(200, {}, {
-      recipient: {
-        id: `demo-pagarme-recipient-${payload.role ?? 'dentist'}`,
+      account: {
+        id: `demo-asaas-account-${payload.role ?? 'dentist'}`,
         role: payload.role ?? 'dentist',
-        documentType: payload.documentType ?? 'cpf',
-        documentNumber: payload.documentNumber ?? '52998224725',
-        legalName: payload.legalName ?? 'Recebedor Demo',
+        documentType: 'cpf',
+        documentNumber: '52998224725',
+        legalName: 'Conta Demo',
         status: 'active',
-        providerStatus: 'active',
+        asaasAccountId: `acc_demo_${payload.role ?? 'dentist'}`,
+        asaasWalletId: `wallet_demo_${payload.role ?? 'dentist'}`,
+        providerStatus: 'APPROVED',
+        commercialInfoStatus: 'APPROVED',
+        bankAccountInfoStatus: 'APPROVED',
+        documentationStatus: 'APPROVED',
+        generalStatus: 'APPROVED',
+        onboardingUrl: null,
         providerErrorCode: null,
         providerErrorMessage: null,
         termsVersion: payload.termsVersion ?? 'financial-v1',
         updatedAt: new Date().toISOString(),
+      },
+    });
+  });
+
+  server.post('/v1/commerce/biteplaner/checkout', (_schema, request) => {
+    const payload = JSON.parse(request.requestBody || '{}') as {
+      model?: string;
+      color?: string;
+      quantity?: number;
+    };
+
+    return new Response(200, {}, {
+      orderId: `demo-commerce-biteplaner-${Date.now()}`,
+      checkoutId: 'demo_asaas_checkout_biteplaner',
+      checkoutUrl: 'https://sandbox.asaas.com/checkout/demo-biteplaner',
+      product: {
+        key: 'biteplaner',
+        model: payload.model ?? 'impacto',
+        color: payload.color ?? 'preto',
+        quantity: payload.quantity ?? 1,
       },
     });
   });
@@ -149,30 +181,26 @@ export function productHandlers(server: Server) {
     return new Response(200, {}, { productRole });
   });
 
-  server.post('/v1/account/products/biteplaner/roles/dentist', (_schema, request) => {
+  server.post('/v1/account/products/biteplaner/dentist-license-requests', (_schema, request) => {
     const payload = JSON.parse(request.requestBody || '{}') as Record<string, unknown>;
     const productRole = createProductRole({ requestHeaders: request.requestHeaders }, 'dentist', payload);
-    return new Response(200, {}, { productRole });
-  });
-
-  server.post('/v1/account/products/biteplaner/roles/lab', (_schema, request) => {
-    const payload = JSON.parse(request.requestBody || '{}') as Record<string, unknown>;
-    const productRole = createProductRole({ requestHeaders: request.requestHeaders }, 'lab', payload);
-    return new Response(200, {}, { productRole });
-  });
-
-  server.get('/v1/admin/biteplaner/partner-requests', (_schema, request) => {
-    const status = new URL(request.url, 'http://localhost').searchParams.get('status') ?? undefined;
-    return new Response(200, {}, listPartnerRequests(status));
-  });
-
-  server.post('/v1/admin/biteplaner/partner-requests/:productRoleId/approve', (_schema, request) => {
-    return new Response(200, {}, approvePartnerRequest(request.params.productRoleId));
-  });
-
-  server.post('/v1/admin/biteplaner/partner-requests/:productRoleId/reject', (_schema, request) => {
-    const payload = JSON.parse(request.requestBody || '{}') as { reason?: string };
-    return new Response(200, {}, rejectPartnerRequest(request.params.productRoleId, payload.reason ?? 'Recusado pela Nexor.'));
+    return new Response(200, {}, {
+      request: {
+        id: productRole.id,
+        profileId: '',
+        status: 'pending',
+        workflowStatus: 'admin_review_pending',
+        dentistName: '',
+        croNumber: typeof payload.croNumber === 'string' ? payload.croNumber : '',
+        cpf: '',
+        cnpj: '',
+        professionalSummary: '',
+        submittedAt: productRole.createdAt,
+        reviewedAt: null,
+        rejectionReason: null,
+        metadata: productRole.metadata,
+      },
+    });
   });
 
   server.get('/v1/admin/biteplaner/dentist-license-requests', (_schema, request) => {

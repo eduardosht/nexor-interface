@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, FlaskConical, Stethoscope, Handshake, X, BriefcaseBusiness, ClipboardList, Settings2, UserRound, Home, FileText, Star, Link2, Menu, CreditCard } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, Stethoscope, X, ClipboardList, Home, FileText, Menu, ShoppingCart, CreditCard, Building2 } from 'lucide-react';
 import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
@@ -115,13 +115,10 @@ function mapAccountNotification(notification: AccountNotificationResponse): Mock
 
 
 
-/* ─── Layout Shell ─── */
+/* Layout Shell */
 
 
-/* ─── Sidebar ─── */
-
-
-
+/* Sidebar */
 
 
 
@@ -136,25 +133,28 @@ function mapAccountNotification(notification: AccountNotificationResponse): Mock
 
 
 
-/* ─── Sidebar Footer ─── */
 
 
 
-/* ─── Content area ─── */
-
-
-/* ─── Top bar ─── */
+/* Sidebar Footer */
 
 
 
+/* Content area */
+
+
+/* Top bar */
 
 
 
-/* ─── Scrollable content ─── */
 
 
 
-/* ─── Nav items ─── */
+/* Scrollable content */
+
+
+
+/* Nav items */
 
 const NAV_ITEMS = [
   { to: '/painel/home', label: 'Dashboard', Icon: LayoutDashboard },
@@ -173,37 +173,14 @@ const ACCOUNT_SUBNAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
-  { to: '/painel/admin/pagamentos', label: 'Pagamentos', Icon: CreditCard },
-  { to: '/painel/admin/remocoes-conta', label: 'Remoções', Icon: ShieldCheck },
-  { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
-  { to: '/painel/admin/parceiros', label: 'Parceiros', Icon: Handshake },
   { to: '/painel/admin/dentistas', label: 'Dentistas', Icon: Stethoscope },
-  { to: '/painel/admin/laboratorios', label: 'Laboratórios', Icon: FlaskConical },
-  { to: '/painel/admin/usuarios', label: 'Usuários', Icon: UserRound },
-  { to: '/painel/admin/configuracoes/negocio', label: 'Config. Negócio', Icon: BriefcaseBusiness },
-  { to: '/painel/admin/configuracoes/sistema', label: 'Config. Sistema', Icon: Settings2 },
+  { to: '/painel/admin/laboratorios', label: 'Laboratórios', Icon: Building2 },
+  { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
 ];
 
-const ADMIN_OVERVIEW_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => item.to === '/painel/admin/home');
-const ADMIN_BITEPLANER_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
-  item.to === '/painel/admin/ordens' ||
-  item.to === '/painel/admin/pagamentos' ||
-  item.to === '/painel/admin/remocoes-conta' ||
-  item.to === '/painel/admin/checkups/emails' ||
-  item.to === '/painel/admin/relatorios' ||
-  item.to === '/painel/admin/parceiros' ||
-  item.to === '/painel/admin/dentistas' ||
-  item.to === '/painel/admin/laboratorios'
-));
-const ADMIN_SYSTEM_NAV_ITEMS = ADMIN_NAV_ITEMS.filter((item) => (
-  item.to === '/painel/admin/usuarios' ||
-  item.to === '/painel/admin/configuracoes/negocio' ||
-  item.to === '/painel/admin/configuracoes/sistema'
-));
+type BiteplanerMenuMode = 'dentist';
 
-type BiteplanerMenuMode = 'customer' | 'partner' | 'dentist' | 'lab';
-
-const BITEPLANER_MENU_ROLES = new Set<BiteplanerMenuMode>(['customer', 'partner', 'dentist', 'lab']);
+const BITEPLANER_MENU_ROLES = new Set<BiteplanerMenuMode>(['dentist']);
 const BITEPLANER_MENU_STATUSES = new Set(['active']);
 
 function isBiteplanerMenuMode(value: string | null): value is BiteplanerMenuMode {
@@ -218,49 +195,12 @@ function canSeeBiteplanerProductMenu(user?: BackendUser | null) {
   ));
 }
 
-function getActiveBiteplanerMenuMode(user?: BackendUser | null, preferredMode?: string | null): BiteplanerMenuMode | null {
-  const requestedMode = preferredMode ?? null;
-  const activeRoles = (user?.productRoles ?? []).filter((productRole) => (
+function isDentistBiteplanerMode(user?: BackendUser | null) {
+  return (user?.productRoles ?? []).some((productRole) => (
     productRole.productKey === 'biteplaner' &&
-    isBiteplanerMenuMode(productRole.role) &&
-    BITEPLANER_MENU_STATUSES.has(productRole.status)
+    productRole.role === 'dentist' &&
+    productRole.status === 'active'
   ));
-
-  if (
-    isBiteplanerMenuMode(requestedMode) &&
-    activeRoles.some((productRole) => productRole.role === requestedMode)
-  ) {
-    return requestedMode;
-  }
-
-  return (activeRoles[0]?.role as BiteplanerMenuMode | undefined) ?? null;
-}
-
-function hasStartedBiteplanerCustomerOrder(user?: BackendUser | null) {
-  return (user?.productRoles ?? []).some((productRole) => {
-    if (
-      productRole.productKey !== 'biteplaner' ||
-      productRole.role !== 'customer' ||
-      productRole.status !== 'active'
-    ) {
-      return false;
-    }
-
-    const metadata = productRole.metadata ?? {};
-    const hasOrderFlag =
-      metadata.orderStarted === true ||
-      metadata.hasOrder === true ||
-      metadata.orderStartedAt ||
-      metadata.orderId ||
-      productRole.orderStartedAt ||
-      productRole.orderId;
-
-    if (hasOrderFlag) {
-      return true;
-    }
-
-    return Boolean(productRole.stage && productRole.stage !== 'new_user_onboarding');
-  });
 }
 
 function getGreeting() {
@@ -293,18 +233,10 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
   const isAccountActive = location.pathname === '/painel/conta';
   const isBiteplanerActive = location.pathname.startsWith('/painel/biteplaner');
-  const requestedBiteplanerMode = new URLSearchParams(location.search).get('mode');
-  const biteplanerMode = getActiveBiteplanerMenuMode(backendUser, requestedBiteplanerMode);
-  const biteplanerModeQuery = biteplanerMode && biteplanerMode !== 'customer' ? `?mode=${biteplanerMode}` : '';
-  const biteplanerHomePath = `/painel/biteplaner${biteplanerModeQuery}`;
-  const isPartnerBiteplanerMode = biteplanerMode === 'partner';
-  const isDentistBiteplanerMode = biteplanerMode === 'dentist';
-  const isLabBiteplanerMode = biteplanerMode === 'lab';
-  const isCustomerBiteplanerMode = biteplanerMode === 'customer';
-  const showEvaluationsSubmenu = isPartnerBiteplanerMode || isDentistBiteplanerMode || isLabBiteplanerMode;
+  const biteplanerHomePath = '/painel/biteplaner';
   const isAdmin = hasAdministrativeRole(backendUser?.roles);
   const showBiteplanerProductMenu = canSeeBiteplanerProductMenu(backendUser);
-  const showCustomerOrderSubmenu = hasStartedBiteplanerCustomerOrder(backendUser);
+  const showCustomerOrderSubmenu = isDentistBiteplanerMode(backendUser);
   const mobileDrawerItems = isAdmin
     ? ADMIN_NAV_ITEMS
     : [
@@ -701,35 +633,33 @@ export function PortalLayout({ children }: { children: ReactNode }) {
                         <Home size={13} />
                         Home
                       </S.SubNavLink>
-                      {isCustomerBiteplanerMode && showCustomerOrderSubmenu ? (
-                        <S.SubNavLink
-                          to="/painel/biteplaner/jornada"
-                          $collapsed={collapsed}
-                          title={collapsed ? 'Ordem' : undefined}
-                        >
-                          <FileText size={13} />
-                          Ordem
-                        </S.SubNavLink>
-                      ) : null}
-                      {isPartnerBiteplanerMode ? (
-                        <S.SubNavLink
-                          to="/painel/biteplaner/indicar?mode=partner"
-                          $collapsed={collapsed}
-                          title={collapsed ? 'Indicar' : undefined}
-                        >
-                          <Link2 size={13} />
-                          Indicar
-                        </S.SubNavLink>
-                      ) : null}
-                      {showEvaluationsSubmenu ? (
-                        <S.SubNavLink
-                          to={`/painel/biteplaner/avaliacoes${biteplanerModeQuery}`}
-                          $collapsed={collapsed}
-                          title={collapsed ? 'Avaliações' : undefined}
-                        >
-                          <Star size={13} />
-                          Avaliações
-                        </S.SubNavLink>
+                      <S.SubNavLink
+                        to="/painel/compra"
+                        $collapsed={collapsed}
+                        title={collapsed ? 'Compra' : undefined}
+                      >
+                        <ShoppingCart size={13} />
+                        Compra
+                      </S.SubNavLink>
+                      {showCustomerOrderSubmenu ? (
+                        <>
+                          <S.SubNavLink
+                            to="/painel/biteplaner/financeiro?role=dentist"
+                            $collapsed={collapsed}
+                            title={collapsed ? 'Financeiro' : undefined}
+                          >
+                            <CreditCard size={13} />
+                            Financeiro
+                          </S.SubNavLink>
+                          <S.SubNavLink
+                            to="/painel/biteplaner/ordens"
+                            $collapsed={collapsed}
+                            title={collapsed ? 'Ordens' : undefined}
+                          >
+                            <FileText size={13} />
+                            Ordens
+                          </S.SubNavLink>
+                        </>
                       ) : null}
                     </>
                   ) : null}
@@ -740,33 +670,8 @@ export function PortalLayout({ children }: { children: ReactNode }) {
 
           {isAdmin ? (
             <>
-              {ADMIN_OVERVIEW_NAV_ITEMS.map(({ to, label, Icon }) => (
-                <S.StyledNavLink
-                  key={to}
-                  to={to}
-                  $collapsed={collapsed}
-                  title={collapsed ? label : undefined}
-                >
-                  <Icon size={16} />
-                  <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
-                </S.StyledNavLink>
-              ))}
-              <S.NavSectionDivider style={{ marginTop: 8 }} />
-              <S.NavSectionLabel $collapsed={collapsed}>Biteplaner</S.NavSectionLabel>
-              {ADMIN_BITEPLANER_NAV_ITEMS.map(({ to, label, Icon }) => (
-                <S.StyledNavLink
-                  key={to}
-                  to={to}
-                  $collapsed={collapsed}
-                  title={collapsed ? label : undefined}
-                >
-                  <Icon size={16} />
-                  <S.NavLabel $collapsed={collapsed}>{label}</S.NavLabel>
-                </S.StyledNavLink>
-              ))}
-              <S.NavSectionDivider />
-              <S.NavSectionLabel $collapsed={collapsed}>Sistema</S.NavSectionLabel>
-              {ADMIN_SYSTEM_NAV_ITEMS.map(({ to, label, Icon }) => (
+              {!collapsed ? <S.NavSectionLabel $collapsed={collapsed}>Admin</S.NavSectionLabel> : null}
+              {ADMIN_NAV_ITEMS.map(({ to, label, Icon }) => (
                 <S.StyledNavLink
                   key={to}
                   to={to}

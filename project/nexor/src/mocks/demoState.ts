@@ -1,8 +1,8 @@
 // Stable key for the login/auth demo flow. Mock handlers read this directly so
 // the UI can switch personas without inventing a parallel session contract.
 export const ACTIVE_DEMO_PERSONA_STORAGE_KEY = 'nexor_demo_persona';
-const DEMO_PAGARME_PAYMENT_ORDER_ID =
-  import.meta.env.VITE_DEMO_PAGARME_PAYMENT_ORDER_ID?.trim() || '00000000-0000-4000-8000-000000000005';
+const DEMO_ASAAS_PAYMENT_ORDER_ID =
+  import.meta.env.VITE_DEMO_ASAAS_PAYMENT_ORDER_ID?.trim() || '00000000-0000-4000-8000-000000000005';
 
 export type DemoPersona =
   | 'athleteRegistered'
@@ -1508,7 +1508,7 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-005',
-      checkoutOrderId: DEMO_PAGARME_PAYMENT_ORDER_ID,
+      checkoutOrderId: DEMO_ASAAS_PAYMENT_ORDER_ID,
       status: 'awaiting_payment',
       statusLabel: 'Aguardando pagamento',
       stage: 'awaiting_payment',
@@ -3435,80 +3435,6 @@ export function getDemoStateSnapshot() {
   return clone(state);
 }
 
-export function listAdminProfiles(filters: {
-  role?: string | undefined;
-  search?: string | undefined;
-  email?: string | undefined;
-  page?: number | undefined;
-  limit?: number | undefined;
-}) {
-  const query = filters.search?.trim().toLowerCase() ?? '';
-  const emailQuery = filters.email?.trim().toLowerCase() ?? '';
-  const page = filters.page && Number.isFinite(filters.page) ? Math.max(1, filters.page) : 1;
-  const limit = filters.limit && Number.isFinite(filters.limit) ? Math.max(1, filters.limit) : 25;
-
-  const filtered = state.users
-    .filter((user) => (filters.role ? user.roles.includes(filters.role) : true))
-    .filter((user) => (emailQuery ? user.email.toLowerCase().includes(emailQuery) : true))
-    .filter((user) => {
-      if (!query) return true;
-      return `${user.profileId} ${user.fullName} ${user.email}`.toLowerCase().includes(query);
-    });
-  const total = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const startIndex = (page - 1) * limit;
-  const paginated = filtered.slice(startIndex, startIndex + limit);
-  const rangeStart = total === 0 || paginated.length === 0 ? 0 : startIndex + 1;
-  const rangeEnd = rangeStart === 0 ? 0 : startIndex + paginated.length;
-
-  const profiles = paginated
-    .map((user) => ({
-      id: user.profileId,
-      email: user.email,
-      fullName: user.fullName,
-      phone: user.phone,
-      status: user.status ?? (user.roles.length > 0 ? 'active' : 'pending'),
-      deleted: user.email.startsWith('deleted+') && user.email.endsWith('@privacy.nexor.local'),
-      roles: user.roles,
-      platformRoles: user.roles,
-      productRoles: user.productRoles ?? generatedProductRoles(user),
-      createdAt: user.enrollment?.created_at ?? user.productRoles?.[0]?.createdAt ?? '2026-05-01T09:00:00.000Z',
-      updatedAt: user.productRoles?.[0]?.updatedAt ?? user.enrollment?.created_at ?? '2026-05-01T09:00:00.000Z',
-    }));
-
-  return {
-    profiles,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-      rangeStart,
-      rangeEnd
-    }
-  };
-}
-
-export function updateAdminProfileStatus(profileId: string, status: 'pending' | 'active' | 'inactive' | 'suspended' | 'blocked') {
-  const user = state.users.find((candidate) => candidate.profileId === profileId);
-
-  if (!user) {
-    throw new DemoStateError(404, 'not_found', 'Profile not found.');
-  }
-
-  user.status = status;
-
-  return {
-    id: user.profileId,
-    email: user.email,
-    fullName: user.fullName,
-    phone: user.phone,
-    status,
-    roles: user.roles,
-    updatedAt: new Date().toISOString(),
-  };
-}
-
 export function getAuthPayload(context?: RequestContext) {
   const user = getPersonaUser(resolveActiveDemoPersona(context));
 
@@ -3900,11 +3826,6 @@ export function createProductRole(
 
 function mapDentistLicenseRequest(role: ProductRolePayload, user: DemoUser) {
   const metadata = role.metadata;
-  const practiceLocations = Array.isArray(metadata.practiceLocations)
-    ? metadata.practiceLocations
-    : metadata.practiceLocation
-      ? [metadata.practiceLocation]
-      : [];
   const workflow = state.dentistLicensingWorkflows.find((item) => item.productRoleId === role.id);
 
   return {
@@ -3917,7 +3838,6 @@ function mapDentistLicenseRequest(role: ProductRolePayload, user: DemoUser) {
     cnpj: typeof metadata.cnpj === 'string' ? metadata.cnpj : '',
     professionalSummary: typeof metadata.professionalSummary === 'string' ? metadata.professionalSummary : '',
     submittedAt: role.createdAt,
-    practiceLocations,
     metadata
   };
 }
@@ -3945,49 +3865,12 @@ function mapLabLicenseRequest(role: ProductRolePayload, user: DemoUser) {
   };
 }
 
-function mapPartnerRequest(role: ProductRolePayload, user: DemoUser) {
-  const metadata = role.metadata;
-  const serviceLocations = Array.isArray(metadata.serviceLocations)
-    ? metadata.serviceLocations.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    : [];
-
-  return {
-    id: role.id,
-    profileId: user.profileId,
-    status: role.status,
-    partnerName: typeof metadata.name === 'string' ? metadata.name : user.fullName,
-    documentType: typeof metadata.documentType === 'string' ? metadata.documentType : 'cnpj',
-    documentNumber: typeof metadata.documentNumber === 'string' ? metadata.documentNumber : '',
-    partnerType: typeof metadata.partnerType === 'string' ? metadata.partnerType : '',
-    location: metadata.location && typeof metadata.location === 'object' && !Array.isArray(metadata.location)
-      ? metadata.location
-      : null,
-    serviceLocations,
-    contactEmail: typeof metadata.contactEmail === 'string' ? metadata.contactEmail : user.email,
-    cityState: typeof metadata.cityState === 'string' ? metadata.cityState : '',
-    channels: typeof metadata.channels === 'string' ? metadata.channels : '',
-    submittedAt: role.createdAt,
-    metadata
-  };
-}
-
 export function listDentistLicenseRequests(status?: string) {
   const requests = state.users.flatMap((user) =>
     (user.productRoles ?? [])
       .filter((role) => role.productKey === 'biteplaner' && role.role === 'dentist')
       .filter((role) => !status || role.status === status)
       .map((role) => mapDentistLicenseRequest(role, user))
-  );
-
-  return { requests };
-}
-
-export function listPartnerRequests(status?: string) {
-  const requests = state.users.flatMap((user) =>
-    (user.productRoles ?? [])
-      .filter((role) => role.productKey === 'biteplaner' && role.role === 'partner')
-      .filter((role) => !status || role.status === status)
-      .map((role) => mapPartnerRequest(role, user))
   );
 
   return { requests };
@@ -4098,42 +3981,6 @@ export function approveLabLicenseRequest(productRoleId: string) {
   return { request: mapLabLicenseRequest(role, user) };
 }
 
-export function approvePartnerRequest(productRoleId: string) {
-  const user = state.users.find((candidate) =>
-    candidate.productRoles?.some((role) => role.id === productRoleId)
-  );
-  const role = user?.productRoles?.find((item) => item.id === productRoleId);
-
-  if (!user || !role) {
-    throw new DemoStateError(404, 'request_not_found', 'Solicitação de parceiro não encontrada.');
-  }
-
-  const now = new Date().toISOString();
-  const partnerCode = `PARTNER-${user.profileId.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
-  role.status = 'active';
-  role.updatedAt = now;
-  role.metadata = {
-    ...role.metadata,
-    adminReview: { status: 'approved', approvedAt: now },
-    partnerCode
-  };
-  if (!user.roles.includes('partner')) user.roles.push('partner');
-  user.allowedModes = Array.from(new Set([...(user.allowedModes ?? []), 'partner']));
-
-  state.counters.notifications += 1;
-  state.notifications.push({
-    id: `demo-notification-${state.counters.notifications}`,
-    profileId: user.profileId,
-    title: 'Cadastro aprovado',
-    message: 'Seu cadastro de parceiro foi aprovado pela Nexor. Agora você pode gerar links de indicação.',
-    type: 'biteplaner_partner_approved',
-    read: false,
-    createdAt: now
-  });
-
-  return { request: mapPartnerRequest(role, user) };
-}
-
 export function rejectDentistLicenseRequest(productRoleId: string, reason: string) {
   const user = state.users.find((candidate) =>
     candidate.productRoles?.some((role) => role.id === productRoleId)
@@ -4166,23 +4013,6 @@ export function rejectLabLicenseRequest(productRoleId: string, reason: string) {
   role.metadata = { ...role.metadata, adminReview: { status: 'rejected', reason } };
 
   return { request: mapLabLicenseRequest(role, user) };
-}
-
-export function rejectPartnerRequest(productRoleId: string, reason: string) {
-  const user = state.users.find((candidate) =>
-    candidate.productRoles?.some((role) => role.id === productRoleId)
-  );
-  const role = user?.productRoles?.find((item) => item.id === productRoleId);
-
-  if (!user || !role) {
-    throw new DemoStateError(404, 'request_not_found', 'Solicitação de parceiro não encontrada.');
-  }
-
-  role.status = 'rejected';
-  role.updatedAt = new Date().toISOString();
-  role.metadata = { ...role.metadata, adminReview: { status: 'rejected', reason } };
-
-  return { request: mapPartnerRequest(role, user) };
 }
 
 const DENTIST_LICENSING_COURSE = [

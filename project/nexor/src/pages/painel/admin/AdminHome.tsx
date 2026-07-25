@@ -1,19 +1,17 @@
 import { Select } from '@nexor/design-system';
 import { useEffect, useMemo, useState } from 'react';
-import { AdminProductGate } from './AdminProductGate';
 import {
-   CartesianGrid,
-  Line,
-  LineChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import { useAuth } from '../../../hooks/useAuth';
 import { SkeletonBlock, SkeletonGrid } from '../../../components/Skeleton';
-import { fetchOrders, getAuthToken, type DemoOrderSummary } from '../../../features/demo/biteplanerFlow';
-import { useAdminPortal } from '../../../features/admin/portal';
+import { useAuth } from '../../../hooks/useAuth';
+import { api } from '../../../lib/api';
 import {
   ChartHeader,
   ChartPanel,
@@ -31,66 +29,63 @@ import {
   StatValue,
 } from './styles';
 
-const MONTH_LABELS = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
+type DashboardRange = '1y' | '5y' | 'all';
+
+type DashboardResponse = {
+  metrics: {
+    licensedDentists: number;
+    pendingDentistLicenses: number;
+    biteplanerOrders: number;
+    ordersWaitingForLab: number;
+  };
+  licensedSeries: Array<{ label: string; total: number }>;
+};
+
+const RANGE_OPTIONS = [
+  { value: '1y', label: '1 ano' },
+  { value: '5y', label: '5 anos' },
+  { value: 'all', label: 'Tudo' },
 ];
 
-function getWeekOfMonth(date: Date) {
-  const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-  const offset = firstDay.getDay();
-  return Math.ceil((date.getDate() + offset) / 7);
-}
-
-function formatWeekLabel(week: number) {
-  return `${week}ª semana`;
-}
-
-function countByStatus(orders: DemoOrderSummary[], statuses: string[]) {
-  return orders.filter((order) => statuses.includes(order.status)).length;
-}
+const EMPTY_DASHBOARD: DashboardResponse = {
+  metrics: {
+    licensedDentists: 0,
+    pendingDentistLicenses: 0,
+    biteplanerOrders: 0,
+    ordersWaitingForLab: 0,
+  },
+  licensedSeries: [],
+};
 
 export function AdminHome() {
   const { session } = useAuth();
-  const token = getAuthToken(session);
-  const { products, selectedProductId, selectedProduct, setSelectedProductId } = useAdminPortal();
-  const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
+  const token = session?.access_token;
+  const [range, setRange] = useState<DashboardRange>('1y');
+  const [dashboard, setDashboard] = useState<DashboardResponse>(EMPTY_DASHBOARD);
   const [loading, setLoading] = useState(false);
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(String(now.getMonth() + 1));
-  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!selectedProductId && products[0]) {
-      setSelectedProductId(products[0].id);
-    }
-  }, [products, selectedProductId, setSelectedProductId]);
-
-  useEffect(() => {
-    if (!token || !selectedProduct) {
+    if (!token) {
       return;
     }
 
     let active = true;
 
-    async function loadOrders() {
+    async function loadDashboard() {
       setLoading(true);
+      setError('');
 
       try {
-        const response = await fetchOrders('admin', token);
+        const response = await api.get<DashboardResponse>(`/v1/admin/commerce/dashboard?range=${range}`, token);
 
         if (active) {
-          setOrders(response.orders);
+          setDashboard(response);
+        }
+      } catch {
+        if (active) {
+          setError('Não foi possível carregar o dashboard commerce.');
+          setDashboard(EMPTY_DASHBOARD);
         }
       } finally {
         if (active) {
@@ -99,66 +94,21 @@ export function AdminHome() {
       }
     }
 
-    void loadOrders();
+    void loadDashboard();
 
     return () => {
       active = false;
     };
-  }, [selectedProduct, token]);
-
-  const availableYears = useMemo(() => {
-    const years = Array.from(
-      new Set([
-        ...orders.map((order) => String(new Date(order.created_at).getFullYear())),
-        selectedYear,
-      ])
-    ).sort((left, right) => Number(right) - Number(left));
-
-    return years;
-  }, [orders, selectedYear]);
-
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const date = new Date(order.created_at);
-      return date.getMonth() + 1 === Number(selectedMonth) && date.getFullYear() === Number(selectedYear);
-    });
-  }, [orders, selectedMonth, selectedYear]);
-
-  const weeklySeries = useMemo(() => {
-    const weekMap = new Map<number, number>();
-
-    filteredOrders.forEach((order) => {
-      const week = getWeekOfMonth(new Date(order.created_at));
-      weekMap.set(week, (weekMap.get(week) ?? 0) + 1);
-    });
-
-    const maxWeek = Math.max(4, ...weekMap.keys(), 0);
-    return Array.from({ length: maxWeek }, (_, index) => {
-      const week = index + 1;
-      return {
-        label: formatWeekLabel(week),
-        total: weekMap.get(week) ?? 0,
-      };
-    });
-  }, [filteredOrders]);
+  }, [range, token]);
 
   const stats = useMemo(
     () => [
-      { label: 'Ordens no período', value: loading ? '...' : String(filteredOrders.length) },
-      {
-        label: 'Fila do laboratório',
-        value: loading ? '...' : String(countByStatus(filteredOrders, ['awaiting_lab_start', 'lab_processing'])),
-      },
-      {
-        label: 'Aguardando dentista',
-        value: loading ? '...' : String(countByStatus(filteredOrders, ['awaiting_dentist_forms'])),
-      },
-      {
-        label: 'Em adaptação',
-        value: loading ? '...' : String(countByStatus(filteredOrders, ['awaiting_adaptation'])),
-      },
+      { label: 'Dentistas licenciados', value: dashboard.metrics.licensedDentists },
+      { label: 'Solicitações pendentes', value: dashboard.metrics.pendingDentistLicenses },
+      { label: 'Pedidos Biteplaner', value: dashboard.metrics.biteplanerOrders },
+      { label: 'Aguardando envio ao laboratório', value: dashboard.metrics.ordersWaitingForLab },
     ],
-    [filteredOrders, loading]
+    [dashboard.metrics]
   );
 
   return (
@@ -166,94 +116,65 @@ export function AdminHome() {
       <PageHeader>
         <PageTitle>Dashboard administrativo</PageTitle>
         <PageSubtitle>
-          {selectedProduct
-            ? `Acompanhe a evolução operacional semanal das ordens do ${selectedProduct.label}.`
-            : 'Acompanhe a evolução operacional semanal das ordens do Biteplaner.'}
+          Visão commerce da operação Biteplaner: licenciamento de dentistas, pedidos e fila de envio ao laboratório.
         </PageSubtitle>
       </PageHeader>
 
-      <AdminProductGate />
+      {error ? <p role="alert">{error}</p> : null}
 
-      {selectedProduct ? (
-        <>
+      {loading ? (
+        <SkeletonGrid cards={4} minCardWidth="180px" />
+      ) : (
+        <StatGrid>
+          {stats.map((stat) => (
+            <StatCard key={stat.label} padding="lg">
+              <StatValue>{stat.value}</StatValue>
+              <StatLabel>{stat.label}</StatLabel>
+            </StatCard>
+          ))}
+        </StatGrid>
+      )}
+
+      <ChartPanel padding="lg">
+        <ChartHeader>
+          <div>
+            <SectionTitle>Licenciados por período</SectionTitle>
+            <SectionDescription>
+              O filtro de 1 ano exibe a evolução mensal. Os filtros de 5 anos e Tudo exibem a evolução anual.
+            </SectionDescription>
+          </div>
+          <DashboardFilterBar>
+            <Select
+              label="Período"
+              value={range}
+              onChange={(value) => setRange(value as DashboardRange)}
+              options={RANGE_OPTIONS}
+            />
+          </DashboardFilterBar>
+        </ChartHeader>
+
+        <ChartWrap>
           {loading ? (
-            <SkeletonGrid cards={4} minCardWidth="180px" />
+            <SkeletonBlock height="360px" />
           ) : (
-            <StatGrid>
-              {stats.map((stat) => (
-                <StatCard key={stat.label} padding="lg">
-                  <StatValue>{stat.value}</StatValue>
-                  <StatLabel>{stat.label}</StatLabel>
-                </StatCard>
-              ))}
-            </StatGrid>
+            <ResponsiveContainer width="100%" height={360}>
+              <BarChart data={dashboard.licensedSeries} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                <CartesianGrid stroke="#E7E7E7" strokeDasharray="4 4" vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 8,
+                    border: '1px solid #E0E0E0',
+                    boxShadow: '0 10px 32px rgba(0, 0, 0, 0.12)',
+                  }}
+                />
+                <Bar dataKey="total" fill="#171717" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           )}
-
-          <ChartPanel padding="lg">
-            <ChartHeader>
-              <div>
-                <SectionTitle>Ordens por semana</SectionTitle>
-                <SectionDescription>
-                  Leitura temporal das ordens criadas no período selecionado, organizada por semana do mês.
-                </SectionDescription>
-              </div>
-              <DashboardFilterBar>
-                <Select
-                  label="Mês"
-                  value={selectedMonth}
-                  onChange={(value) => {
-                    setSelectedMonth(value);
-                  }}
-                  options={MONTH_LABELS.map((label, index) => ({
-                    label,
-                    value: String(index + 1),
-                  }))}
-                />
-                <Select
-                  label="Ano"
-                  value={selectedYear}
-                  onChange={(value) => {
-                    setSelectedYear(value);
-                  }}
-                  options={availableYears.map((year) => ({
-                    label: year,
-                    value: year,
-                  }))}
-                />
-              </DashboardFilterBar>
-            </ChartHeader>
-
-            <ChartWrap>
-              {loading ? (
-                <SkeletonBlock height="360px" />
-              ) : (
-              <ResponsiveContainer width="100%" height={360}>
-                <LineChart data={weeklySeries} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke="#E7E7E7" strokeDasharray="4 4" vertical={false} />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: '1px solid #E0E0E0',
-                      boxShadow: '0 10px 32px rgba(0, 0, 0, 0.12)',
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="#171717"
-                    strokeWidth={3}
-                    dot={{ r: 4, strokeWidth: 0, fill: '#171717' }}
-                    activeDot={{ r: 6, strokeWidth: 0, fill: '#171717' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-              )}
-            </ChartWrap>
-          </ChartPanel>
-        </>
-      ) : null}
+        </ChartWrap>
+      </ChartPanel>
     </PageStack>
   );
 }

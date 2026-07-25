@@ -44,7 +44,6 @@ import {
 const ONBOARDING_ROUTES_BY_TYPE: Record<string, string> = {
   parceiro: '/painel/biteplaner/cadastro/parceiro',
   dentista: '/painel/biteplaner/cadastro/dentista',
-  laboratório: '/painel/biteplaner/cadastro/laboratório',
 };
 
 const isApiErrorLike = (
@@ -335,9 +334,9 @@ export function Cadastro() {
           {step === 2 ? (
             <div style={{ display: 'grid', gap: '12px' }}>
               <Description>
-                Esta etapa registra apenas consentimentos gerais da conta Nexor. Dados clínicos,
-                documentos, elegibilidade odontológica e formulários do Biteplaner são tratados
-                depois, dentro do produto, com finalidade e acesso próprios.
+                Esta etapa registra apenas consentimentos gerais da conta Nexor para cadastro, autenticação,
+                segurança, comunicações essenciais e gestão da conta. A compra de produtos acontece depois,
+                no ambiente correspondente.
               </Description>
               <CheckboxField
                 checked={terms}

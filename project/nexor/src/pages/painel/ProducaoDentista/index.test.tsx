@@ -775,8 +775,6 @@ describe('ProducaoDentista', () => {
       'utf8'
     );
     const dentistLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminDentistLicensing.tsx'), 'utf8');
-    const partnerLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminPartnerLicensing.tsx'), 'utf8');
-    const labLicensingSource = readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminLabLicensing.tsx'), 'utf8');
 
     expect(workflowFormsSource).toContain('AdminFormButton,');
     expect(workflowFormsSource).toContain('<AdminFormButton');
@@ -850,12 +848,9 @@ describe('ProducaoDentista', () => {
       expect(source).toContain('biteplanerFormButtonStyles');
     });
 
-    [dentistLicensingSource, partnerLicensingSource, labLicensingSource].forEach((source) => {
+    [dentistLicensingSource].forEach((source) => {
       expect(source).not.toContain('const DangerButton = styled.button');
       expect(source).not.toContain('const IconButton = styled.button');
-      expect(source).toContain('AdminModalAction');
-      expect(source).toContain('actionTone="attention"');
-      expect(source).not.toMatch(/<AdminModalAction[\s\S]*?leadingIcon=/);
     });
   });
 

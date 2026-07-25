@@ -22,30 +22,20 @@ const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) =
 const DemoAdm = lazy(() => import('../pages/DemoAdm').then(({ DemoAdm }) => ({ default: DemoAdm })));
 const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
 const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
-const CadastroUsuarioBiteplaner = lazy(() => import('../pages/painel/CadastroUsuarioBiteplaner').then(({ CadastroUsuarioBiteplaner }) => ({ default: CadastroUsuarioBiteplaner })));
 const MinhaConta = lazy(() => import('../pages/painel/MinhaConta').then(({ MinhaConta }) => ({ default: MinhaConta })));
 const Notificacoes = lazy(() => import('../pages/painel/Notificacoes').then(({ Notificacoes }) => ({ default: Notificacoes })));
-const PreRequisito = lazy(() => import('../pages/painel/PreRequisito').then(({ PreRequisito }) => ({ default: PreRequisito })));
-const ConsultaInicial = lazy(() => import('../pages/painel/ConsultaInicial').then(({ ConsultaInicial }) => ({ default: ConsultaInicial })));
 const Compra = lazy(() => import('../pages/painel/Compra').then(({ Compra }) => ({ default: Compra })));
-const BiteplanerHub = lazy(() => import('../pages/painel/BiteplanerHub').then(({ BiteplanerHub }) => ({ default: BiteplanerHub })));
+const BiteplanerHome = lazy(() => import('../pages/painel/BiteplanerHome').then(({ BiteplanerHome }) => ({ default: BiteplanerHome })));
+const BiteplanerOrders = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrders }) => ({ default: BiteplanerOrders })));
+const BiteplanerOrderDetail = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrderDetail }) => ({ default: BiteplanerOrderDetail })));
+const BiteplanerOrderCompletion = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrderCompletion }) => ({ default: BiteplanerOrderCompletion })));
 const FinanceiroRecebedor = lazy(() => import('../pages/painel/FinanceiroRecebedor').then(({ FinanceiroRecebedor }) => ({ default: FinanceiroRecebedor })));
 const PartnerReferralPage = lazy(() => import('../pages/painel/PartnerReferralPage').then(({ PartnerReferralPage }) => ({ default: PartnerReferralPage })));
-const Avaliacoes = lazy(() => import('../pages/painel/Avaliacoes').then(({ Avaliacoes }) => ({ default: Avaliacoes })));
-const Jornada = lazy(() => import('../pages/painel/Jornada').then(({ Jornada }) => ({ default: Jornada })));
-const ProducaoDentista = lazy(() => import('../pages/painel/ProducaoDentista').then(({ ProducaoDentista }) => ({ default: ProducaoDentista })));
+const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBiteplaner').then(({ RelatoriosBiteplaner }) => ({ default: RelatoriosBiteplaner })));
 const AdminHome = lazy(() => import('../pages/painel/admin/AdminHome').then(({ AdminHome }) => ({ default: AdminHome })));
 const AdminOrders = lazy(() => import('../pages/painel/admin/AdminOrders').then(({ AdminOrders }) => ({ default: AdminOrders })));
-const AdminPayments = lazy(() => import('../pages/painel/admin/AdminPayments').then(({ AdminPayments }) => ({ default: AdminPayments })));
-const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBiteplaner').then(({ RelatoriosBiteplaner }) => ({ default: RelatoriosBiteplaner })));
 const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
-const AdminLabLicensing = lazy(() => import('../pages/painel/admin/AdminLabLicensing').then(({ AdminLabLicensing }) => ({ default: AdminLabLicensing })));
-const AdminPartnerLicensing = lazy(() => import('../pages/painel/admin/AdminPartnerLicensing').then(({ AdminPartnerLicensing }) => ({ default: AdminPartnerLicensing })));
-const AdminAccountDeletions = lazy(() => import('../pages/painel/admin/AdminAccountDeletions').then(({ AdminAccountDeletions }) => ({ default: AdminAccountDeletions })));
-const AdminUsers = lazy(() => import('../pages/painel/admin/AdminUsers').then(({ AdminUsers }) => ({ default: AdminUsers })));
-const AdminBusinessSettings = lazy(() => import('../pages/painel/admin/AdminBusinessSettings').then(({ AdminBusinessSettings }) => ({ default: AdminBusinessSettings })));
-const AdminSystemSettings = lazy(() => import('../pages/painel/admin/AdminSystemSettings').then(({ AdminSystemSettings }) => ({ default: AdminSystemSettings })));
-const AdminCheckupEmails = lazy(() => import('../pages/painel/admin/AdminCheckupEmails').then(({ AdminCheckupEmails }) => ({ default: AdminCheckupEmails })));
+const AdminLaboratories = lazy(() => import('../pages/painel/admin/AdminLaboratories').then(({ AdminLaboratories }) => ({ default: AdminLaboratories })));
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return (
@@ -148,33 +138,28 @@ export const router = createBrowserRouter([
   { path: '/conta', element: <ProtectedRedirect><AccountRedirect /></ProtectedRedirect> },
   { path: '/painel', element: <ProtectedRedirect><PortalRootRedirect /></ProtectedRedirect> },
   { path: '/painel/home', element: <PainelRoute><PainelHome /></PainelRoute> },
-  { path: '/painel/biteplaner/onboarding', element: <PainelRoute><CadastroUsuarioBiteplaner /></PainelRoute> },
+  { path: '/painel/biteplaner/onboarding', element: <Navigate to="/painel/compra" replace /> },
   { path: '/painel/biteplaner/cadastro/:role', element: <PainelRoute><CadastroPerfilBiteplaner /></PainelRoute> },
   { path: '/painel/conta', element: <PainelRoute><MinhaConta /></PainelRoute> },
   { path: '/painel/notificacoes', element: <PainelRoute><Notificacoes /></PainelRoute> },
-  { path: '/painel/pre-requisito', element: <Navigate to="/painel/pre-consulta" replace /> },
-  { path: '/painel/pre-consulta', element: <PainelRoute><PreRequisito /></PainelRoute> },
-  { path: '/painel/consulta-inicial', element: <PainelRoute><ConsultaInicial /></PainelRoute> },
+  { path: '/painel/pre-requisito', element: <Navigate to="/painel/compra" replace /> },
+  { path: '/painel/pre-consulta', element: <Navigate to="/painel/compra" replace /> },
+  { path: '/painel/consulta-inicial', element: <Navigate to="/painel/compra" replace /> },
   { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
   { path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
-  { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHub /></PainelRoute> },
+  { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHome /></PainelRoute> },
+  { path: '/painel/biteplaner/ordens', element: <PainelRoute><BiteplanerOrders /></PainelRoute> },
+  { path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><BiteplanerOrderDetail /></PainelRoute> },
+  { path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><BiteplanerOrderCompletion /></PainelRoute> },
   { path: '/painel/biteplaner/financeiro', element: <PainelRoute><FinanceiroRecebedor /></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },
-  { path: '/painel/biteplaner/avaliacoes', element: <PainelRoute><Avaliacoes /></PainelRoute> },
-  { path: '/painel/biteplaner/jornada', element: <PainelRoute><Jornada /></PainelRoute> },
-  { path: '/painel/dentista/producao/:orderId', element: <PainelRoute><ProducaoDentista /></PainelRoute> },
+  { path: '/painel/biteplaner/avaliacoes', element: <Navigate to="/painel/home" replace /> },
+  { path: '/painel/biteplaner/jornada', element: <Navigate to="/painel/home" replace /> },
+  { path: '/painel/dentista/producao/:orderId', element: <Navigate to="/painel/home" replace /> },
   { path: '/painel/admin/home', element: <AdminPainelRoute><AdminHome /></AdminPainelRoute> },
   { path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> },
-  { path: '/painel/admin/pagamentos', element: <AdminPainelRoute><AdminPayments /></AdminPainelRoute> },
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
-  { path: '/painel/admin/parceiros', element: <AdminPainelRoute><AdminPartnerLicensing /></AdminPainelRoute> },
-  { path: '/painel/admin/remocoes-conta', element: <AdminPainelRoute><AdminAccountDeletions /></AdminPainelRoute> },
-  { path: '/painel/admin/checkups/emails', element: <AdminPainelRoute><AdminCheckupEmails /></AdminPainelRoute> },
   { path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> },
-  { path: '/painel/admin/laboratórios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },
-  { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLabLicensing /></AdminPainelRoute> },
-  { path: '/painel/admin/usuarios', element: <AdminPainelRoute><AdminUsers /></AdminPainelRoute> },
-  { path: '/painel/admin/configuracoes/negocio', element: <AdminPainelRoute><AdminBusinessSettings /></AdminPainelRoute> },
-  { path: '/painel/admin/configuracoes/sistema', element: <AdminPainelRoute><AdminSystemSettings /></AdminPainelRoute> },
+  { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLaboratories /></AdminPainelRoute> },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);

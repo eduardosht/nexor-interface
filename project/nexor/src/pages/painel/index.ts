@@ -1,4 +1,5 @@
 export { Avaliacoes } from './Avaliacoes';
+export { BiteplanerHome } from './BiteplanerHome';
 export { BiteplanerHub } from './BiteplanerHub';
 export { CadastroPerfilBiteplaner } from './CadastroPerfilBiteplaner';
 export { Compra } from './Compra';

@@ -87,17 +87,6 @@ describe("AdminDentistLicensing", () => {
           status: "pending",
           workflowStatus: "admin_review_pending",
           submittedAt: "2026-05-10T10:00:00.000Z",
-          practiceLocations: [
-            {
-              name: "Clínica Centro",
-              address: "Praca da Se - Se, São Paulo - SP",
-              cep: "01001-000",
-              phone: "(11) 99999-9999",
-              serviceHours: "Segunda a sexta, 8h as 18h",
-              city: "São Paulo",
-              state: "SP",
-            },
-          ],
         },
       ],
     });
@@ -134,14 +123,17 @@ describe("AdminDentistLicensing", () => {
     );
 
     const dialog = await screen.findByRole("dialog", {
-      name: /dados enviados pelo dentista/i,
+      name: /revisar licenciamento do dentista/i,
     });
-    expect(within(dialog).getByText("529.982.247-25")).toBeInTheDocument();
-    expect(within(dialog).getByText("19.131.243/0001-97")).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(/odontologia esportiva e dtm/i),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText(/clínica centro/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/aprovar ou recusar o licenciamento/i)).toBeInTheDocument();
+    expect(within(dialog).getAllByText("CRO-SP 12345").length).toBeGreaterThan(0);
+    expect(within(dialog).queryByText(/status do fluxo/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/^status$/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/aguardando an.lise/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("529.982.247-25")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("19.131.243/0001-97")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/odontologia esportiva e dtm/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/clínica centro/i)).not.toBeInTheDocument();
 
     fireEvent.click(
       within(dialog).getByRole("button", { name: /aprovar cadastro/i }),
@@ -168,7 +160,6 @@ describe("AdminDentistLicensing", () => {
           status: "pending",
           workflowStatus: "admin_review_pending",
           submittedAt: "2026-05-10T10:00:00.000Z",
-          practiceLocations: [],
         },
       ],
     });
@@ -189,7 +180,7 @@ describe("AdminDentistLicensing", () => {
     );
 
     const dialog = await screen.findByRole("dialog", {
-      name: /dados enviados pelo dentista/i,
+      name: /revisar licenciamento do dentista/i,
     });
     const rejectButton = within(dialog).getByRole("button", {
       name: /recusar cadastro/i,
@@ -224,7 +215,6 @@ describe("AdminDentistLicensing", () => {
           status: "pending",
           workflowStatus: "admin_review_pending",
           submittedAt: "2026-05-10T10:00:00.000Z",
-          practiceLocations: [],
         },
         {
           id: "role-2",
@@ -235,7 +225,6 @@ describe("AdminDentistLicensing", () => {
           status: "active",
           workflowStatus: "approved_pending_payment",
           submittedAt: "2026-05-11T10:00:00.000Z",
-          practiceLocations: [],
         },
       ],
     });
@@ -282,7 +271,6 @@ describe("AdminDentistLicensing", () => {
           status: "active",
           workflowStatus: "approved_pending_payment",
           submittedAt: "2026-05-11T10:00:00.000Z",
-          practiceLocations: [],
         },
         {
           id: "role-rejected",
@@ -293,7 +281,6 @@ describe("AdminDentistLicensing", () => {
           status: "rejected",
           workflowStatus: "admin_rejected",
           submittedAt: "2026-05-12T10:00:00.000Z",
-          practiceLocations: [],
         },
         {
           id: "role-pending",
@@ -304,7 +291,6 @@ describe("AdminDentistLicensing", () => {
           status: "pending",
           workflowStatus: "admin_review_pending",
           submittedAt: "2026-05-10T10:00:00.000Z",
-          practiceLocations: [],
         },
       ],
     });
@@ -430,7 +416,7 @@ describe("AdminDentistLicensing", () => {
     expect(source).toContain("const CompactModalButton = styled(Button)");
   });
 
-  it("keeps the dentist modal header, cards, clinic disclosure and approval action compact", () => {
+  it("keeps the dentist modal header, cards and approval action compact", () => {
     const source = readFileSync(
       resolve(__dirname, "AdminDentistLicensing.tsx"),
       "utf8",
@@ -442,9 +428,6 @@ describe("AdminDentistLicensing", () => {
     expect(source).toContain("const CompactModalCardHeader = styled.div");
     expect(source).toContain("const CompactModalCardBody = styled.div");
     expect(source).toContain("grid-column: 1 / -1;");
-    expect(source).toContain("const ClinicDisclosure = styled.details");
-    expect(source).toContain("<ClinicDisclosure");
-    expect(source).not.toContain("<ClinicDisclosure open");
     expect(source).toContain('$tone="success"');
     expect(source).toContain("background: ${({ theme, $tone }) =>");
     expect(source).toContain('$tone === "success"');

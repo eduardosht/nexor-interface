@@ -75,8 +75,20 @@ export const Section = styled.section`
 `;
 
 export const SectionHeader = styled.div`
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 4px;
+
+  @media (max-width: 620px) {
+    display: grid;
+  }
+`;
+
+export const SectionHeaderText = styled.div`
   display: grid;
   gap: 4px;
+  min-width: 0;
 `;
 
 export const SectionTitle = styled(PortalSectionTitle).attrs({ as: 'h2', $size: 'sm' as const })`
@@ -85,6 +97,73 @@ export const SectionTitle = styled(PortalSectionTitle).attrs({ as: 'h2', $size: 
 
 export const SectionDescription = styled(PortalSectionDescription).attrs({ $size: 'sm' as const })`
   margin: 0;
+`;
+
+export const AsaasLogoLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  background: ${({ theme }) => theme.colors.bgBase};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  text-decoration: none;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+
+  img {
+    display: block;
+    width: 112px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  &:hover {
+    border-color: #0057ff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #0057ff;
+    outline-offset: 2px;
+  }
+`;
+
+export const AccountSummary = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bgBase};
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const AccountSummaryItem = styled.div`
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    color: ${({ theme }) => theme.colors.textPrimary};
+    font-size: 14px;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
 `;
 
 export const Grid = styled.div`
@@ -98,6 +177,15 @@ export const Grid = styled.div`
 
   @media (max-width: 620px) {
     grid-template-columns: 1fr;
+  }
+`;
+
+export const GridItem = styled.div<{ $span?: 'two' | 'full' }>`
+  min-width: 0;
+  grid-column: ${({ $span }) => ($span === 'full' ? '1 / -1' : $span === 'two' ? 'span 2' : 'span 1')};
+
+  @media (max-width: 620px) {
+    grid-column: 1 / -1;
   }
 `;
 
@@ -188,12 +276,35 @@ export const BackLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 0 14px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  color: ${({ theme }) => theme.colors.textPrimary};
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #15803d;
+  color: #15803d;
+  background: transparent;
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+
+  &:hover {
+    border-color: #166534;
+    background: rgba(21, 128, 61, 0.08);
+    color: #166534;
+    box-shadow: 0 10px 22px rgba(21, 128, 61, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(21, 128, 61, 0.36);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 760px) {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
 `;

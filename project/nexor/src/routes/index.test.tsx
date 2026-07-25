@@ -35,11 +35,23 @@ describe('routes', () => {
     expect(routesSource).toContain("{ path: '/painel/notificacoes', element: <PainelRoute><Notificacoes /></PainelRoute> }");
   });
 
-  it('routes purchase confirmation and admin payment operations separately', () => {
-    expect(routesSource).toContain("const AdminPayments = lazy(() => import('../pages/painel/admin/AdminPayments')");
+  it('routes Biteplaner home to its dashboard page instead of purchase', () => {
+    expect(routesSource).toContain("const BiteplanerHome = lazy(() => import('../pages/painel/BiteplanerHome')");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHome /></PainelRoute> }");
+    expect(routesSource).not.toContain("{ path: '/painel/biteplaner', element: <Navigate to=\"/painel/compra\" replace /> }");
+  });
+  it('routes purchase confirmation and the lean admin commerce pages separately', () => {
     expect(routesSource).toContain("{ path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
     expect(routesSource).toContain("{ path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
-    expect(routesSource).toContain("{ path: '/painel/admin/pagamentos', element: <AdminPainelRoute><AdminPayments /></AdminPainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens', element: <PainelRoute><BiteplanerOrders /></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><BiteplanerOrderDetail /></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><BiteplanerOrderCompletion /></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/admin/home', element: <AdminPainelRoute><AdminHome /></AdminPainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> }");
+    expect(routesSource).not.toContain('/painel/admin/pagamentos');
+    expect(routesSource).not.toContain('/painel/admin/configuracoes');
   });
 
   it('rewrites the demo admin route before Apache treats the asset folder as a directory', () => {

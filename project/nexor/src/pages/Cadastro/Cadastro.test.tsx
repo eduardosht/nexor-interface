@@ -281,14 +281,16 @@ describe('Cadastro', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('keeps legal consent messaging on the second step', async () => {
+  it('keeps legal consent messaging on the second step without clinical triage language', async () => {
     renderCadastro();
     fillStepOneWithValidData();
     fireEvent.click(screen.getByRole('button', { name: /próximo/i }));
 
     await waitFor(() =>
-      expect(screen.getByText(/dados clínicos, documentos, elegibilidade odontológica/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/cadastro, autentica/i).length).toBeGreaterThanOrEqual(1)
     );
+    expect(screen.queryByText(/dados cl.nicos/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/elegibilidade odontol.gica/i)).not.toBeInTheDocument();
     expect(screen.getByText(/lgpd/i)).toBeInTheDocument();
     expect(
       screen.getByText(/posso revogar essa autorização a qualquer momento/i)

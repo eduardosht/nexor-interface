@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Download, ShieldCheck } from 'lucide-react';
 import { AdminDataTable, AdminMetricGrid, ResponsiveDataList, type AdminDataTableColumn, type AdminMetric } from '@nexor/design-system';
+import { env } from '../../../config/env';
 import { api } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import * as S from './styles';
@@ -14,97 +15,100 @@ import {
   AdminMobileMetaValue,
 } from '../admin/mobileCards';
 
-type ReportPurpose = 'support' | 'finance' | 'clinical_care' | 'operations' | 'management' | 'compliance';
-
 type ReportField = {
   key: string;
   label: string;
-  classification: 'operational' | 'personal' | 'sensitive' | 'financial';
 };
 
 type ReportResponse = {
   fields: ReportField[];
-  rows: Array<Record<string, string | null>>;
+  rows: Array<Record<string, string | number | null>>;
 };
 
-const PURPOSE_OPTIONS: Array<{ value: ReportPurpose; label: string; description: string }> = [
-  { value: 'operations', label: 'Operação', description: 'Fila, status e andamento sem dados clínicos.' },
-  { value: 'support', label: 'Suporte', description: 'Contato mínimo e acompanhamento do atendimento.' },
-  { value: 'finance', label: 'Financeiro', description: 'Status de pedido e pagamento sem saúde.' },
-  { value: 'clinical_care', label: 'Clínico', description: 'Dados necessários ao cuidado autorizado.' },
-  { value: 'management', label: 'Gestão', description: 'Leitura executiva e minimizada.' },
-  { value: 'compliance', label: 'Compliance', description: 'Governança, auditoria e solicitações LGPD.' },
-];
+const HIDDEN_INTERFACE_FIELD_KEYS = new Set(['buyerEmail', 'quantity', 'model', 'color']);
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos' },
-  { value: 'registration_started', label: 'Cadastro iniciado' },
   { value: 'awaiting_payment', label: 'Aguardando pagamento' },
-  { value: 'payment_confirmed', label: 'Pagamento confirmado' },
-  { value: 'awaiting_scheduling', label: 'Aguardando agendamento' },
-  { value: 'in_progress', label: 'Em andamento' },
-  { value: 'appointment_confirmed', label: 'Consulta confirmada' },
-  { value: 'ineligible_reassessment', label: 'Inaptidão' },
-  { value: 'lab_processing', label: 'Em produção no laboratório' },
-  { value: 'product_received_by_clinic', label: 'Produto recebido pela clínica' },
-  { value: 'awaiting_adaptation', label: 'Aguardando adaptação' },
-  { value: 'follow_up', label: 'Acompanhamento' },
+  { value: 'paid', label: 'Pago' },
+  { value: 'technical_review', label: 'Revisão técnica' },
+  { value: 'correction_requested', label: 'Correção solicitada' },
+  { value: 'ready_for_production', label: 'Pronto para produção' },
+  { value: 'in_production', label: 'Em produção' },
+  { value: 'shipped', label: 'Enviado' },
+  { value: 'delivered', label: 'Entregue' },
   { value: 'completed', label: 'Concluído' },
   { value: 'cancelled', label: 'Cancelado' },
+  { value: 'refunded', label: 'Reembolsado' },
 ];
 
-function getDefaultPurpose(roles: string[] = []): ReportPurpose {
-  if (roles.includes('finance')) return 'finance';
-  if (roles.includes('clinical')) return 'clinical_care';
-  if (roles.includes('support')) return 'support';
-  if (roles.includes('management')) return 'management';
-  if (roles.includes('compliance')) return 'compliance';
-  return 'operations';
+const statusLabels: Record<string, string> = {
+  draft: 'Rascunho',
+  awaiting_payment: 'Aguardando pagamento',
+  payment_failed: 'Pagamento falhou',
+  paid: 'Pago',
+  technical_review: 'Revisão técnica',
+  correction_requested: 'Correção solicitada',
+  ready_for_production: 'Pronto para produção',
+  in_production: 'Em produção',
+  shipped: 'Enviado',
+  delivered: 'Entregue',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  pending: 'Pendente',
+  awaiting_payment: 'Aguardando pagamento',
+  not_created: 'Não iniciado',
+  paid: 'Pago',
+  confirmed: 'Confirmado',
+  received: 'Recebido',
+  overdue: 'Vencido',
+  refunded: 'Reembolsado',
+  cancelled: 'Cancelado',
+  failed: 'Falhou',
+  payment_failed: 'Pagamento falhou',
+};
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
-function buildReportPath(purpose: ReportPurpose, filters: { status: string; dateFrom: string; dateTo: string }) {
-  const params = new URLSearchParams({ purpose });
+function getInitialDateRange() {
+  const dateTo = new Date();
+  const dateFrom = new Date(dateTo);
+  dateFrom.setMonth(dateFrom.getMonth() - 3);
+
+  return {
+    dateFrom: formatDateInputValue(dateFrom),
+    dateTo: formatDateInputValue(dateTo),
+  };
+}
+
+function buildReportPath(filters: { status: string; dateFrom: string; dateTo: string }, csv = false) {
+  const params = new URLSearchParams();
 
   if (filters.status.trim()) params.set('status', filters.status.trim());
   if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters.dateTo) params.set('dateTo', filters.dateTo);
 
-  return `/v1/reports/biteplaner/orders?${params.toString()}`;
+  const query = params.toString();
+  return `/v1/admin/commerce/biteplaner/report${csv ? '.csv' : ''}${query ? `?${query}` : ''}`;
 }
 
-const reportFieldLabels: Record<string, string> = {
-  orderId: 'ID da ordem',
-  orderStatus: 'Status da ordem',
-  createdAt: 'Criado em',
-};
+function buildApiUrl(path: string) {
+  return new URL(path, `${env.apiUrl.endsWith('/') ? env.apiUrl : `${env.apiUrl}/`}`).toString();
+}
 
-const orderStatusLabels: Record<string, string> = {
-  registration_started: 'Cadastro iniciado',
-  awaiting_payment: 'Aguardando pagamento',
-  payment_confirmed: 'Pagamento confirmado',
-  awaiting_scheduling: 'Aguardando agendamento',
-  awaiting_initial_appointment_acceptance: 'Aguardando aceite do dentista',
-  appointment_confirmed: 'Consulta confirmada',
-  in_progress: 'Consulta em andamento',
-  treatment_required: 'Tratamento prévio pendente',
-  clinical_decision_pending: 'Aguardando decisão clínica',
-  dentist_forms_pending: 'Aguardando envio ao laboratório',
-  lab_processing: 'Em produção no laboratório',
-  lab_production: 'Em produção no laboratório',
-  lab_acceptance_pending: 'Aguardando aceite do laboratório',
-  dentist_adjustment_required: 'Ajuste de produção',
-  product_received_by_clinic: 'Produto recebido pela clínica',
-  awaiting_adaptation: 'Aguardando adaptação',
-  follow_up: 'Acompanhamento',
-  completed: 'Concluído',
-  ineligible_reassessment: 'Inaptidão',
-  cancelled: 'Cancelado',
-};
-
-function formatDateTime(value: string | null | undefined) {
+function formatDateTime(value: string | number | null | undefined) {
   if (!value) return '-';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return String(value);
 
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
@@ -115,36 +119,68 @@ function formatDateTime(value: string | null | undefined) {
   }).format(date);
 }
 
-function formatOrderId(value: string | null | undefined) {
-  if (!value) return '-';
-  if (value.startsWith('#')) return value;
-  if (/^\d+$/.test(value)) return `#${value}`;
-  return value;
+function maskEmail(value: string) {
+  const [localPart, domain] = value.split('@');
+  if (!localPart || !domain) return value;
+
+  const visibleStart = localPart.slice(0, 1);
+  const visibleEnd = localPart.length > 2 ? localPart.slice(-1) : '';
+  return `${visibleStart}${'*'.repeat(Math.max(3, localPart.length - visibleStart.length - visibleEnd.length))}${visibleEnd}@${domain}`;
 }
 
-function formatReportValue(fieldKey: string, value: string | null | undefined) {
-  if (fieldKey === 'orderId') return formatOrderId(value);
-  if (fieldKey === 'orderStatus') return orderStatusLabels[value ?? ''] ?? value ?? '-';
-  if (fieldKey === 'createdAt') return formatDateTime(value);
-  return value ?? '-';
+function formatValue(fieldKey: string, value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === '') return '-';
+  if (fieldKey === 'createdAt' || fieldKey === 'paidAt') return formatDateTime(value);
+  if (fieldKey === 'status' || fieldKey === 'orderStatus') return statusLabels[String(value)] ?? String(value);
+  if (fieldKey === 'paymentStatus') return paymentStatusLabels[String(value)] ?? String(value);
+  if (fieldKey.toLowerCase().includes('email')) return maskEmail(String(value));
+  if (fieldKey === 'orderId') return String(value).slice(0, 8);
+  return String(value);
+}
+
+function isStatusChipField(fieldKey: string) {
+  return fieldKey === 'status' || fieldKey === 'orderStatus' || fieldKey === 'paymentStatus';
+}
+
+function getStatusChipColor(fieldKey: string, value: string | number | null | undefined) {
+  const status = String(value ?? '');
+  if (fieldKey === 'paymentStatus') {
+    if (['paid', 'confirmed', 'received'].includes(status)) return '#15803d';
+    if (['pending', 'awaiting_payment', 'not_created', 'overdue'].includes(status)) return '#d18a00';
+    if (['failed', 'payment_failed', 'cancelled'].includes(status)) return '#b91c1c';
+    if (status === 'refunded') return '#2563eb';
+    return '#6b7280';
+  }
+
+  if (['paid', 'ready_for_production', 'completed', 'delivered'].includes(status)) return '#15803d';
+  if (['awaiting_payment', 'technical_review', 'correction_requested', 'in_production', 'shipped'].includes(status)) return '#d18a00';
+  if (['payment_failed', 'cancelled', 'refunded'].includes(status)) return '#b91c1c';
+  return '#6b7280';
+}
+
+function renderReportValue(fieldKey: string, value: string | number | null | undefined) {
+  const label = formatValue(fieldKey, value);
+  if (!isStatusChipField(fieldKey)) return label;
+
+  return (
+    <S.ReportStatusPill $color={getStatusChipColor(fieldKey, value)}>
+      <S.ReportStatusDot $color={getStatusChipColor(fieldKey, value)} />
+      {label}
+    </S.ReportStatusPill>
+  );
 }
 
 export function RelatoriosBiteplaner() {
-  const { backendUser, session } = useAuth();
+  const { session } = useAuth();
   const token = session?.access_token;
-  const [purpose, setPurpose] = useState<ReportPurpose>(() => getDefaultPurpose(backendUser?.roles));
+  const initialDateRange = useRef(getInitialDateRange()).current;
   const [status, setStatus] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [exportReason, setExportReason] = useState('');
+  const [dateFrom, setDateFrom] = useState(initialDateRange.dateFrom);
+  const [dateTo, setDateTo] = useState(initialDateRange.dateTo);
   const [report, setReport] = useState<ReportResponse>({ fields: [], rows: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
-
-  useEffect(() => {
-    setPurpose(getDefaultPurpose(backendUser?.roles));
-  }, [backendUser?.roles]);
 
   useEffect(() => {
     if (!token) return;
@@ -156,17 +192,15 @@ export function RelatoriosBiteplaner() {
       setError('');
 
       try {
-        const response = await api.get<ReportResponse>(
-          buildReportPath(purpose, { status, dateFrom, dateTo }),
-          token
-        );
+        const response = await api.get<ReportResponse>(buildReportPath({ status, dateFrom, dateTo }), token);
 
         if (active) {
           setReport(response);
         }
       } catch {
         if (active) {
-          setError('Não foi possível carregar os relatórios seguros do Biteplaner.');
+          setError('Não foi possível carregar o relatório Biteplaner.');
+          setReport({ fields: [], rows: [] });
         }
       } finally {
         if (active) {
@@ -180,39 +214,34 @@ export function RelatoriosBiteplaner() {
     return () => {
       active = false;
     };
-  }, [dateFrom, dateTo, purpose, status, token]);
+  }, [dateFrom, dateTo, status, token]);
 
-  const sensitiveFieldCount = useMemo(
-    () => report.fields.filter((field) => field.classification === 'sensitive').length,
+  const visibleFields = useMemo(
+    () => report.fields.filter((field) => !HIDDEN_INTERFACE_FIELD_KEYS.has(field.key)),
     [report.fields]
   );
-  const personalFieldCount = useMemo(
-    () => report.fields.filter((field) => field.classification === 'personal').length,
-    [report.fields]
-  );
-  const exportRequiresReason = personalFieldCount > 0 || sensitiveFieldCount > 0;
   const hasReportRows = report.rows.length > 0;
   const metrics = useMemo<AdminMetric[]>(
     () => [
-      { label: 'Registros retornados', value: loading ? '...' : report.rows.length, tone: 'success' },
-      { label: 'Campos liberados', value: report.fields.length, tone: 'success' },
-      { label: 'Campos sensíveis visíveis', value: sensitiveFieldCount, tone: sensitiveFieldCount > 0 ? 'danger' : 'success' },
+      { label: 'Pedidos retornados', value: loading ? '...' : report.rows.length, tone: 'success' },
+      { label: 'Campos do relatório', value: visibleFields.length, tone: 'success' },
+      { label: 'Status filtrado', value: status ? statusLabels[status] ?? status : 'Todos', tone: 'success' },
     ],
-    [loading, report.fields.length, report.rows.length, sensitiveFieldCount]
+    [loading, report.rows.length, status, visibleFields.length]
   );
-  const reportColumns = useMemo<AdminDataTableColumn<Record<string, string | null>>[]>(
+  const reportColumns = useMemo<AdminDataTableColumn<Record<string, string | number | null>>[]>(
     () =>
-      report.fields.map((field) => ({
+      visibleFields.map((field) => ({
         key: field.key,
-        label: reportFieldLabels[field.key] ?? field.label,
-        sortValue: (row) => row[field.key] ?? '',
-        render: (row) => formatReportValue(field.key, row[field.key]),
+        label: field.label,
+        sortValue: (row) => String(row[field.key] ?? ''),
+        render: (row) => renderReportValue(field.key, row[field.key]),
       })),
-    [report.fields]
+    [visibleFields]
   );
 
   async function handleExport() {
-    if (!token || !hasReportRows || (exportRequiresReason && !exportReason.trim())) {
+    if (!token || !hasReportRows) {
       return;
     }
 
@@ -220,19 +249,25 @@ export function RelatoriosBiteplaner() {
     setError('');
 
     try {
-      await api.post(
-        '/v1/reports/biteplaner/orders/export',
-        {
-          purpose,
-          status: status.trim() || undefined,
-          dateFrom: dateFrom || undefined,
-          dateTo: dateTo || undefined,
-          exportReason: exportReason.trim() || undefined,
-        },
-        token
-      );
+      const response = await fetch(buildApiUrl(buildReportPath({ status, dateFrom, dateTo }, true)), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error('export_failed');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `relatorio-biteplaner-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
     } catch {
-      setError('Não foi possível exportar este relatório com as permissões atuais.');
+      setError('Não foi possível baixar o CSV do relatório.');
     } finally {
       setExporting(false);
     }
@@ -242,42 +277,27 @@ export function RelatoriosBiteplaner() {
     <S.Page>
       <S.Header>
         <S.TitleBlock>
-          <S.Eyebrow>Governança de dados</S.Eyebrow>
+          <S.Eyebrow>Commerce</S.Eyebrow>
           <S.Title>Relatórios Biteplaner</S.Title>
           <S.Subtitle>
-            Visualização segura para pessoas não técnicas, com campos reduzidos por finalidade e trilha de auditoria
-            para acessos e exportações.
+            Extração simples dos pedidos Biteplaner feitos por dentistas, com filtros por status e período.
           </S.Subtitle>
         </S.TitleBlock>
       </S.Header>
 
       <S.Notice>
-        <ShieldCheck size={18} aria-hidden /> Acessos e exportações são registrados. Dados sensíveis só aparecem para
-        finalidades autorizadas.
+        <ShieldCheck size={18} aria-hidden /> O relatório usa apenas dados operacionais do pedido commerce e mantém o paciente fora da plataforma.
       </S.Notice>
 
       <S.Panel>
         <S.FilterGrid>
-          <S.FieldGroup>
-            Finalidade
-            <S.Select value={purpose} onChange={(event) => setPurpose(event.target.value as ReportPurpose)}>
-              {PURPOSE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </S.Select>
-          </S.FieldGroup>
-          <S.FieldGroup>
-            Status
-            <S.Select value={status} onChange={(event) => setStatus(event.target.value)}>
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value || 'all'} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </S.Select>
-          </S.FieldGroup>
+          <S.StatusSelect
+            id="admin-report-status-filter"
+            label="Status"
+            value={status}
+            onChange={setStatus}
+            options={STATUS_OPTIONS}
+          />
           <S.FieldGroup>
             De
             <S.Input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
@@ -305,25 +325,25 @@ export function RelatoriosBiteplaner() {
                 data={report.rows}
                 columns={reportColumns}
                 keyExtractor={(row, index) => `${row.orderId ?? 'row'}-${index}`}
-                emptyMessage="Nenhum registro encontrado para os filtros atuais."
+                emptyMessage="Nenhum pedido encontrado para os filtros atuais."
                 testId="report-table"
               />
             }
             data={report.rows}
             keyExtractor={(row) => `${row.orderId ?? JSON.stringify(row)}`}
-            emptyMessage="Nenhum registro encontrado para os filtros atuais."
+            emptyMessage="Nenhum pedido encontrado para os filtros atuais."
             mobileTestId="report-mobile-list"
             renderCard={(row) => (
               <AdminMobileCard>
                 <div>
-                  <AdminMobileCardTitle>{formatReportValue('orderId', row.orderId) || 'Registro'}</AdminMobileCardTitle>
-                  <AdminMobileCardSubtitle>{formatReportValue('createdAt', row.createdAt)}</AdminMobileCardSubtitle>
+                  <AdminMobileCardTitle>{formatValue('orderId', row.orderId) || 'Pedido'}</AdminMobileCardTitle>
+                  <AdminMobileCardSubtitle>{formatValue('createdAt', row.createdAt)}</AdminMobileCardSubtitle>
                 </div>
                 <AdminMobileMetaGrid>
-                  {report.fields.map((field) => (
+                  {visibleFields.map((field) => (
                     <AdminMobileMetaItem key={field.key}>
-                      <AdminMobileMetaLabel>{reportFieldLabels[field.key] ?? field.label}</AdminMobileMetaLabel>
-                      <AdminMobileMetaValue>{formatReportValue(field.key, row[field.key])}</AdminMobileMetaValue>
+                      <AdminMobileMetaLabel>{field.label}</AdminMobileMetaLabel>
+                      <AdminMobileMetaValue>{renderReportValue(field.key, row[field.key])}</AdminMobileMetaValue>
                     </AdminMobileMetaItem>
                   ))}
                 </AdminMobileMetaGrid>
@@ -333,16 +353,9 @@ export function RelatoriosBiteplaner() {
         )}
 
         <S.Actions>
-          <S.FieldGroup>
-            Justificativa da exportação
-            <S.Input
-              value={exportReason}
-              onChange={(event) => setExportReason(event.target.value)}
-              placeholder={exportRequiresReason ? 'Obrigatória para dados pessoais ou sensíveis' : 'Opcional'}
-            />
-          </S.FieldGroup>
-          <S.Button type="button" disabled={!hasReportRows || exporting || (exportRequiresReason && !exportReason.trim())} onClick={handleExport}>
-            {exporting ? 'Exportando...' : 'Exportar CSV'}
+          <S.Button type="button" disabled={!hasReportRows || exporting} onClick={handleExport}>
+            <Download size={16} aria-hidden />
+            {exporting ? 'Baixando...' : 'Baixar CSV'}
           </S.Button>
         </S.Actions>
       </S.Panel>

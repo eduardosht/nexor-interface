@@ -4,12 +4,10 @@ import {
   DemoStateError,
   createAccountNotification,
   getAuthPayload,
-  listAdminProfiles,
   listAccountNotifications,
   markAllAccountNotificationsRead,
   markAccountNotificationRead,
   markAccountNotificationUnread,
-  updateAdminProfileStatus
 } from '../demoState';
 
 function parseBody(request: { requestBody: string }) {
@@ -108,42 +106,4 @@ export function authHandlers(server: Server) {
   server.post('/v1/admin/notifications', withDemoErrors((_schema, request) =>
     createAccountNotification(parseBody(request), { requestHeaders: request.requestHeaders })
   ));
-  server.get('/v1/admin/profiles', withDemoErrors((_schema, request) => {
-    const rawLimit = request.queryParams.limit;
-    const limitValue = Array.isArray(rawLimit) ? rawLimit[0] : rawLimit;
-    const rawRole = request.queryParams.role;
-    const rawSearch = request.queryParams.search;
-    const rawEmail = request.queryParams.email;
-    const rawPage = request.queryParams.page;
-    const role = Array.isArray(rawRole) ? rawRole[0] : rawRole;
-    const search = Array.isArray(rawSearch) ? rawSearch[0] : rawSearch;
-    const email = Array.isArray(rawEmail) ? rawEmail[0] : rawEmail;
-    const pageValue = Array.isArray(rawPage) ? rawPage[0] : rawPage;
-    const limit = limitValue === undefined ? 25 : Number(limitValue);
-    const page = pageValue === undefined ? 1 : Number(pageValue);
-
-    return listAdminProfiles({
-      role,
-      search,
-      email,
-      page: Number.isFinite(page) ? page : 1,
-      limit: Number.isFinite(limit) ? limit : 25
-    });
-  }));
-  server.patch('/v1/admin/profiles/:profileId/status', withDemoErrors((_schema, request) => {
-    const body = parseBody(request);
-    const status = body.status;
-
-    if (
-      status !== 'pending' &&
-      status !== 'active' &&
-      status !== 'inactive' &&
-      status !== 'suspended' &&
-      status !== 'blocked'
-    ) {
-      return new Response(400, {}, { error: 'bad_request', message: 'Invalid profile status.' });
-    }
-
-    return updateAdminProfileStatus(request.params.profileId, status);
-  }));
 }

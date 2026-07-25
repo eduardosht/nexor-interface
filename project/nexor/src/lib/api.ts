@@ -75,5 +75,12 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: JSON.stringify(body)
     });
+  },
+  put<T>(path: string, body: unknown, token?: string) {
+    return request<T>(path, {
+      method: 'PUT',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: JSON.stringify(body)
+    });
   }
 };

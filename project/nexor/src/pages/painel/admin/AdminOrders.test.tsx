@@ -1,44 +1,46 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { initDesignSystem } from '@nexor/design-system';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { lightTheme } from '../../../styles/theme';
+import { AdminOrders } from './AdminOrders';
 
-const { mockUseAuth, mockApiGet, mockUseAdminPortal } = vi.hoisted(() => ({
-  mockUseAuth: vi.fn(),
-  mockApiGet: vi.fn(),
-  mockUseAdminPortal: vi.fn(),
-}));
+const mockApiGet = vi.fn();
+const mockApiPost = vi.fn();
+const mockWindowOpen = vi.fn();
 
 vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: mockUseAuth,
+  useAuth: () => ({
+    session: { access_token: 'tok', user: { id: '1', email: 'admin@nexor.dev' } },
+  }),
 }));
 
 vi.mock('../../../lib/api', () => ({
   api: {
-    get: mockApiGet,
+    get: (...args: unknown[]) => mockApiGet(...args),
+    post: (...args: unknown[]) => mockApiPost(...args),
   },
 }));
 
-vi.mock('../../../features/admin/portal', () => ({
-  useAdminPortal: mockUseAdminPortal,
-}));
-
-import { AdminOrders } from './AdminOrders';
-
 const { DesignSystemRoot } = initDesignSystem({ brand: 'nexor' });
 
+const order = {
+  id: '5a8a8eb5-b63f-4e2a-9e77-a9d78f092333',
+  buyerName: 'Dra. Marina',
+  buyerEmail: 'marina@nexor.dev',
+  status: 'paid',
+  paymentStatus: 'pending',
+  shipmentStatus: null,
+  quantity: 2,
+  model: 'Biteplaner Pro',
+  color: 'Transparente',
+  totalFormatted: 'R$ 1.200,00',
+  createdAt: '2026-07-16T12:00:00.000Z',
+  canSendToLab: true,
+};
+
 function renderPage() {
-  mockUseAuth.mockReturnValue({
-    session: { access_token: 'tok', user: { id: '1', email: 'admin@nexor.dev' } },
-  });
-
-  mockUseAdminPortal.mockReturnValue({
-    selectedProduct: { id: 'biteplaner', name: 'Biteplaner', label: 'Biteplaner', description: '', status: 'available' },
-  });
-
   return render(
     <ThemeProvider theme={lightTheme}>
       <DesignSystemRoot>
@@ -52,219 +54,115 @@ function renderPage() {
 
 describe('AdminOrders', () => {
   beforeEach(() => {
-    mockUseAuth.mockReset();
     mockApiGet.mockReset();
-    mockUseAdminPortal.mockReset();
+    mockApiPost.mockReset();
+    mockWindowOpen.mockReset();
+    mockWindowOpen.mockReturnValue({ focus: vi.fn() });
+    vi.stubGlobal('open', mockWindowOpen);
   });
 
-  it('shows operational readiness for orders awaiting dentist production filling', async () => {
+  it('loads Biteplaner commerce orders for the admin queue with backend pagination', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [order], pagination: { page: 1, pageSize: 25, hasNextPage: false } });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalledWith('/v1/admin/commerce/biteplaner/orders?limit=25&page=1', 'tok');
+    });
+
+    expect(screen.getByText('Dra. Marina')).toBeInTheDocument();
+    expect(screen.getByText('2x Biteplaner')).toBeInTheDocument();
+    expect(screen.getByText('Biteplaner Pro / Transparente')).toBeInTheDocument();
+    expect(screen.getByText('Pendente')).toBeInTheDocument();
+  });
+
+  it('filters the request by commerce status and resets pagination', async () => {
+    mockApiGet.mockResolvedValue({ orders: [], pagination: { page: 1, pageSize: 25, hasNextPage: false } });
+
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/status/i), { target: { value: 'paid' } });
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenLastCalledWith('/v1/admin/commerce/biteplaner/orders?status=paid&limit=25&page=1', 'tok');
+    });
+  });
+
+  it('loads the next page when backend pagination has more results', async () => {
+    mockApiGet
+      .mockResolvedValueOnce({ orders: [order], pagination: { page: 1, pageSize: 25, hasNextPage: true } })
+      .mockResolvedValueOnce({ orders: [], pagination: { page: 2, pageSize: 25, hasNextPage: false } });
+
+    renderPage();
+
+    const nextButton = await screen.findByRole('button', { name: /próxima/i });
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenLastCalledWith('/v1/admin/commerce/biteplaner/orders?limit=25&page=2', 'tok');
+    });
+  });
+
+  it('renders friendly labels for refunded and correction requested statuses', async () => {
     mockApiGet.mockResolvedValueOnce({
       orders: [
-        {
-          id: 'BP-DEMO-004',
-          status: 'awaiting_dentist_forms',
-          statusLabel: 'aguardando envio ao laboratório',
-          stage: 'awaiting_dentist_forms',
-          created_at: '2026-05-02T12:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          operationalReadiness: {
-            preLabReady: false,
-            pendingItems: [
-              'Anamnese / avaliação inicial pendente',
-              'Escaneamento 3D intraoral pendente',
-            ],
-            summary:
-              'Pendências antes da liberação: Anamnese / avaliação inicial pendente; Escaneamento 3D intraoral pendente.',
-          },
-        },
-        {
-          id: 'BP-DEMO-005',
-          status: 'lab_processing',
-          statusLabel: 'Em processo - Laboratório',
-          stage: 'lab_production',
-          created_at: '2026-05-03T08:00:00.000Z',
-          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
-          operationalReadiness: {
-            preLabReady: true,
-            pendingItems: [],
-            summary: 'Ordem operacionalmente pronta para a próxima etapa.',
-          },
-        },
+        { ...order, id: '6b8a8eb5-b63f-4e2a-9e77-a9d78f092333', status: 'correction_requested' },
+        { ...order, id: '7c8a8eb5-b63f-4e2a-9e77-a9d78f092333', status: 'refunded', paymentStatus: 'refunded' },
       ],
+      pagination: { page: 1, pageSize: 25, hasNextPage: false },
     });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('admin-orders-table')).toBeInTheDocument());
-    expect(screen.getAllByText(/aguardando envio ao laboratório/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/escaneamento 3d intraoral pendente/i).length).toBeGreaterThan(0);
-    const pendingLabStat = screen.getByText(/aguardando liberação ao lab/i).closest('div');
-    expect(pendingLabStat).not.toBeNull();
-    expect(within(pendingLabStat as HTMLElement).getByText('1')).toBeInTheDocument();
+    expect(await screen.findByText('Correção solicitada')).toBeInTheDocument();
+    expect(screen.getAllByText('Reembolsado').length).toBeGreaterThan(0);
+    expect(screen.queryByText('correction_requested')).not.toBeInTheDocument();
+    expect(screen.queryByText('refunded')).not.toBeInTheDocument();
   });
 
-  it('requests the first admin order page with a backend limit', async () => {
-    mockApiGet.mockResolvedValueOnce({ orders: [] });
-
-    renderPage();
-
-    await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/v1/orders?limit=30', 'tok'));
-  });
-
-  it('uses the design-system multi-select removable chips for admin filters', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: 'BP-DEMO-004',
-          status: 'awaiting_dentist_forms',
-          statusLabel: 'aguardando envio ao laboratório',
-          stage: 'awaiting_dentist_forms',
-          created_at: '2026-05-02T12:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          operationalReadiness: {
-            preLabReady: false,
-            pendingItems: [],
-            summary: 'Pendências antes da liberação.',
+  it('creates a lab email draft from a paid order', async () => {
+    mockApiGet.mockResolvedValueOnce({ orders: [order], pagination: { page: 1, pageSize: 25, hasNextPage: false } });
+    mockApiPost.mockResolvedValueOnce({
+      email: {
+        to: '',
+        subject: 'Pedido Biteplaner 5a8a8eb5 para produção',
+        body: 'Ordem: 5a8a8eb5-b63f-4e2a-9e77-a9d78f092333\n- scan3d.stl: https://signed.example/scan3d.stl',
+        attachments: [
+          {
+            id: 'attachment-1',
+            fileName: 'scan3d.stl',
+            technicalFileName: 'scan3d.stl',
+            mimeType: 'model/stl',
+            sizeBytes: 1234,
+            downloadUrl: 'https://signed.example/scan3d.stl',
+            expiresAt: '2026-07-16T12:05:00.000Z',
           },
-        },
-        {
-          id: 'BP-DEMO-005',
-          status: 'lab_processing',
-          statusLabel: 'Em processo - Laboratório',
-          stage: 'lab_production',
-          created_at: '2026-05-03T08:00:00.000Z',
-          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
-          operationalReadiness: {
-            preLabReady: true,
-            pendingItems: [],
-            summary: 'Ordem operacionalmente pronta.',
-          },
-        },
-      ],
+        ],
+      },
     });
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByTestId('admin-orders-table')).toBeInTheDocument());
-
-    const statusFilter = screen.getByTestId('admin-orders-filter-status');
-    fireEvent.click(within(statusFilter).getByRole('button', { name: /todos os status/i }));
-    fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
-
-    expect(within(statusFilter).getByRole('button', { name: /remover em processo - laboratório/i })).toBeInTheDocument();
-    const table = screen.getByTestId('admin-orders-table');
-    expect(within(table).queryByText('BP-DEMO-004')).not.toBeInTheDocument();
-    expect(within(table).getByText('BP-DEMO-005')).toBeInTheDocument();
-
-    fireEvent.click(within(statusFilter).getByRole('button', { name: /remover em processo - laboratório/i }));
-
-    expect(within(table).getByText('BP-DEMO-004')).toBeInTheDocument();
-    expect(within(table).getByText('BP-DEMO-005')).toBeInTheDocument();
-  });
-
-  it('renders mobile order cards with prioritized operational content', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: 'BP-DEMO-004',
-          status: 'awaiting_dentist_forms',
-          statusLabel: 'aguardando envio ao laboratório',
-          stage: 'awaiting_dentist_forms',
-          created_at: '2026-05-02T12:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          operationalReadiness: {
-            preLabReady: false,
-            pendingItems: [],
-            summary: 'Pendências antes da liberação.',
-          },
-        },
-      ],
+    const row = await screen.findByText('Dra. Marina');
+    const actionButton = within(row.closest('tr') as HTMLElement).getByRole('button', {
+      name: /criar e-mail para enviar pedido 5a8a8eb5 ao laboratório/i,
     });
 
-    renderPage();
+    expect(actionButton).not.toHaveTextContent(/enviar ao laboratório/i);
+    fireEvent.click(actionButton);
 
-    expect(await screen.findByTestId('admin-orders-mobile-list')).toBeInTheDocument();
-    const card = screen.getByTestId('admin-order-card-BP-DEMO-004');
-    expect(within(card).getByText('BP-DEMO-004')).toBeInTheDocument();
-    expect(within(card).getByText('Joao Demo')).toBeInTheDocument();
-    expect(within(card).getByText(/pendências antes da liberação/i)).toBeInTheDocument();
-  });
-
-  it('opens mobile filters in a sheet and shows active filter chips', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: 'BP-DEMO-004',
-          status: 'awaiting_dentist_forms',
-          statusLabel: 'aguardando envio ao laboratório',
-          stage: 'awaiting_dentist_forms',
-          created_at: '2026-05-02T12:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          operationalReadiness: { preLabReady: false, pendingItems: [], summary: 'Pendente.' },
-        },
-        {
-          id: 'BP-DEMO-005',
-          status: 'lab_processing',
-          statusLabel: 'Em processo - Laboratório',
-          stage: 'lab_production',
-          created_at: '2026-05-03T08:00:00.000Z',
-          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
-          operationalReadiness: { preLabReady: true, pendingItems: [], summary: 'Pronta.' },
-        },
-      ],
+    await waitFor(() => {
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/admin/commerce/biteplaner/orders/5a8a8eb5-b63f-4e2a-9e77-a9d78f092333/compose-lab-email',
+        {},
+        'tok'
+      );
     });
-
-    renderPage();
-
-    fireEvent.click(await screen.findByText(/abrir filtros de ordens/i));
-    expect(screen.getByRole('dialog', { name: /filtros de ordens/i })).toBeInTheDocument();
-
-    const statusFilter = screen.getByTestId('admin-orders-mobile-filter-status');
-    fireEvent.click(within(statusFilter).getByRole('button', { name: /todos os status/i }));
-    fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
-    fireEvent.click(screen.getByRole('button', { name: /aplicar filtros/i }));
-
-    expect(screen.getByText(/status: em processo - laboratório/i)).toBeInTheDocument();
-    const mobileList = screen.getByTestId('admin-orders-mobile-list');
-    expect(within(mobileList).queryByText('BP-DEMO-004')).not.toBeInTheDocument();
-    expect(within(mobileList).getByText('BP-DEMO-005')).toBeInTheDocument();
-  });
-
-  it('discards draft mobile filters when the sheet closes without applying', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      orders: [
-        {
-          id: 'BP-DEMO-004',
-          status: 'awaiting_dentist_forms',
-          statusLabel: 'aguardando envio ao laboratório',
-          stage: 'awaiting_dentist_forms',
-          created_at: '2026-05-02T12:00:00.000Z',
-          customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
-          operationalReadiness: { preLabReady: false, pendingItems: [], summary: 'Pendente.' },
-        },
-        {
-          id: 'BP-DEMO-005',
-          status: 'lab_processing',
-          statusLabel: 'Em processo - Laboratório',
-          stage: 'lab_production',
-          created_at: '2026-05-03T08:00:00.000Z',
-          customer: { full_name: 'Marina Demo', email: 'marina@nexor.dev', phone: null },
-          operationalReadiness: { preLabReady: true, pendingItems: [], summary: 'Pronta.' },
-        },
-      ],
-    });
-
-    renderPage();
-
-    fireEvent.click(await screen.findByText(/abrir filtros de ordens/i));
-    const statusFilter = screen.getByTestId('admin-orders-mobile-filter-status');
-    fireEvent.click(within(statusFilter).getByRole('button', { name: /todos os status/i }));
-    fireEvent.click(screen.getByRole('option', { name: /em processo - laboratório/i }));
-    fireEvent.click(screen.getByRole('button', { name: /fechar filtros/i }));
-
-    expect(screen.queryByText(/status: em processo - laboratório/i)).not.toBeInTheDocument();
-    const mobileList = screen.getByTestId('admin-orders-mobile-list');
-    expect(within(mobileList).getByText('BP-DEMO-004')).toBeInTheDocument();
-    expect(within(mobileList).getByText('BP-DEMO-005')).toBeInTheDocument();
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      expect.stringContaining('mailto:?subject=Pedido+Biteplaner+5a8a8eb5+para+produ%C3%A7%C3%A3o'),
+      '_blank',
+      'noopener,noreferrer'
+    );
+    expect(mockWindowOpen.mock.calls[0][0]).toContain('scan3d.stl');
   });
 });

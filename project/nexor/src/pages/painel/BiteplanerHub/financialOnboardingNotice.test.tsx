@@ -58,7 +58,7 @@ describe('BiteplanerHub financial onboarding notice', () => {
     mockApiPatch.mockReset();
   });
 
-  it('links approved dentists with pending Pagar.me recipient data to financial onboarding', async () => {
+  it('links approved dentists with pending Asaas account data to financial onboarding', async () => {
     mockApiGet.mockImplementation((path: string) => {
       if (path === '/v1/products/biteplaner/access-options') {
         return Promise.resolve({
@@ -73,12 +73,19 @@ describe('BiteplanerHub financial onboarding notice', () => {
 
       if (path === '/v1/account/products/biteplaner/financial-onboarding') {
         return Promise.resolve({
-          recipients: [
+          accounts: [
             {
-              id: 'recipient-1',
+              id: 'asaas-account-1',
               role: 'dentist',
-              status: 'pending_data',
+              status: 'pending_onboarding',
               providerStatus: null,
+              asaasAccountId: null,
+              asaasWalletId: null,
+              commercialInfoStatus: null,
+              bankAccountInfoStatus: null,
+              documentationStatus: null,
+              generalStatus: null,
+              onboardingUrl: null,
               providerErrorCode: null,
               providerErrorMessage: null,
               termsVersion: null,
@@ -120,12 +127,19 @@ describe('BiteplanerHub financial onboarding notice', () => {
 
       if (path === '/v1/account/products/biteplaner/financial-onboarding') {
         return Promise.resolve({
-          recipients: [
+          accounts: [
             {
-              id: 'recipient-1',
+              id: 'asaas-account-1',
               role: 'dentist',
-              status: 'pending_data',
+              status: 'pending_onboarding',
               providerStatus: null,
+              asaasAccountId: null,
+              asaasWalletId: null,
+              commercialInfoStatus: null,
+              bankAccountInfoStatus: null,
+              documentationStatus: null,
+              generalStatus: null,
+              onboardingUrl: null,
               providerErrorCode: null,
               providerErrorMessage: null,
               termsVersion: null,

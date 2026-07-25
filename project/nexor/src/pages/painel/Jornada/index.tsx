@@ -423,7 +423,7 @@ function getPaymentMethodLabel(value: string) {
     return 'Boleto';
   }
 
-  return value || 'Aguardando dados do Pagar.me';
+  return value || 'Aguardando dados do Asaas';
 }
 
 const PAYMENT_DETAILS_STATUSES = new Set([
@@ -479,14 +479,14 @@ function getOrderPaymentDetails(order: DemoOrderSummary) {
     getStringPaymentField(payment, ['confirmed_at', 'created_at']);
 
   return {
-    amount: amountCents !== null ? formatCurrencyFromCents(amountCents) : 'Aguardando dados do Pagar.me',
+    amount: amountCents !== null ? formatCurrencyFromCents(amountCents) : 'Aguardando dados do Asaas',
     model: purchaseConfiguration ? formatPurchaseOption(purchaseConfiguration.model) : 'Não informado',
     color: purchaseConfiguration ? formatPurchaseOption(purchaseConfiguration.color) : 'Não informado',
     quantity: purchaseConfiguration ? String(purchaseConfiguration.quantity) : 'Não informado',
     method: getPaymentMethodLabel(method),
     paidAt: paidAt
       ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(paidAt))
-      : 'Aguardando dados do Pagar.me',
+      : 'Aguardando dados do Asaas',
   };
 }
 

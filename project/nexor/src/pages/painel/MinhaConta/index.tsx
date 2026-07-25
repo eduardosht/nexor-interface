@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { Link } from 'react-router-dom';
 import { ChevronDown, Download, ExternalLink, Mail, Pencil } from 'lucide-react';
 import {
-  Field as DesignSystemField,
   Snackbar,
   SnackbarStack,
   sanitizePersonName,
@@ -11,24 +10,8 @@ import {
 import { SkeletonCard } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
-import { fetchCommunicationPreferences, updateCommunicationPreferences } from '../../../features/platformEmails/platformEmails.api';
-import type { CommunicationPreferences } from '../../../features/platformEmails/platformEmails.types';
 import * as S from './styles';
 
-
-interface MeResponse {
-  user?: {
-    profileId?: string;
-    email?: string;
-    roles?: string[];
-    fullName?: string | null;
-    phone?: string | null;
-  };
-  profile?: {
-    full_name: string;
-    role: string;
-  };
-}
 
 interface MockProduct {
   key: 'biteplaner';
@@ -45,34 +28,6 @@ type ProductRole = {
   status: string;
   stage?: string | null;
   metadata: Record<string, unknown>;
-};
-
-type ProductRolesResponse = {
-  productRoles: ProductRole[];
-};
-
-type AccountDeletionStatus =
-  | 'pending_confirmation'
-  | 'pending_admin_review'
-  | 'cancelled_by_user'
-  | 'rejected'
-  | 'approved_direct'
-  | 'approved_processing_privacy'
-  | 'completed';
-
-type AccountDeletionResponse = {
-  request: {
-    id: string;
-    status: AccountDeletionStatus;
-    active_order_ids?: string[];
-    admin_decision_note?: string | null;
-  };
-  requiresAdminReview: boolean;
-  message: string;
-};
-
-type CurrentAccountDeletionResponse = {
-  deletionRequest: AccountDeletionResponse | null;
 };
 
 type AccountConsentsResponse = {
@@ -112,43 +67,11 @@ type CepAddressLookup = {
   coordinates: { lat: number; lng: number };
 };
 
-const deletionReasonOptions = [
-  { value: '', label: 'Prefiro não informar' },
-  { value: 'privacy', label: 'Privacidade e LGPD' },
-  { value: 'no_longer_uses', label: 'Não uso mais a Nexor' },
-  { value: 'duplicate_account', label: 'Tenho outra conta' },
-  { value: 'service_issue', label: 'Tive problema com o serviço' },
-  { value: 'other', label: 'Outros' },
-] as const;
-
-const PRODUCT_ROLES_LOAD_TIMEOUT_MS = 10000;
-
-type DeletionReason = (typeof deletionReasonOptions)[number]['value'];
 type AccountSnackbar = {
   message: string;
   title: string;
   tone: SnackbarTone;
 };
-
-function getFirstName(name: string, fallbackEmail: string) {
-  const fromName = name.trim().split(/\s+/).filter(Boolean)[0];
-
-  if (fromName) {
-    return fromName;
-  }
-
-  return fallbackEmail.split('@')[0] || 'confirmar';
-}
-
-
-
-
-
-
-
-
-
-
 
 const fadeSection = {
   hidden: { opacity: 0, y: 10 },
@@ -166,7 +89,7 @@ function getMockAcquiredProducts(email: string): MockProduct[] {
       name: 'Biteplaner',
       status: 'Ativo',
       description: 'Produto ativo na sua conta Nexor.',
-      href: '/painel/biteplaner?mode=user',
+      href: '/painel/biteplaner',
     },
   ];
 }
@@ -375,50 +298,19 @@ async function fetchCepAddress(cep: string): Promise<CepAddressLookup | null> {
   };
 }
 
-function withTimeout<T>(promise: Promise<T> | T, timeoutMs: number, message: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
-      reject(new Error(message));
-    }, timeoutMs);
-
-    Promise.resolve(promise).then(
-      (value) => {
-        window.clearTimeout(timeoutId);
-        resolve(value);
-      },
-      (error: unknown) => {
-        window.clearTimeout(timeoutId);
-        reject(error);
-      }
-    );
-  });
-}
-
 export function MinhaConta() {
   const { session, backendUser, sendPasswordReset, hasConfiguredAuth, isMockMode } = useAuth();
   const [fullName, setFullName] = useState('');
-  const [saving, setSaving] = useState(false);
   const [passwordSending, setPasswordSending] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingProductRoles, setLoadingProductRoles] = useState(false);
   const [productRolesError, setProductRolesError] = useState('');
   const [loadedRoles, setLoadedRoles] = useState<string[]>([]);
   const [productRoles, setProductRoles] = useState<ProductRole[]>([]);
-  const [savingProductRoleId, setSavingProductRoleId] = useState('');
   const [editingOnboardingFields, setEditingOnboardingFields] = useState<Set<string>>(() => new Set());
-  const [deletionModalOpen, setDeletionModalOpen] = useState(false);
-  const [deletionReason, setDeletionReason] = useState<DeletionReason>('');
-  const [deletionReasonDetails, setDeletionReasonDetails] = useState('');
-  const [deletionConfirmation, setDeletionConfirmation] = useState('');
-  const [deletionSubmitting, setDeletionSubmitting] = useState(false);
-  const [deletionRequest, setDeletionRequest] = useState<AccountDeletionResponse | null>(null);
-  const [deletionActionSubmitting, setDeletionActionSubmitting] = useState(false);
   const [privacyExportSubmitting, setPrivacyExportSubmitting] = useState(false);
   const [privacyConsents, setPrivacyConsents] = useState<AccountConsentsResponse | null>(null);
   const [marketingRevocationSubmitting, setMarketingRevocationSubmitting] = useState(false);
-  const [communicationPreferences, setCommunicationPreferences] = useState<CommunicationPreferences | null>(null);
-  const [communicationPreferencesSaving, setCommunicationPreferencesSaving] = useState(false);
-  const [disableCommunicationModalOpen, setDisableCommunicationModalOpen] = useState(false);
   const [expandedOnboardingCards, setExpandedOnboardingCards] = useState<Set<string>>(() => new Set());
   const [snackbar, setSnackbar] = useState<AccountSnackbar | null>(null);
   const loadedAccountTokenRef = useRef<string | null>(null);
@@ -427,11 +319,7 @@ export function MinhaConta() {
   const email = backendUser?.email ?? session?.user.email ?? '—';
   const roles = loadedRoles.length > 0 ? loadedRoles : (backendUser?.roles ?? []);
   const isAdmin = roles.includes('admin');
-  const firstName = getFirstName(fullName, email);
-  const canConfirmDeletion = deletionConfirmation.trim() === firstName;
   const acquiredProducts = useMemo(() => getMockAcquiredProducts(email), [email]);
-  const deletionStatus = deletionRequest?.request?.status;
-  const systemFlowEmailEnabled = communicationPreferences?.systemFlowEmailEnabled ?? true;
   const marketingConsentActive = privacyConsents?.latestAccountConsents?.marketing === true;
   const visibleProductRoles = useMemo(
     () => productRoles.filter((role) => role.role !== 'customer' || hasCompletedCustomerOnboarding(role)),
@@ -504,8 +392,8 @@ export function MinhaConta() {
   function renderOnboardingActions(role: ProductRole, isSavingRole: boolean) {
     return (
       <S.FormActions>
-        <S.SaveBtn type="button" disabled={isSavingRole} onClick={() => void handleSaveProductRole(role)}>
-          Salvar
+        <S.SaveBtn type="button" disabled={true || isSavingRole} title={`Dados de ${getRoleLabel(role.role)} são atualizados pelo cadastro principal Nexor.`}>
+          Dados vinculados ao cadastro principal
         </S.SaveBtn>
       </S.FormActions>
     );
@@ -953,7 +841,13 @@ export function MinhaConta() {
   useEffect(() => {
     if (!session) return;
     const token = session.access_token;
-    if (loadedAccountTokenRef.current === token) return;
+    const accountSnapshotKey = JSON.stringify({
+      token,
+      fullName: backendUser?.fullName,
+      roles: backendUser?.roles,
+      productRoles: backendUser?.productRoles,
+    });
+    if (loadedAccountTokenRef.current === accountSnapshotKey) return;
     const requestId = accountLoadRequestIdRef.current + 1;
     accountLoadRequestIdRef.current = requestId;
     let active = true;
@@ -964,55 +858,26 @@ export function MinhaConta() {
       setLoadingProductRoles(true);
       setProductRolesError('');
 
-      try {
-        const resp = await api.get<MeResponse>('/v1/auth/me', token);
-        if (!shouldApplyState()) {
-          return;
-        }
-
-        const nextName = resp.user?.fullName ?? resp.profile?.full_name ?? '';
-        const nextRoles = resp.user?.roles ?? [];
-
-        if (nextName) {
-          setFullName(nextName);
-        }
-
-        setLoadedRoles(nextRoles);
-      } catch {
-        /* silently skip — name stays empty */
-      } finally {
-        if (shouldApplyState()) {
-          setLoadingProfile(false);
-        }
-      }
-
-      try {
-        const productRolesResp = await withTimeout(
-          api.get<ProductRolesResponse>('/v1/account/product-roles', token),
-          PRODUCT_ROLES_LOAD_TIMEOUT_MS,
-          'Product roles request timed out.'
+      if (shouldApplyState()) {
+        setFullName(sanitizePersonName(backendUser?.fullName ?? '').trim());
+        setLoadedRoles(backendUser?.roles ?? []);
+        setProductRoles(
+          (backendUser?.productRoles ?? []).map((role) => ({
+            id: getString(role.orderId) || `${role.productKey}:${role.role}`,
+            productKey: role.productKey,
+            role: role.role as ProductRole['role'],
+            status: role.status,
+            stage: role.stage,
+            metadata: role.metadata ?? {},
+          }))
         );
-        if (!shouldApplyState()) {
-          return;
-        }
-
-        setProductRoles(productRolesResp?.productRoles ?? []);
         setProductRolesError('');
-      } catch {
-        if (shouldApplyState()) {
-          setProductRoles([]);
-          setProductRolesError('Não foi possível carregar os dados de onboarding. Tente atualizar a página em instantes.');
-        }
-      } finally {
-        if (shouldApplyState()) {
-          setLoadingProductRoles(false);
-          loadedAccountTokenRef.current = token;
-        }
+        setLoadingProfile(false);
+        setLoadingProductRoles(false);
+        loadedAccountTokenRef.current = accountSnapshotKey;
       }
 
-      const [deletionResult, communicationPreferencesResult, accountConsentsResult] = await Promise.allSettled([
-        api.get<CurrentAccountDeletionResponse>('/v1/account/deletion-request/current', token),
-        fetchCommunicationPreferences(token),
+      const [accountConsentsResult] = await Promise.allSettled([
         api.get<AccountConsentsResponse>('/v1/account/consents', token),
       ]);
 
@@ -1020,18 +885,12 @@ export function MinhaConta() {
         return;
       }
 
-      setDeletionRequest(deletionResult.status === 'fulfilled' ? deletionResult.value?.deletionRequest ?? null : null);
-      setCommunicationPreferences(
-        communicationPreferencesResult.status === 'fulfilled'
-          ? communicationPreferencesResult.value?.preferences ?? null
-          : null
-      );
       setPrivacyConsents(accountConsentsResult.status === 'fulfilled' ? accountConsentsResult.value ?? null : null);
     }
 
     void load();
     return () => { active = false; };
-  }, [session]);
+  }, [backendUser, session]);
 
   function updateProductRoleMetadata(
     productRoleId: string | undefined,
@@ -1107,97 +966,6 @@ export function MinhaConta() {
         practiceLocation: nextLocation,
       };
     });
-  }
-
-  async function handleSaveProductRole(role: ProductRole) {
-    if (!session || !role.id) {
-      return;
-    }
-
-    setSavingProductRoleId(role.id);
-    setSnackbar(null);
-
-    try {
-      let metadata = role.metadata;
-
-      if (role.role === 'dentist') {
-        const primaryLocation = getPrimaryPracticeLocation(metadata);
-        const nextLocation = {
-          ...primaryLocation,
-          dentistName: getString(metadata.fullName) || primaryLocation.dentistName,
-        };
-
-        metadata = {
-          ...metadata,
-          practiceLocations: [nextLocation],
-          practiceLocation: nextLocation,
-        };
-      }
-
-      const response = await api.patch<{ productRole: ProductRole }>(
-        `/v1/account/product-roles/${role.id}`,
-        { metadata },
-        session.access_token
-      );
-
-      setProductRoles((current) =>
-        current.map((item) => (item.id === role.id ? response.productRole : item))
-      );
-      setEditingOnboardingFields((current) => {
-        const rolePrefix = `${role.id}:`;
-        return new Set([...current].filter((key) => !key.startsWith(rolePrefix)));
-      });
-      setSnackbar({
-        tone: 'success',
-        title: 'Onboarding atualizado',
-        message: 'Os dados do produto foram salvos e refletirão nos fluxos operacionais.',
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao salvar onboarding',
-        message: 'Não foi possível salvar os dados do produto. Tente novamente.',
-      });
-    } finally {
-      setSavingProductRoleId('');
-    }
-  }
-
-  async function persistCommunicationPreferences(systemFlowEmailEnabled: boolean) {
-    if (!session) {
-      return;
-    }
-
-    setCommunicationPreferencesSaving(true);
-    setSnackbar(null);
-
-    try {
-      const response = await updateCommunicationPreferences(session.access_token, { systemFlowEmailEnabled });
-      setCommunicationPreferences(response.preferences);
-      setDisableCommunicationModalOpen(false);
-      setSnackbar({
-        tone: 'success',
-        title: 'Preferências atualizadas',
-        message: 'Sua preferência de comunicação foi salva.',
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao salvar preferências',
-        message: 'Não foi possível atualizar sua preferência de comunicação. Tente novamente.',
-      });
-    } finally {
-      setCommunicationPreferencesSaving(false);
-    }
-  }
-
-  function handleCommunicationPreferenceChange(enabled: boolean) {
-    if (enabled) {
-      void persistCommunicationPreferences(true);
-      return;
-    }
-
-    setDisableCommunicationModalOpen(true);
   }
 
   async function handleMarketingConsentChange(enabled: boolean) {
@@ -1284,31 +1052,13 @@ export function MinhaConta() {
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
-    if (!session) return;
-    setSaving(true);
     setSnackbar(null);
-    try {
-      await api.patch(
-        '/v1/auth/profile',
-        {
-          fullName: sanitizePersonName(fullName).trim(),
-        },
-        session.access_token
-      );
-      setSnackbar({
-        tone: 'success',
-        title: 'Alterações salvas',
-        message: 'Os dados da sua conta foram atualizados.',
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao salvar',
-        message: 'Não foi possível salvar. Tente novamente.',
-      });
-    } finally {
-      setSaving(false);
-    }
+    setFullName(sanitizePersonName(fullName).trim());
+    setSnackbar({
+      tone: 'info',
+      title: 'Cadastro centralizado',
+      message: 'Os dados cadastrais agora são atualizados pelo cadastro principal Nexor/OrthoTech. Nenhuma rota legada foi acionada.',
+    });
   }
 
   async function handlePasswordReset() {
@@ -1356,122 +1106,6 @@ export function MinhaConta() {
     }
   }
 
-  function closeDeletionModal() {
-    if (deletionSubmitting) {
-      return;
-    }
-
-    setDeletionModalOpen(false);
-    setDeletionReason('');
-    setDeletionReasonDetails('');
-    setDeletionConfirmation('');
-  }
-
-  async function handleDeletionRequest() {
-    if (!session || !canConfirmDeletion) {
-      return;
-    }
-
-    setDeletionSubmitting(true);
-    setSnackbar(null);
-
-    try {
-      const response = await api.post<AccountDeletionResponse>(
-        '/v1/account/deletion-request',
-        {
-          confirmationFirstName: deletionConfirmation.trim(),
-          ...(deletionReason ? { reason: deletionReason } : {}),
-          reasonDetails: deletionReasonDetails.trim(),
-        },
-        session.access_token
-      );
-      setDeletionRequest(response);
-
-      setSnackbar({
-        tone: 'success',
-        title: 'Solicitação registrada',
-        message: response.message ?? 'Solicitação de exclusão registrada.',
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao solicitar exclusão',
-        message: 'Não foi possível registrar a solicitação de exclusão.',
-      });
-    } finally {
-      setDeletionModalOpen(false);
-      setDeletionReason('');
-      setDeletionReasonDetails('');
-      setDeletionConfirmation('');
-      setDeletionSubmitting(false);
-    }
-  }
-
-  async function handleForceAdminReview() {
-    if (!session || deletionActionSubmitting) {
-      return;
-    }
-
-    setDeletionActionSubmitting(true);
-    setSnackbar(null);
-
-    try {
-      const response = await api.post<AccountDeletionResponse>(
-        '/v1/account/deletion-request',
-        {
-          confirmationFirstName: firstName,
-          forceAdminReview: true,
-        },
-        session.access_token
-      );
-      setDeletionRequest(response);
-      setSnackbar({
-        tone: 'success',
-        title: 'Enviado para análise',
-        message: response.message,
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao enviar',
-        message: 'Não foi possível enviar a solicitação para análise.',
-      });
-    } finally {
-      setDeletionActionSubmitting(false);
-    }
-  }
-
-  async function handleCancelDeletionRequest() {
-    if (!session || !deletionRequest || deletionActionSubmitting) {
-      return;
-    }
-
-    setDeletionActionSubmitting(true);
-    setSnackbar(null);
-
-    try {
-      const response = await api.post<AccountDeletionResponse>(
-        `/v1/account/deletion-request/${deletionRequest.request.id}/cancel`,
-        {},
-        session.access_token
-      );
-      setDeletionRequest(response);
-      setSnackbar({
-        tone: 'success',
-        title: 'Remoção cancelada',
-        message: response.message,
-      });
-    } catch {
-      setSnackbar({
-        tone: 'error',
-        title: 'Falha ao cancelar',
-        message: 'Não foi possível cancelar a solicitação de remoção.',
-      });
-    } finally {
-      setDeletionActionSubmitting(false);
-    }
-  }
-
   return (
     <S.Page>
       <S.PageTitle>Minha Conta</S.PageTitle>
@@ -1510,7 +1144,7 @@ export function MinhaConta() {
                 </S.Field>
               </S.CardRow>
               <S.FormActions>
-                <S.SaveBtn type="submit" disabled={saving}>Salvar</S.SaveBtn>
+                <S.SaveBtn type="submit">Atualizar localmente</S.SaveBtn>
               </S.FormActions>
             </S.Card>
           )}
@@ -1586,18 +1220,11 @@ export function MinhaConta() {
 
               <S.PrivacyConsentItem>
                 <S.PreferenceContent>
-                  <S.PrivacyConsentStatus>Fluxos do sistema por e-mail</S.PrivacyConsentStatus>
-                  <S.PrivacyConsentHint>Inclui lembretes de check-up, andamento de pedidos e comunicações operacionais da sua jornada. E-mails de segurança e autenticação continuam ativos.</S.PrivacyConsentHint>
-                  <S.PreferenceSwitchLabel>
-                    <S.PreferenceSwitchInput
-                      type="checkbox"
-                      checked={systemFlowEmailEnabled}
-                      disabled={communicationPreferencesSaving}
-                      onChange={(event) => handleCommunicationPreferenceChange(event.target.checked)}
-                    />
-                    <S.PreferenceSwitchText>Receber comunicações de fluxos do sistema por e-mail</S.PreferenceSwitchText>
-
-                  </S.PreferenceSwitchLabel>
+                  <S.PrivacyConsentStatus>Comunicações operacionais</S.PrivacyConsentStatus>
+                  <S.PrivacyConsentHint>
+                    Preferências operacionais serão reativadas quando o novo fluxo commerce/licenciamento estiver conectado.
+                    E-mails de segurança e autenticação continuam ativos.
+                  </S.PrivacyConsentHint>
                 </S.PreferenceContent>
               </S.PrivacyConsentItem>
             </S.PrivacyConsentSummary>
@@ -1649,7 +1276,6 @@ export function MinhaConta() {
             {visibleProductRoles.map((role) => {
               const metadata = role.metadata ?? {};
               const primaryLocation = getPrimaryPracticeLocation(metadata);
-              const isSavingRole = Boolean(role.id && savingProductRoleId === role.id);
               const isCollapsibleRole = role.role === 'dentist' || role.role === 'customer';
               const roleKey = getProductRoleKey(role);
               const isExpanded = !isCollapsibleRole || expandedOnboardingCards.has(roleKey);
@@ -1684,12 +1310,12 @@ export function MinhaConta() {
                     {isExpanded ? (
                       <S.OnboardingBody>
                         {role.role === 'dentist'
-                          ? renderDentistOnboardingFields(role, metadata, primaryLocation, isSavingRole)
+                          ? renderDentistOnboardingFields(role, metadata, primaryLocation, false)
                           : role.role === 'customer'
                             ? renderCustomerOnboardingFields(metadata)
                             : role.role === 'partner'
-                              ? renderPartnerOnboardingFields(role, metadata, isSavingRole)
-                              : renderLabOnboardingFields(role, metadata, isSavingRole)}
+                              ? renderPartnerOnboardingFields(role, metadata, false)
+                              : renderLabOnboardingFields(role, metadata, false)}
                       </S.OnboardingBody>
                     ) : null}
                   </S.OnboardingCardContent>
@@ -1731,169 +1357,27 @@ export function MinhaConta() {
 
       {!isAdmin ? (
         <S.Section
-          id="excluir-conta"
+          id="solicitacoes-lgpd"
           variants={fadeSection}
           initial="hidden"
           animate="visible"
           transition={{ delay: 0.12 } as never}
         >
-          <S.SectionTitle>Excluir conta</S.SectionTitle>
-          <S.DangerCard>
+          <S.SectionTitle>Solicitações LGPD</S.SectionTitle>
+          <S.Card>
             <S.SecurityContent>
-              <S.SecurityTitle>
-                {deletionStatus === 'rejected'
-                  ? 'Remoção de conta rejeitada'
-                  : deletionStatus === 'pending_admin_review'
-                    ? 'Remoção em análise'
-                    : deletionStatus === 'pending_confirmation'
-                      ? 'Fluxos ativos encontrados'
-                      : deletionStatus === 'cancelled_by_user'
-                        ? 'Remoção cancelada'
-                        : deletionStatus === 'approved_direct' ||
-                          deletionStatus === 'approved_processing_privacy'
-                          ? 'Remoção aprovada'
-                          : 'Solicitar exclusão da conta'}
-              </S.SecurityTitle>
+              <S.SecurityTitle>Correção, revogação ou exclusão de dados</S.SecurityTitle>
               <S.SecurityText>
-                {deletionRequest?.message ??
-                  'Por segurança, a exclusão pode ficar pendente quando houver ordens em andamento vinculadas à conta.'}
+                Durante o reset da plataforma, solicitações sensíveis da conta devem ser feitas pelo canal LGPD para análise manual da Nexor.
               </S.SecurityText>
-              {deletionStatus === 'pending_confirmation' ? (
-                <S.DeletionStatusNotice role="status" aria-label="Status da remoção">
-                  <S.DeletionStatusTitle>Status alterado</S.DeletionStatusTitle>
-                  <S.DeletionStatusMessage>
-                    {deletionRequest?.message ??
-                      'Encontramos fluxos ativos vinculados à sua conta. Para continuar, envie a solicitação para análise da Nexor.'}
-                  </S.DeletionStatusMessage>
-                </S.DeletionStatusNotice>
-              ) : null}
             </S.SecurityContent>
             <S.FormActions>
-              {deletionStatus === 'pending_confirmation' ? (
-                <>
-                  <S.DangerButton
-                    type="button"
-                    disabled={deletionActionSubmitting}
-                    onClick={handleForceAdminReview}
-                  >
-                    Enviar para análise da Nexor
-                  </S.DangerButton>
-                  <S.CancelButton
-                    type="button"
-                    disabled={deletionActionSubmitting}
-                    onClick={handleCancelDeletionRequest}
-                  >
-                    Cancelar remoção
-                  </S.CancelButton>
-                </>
-              ) : deletionStatus === 'pending_admin_review' ? (
-                <S.CancelButton
-                  type="button"
-                  disabled={deletionActionSubmitting}
-                  onClick={handleCancelDeletionRequest}
-                >
-                  Cancelar remoção
-                </S.CancelButton>
-              ) : deletionStatus === 'rejected' && deletionRequest?.request ? (
-                <S.CancelButton as="a" href={`mailto:suporte@nexor.com.br?subject=Remoção de conta ${deletionRequest.request.id}`}>
-                  Entrar em contato
-                </S.CancelButton>
-              ) : deletionStatus === 'approved_direct' ||
-                deletionStatus === 'approved_processing_privacy' ||
-                deletionStatus === 'completed' ? null : (
-                <S.DangerButton type="button" onClick={() => setDeletionModalOpen(true)}>
-                  Excluir conta
-                </S.DangerButton>
-              )}
+              <S.CancelButton as="a" href="/?assunto=lgpd#contato" target="_blank" rel="noopener noreferrer">
+                Falar com o canal LGPD
+              </S.CancelButton>
             </S.FormActions>
-          </S.DangerCard>
+          </S.Card>
         </S.Section>
-      ) : null}
-
-      {deletionModalOpen ? (
-        <S.ModalOverlay role="presentation">
-          <S.Modal role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
-            <S.ModalHeader>
-              <div>
-                <S.ModalTitle id="delete-account-title">Confirmar exclusão da conta</S.ModalTitle>
-                <S.SecurityText>
-                  Para continuar, digite <strong>{firstName}</strong>. O motivo é opcional.
-                </S.SecurityText>
-              </div>
-            </S.ModalHeader>
-            <S.ModalBody>
-              <S.Field>
-                <S.FieldLabel id="account-deletion-reason-label">Motivo da exclusão</S.FieldLabel>
-                <S.ReasonChips role="group" aria-labelledby="account-deletion-reason-label">
-                  {deletionReasonOptions.map((option) => (
-                    <S.ReasonChip
-                      key={option.value || 'empty'}
-                      type="button"
-                      $active={deletionReason === option.value}
-                      aria-pressed={deletionReason === option.value}
-                      onClick={() => setDeletionReason(option.value)}
-                    >
-                      {option.label}
-                    </S.ReasonChip>
-                  ))}
-                </S.ReasonChips>
-              </S.Field>
-              {deletionReason === 'other' ? (
-                <S.Field as="label">
-                  <S.FieldLabel>Descreva o motivo</S.FieldLabel>
-                  <S.TextArea
-                    aria-label="Descreva o motivo"
-                    value={deletionReasonDetails}
-                    maxLength={500}
-                    onChange={(event) => setDeletionReasonDetails(event.target.value)}
-                  />
-                </S.Field>
-              ) : null}
-              <DesignSystemField
-                type="text"
-                label={<>Digite <strong>{firstName}</strong> para confirmar</>}
-                aria-label={`Digite ${firstName} para confirmar`}
-                value={deletionConfirmation}
-                onChange={(event) => setDeletionConfirmation(event.target.value)}
-              />
-            </S.ModalBody>
-            <S.ModalActions>
-              <S.CancelButton type="button" onClick={closeDeletionModal}>
-                Cancelar
-              </S.CancelButton>
-              <S.DangerButton type="button" disabled={!canConfirmDeletion || deletionSubmitting} onClick={handleDeletionRequest}>
-                {deletionSubmitting ? 'Enviando...' : 'Confirmar exclusão'}
-              </S.DangerButton>
-            </S.ModalActions>
-          </S.Modal>
-        </S.ModalOverlay>
-      ) : null}
-
-      {disableCommunicationModalOpen ? (
-        <S.ModalOverlay role="presentation">
-          <S.Modal role="dialog" aria-modal="true" aria-labelledby="disable-communication-title">
-            <S.ModalHeader>
-              <div>
-                <S.ModalTitle id="disable-communication-title">Desativar e-mails de fluxo?</S.ModalTitle>
-                <S.SecurityText>
-                  Você deixará de receber lembretes operacionais, como os avisos de check-up. E-mails de segurança e autenticação continuam ativos.
-                </S.SecurityText>
-              </div>
-            </S.ModalHeader>
-            <S.ModalActions>
-              <S.CancelButton type="button" disabled={communicationPreferencesSaving} onClick={() => setDisableCommunicationModalOpen(false)}>
-                Cancelar
-              </S.CancelButton>
-              <S.DangerButton
-                type="button"
-                disabled={communicationPreferencesSaving}
-                onClick={() => void persistCommunicationPreferences(false)}
-              >
-                {communicationPreferencesSaving ? 'Salvando...' : 'Desativar e-mails'}
-              </S.DangerButton>
-            </S.ModalActions>
-          </S.Modal>
-        </S.ModalOverlay>
       ) : null}
       {snackbar ? (
         <SnackbarStack>

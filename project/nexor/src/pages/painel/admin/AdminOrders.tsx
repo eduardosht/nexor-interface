@@ -1,34 +1,9 @@
-import {
-  Button,
-  AdminDataTable,
-  AdminMetricGrid,
-  AdminMobileActionButton,
-  AdminMobilePagination,
-  AdminMobileRecordCard,
-  AdminResponsiveCollection,
-  AdminStatusPill,
-  Field,
-  FilterSheet,
-  MultiSelect,
-  StatusIndicator,
-  type AdminDataTableColumn,
-  type AdminMetric,
-} from '@nexor/design-system';
-import { useEffect, useMemo, useState } from 'react';
+import { AdminFormButton, Field } from '@nexor/design-system';
+import { ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
-import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
-import { AdminProductGate } from './AdminProductGate';
-import {
-   fetchOrders,
-  formatDate,
-  getAuthToken,
-  getOrderDisplayId,
-  getOrderStatusPresentation,
-  getStageLabel,
-  type DemoOrderSummary,
-} from '../../../features/demo/biteplanerFlow';
-import { useAdminPortal } from '../../../features/admin/portal';
+import { api } from '../../../lib/api';
 import * as S from './AdminOrders.styles';
 import {
   FilterBar,
@@ -39,424 +14,345 @@ import {
   TableSection,
 } from './styles';
 
+type CommerceOrder = {
+  id: string;
+  buyerName: string;
+  buyerEmail: string;
+  status: string;
+  paymentStatus: string;
+  shipmentStatus: string | null;
+  quantity: number;
+  model: string;
+  color: string;
+  totalFormatted: string;
+  createdAt: string;
+  canSendToLab: boolean;
+};
 
+type OrdersResponse = {
+  orders: CommerceOrder[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    hasNextPage: boolean;
+  };
+};
+
+type LabEmailResponse = {
+  email: {
+    to: string;
+    subject: string;
+    body: string;
+    attachments: Array<{
+      id: string;
+      fileName: string;
+      technicalFileName: string;
+      mimeType: string;
+      sizeBytes: number;
+      downloadUrl: string | null;
+      expiresAt: string | null;
+    }>;
+  };
+};
+
+type StatusTone = 'success' | 'warning' | 'danger' | 'neutral';
+
+const PAGE_SIZE = 25;
 
 const STATUS_OPTIONS = [
-  { value: 'registration_started', label: 'Pré-consulta pendente' },
-  { value: 'awaiting_scheduling', label: 'Aguardando consulta inicial' },
-  { value: 'in_progress', label: 'Aguardando confirmação de consulta' },
-  { value: 'appointment_confirmed', label: 'Aguardando decisão clínica' },
+  { value: '', label: 'Todos' },
   { value: 'awaiting_payment', label: 'Aguardando pagamento' },
-  { value: 'awaiting_dentist_forms', label: 'Aguardando envio ao laboratório' },
-  { value: 'payment_confirmed', label: 'Pagamento confirmado' },
-  { value: 'treatment_required', label: 'Tratamento prévio pendente' },
-  { value: 'lab_processing', label: 'Em processo - Laboratório' },
-  { value: 'awaiting_adaptation', label: 'Aguardando adaptação' },
-  { value: 'follow_up', label: 'Em acompanhamento' },
-  { value: 'ineligible_reassessment', label: 'Inaptidão' },
+  { value: 'paid', label: 'Pago' },
+  { value: 'ready_for_production', label: 'Pronto para produção' },
+  { value: 'correction_requested', label: 'Correção solicitada' },
+  { value: 'in_production', label: 'Em produção' },
+  { value: 'shipped', label: 'Enviado' },
+  { value: 'completed', label: 'Concluído' },
   { value: 'cancelled', label: 'Cancelado' },
+  { value: 'refunded', label: 'Reembolsado' },
 ];
 
-const MOBILE_PAGE_SIZE = 6;
-const ADMIN_ORDER_PAGE_SIZE = 30;
+const statusLabels: Record<string, string> = {
+  draft: 'Rascunho',
+  awaiting_payment: 'Aguardando pagamento',
+  payment_failed: 'Pagamento falhou',
+  paid: 'Pago',
+  technical_review: 'Revisão técnica',
+  correction_requested: 'Correção solicitada',
+  ready_for_production: 'Pronto para produção',
+  in_production: 'Em produção',
+  shipped: 'Enviado',
+  delivered: 'Entregue',
+  completed: 'Concluído',
+  refunded: 'Reembolsado',
+  cancelled: 'Cancelado',
+};
+
+const paymentStatusLabels: Record<string, string> = {
+  pending: 'Pendente',
+  awaiting_payment: 'Aguardando pagamento',
+  not_created: 'Não iniciado',
+  paid: 'Pago',
+  confirmed: 'Confirmado',
+  received: 'Recebido',
+  overdue: 'Vencido',
+  refunded: 'Reembolsado',
+  cancelled: 'Cancelado',
+  failed: 'Falhou',
+  payment_failed: 'Pagamento falhou',
+};
+
+function formatDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function getStatusTone(status: string): StatusTone {
+  if (['paid', 'ready_for_production', 'completed', 'delivered'].includes(status)) return 'success';
+  if (['awaiting_payment', 'technical_review', 'correction_requested', 'in_production', 'shipped', 'pending'].includes(status)) return 'warning';
+  if (['payment_failed', 'cancelled', 'failed', 'refunded'].includes(status)) return 'danger';
+  return 'neutral';
+}
+
+function getPaymentStatusLabel(status: string) {
+  return paymentStatusLabels[status] ?? statusLabels[status] ?? status;
+}
+
+function buildMailtoUrl(email: LabEmailResponse['email']) {
+  const params = new URLSearchParams({
+    subject: email.subject,
+    body: email.body,
+  });
+
+  return `mailto:${email.to ?? ''}?${params.toString()}`;
+}
 
 export function AdminOrders() {
-  const { selectedProduct } = useAdminPortal();
   const { session } = useAuth();
-  const token = getAuthToken(session);
-  const [orders, setOrders] = useState<DemoOrderSummary[]>([]);
-  const [loading, setLoading] = useState(false);
+  const token = session?.access_token;
+  const [orders, setOrders] = useState<CommerceOrder[]>([]);
+  const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [stageFilter, setStageFilter] = useState<string[]>([]);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [mobilePage, setMobilePage] = useState(1);
-  const [draftStatusFilter, setDraftStatusFilter] = useState<string[]>([]);
-  const [draftStageFilter, setDraftStageFilter] = useState<string[]>([]);
-  const [hasMoreOrders, setHasMoreOrders] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const serverStatusFilter = statusFilter.length === 1 ? statusFilter[0] : undefined;
-  const debouncedSearch = useDebouncedValue(search, 300);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [composingOrderId, setComposingOrderId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const requestSequence = useRef(0);
 
-  useEffect(() => {
-    if (!selectedProduct || !token) {
+  const loadOrders = useCallback(async () => {
+    const requestId = ++requestSequence.current;
+
+    if (!token) {
+      setOrders([]);
+      setHasNextPage(false);
+      setLoading(false);
+      setError('');
       return;
     }
 
-    let active = true;
-
-    async function loadOrders() {
-      setLoading(true);
-
-      try {
-        const response = await fetchOrders('admin', token, {
-          status: serverStatusFilter,
-          limit: ADMIN_ORDER_PAGE_SIZE,
-        });
-
-        if (active && response !== undefined) {
-          setOrders(response.orders);
-          setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadOrders();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedProduct, serverStatusFilter, token]);
-
-  async function loadMoreOrders() {
-    if (!selectedProduct || !token || orders.length === 0 || loadingMore) {
-      return;
-    }
-
-    const cursor = orders[orders.length - 1]?.created_at;
-
-    if (!cursor) {
-      return;
-    }
-
-    setLoadingMore(true);
+    setLoading(true);
+    setError('');
 
     try {
-      const response = await fetchOrders('admin', token, {
-        status: serverStatusFilter,
-        limit: ADMIN_ORDER_PAGE_SIZE,
-        createdBefore: cursor,
-      });
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      params.set('limit', String(PAGE_SIZE));
+      params.set('page', String(page));
+      const response = await api.get<OrdersResponse>(`/v1/admin/commerce/biteplaner/orders?${params.toString()}`, token);
 
-      setOrders((current) => {
-        const existingIds = new Set(current.map((order) => order.id));
-        const nextOrders = response.orders.filter((order) => !existingIds.has(order.id));
-        return [...current, ...nextOrders];
-      });
-      setHasMoreOrders(response.orders.length === ADMIN_ORDER_PAGE_SIZE);
+      if (requestSequence.current === requestId) {
+        setOrders(response.orders);
+        setHasNextPage(Boolean(response.pagination?.hasNextPage));
+      }
+    } catch {
+      if (requestSequence.current !== requestId) return;
+
+      setError('Não foi possível carregar os pedidos Biteplaner.');
+      setOrders([]);
+      setHasNextPage(false);
     } finally {
-      setLoadingMore(false);
+      if (requestSequence.current === requestId) {
+        setLoading(false);
+      }
+    }
+  }, [page, status, token]);
+
+  useEffect(() => {
+    void loadOrders();
+    return () => {
+      requestSequence.current += 1;
+    };
+  }, [loadOrders]);
+
+  const filteredOrders = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return orders;
+
+    return orders.filter((order) =>
+      `${order.id} ${order.buyerName} ${order.buyerEmail} ${order.model} ${order.color}`
+        .toLowerCase()
+        .includes(term)
+    );
+  }, [orders, search]);
+
+  async function composeLabEmail(orderId: string) {
+    if (!token || composingOrderId) {
+      return;
+    }
+
+    setComposingOrderId(orderId);
+    setError('');
+
+    try {
+      const response = await api.post<LabEmailResponse>(
+        `/v1/admin/commerce/biteplaner/orders/${orderId}/compose-lab-email`,
+        {},
+        token
+      );
+      const openedWindow = window.open(buildMailtoUrl(response.email), '_blank', 'noopener,noreferrer');
+
+      if (openedWindow === null) {
+        window.location.href = buildMailtoUrl(response.email);
+      }
+    } catch {
+      setError('Não foi possível criar o e-mail para o laboratório.');
+    } finally {
+      setComposingOrderId(null);
     }
   }
 
-  const stageOptions = useMemo(
-    () =>
-      Array.from(new Set(orders.map((order) => order.stage))).map((stage) => {
-        const sample = orders.find((order) => order.stage === stage);
-
-        return {
-          value: stage,
-          label: sample ? getStageLabel(sample) : stage,
-        };
-      }),
-    [orders]
-  );
-
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      const matchesSearch = debouncedSearch.trim()
-        ? `${getOrderDisplayId(order)} ${order.id} ${order.customer?.full_name ?? ''} ${order.customer?.email ?? ''}`
-            .toLowerCase()
-            .includes(debouncedSearch.trim().toLowerCase())
-        : true;
-      const matchesStatus = statusFilter.length === 0 || statusFilter.includes(order.status);
-      const matchesStage = stageFilter.length === 0 || stageFilter.includes(order.stage);
-      return matchesSearch && matchesStatus && matchesStage;
-    });
-  }, [debouncedSearch, orders, stageFilter, statusFilter]);
-
-  const activeFilterLabels = useMemo(() => {
-    const statusLabels = statusFilter
-      .map((value) => STATUS_OPTIONS.find((option) => option.value === value)?.label)
-      .filter((label): label is string => Boolean(label))
-      .map((label) => `Status: ${label}`);
-    const stageLabels = stageFilter
-      .map((value) => stageOptions.find((option) => option.value === value)?.label)
-      .filter((label): label is string => Boolean(label))
-      .map((label) => `Etapa: ${label}`);
-
-    return [...statusLabels, ...stageLabels];
-  }, [stageFilter, stageOptions, statusFilter]);
-
-  useEffect(() => {
-    setMobilePage(1);
-  }, [debouncedSearch, stageFilter, statusFilter]);
-
-  const mobileTotalPages = Math.max(1, Math.ceil(filteredOrders.length / MOBILE_PAGE_SIZE));
-  const safeMobilePage = Math.min(mobilePage, mobileTotalPages);
-  const visibleMobileOrders = useMemo(() => {
-    const start = (safeMobilePage - 1) * MOBILE_PAGE_SIZE;
-    return filteredOrders.slice(start, start + MOBILE_PAGE_SIZE);
-  }, [filteredOrders, safeMobilePage]);
-
-  const stats = useMemo<AdminMetric[]>(
-    () => [
-      { label: 'Casos totais', value: String(orders.length), tone: 'success' },
-      {
-        label: 'Aguardando liberação ao lab',
-        value: String(
-          orders.filter(
-            (order) => order.status === 'awaiting_dentist_forms' && !order.operationalReadiness?.preLabReady
-          ).length
-        ),
-        tone: 'success',
-      },
-      { label: 'Em laboratório', value: String(orders.filter((order) => order.status === 'lab_processing').length), tone: 'success' },
-      { label: 'Em acompanhamento', value: String(orders.filter((order) => order.status === 'follow_up').length), tone: 'success' },
-    ],
-    [orders]
-  );
-
-  const columns: AdminDataTableColumn<DemoOrderSummary>[] = [
-    {
-      key: 'id',
-      label: 'Pedido',
-      width: '9%',
-      sortValue: (row) => getOrderDisplayId(row),
-      render: (row) => getOrderDisplayId(row)
-    },
-    { key: 'customer', label: 'Cliente', sortValue: (row) => row.customer?.full_name ?? '', render: (row) => row.customer?.full_name ?? 'Não identificado' },
-    {
-      key: 'status',
-      label: 'Status',
-      sortValue: (row) => getOrderStatusPresentation(row).label,
-      render: (row) => {
-        const presentation = getOrderStatusPresentation(row);
-        return <AdminStatusPill color={presentation.color} label={presentation.label} />;
-      }
-    },
-    { key: 'stage', label: 'Etapa', sortValue: (row) => getStageLabel(row), render: (row) => getStageLabel(row) },
-    {
-      key: 'readiness',
-      label: 'Prontidao operacional',
-      render: (row) => {
-        const isAwaitingLabRelease = row.status === 'awaiting_dentist_forms';
-        const readiness = row.operationalReadiness;
-
-        if (!isAwaitingLabRelease) {
-          return (
-            <S.ReadinessCell>
-              <StatusIndicator color="#737373" label="Não se aplica nesta etapa" />
-            </S.ReadinessCell>
-          );
-        }
-
-        if (readiness?.preLabReady) {
-          return (
-            <S.ReadinessCell>
-              <StatusIndicator color="#15803D" label="Liberado para envio ao laboratório" />
-              <S.ReadinessText>{readiness.summary}</S.ReadinessText>
-            </S.ReadinessCell>
-          );
-        }
-
-        return (
-          <S.ReadinessCell>
-            <StatusIndicator color="#D18A00" label="Aguardando envio ao laboratório" />
-            <S.ReadinessText>{readiness?.summary ?? 'Pendências operacionais antes do laboratório.'}</S.ReadinessText>
-          </S.ReadinessCell>
-        );
-      }
-    },
-    { key: 'date', label: 'Atualizado em', sortValue: (row) => new Date(row.created_at).getTime(), render: (row) => formatDate(row.created_at) },
-  ];
-
-  function openMobileFilters() {
-    setDraftStatusFilter(statusFilter);
-    setDraftStageFilter(stageFilter);
-    setMobileFiltersOpen(true);
-  }
-
-  function closeMobileFilters() {
-    setDraftStatusFilter(statusFilter);
-    setDraftStageFilter(stageFilter);
-    setMobileFiltersOpen(false);
-  }
-
-  function clearDraftMobileFilters() {
-    setDraftStatusFilter([]);
-    setDraftStageFilter([]);
-  }
-
-  function applyMobileFilters() {
-    setStatusFilter(draftStatusFilter);
-    setStageFilter(draftStageFilter);
-    setMobileFiltersOpen(false);
+  function handleStatusChange(value: string) {
+    setStatus(value);
+    setPage(1);
   }
 
   return (
     <PageStack>
       <PageHeader>
-        <PageTitle>Ordens compartilhadas do Biteplaner</PageTitle>
+        <PageTitle>Ordens Biteplaner</PageTitle>
         <PageSubtitle>
-          O admin visualiza o mesmo fluxo compartilhado da demo, com filtros por status e etapa para validar propagação entre perfis e enxergar quando uma ordem ainda depende do preenchimento clínico e documental do dentista antes do laboratório.
+          Pedidos commerce feitos por dentistas licenciados. Use esta fila para acompanhar pagamento e preparar o e-mail de envio para operação de laboratório.
         </PageSubtitle>
       </PageHeader>
 
-      <AdminProductGate />
+      {error ? <p role="alert">{error}</p> : null}
 
-      {selectedProduct ? (
-        <>
-          <AdminMetricGrid metrics={stats} columns={4} />
+      <TableSection padding="lg">
+        <FilterBar>
+          <Field
+            as="input"
+            label="Buscar"
+            placeholder="Buscar por pedido, dentista, e-mail, modelo ou cor"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <S.SelectField>
+            <span>Status</span>
+            <select value={status} onChange={(event) => handleStatusChange(event.target.value)}>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value || 'all'} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </S.SelectField>
+        </FilterBar>
 
-          <TableSection padding="lg">
-            <S.DesktopFilters>
-              <FilterBar>
-                <Field
-                  as="input"
-                  label="Buscar"
-                  placeholder="Buscar por pedido, cliente ou e-mail..."
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                  }}
-                />
+        {loading ? (
+          <SkeletonTable rows={6} columns={7} />
+        ) : (
+          <>
+            <S.TableScroller>
+              <S.OrdersTable>
+                <thead>
+                  <tr>
+                    <th>Pedido</th>
+                    <th>Dentista</th>
+                    <th>Status</th>
+                    <th>Pagamento</th>
+                    <th>Produto</th>
+                    <th>Criado em</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.id.slice(0, 8)}</td>
+                      <td>
+                        <strong>{order.buyerName}</strong>
+                        <span>{order.buyerEmail || 'E-mail não informado'}</span>
+                      </td>
+                      <td>
+                        <S.StatusInline $tone={getStatusTone(order.status)}>
+                          <S.StatusDot aria-hidden />
+                          <S.StatusText>{statusLabels[order.status] ?? order.status}</S.StatusText>
+                        </S.StatusInline>
+                      </td>
+                      <td>{getPaymentStatusLabel(order.paymentStatus)}</td>
+                      <td>
+                        {order.quantity}x Biteplaner
+                        <span>{[order.model, order.color].filter(Boolean).join(' / ') || 'Configuração não informada'}</span>
+                      </td>
+                      <td>{formatDate(order.createdAt)}</td>
+                      <td>
+                        <S.IconActionButton
+                          type="button"
+                          disabled={!order.canSendToLab || composingOrderId === order.id}
+                          aria-label={`Criar e-mail para enviar pedido ${order.id.slice(0, 8)} ao laboratório`}
+                          title="Criar e-mail para laboratório"
+                          onClick={() => void composeLabEmail(order.id)}
+                        >
+                          <Send size={16} aria-hidden />
+                        </S.IconActionButton>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7}>Nenhum pedido encontrado.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </S.OrdersTable>
+            </S.TableScroller>
 
-                <div data-testid="admin-orders-filter-status">
-                  <MultiSelect
-                    options={STATUS_OPTIONS}
-                    value={statusFilter}
-                    onChange={setStatusFilter}
-                    placeholder="Todos os status"
-                    label="Status"
-                  />
-                </div>
-
-                <div data-testid="admin-orders-filter-stage">
-                  <MultiSelect
-                    options={stageOptions}
-                    value={stageFilter}
-                    onChange={setStageFilter}
-                    placeholder="Todas as etapas"
-                    label="Etapa"
-                  />
-                </div>
-              </FilterBar>
-            </S.DesktopFilters>
-
-            <S.MobileFilterTriggerRow>
-              <Field
-                as="input"
-                label="Buscar"
-                placeholder="Pedido, cliente ou e-mail"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                }}
-              />
-              <Button type="button" variant="secondary" onClick={openMobileFilters}>
-                Abrir filtros de ordens
-              </Button>
-            </S.MobileFilterTriggerRow>
-
-            {activeFilterLabels.length > 0 ? (
-              <S.FilterChipRow aria-label="Filtros ativos">
-                {activeFilterLabels.map((label) => (
-                  <S.FilterChip key={label}>{label}</S.FilterChip>
-                ))}
-              </S.FilterChipRow>
-            ) : null}
-
-            {loading && orders.length === 0 ? (
-              <SkeletonTable rows={6} columns={5} />
-            ) : (
-              <AdminResponsiveCollection
-                renderTable={() => (
-                  <AdminDataTable
-                    data={filteredOrders}
-                    columns={columns}
-                    keyExtractor={(row) => row.id}
-                    pageSize={6}
-                    emptyMessage="Nenhuma ordem encontrada para os filtros aplicados."
-                    testId="admin-orders-table"
-                  />
-                )}
-                items={visibleMobileOrders}
-                getItemKey={(row) => row.id}
-                emptyState="Nenhuma ordem encontrada para os filtros aplicados."
-                renderCard={(row) => {
-                  const presentation = getOrderStatusPresentation(row);
-
-                return (
-                  <AdminMobileRecordCard
-                    testId={`admin-order-card-${row.id}`}
-                    title={getOrderDisplayId(row)}
-                    subtitle={row.customer?.full_name ?? 'Não identificado'}
-                    status={<StatusIndicator color={presentation.color} label={presentation.label} />}
-                    metadata={[
-                      { label: 'Etapa', value: getStageLabel(row) },
-                      { label: 'Atualizado', value: formatDate(row.created_at) },
-                    ]}
-                    primaryAction={
-                      <AdminMobileActionButton type="button" aria-label={`Ver pedido ${getOrderDisplayId(row)}`}>
-                        Ver pedido
-                      </AdminMobileActionButton>
-                    }
-                  >
-                    <S.ReadinessText>
-                      {row.operationalReadiness?.summary ?? 'Sem pendência operacional registrada.'}
-                    </S.ReadinessText>
-                  </AdminMobileRecordCard>
-                );
-                }}
-                mobileTestId="admin-orders-mobile-list"
-                desktopTestId="admin-orders-desktop-list"
-                pagination={
-                  <AdminMobilePagination
-                    page={safeMobilePage}
-                    pageSize={MOBILE_PAGE_SIZE}
-                    totalItems={filteredOrders.length}
-                    onPrevious={() => setMobilePage((current) => Math.max(1, current - 1))}
-                    onNext={() => setMobilePage((current) => Math.min(mobileTotalPages, current + 1))}
-                  />
-                }
-              />
-            )}
-
-            {hasMoreOrders ? (
-              <S.LoadMoreRow>
-                <Button type="button" variant="secondary" onClick={loadMoreOrders} disabled={loadingMore}>
-                  {loadingMore ? 'Carregando ordens...' : 'Carregar mais ordens'}
-                </Button>
-              </S.LoadMoreRow>
-            ) : null}
-
-            <FilterSheet
-              open={mobileFiltersOpen}
-              title="Filtros de ordens"
-              onClose={closeMobileFilters}
-              onClear={clearDraftMobileFilters}
-              onApply={applyMobileFilters}
-            >
-              <S.FilterSheetGrid>
-                <div data-testid="admin-orders-mobile-filter-status">
-                  <MultiSelect
-                    options={STATUS_OPTIONS}
-                    value={draftStatusFilter}
-                    onChange={setDraftStatusFilter}
-                    placeholder="Todos os status"
-                    label="Status"
-                  />
-                </div>
-
-                <div data-testid="admin-orders-mobile-filter-stage">
-                  <MultiSelect
-                    options={stageOptions}
-                    value={draftStageFilter}
-                    onChange={setDraftStageFilter}
-                    placeholder="Todas as etapas"
-                    label="Etapa"
-                  />
-                </div>
-              </S.FilterSheetGrid>
-            </FilterSheet>
-          </TableSection>
-        </>
-      ) : null}
+            <S.PaginationBar>
+              <AdminFormButton
+                type="button"
+                variant="secondary"
+                disabled={page === 1 || loading}
+                leadingIcon={<ChevronLeft size={16} aria-hidden />}
+                onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+              >
+                Anterior
+              </AdminFormButton>
+              <S.PageIndicator>Página {page}</S.PageIndicator>
+              <AdminFormButton
+                type="button"
+                variant="secondary"
+                disabled={!hasNextPage || loading}
+                trailingIcon={<ChevronRight size={16} aria-hidden />}
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+              >
+                Próxima
+              </AdminFormButton>
+            </S.PaginationBar>
+          </>
+        )}
+      </TableSection>
     </PageStack>
   );
 }

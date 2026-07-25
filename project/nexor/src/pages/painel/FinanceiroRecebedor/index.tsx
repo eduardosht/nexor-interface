@@ -1,182 +1,62 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CheckCircle2, RotateCcw, Send } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ExternalLink, RefreshCw, Send } from 'lucide-react';
+import { AdminFormButton, CheckboxField, Field } from '@nexor/design-system';
 import { ApiError } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
-import { brazilianBanks } from '../../../data/brazilianBanks';
 import {
   getFinancialOnboarding,
-  retryFinancialOnboarding,
   submitFinancialOnboarding,
-  type FinancialOnboardingSubmitPayload,
-  type FinancialRecipientStatusRecord
-} from '../../../features/financialOnboarding/pagarmeRecipient.api';
+  syncFinancialOnboarding,
+  type FinancialAccountRole,
+  type FinancialAccountStatusRecord,
+  type FinancialDocumentType,
+  type FinancialCompanyType
+} from '../../../features/financialOnboarding/asaasFinancialAccount.api';
 import * as S from './styles';
 
-type FormState = {
-  role: 'dentist' | 'lab';
-  documentType: 'cpf' | 'cnpj';
-  documentNumber: string;
-  legalName: string;
-  email: string;
-  phoneNumber: string;
-  siteUrl: string;
-  motherName: string;
-  birthdate: string;
-  monthlyIncome: string;
-  professionalOccupation: string;
-  addressStreet: string;
-  addressComplementary: string;
-  addressStreetNumber: string;
-  addressNeighborhood: string;
-  addressCity: string;
-  addressState: string;
-  addressZipCode: string;
-  addressReferencePoint: string;
-  bankCode: string;
-  branchNumber: string;
-  branchDigit: string;
-  accountNumber: string;
-  accountDigit: string;
-  accountType: 'checking' | 'savings';
-  holderName: string;
-  holderDocument: string;
-  holderType: 'individual' | 'company';
-  transferInterval: 'daily' | 'weekly' | 'monthly';
-  transferDay: string;
-  termsAccepted: boolean;
-};
+const financialTermsVersion = 'financial-v1';
 
 type CepAddressResponse = {
-  cep?: string;
   address?: string;
   district?: string;
-  city?: string;
-  state?: string;
 };
 
-const initialForm: FormState = {
-  role: 'dentist',
-  documentType: 'cpf',
-  documentNumber: '',
-  legalName: '',
-  email: '',
-  phoneNumber: '',
-  siteUrl: 'https://nexoradvance.com.br',
-  motherName: '',
-  birthdate: '',
-  monthlyIncome: '',
-  professionalOccupation: '',
-  addressStreet: '',
-  addressComplementary: '',
-  addressStreetNumber: '',
-  addressNeighborhood: '',
-  addressCity: '',
-  addressState: '',
-  addressZipCode: '',
-  addressReferencePoint: '',
-  bankCode: '',
-  branchNumber: '',
-  branchDigit: '',
-  accountNumber: '',
-  accountDigit: '',
-  accountType: 'checking',
-  holderName: '',
-  holderDocument: '',
-  holderType: 'individual',
-  transferInterval: 'daily',
-  transferDay: '0',
-  termsAccepted: false
+type AsaasRegistrationForm = {
+  phoneNumber: string;
+  documentType: FinancialDocumentType;
+  documentNumber: string;
+  legalName: string;
+  birthDate: string;
+  incomeValue: string;
+  companyType: FinancialCompanyType | '';
+  postalCode: string;
+  address: string;
+  addressNumber: string;
+  province: string;
 };
 
-const financialTermsVersion = 'financial-v1';
-const brlFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL'
-});
+const onlyDigits = (value: string): string => value.replace(/\D/g, '');
 
-function getTodayDateInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
 
-  return `${year}-${month}-${day}`;
-}
+const formatDocumentNumber = (documentType: FinancialDocumentType, value: string): string => {
+  const digits = onlyDigits(value).slice(0, documentType === 'cpf' ? 11 : 14);
 
-function onlyDigits(value: string, maxLength?: number) {
-  const digits = value.replace(/\D/g, '');
-  return typeof maxLength === 'number' ? digits.slice(0, maxLength) : digits;
-}
+  if (documentType === 'cpf') {
+    if (digits.length <= 3) {
+      return digits;
+    }
 
-function onlyAlphaNumeric(value: string, maxLength: number) {
-  return value.replace(/[^a-z0-9]/gi, '').slice(0, maxLength).toUpperCase();
-}
+    if (digits.length <= 6) {
+      return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    }
 
-function formatBrazilianPhone(value: string) {
-  const digits = onlyDigits(value, 11);
+    if (digits.length <= 9) {
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    }
 
-  if (digits.length <= 2) {
-    return digits;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
   }
-
-  const areaCode = digits.slice(0, 2);
-
-  if (digits.length <= 10) {
-    const firstPart = digits.slice(2, 6);
-    const secondPart = digits.slice(6, 10);
-    return secondPart ? `(${areaCode}) ${firstPart}-${secondPart}` : `(${areaCode}) ${firstPart}`;
-  }
-
-  const firstPart = digits.slice(2, 7);
-  const secondPart = digits.slice(7, 11);
-  return secondPart ? `(${areaCode}) ${firstPart}-${secondPart}` : `(${areaCode}) ${firstPart}`;
-}
-
-function parseMoneyToCents(value: string) {
-  const cents = Number(onlyDigits(value));
-
-  return Number.isFinite(cents) ? cents : 0;
-}
-
-function formatBrazilianCurrency(value: string) {
-  const cents = parseMoneyToCents(value);
-  return cents > 0 ? brlFormatter.format(cents / 100).replace(/\u00a0/g, ' ') : '';
-}
-
-function isPastDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-
-  return value < getTodayDateInputValue();
-}
-
-function formatCep(value: string) {
-  const digits = onlyDigits(value, 8);
-  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
-}
-
-function formatCpf(value: string) {
-  const digits = onlyDigits(value, 11);
-
-  if (digits.length <= 3) {
-    return digits;
-  }
-
-  if (digits.length <= 6) {
-    return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  }
-
-  if (digits.length <= 9) {
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  }
-
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-}
-
-function formatCnpj(value: string) {
-  const digits = onlyDigits(value, 14);
 
   if (digits.length <= 2) {
     return digits;
@@ -195,107 +75,60 @@ function formatCnpj(value: string) {
   }
 
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-}
+};
 
-function formatDocument(value: string) {
-  return onlyDigits(value).length > 11 ? formatCnpj(value) : formatCpf(value);
-}
+const isDocumentComplete = (documentType: FinancialDocumentType, value: string): boolean =>
+  onlyDigits(value).length === (documentType === 'cpf' ? 11 : 14);
+const formatPostalCode = (value: string): string => {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+};
 
-function statusLabel(status: FinancialRecipientStatusRecord['status']) {
-  const labels: Record<FinancialRecipientStatusRecord['status'], string> = {
-    not_started: 'Não iniciado',
-    pending_data: 'Dados pendentes',
-    creating: 'Criando recebedor',
-    active: 'Recebedor ativo',
-    creation_failed: 'Correção necessária',
-    disabled: 'Desativado',
-    deletion_requested: 'Remoção solicitada',
-    archived: 'Arquivado'
-  };
+const normalizePhone = (value: string): string => onlyDigits(value).slice(0, 11);
 
-  return labels[status];
-}
+const formatMobilePhone = (value: string): string => {
+  const digits = normalizePhone(value);
 
-function buildPayload(form: FormState): FinancialOnboardingSubmitPayload {
-  const transferDay = form.transferInterval === 'daily' ? 0 : Number(form.transferDay);
-  const phoneNumber = onlyDigits(form.phoneNumber);
-
-  return {
-    role: form.role,
-    documentType: form.documentType,
-    documentNumber: onlyDigits(form.documentNumber),
-    legalName: form.legalName,
-    email: form.email || undefined,
-    phoneNumber: phoneNumber || undefined,
-    recipientProfile: {
-      siteUrl: form.siteUrl,
-      motherName: form.motherName,
-      birthdate: form.birthdate,
-      monthlyIncome: parseMoneyToCents(form.monthlyIncome),
-      professionalOccupation: form.professionalOccupation,
-      address: {
-        street: form.addressStreet,
-        complementary: form.addressComplementary,
-        streetNumber: form.addressStreetNumber,
-        neighborhood: form.addressNeighborhood,
-        city: form.addressCity,
-        state: form.addressState,
-        zipCode: onlyDigits(form.addressZipCode, 8),
-        referencePoint: form.addressReferencePoint
-      }
-    },
-    bankAccount: {
-      bankCode: form.bankCode,
-      branchNumber: form.branchNumber,
-      branchDigit: form.branchDigit || undefined,
-      accountNumber: form.accountNumber,
-      accountDigit: form.accountDigit,
-      accountType: form.accountType,
-      holderName: form.holderName,
-      holderDocument: onlyDigits(form.holderDocument),
-      holderType: form.holderType
-    },
-    transferSettings: {
-      transferEnabled: true,
-      transferInterval: form.transferInterval,
-      transferDay: Number.isFinite(transferDay) ? transferDay : undefined
-    },
-    termsVersion: financialTermsVersion
-  };
-}
-
-function clearBankFields(form: FormState): FormState {
-  return {
-    ...form,
-    bankCode: '',
-    branchNumber: '',
-    branchDigit: '',
-    accountNumber: '',
-    accountDigit: '',
-    holderName: '',
-    holderDocument: '',
-    termsAccepted: false
-  };
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof ApiError) {
-    return error.message;
+  if (digits.length <= 2) {
+    return digits;
   }
 
-  return 'Não foi possível enviar os dados financeiros agora.';
-}
+  if (digits.length <= 7) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  }
 
-function getProfilePhone(user: { phone?: string | null } | null | undefined) {
-  return typeof user?.phone === 'string' ? formatBrazilianPhone(user.phone) : '';
-}
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
 
-function normalizeTransferDay(interval: FormState['transferInterval'], transferDay: string) {
-  return interval === 'daily' ? '0' : transferDay;
-}
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
 
-async function fetchCepAddress(cep: string): Promise<CepAddressResponse | null> {
-  const digits = onlyDigits(cep, 8);
+const formatBrlCurrency = (value: string): string => {
+  const digits = onlyDigits(value).slice(0, 12);
+
+  if (digits === '') {
+    return '';
+  }
+
+  const cents = Number(digits) / 100;
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(cents).replace(/\u00A0/g, ' ');
+};
+
+const parsePositiveNumber = (value: string): number | undefined => {
+  const compact = value.trim().replace(/[R$\s]/g, '');
+  const normalized = compact.includes(',')
+    ? compact.replace(/\./g, '').replace(',', '.')
+    : compact;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+async function fetchCepAddress(postalCode: string): Promise<CepAddressResponse | null> {
+  const digits = onlyDigits(postalCode);
 
   if (digits.length !== 8 || typeof fetch !== 'function') {
     return null;
@@ -310,86 +143,128 @@ async function fetchCepAddress(cep: string): Promise<CepAddressResponse | null> 
   return response.json() as Promise<CepAddressResponse>;
 }
 
-function formatFieldValue<Key extends Exclude<keyof FormState, 'termsAccepted'>>(
-  field: Key,
-  value: string
-): FormState[Key] {
-  const formattedValue = (() => {
-    switch (field) {
-      case 'phoneNumber':
-        return formatBrazilianPhone(value);
-      case 'monthlyIncome':
-        return formatBrazilianCurrency(value);
-      case 'addressZipCode':
-        return formatCep(value);
-      case 'addressState':
-        return value.replace(/[^a-z]/gi, '').slice(0, 2).toUpperCase();
-      case 'branchNumber':
-        return onlyDigits(value, 4);
-      case 'branchDigit':
-        return onlyAlphaNumeric(value, 1);
-      case 'accountNumber':
-        return onlyDigits(value, 13);
-      case 'accountDigit':
-        return onlyAlphaNumeric(value, 2);
-      case 'holderDocument':
-        return formatDocument(value);
-      default:
-        return value;
-    }
-  })();
+function statusLabel(status: FinancialAccountStatusRecord['status']) {
+  const labels: Record<FinancialAccountStatusRecord['status'], string> = {
+    not_started: 'Não iniciado',
+    pending_onboarding: 'Cadastro financeiro pendente',
+    creating: 'Criando conta Asaas',
+    awaiting_approval: 'Aguardando aprovação Asaas',
+    active: 'Conta Asaas ativa',
+    creation_failed: 'Correção necessária',
+    disabled: 'Desativado',
+    deletion_requested: 'Remoção solicitada',
+    archived: 'Arquivado'
+  };
 
-  return formattedValue as FormState[Key];
+  return labels[status];
+}
+
+function statusDescription(account: FinancialAccountStatusRecord | null) {
+  if (account === null) {
+    return 'Ainda não encontramos uma pendência financeira para este perfil. Ela é criada quando o admin aprova seu cadastro operacional.';
+  }
+
+  if (account.status === 'active') {
+    return 'Seu cadastro financeiro está aprovado. Este perfil já pode participar do split do Biteplaner.';
+  }
+
+  if (account.status === 'awaiting_approval') {
+    return 'O Asaas está validando os dados enviados. Você pode sincronizar o status para verificar se a aprovação já foi concluída.';
+  }
+
+  if (account.status === 'creation_failed') {
+    return account.providerErrorMessage ?? 'Não foi possível criar ou atualizar sua conta Asaas. Revise o cadastro operacional e tente novamente.';
+  }
+
+  return 'Continue o cadastro no ambiente do Asaas. Dados bancários, documentos complementares e validações são preenchidos fora da Nexor.';
+}
+
+const errorFieldLabels: Record<string, string> = {
+  phoneNumber: 'Celular',
+  incomeValue: 'Renda mensal aproximada',
+  companyType: 'Tipo de empresa',
+  birthDate: 'Data de nascimento',
+  email: 'E-mail',
+  documentNumber: 'Documento',
+  legalName: 'Nome legal',
+  'address.postalCode': 'CEP',
+  'address.address': 'Logradouro',
+  'address.addressNumber': 'Número',
+  'address.province': 'Bairro'
+};
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof ApiError) {
+    const field = typeof (error.details as { field?: unknown } | undefined)?.field === 'string'
+      ? (error.details as { field: string }).field
+      : null;
+    const fieldLabel = field ? errorFieldLabels[field] : undefined;
+
+    return fieldLabel ? `${fieldLabel}: ${error.message}` : error.message;
+  }
+
+  return 'Não foi possível atualizar o cadastro financeiro agora.';
+}
+
+function getRequestedRole(searchParams: URLSearchParams): FinancialAccountRole {
+  const role = searchParams.get('role');
+
+  if (role === 'partner') {
+    return role;
+  }
+
+  return 'dentist';
 }
 
 export function FinanceiroRecebedor() {
   const { session, backendUser } = useAuth();
   const [searchParams] = useSearchParams();
-  const requestedRole = searchParams.get('role') === 'lab' ? 'lab' : 'dentist';
+  const requestedRole = getRequestedRole(searchParams);
   const token = session?.access_token;
-  const [form, setForm] = useState<FormState>(() => ({
-    ...initialForm,
-    role: requestedRole,
-    email: backendUser?.email ?? session?.user.email ?? '',
-    phoneNumber: getProfilePhone(backendUser)
-  }));
-  const [recipients, setRecipients] = useState<FinancialRecipientStatusRecord[]>([]);
+  const [accounts, setAccounts] = useState<FinancialAccountStatusRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [acceptedFinancialTerms, setAcceptedFinancialTerms] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [cepLookupError, setCepLookupError] = useState('');
+  const email = backendUser?.email ?? session?.user.email ?? undefined;
+  const [registrationForm, setRegistrationForm] = useState<AsaasRegistrationForm>(() => ({
+    phoneNumber: formatMobilePhone(backendUser?.phone ?? ''),
+    documentType: 'cpf',
+    documentNumber: '',
+    legalName: '',
+    birthDate: '',
+    incomeValue: '',
+    companyType: '',
+    postalCode: '',
+    address: '',
+    addressNumber: '',
+    province: ''
+  }));
 
-  const selectedRecipient = useMemo(
-    () => recipients.find((recipient) => recipient.role === form.role) ?? null,
-    [form.role, recipients]
+  const selectedAccount = useMemo(
+    () => accounts.find((account) => account.role === requestedRole) ?? null,
+    [accounts, requestedRole]
   );
-  const maxBirthdate = getTodayDateInputValue();
-  const hasFailedRecipient = selectedRecipient?.status === 'creation_failed';
-  const isSubmitDisabled =
-    submitting ||
-    !form.documentNumber ||
-    !form.legalName ||
-    !form.siteUrl ||
-    !form.motherName ||
-    !isPastDate(form.birthdate) ||
-    parseMoneyToCents(form.monthlyIncome) <= 0 ||
-    !form.professionalOccupation ||
-    !form.addressStreet ||
-    !form.addressComplementary ||
-    !form.addressStreetNumber ||
-    !form.addressNeighborhood ||
-    !form.addressCity ||
-    !form.addressState ||
-    onlyDigits(form.addressZipCode, 8).length !== 8 ||
-    !form.addressReferencePoint ||
-    !form.bankCode ||
-    !form.branchNumber ||
-    !form.accountNumber ||
-    !form.accountDigit ||
-    !form.holderName ||
-    !form.holderDocument ||
-    !form.termsAccepted;
+
+  const roleLabel =
+    requestedRole === 'dentist' ? 'dentista' : 'parceiro';
+  const isCpfAccount = registrationForm.documentType === 'cpf';
+  const isCnpjAccount = registrationForm.documentType === 'cnpj';
+  const incomeValue = parsePositiveNumber(registrationForm.incomeValue);
+  const requiredAsaasDataReady =
+    registrationForm.legalName.trim() !== '' &&
+    isDocumentComplete(registrationForm.documentType, registrationForm.documentNumber) &&
+    normalizePhone(registrationForm.phoneNumber).length >= 10 &&
+    (!isCpfAccount || registrationForm.birthDate !== '') &&
+    incomeValue !== undefined &&
+    (!isCnpjAccount || registrationForm.companyType !== '') &&
+    onlyDigits(registrationForm.postalCode).length === 8 &&
+    registrationForm.address.trim() !== '' &&
+    registrationForm.addressNumber.trim() !== '' &&
+    registrationForm.province.trim() !== '';
 
   useEffect(() => {
     if (!token) {
@@ -407,18 +282,7 @@ export function FinanceiroRecebedor() {
         const response = await getFinancialOnboarding(token);
 
         if (active) {
-          setRecipients(response.recipients);
-          const recipient = response.recipients.find((item) => item.role === requestedRole);
-
-          if (recipient) {
-            setForm((current) => ({
-              ...current,
-              documentType: recipient.documentType,
-              documentNumber: recipient.documentNumber,
-              legalName: current.legalName || recipient.legalName,
-              phoneNumber: current.phoneNumber || getProfilePhone(backendUser)
-            }));
-          }
+          setAccounts(response.accounts);
         }
       } catch (requestError) {
         if (active) {
@@ -436,68 +300,64 @@ export function FinanceiroRecebedor() {
     return () => {
       active = false;
     };
-  }, [backendUser, requestedRole, token]);
+  }, [token]);
 
-  function updateField<Key extends keyof FormState>(field: Key, value: FormState[Key]) {
-    setForm((current) => ({ ...current, [field]: value }));
+
+  useEffect(() => {
+    if (selectedAccount === null) {
+      return;
+    }
+
+    setRegistrationForm((current) => ({
+      ...current,
+      documentType: selectedAccount.documentType,
+      documentNumber: current.documentNumber || formatDocumentNumber(selectedAccount.documentType, selectedAccount.documentNumber),
+      legalName: current.legalName || selectedAccount.legalName
+    }));
+  }, [selectedAccount]);
+  function upsertAccount(account: FinancialAccountStatusRecord) {
+    setAccounts((current) => [
+      account,
+      ...current.filter((item) => item.role !== account.role)
+    ]);
   }
 
-  function handleTextChange<Key extends Exclude<keyof FormState, 'termsAccepted'>>(field: Key) {
-    return (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const value = formatFieldValue(field, event.target.value);
-
-      if (field === 'transferInterval') {
-        setForm((current) => ({
-          ...current,
-          transferInterval: value as FormState['transferInterval'],
-          transferDay: normalizeTransferDay(value as FormState['transferInterval'], current.transferDay)
-        }));
-        return;
-      }
-
-      if (field === 'transferDay') {
-        updateField(field, normalizeTransferDay(form.transferInterval, value) as FormState[Key]);
-        return;
-      }
-
-      updateField(field, value);
-    };
+  function updateRegistrationField(field: keyof AsaasRegistrationForm, value: string) {
+    setRegistrationForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleCepBlur() {
-    const zipCode = onlyDigits(form.addressZipCode, 8);
+    const postalCode = onlyDigits(registrationForm.postalCode);
 
-    if (zipCode.length !== 8) {
+    if (postalCode.length !== 8) {
       return;
     }
 
     setCepLookupError('');
 
     try {
-      const address = await fetchCepAddress(zipCode);
+      const address = await fetchCepAddress(postalCode);
 
-      if (!address) {
+      if (address === null) {
         setCepLookupError('Não foi possível buscar o CEP informado.');
         return;
       }
 
-      setForm((current) => ({
+      setRegistrationForm((current) => ({
         ...current,
-        addressZipCode: formatCep(address.cep ?? zipCode),
-        addressStreet: address.address ?? current.addressStreet,
-        addressNeighborhood: address.district ?? current.addressNeighborhood,
-        addressCity: address.city ?? current.addressCity,
-        addressState: address.state ? formatFieldValue('addressState', address.state) : current.addressState
+        postalCode: formatPostalCode(postalCode),
+        address: address.address ?? current.address,
+        province: address.district ?? current.province
       }));
     } catch {
       setCepLookupError('Não foi possível buscar o CEP informado.');
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleStart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!token || isSubmitDisabled) {
+    if (!token || !acceptedFinancialTerms || selectedAccount === null || selectedAccount.status === 'active') {
       return;
     }
 
@@ -506,17 +366,28 @@ export function FinanceiroRecebedor() {
     setMessage('');
 
     try {
-      const payload = buildPayload(form);
-      const response = hasFailedRecipient
-        ? await retryFinancialOnboarding(payload, token)
-        : await submitFinancialOnboarding(payload, token);
+      const response = await submitFinancialOnboarding({
+        role: requestedRole,
+        email,
+        phoneNumber: normalizePhone(registrationForm.phoneNumber),
+        documentType: registrationForm.documentType,
+        documentNumber: onlyDigits(registrationForm.documentNumber),
+        legalName: registrationForm.legalName.trim(),
+        birthDate: isCpfAccount ? registrationForm.birthDate : undefined,
+        incomeValue,
+        companyType: isCnpjAccount ? registrationForm.companyType || undefined : undefined,
+        address: {
+          postalCode: registrationForm.postalCode,
+          address: registrationForm.address.trim(),
+          addressNumber: registrationForm.addressNumber.trim(),
+          province: registrationForm.province.trim()
+        },
+        termsVersion: financialTermsVersion
+      }, token);
 
-      setRecipients((current) => [
-        response.recipient,
-        ...current.filter((recipient) => recipient.role !== response.recipient.role)
-      ]);
-      setForm((current) => clearBankFields(current));
-      setMessage('Recebedor criado no Pagar.me.');
+      upsertAccount(response.account);
+      setMessage('Conta Asaas criada. Continue o cadastro no ambiente seguro do Asaas.');
+
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -524,13 +395,36 @@ export function FinanceiroRecebedor() {
     }
   }
 
+  async function handleSync() {
+    if (!token || selectedAccount === null) {
+      return;
+    }
+
+    setSyncing(true);
+    setError('');
+    setMessage('');
+
+    try {
+      const response = await syncFinancialOnboarding({ role: selectedAccount.role }, token);
+
+      upsertAccount(response.account);
+      setMessage(response.account.status === 'active'
+        ? 'Cadastro financeiro aprovado.'
+        : 'Status financeiro atualizado.');
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   return (
     <S.Page>
       <S.Header>
         <S.Eyebrow>Biteplaner financeiro</S.Eyebrow>
-        <S.Title>Onboarding financeiro</S.Title>
+        <S.Title>Parte 2 do cadastro</S.Title>
         <S.Description>
-          Complete o cadastro de recebedor para habilitar split Pagar.me do perfil aprovado.
+          Complete o cadastro financeiro do perfil de {roleLabel} no Asaas para participar do split de pagamentos do Biteplaner.
         </S.Description>
       </S.Header>
 
@@ -540,14 +434,10 @@ export function FinanceiroRecebedor() {
         </S.Notice>
       ) : null}
 
-      {selectedRecipient ? (
-        <S.Notice $tone={selectedRecipient.status === 'active' ? 'success' : hasFailedRecipient ? 'error' : 'warning'}>
-          <S.NoticeTitle>{statusLabel(selectedRecipient.status)}</S.NoticeTitle>
-          {selectedRecipient.providerErrorMessage ? (
-            <S.NoticeText>{selectedRecipient.providerErrorMessage}</S.NoticeText>
-          ) : null}
-        </S.Notice>
-      ) : null}
+      <S.Notice $tone={selectedAccount?.status === 'active' ? 'success' : selectedAccount?.status === 'creation_failed' ? 'error' : 'warning'}>
+        <S.NoticeTitle>{selectedAccount ? statusLabel(selectedAccount.status) : 'Cadastro financeiro indisponível'}</S.NoticeTitle>
+        <S.NoticeText>{statusDescription(selectedAccount)}</S.NoticeText>
+      </S.Notice>
 
       {message ? (
         <S.Notice $tone="success" role="status">
@@ -567,224 +457,197 @@ export function FinanceiroRecebedor() {
         </S.Notice>
       ) : null}
 
-      <S.Form onSubmit={handleSubmit}>
+      <S.Form onSubmit={handleStart}>
         <S.Section>
           <S.SectionHeader>
-            <S.SectionTitle>Dados do recebedor</S.SectionTitle>
-            <S.SectionDescription>Documento, titularidade e contato usados no cadastro Pagar.me.</S.SectionDescription>
+            <S.SectionHeaderText>
+              <S.SectionTitle>Conta Asaas</S.SectionTitle>
+              <S.SectionDescription>
+                A Nexor não salva dados bancários. O Asaas coleta e valida informações financeiras, documentos complementares e dados de repasse.
+              </S.SectionDescription>
+            </S.SectionHeaderText>
+            <S.AsaasLogoLink
+              href="https://www.asaas.com/"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Conhecer o site oficial do Asaas"
+            >
+              <img src="/assets/asaas-logo.png" alt="" aria-hidden />
+              <ExternalLink size={14} aria-hidden />
+            </S.AsaasLogoLink>
           </S.SectionHeader>
+
+          <S.AccountSummary aria-label="Resumo da conta financeira">
+            <S.AccountSummaryItem>
+              <span>Nome legal</span>
+              <strong>{selectedAccount?.legalName ?? '-'}</strong>
+            </S.AccountSummaryItem>
+            <S.AccountSummaryItem>
+              <span>Documento</span>
+              <strong>{selectedAccount?.documentNumber ?? '-'}</strong>
+            </S.AccountSummaryItem>
+          </S.AccountSummary>
+
           <S.Grid>
-            <S.Field>
-              Perfil financeiro
-              <S.Select value={form.role} onChange={handleTextChange('role')}>
-                <option value="dentist">Dentista</option>
-                <option value="lab">Laboratório</option>
-              </S.Select>
-            </S.Field>
-            <S.Field $span="two">
-              Nome legal
-              <S.Input value={form.legalName} onChange={handleTextChange('legalName')} />
-            </S.Field>
-            <S.Field>
-              E-mail financeiro
-              <S.Input type="email" value={form.email} onChange={handleTextChange('email')} />
-            </S.Field>
-            <S.Field>
-              Telefone financeiro
-              <S.Input
-                value={form.phoneNumber}
+            <S.GridItem $span="two">
+              <Field
+                label="Nome legal"
+                value={registrationForm.legalName}
+                onChange={(event) => updateRegistrationField('legalName', event.target.value)}
+              />
+            </S.GridItem>
+            <S.GridItem>
+              <S.Field>
+                Tipo de documento
+                <S.Select
+                  value={registrationForm.documentType}
+                  onChange={(event) => {
+                    const documentType = event.target.value as FinancialDocumentType;
+                    setRegistrationForm((current) => ({
+                      ...current,
+                      documentType,
+                      documentNumber: formatDocumentNumber(documentType, current.documentNumber),
+                      companyType: documentType === 'cnpj' ? current.companyType : ''
+                    }));
+                  }}
+                >
+                  <option value="cpf">CPF</option>
+                  <option value="cnpj">CNPJ</option>
+                </S.Select>
+              </S.Field>
+            </S.GridItem>
+            <S.GridItem>
+              <Field
+                label="Documento"
+                value={registrationForm.documentNumber}
+                inputMode="numeric"
+                onChange={(event) => updateRegistrationField(
+                  'documentNumber',
+                  formatDocumentNumber(registrationForm.documentType, event.target.value)
+                )}
+              />
+            </S.GridItem>            <S.GridItem>
+              <Field
+                label="Celular"
+                value={registrationForm.phoneNumber}
                 inputMode="tel"
                 autoComplete="tel"
-                onChange={handleTextChange('phoneNumber')}
+                onChange={(event) => updateRegistrationField('phoneNumber', formatMobilePhone(event.target.value))}
               />
-            </S.Field>
-          </S.Grid>
-        </S.Section>
-
-        <S.Section>
-          <S.SectionHeader>
-            <S.SectionTitle>Dados cadastrais Pagar.me</S.SectionTitle>
-            <S.SectionDescription>Informações exigidas pelo contrato atual de recebedores pessoa física.</S.SectionDescription>
-          </S.SectionHeader>
-          <S.Grid>
-            <S.Field $span="two">
-              Site do recebedor
-              <S.Input type="url" value={form.siteUrl} onChange={handleTextChange('siteUrl')} />
-            </S.Field>
-            <S.Field>
-              Nome da mãe
-              <S.Input value={form.motherName} onChange={handleTextChange('motherName')} />
-            </S.Field>
-            <S.Field>
-              Data de nascimento
-              <S.Input type="date" max={maxBirthdate} value={form.birthdate} onChange={handleTextChange('birthdate')} />
-            </S.Field>
-            <S.Field>
-              Renda mensal
-              <S.Input inputMode="decimal" value={form.monthlyIncome} onChange={handleTextChange('monthlyIncome')} />
-            </S.Field>
-            <S.Field>
-              Ocupação profissional
-              <S.Input value={form.professionalOccupation} onChange={handleTextChange('professionalOccupation')} />
-            </S.Field>
-            <S.Field>
-              CEP
-              <S.Input
+            </S.GridItem>
+            {isCpfAccount ? (
+              <S.GridItem>
+                <Field
+                  label="Data de nascimento"
+                  type="date"
+                  value={registrationForm.birthDate}
+                  onChange={(event) => updateRegistrationField('birthDate', event.target.value)}
+                />
+              </S.GridItem>
+            ) : null}
+            <S.GridItem>
+              <Field
+                label="Renda mensal aproximada"
+                hint="Informe um valor em reais. O Asaas exige um número, não uma faixa."
+                value={registrationForm.incomeValue}
+                inputMode="decimal"
+                placeholder="R$ 1.200,00"
+                onChange={(event) => updateRegistrationField('incomeValue', formatBrlCurrency(event.target.value))}
+              />
+            </S.GridItem>
+            {isCnpjAccount ? (
+              <S.GridItem>
+                <S.Field>
+                  Tipo de empresa
+                  <S.Select
+                    value={registrationForm.companyType}
+                    onChange={(event) => updateRegistrationField('companyType', event.target.value as FinancialCompanyType | '')}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="MEI">MEI</option>
+                    <option value="LIMITED">Limitada</option>
+                    <option value="INDIVIDUAL">Individual</option>
+                    <option value="ASSOCIATION">Associação</option>
+                  </S.Select>
+                </S.Field>
+              </S.GridItem>
+            ) : null}
+            <S.GridItem>
+              <Field
+                label="CEP"
+                value={registrationForm.postalCode}
                 inputMode="numeric"
-                value={form.addressZipCode}
-                onChange={handleTextChange('addressZipCode')}
                 onBlur={handleCepBlur}
+                onChange={(event) => updateRegistrationField('postalCode', formatPostalCode(event.target.value))}
               />
-            </S.Field>
-            <S.Field $span="two">
-              Logradouro
-              <S.Input value={form.addressStreet} onChange={handleTextChange('addressStreet')} />
-            </S.Field>
-            <S.Field>
-              Número
-              <S.Input value={form.addressStreetNumber} onChange={handleTextChange('addressStreetNumber')} />
-            </S.Field>
-            <S.Field>
-              Complemento
-              <S.Input value={form.addressComplementary} onChange={handleTextChange('addressComplementary')} />
-            </S.Field>
-            <S.Field>
-              Bairro
-              <S.Input value={form.addressNeighborhood} onChange={handleTextChange('addressNeighborhood')} />
-            </S.Field>
-            <S.Field>
-              Cidade
-              <S.Input value={form.addressCity} onChange={handleTextChange('addressCity')} />
-            </S.Field>
-            <S.Field>
-              UF
-              <S.Input value={form.addressState} maxLength={2} onChange={handleTextChange('addressState')} />
-            </S.Field>
-            <S.Field $span="two">
-              Ponto de referência
-              <S.Input value={form.addressReferencePoint} onChange={handleTextChange('addressReferencePoint')} />
-            </S.Field>
+            </S.GridItem>
+            <S.GridItem $span="two">
+              <Field
+                label="Logradouro"
+                value={registrationForm.address}
+                onChange={(event) => updateRegistrationField('address', event.target.value)}
+              />
+            </S.GridItem>
+            <S.GridItem>
+              <Field
+                label="Número"
+                value={registrationForm.addressNumber}
+                onChange={(event) => updateRegistrationField('addressNumber', event.target.value)}
+              />
+            </S.GridItem>
+            <S.GridItem>
+              <Field
+                label="Bairro"
+                value={registrationForm.province}
+                onChange={(event) => updateRegistrationField('province', event.target.value)}
+              />
+            </S.GridItem>
           </S.Grid>
         </S.Section>
 
-        <S.Section>
-          <S.SectionHeader>
-            <S.SectionTitle>Dados bancários</S.SectionTitle>
-            <S.SectionDescription>Envio transiente para criação do recebedor.</S.SectionDescription>
-          </S.SectionHeader>
-          <S.Grid>
-            <S.Field>
-              Código do banco
-              <S.Select value={form.bankCode} onChange={handleTextChange('bankCode')}>
-                <option value="">Selecione o banco</option>
-                {brazilianBanks.map((bank) => (
-                  <option key={bank.code} value={bank.code}>
-                    {bank.code} - {bank.name}
-                  </option>
-                ))}
-              </S.Select>
-            </S.Field>
-            <S.Field>
-              Agência
-              <S.Input
-                value={form.branchNumber}
-                inputMode="numeric"
-                maxLength={4}
-                onChange={handleTextChange('branchNumber')}
-              />
-            </S.Field>
-            <S.Field>
-              Dígito da agência
-              <S.Input
-                value={form.branchDigit}
-                maxLength={1}
-                onChange={handleTextChange('branchDigit')}
-              />
-            </S.Field>
-            <S.Field>
-              Conta
-              <S.Input
-                value={form.accountNumber}
-                inputMode="numeric"
-                maxLength={13}
-                onChange={handleTextChange('accountNumber')}
-              />
-            </S.Field>
-            <S.Field>
-              Dígito da conta
-              <S.Input
-                value={form.accountDigit}
-                maxLength={2}
-                onChange={handleTextChange('accountDigit')}
-              />
-            </S.Field>
-            <S.Field>
-              Tipo de conta
-              <S.Select value={form.accountType} onChange={handleTextChange('accountType')}>
-                <option value="checking">Conta corrente</option>
-                <option value="savings">Conta poupança</option>
-              </S.Select>
-            </S.Field>
-            <S.Field $span="two">
-              Titular da conta
-              <S.Input value={form.holderName} onChange={handleTextChange('holderName')} />
-            </S.Field>
-            <S.Field>
-              Documento do titular
-              <S.Input
-                value={form.holderDocument}
-                inputMode="numeric"
-                onChange={handleTextChange('holderDocument')}
-              />
-            </S.Field>
-            <S.Field>
-              Tipo de titular
-              <S.Select value={form.holderType} onChange={handleTextChange('holderType')}>
-                <option value="individual">Pessoa física</option>
-                <option value="company">Pessoa jurídica</option>
-              </S.Select>
-            </S.Field>
-            <S.Field>
-              Periodicidade de repasse
-              <S.Select value={form.transferInterval} onChange={handleTextChange('transferInterval')}>
-                <option value="daily">Diária</option>
-                <option value="weekly">Semanal</option>
-                <option value="monthly">Mensal</option>
-              </S.Select>
-            </S.Field>
-            <S.Field>
-              Dia do repasse
-              <S.Input
-                type="number"
-                min="0"
-                max="31"
-                value={form.transferInterval === 'daily' ? '0' : form.transferDay}
-                disabled={form.transferInterval === 'daily'}
-                onChange={handleTextChange('transferDay')}
-              />
-            </S.Field>
-          </S.Grid>
-        </S.Section>
-
-        <S.CheckboxLabel>
-          <S.Checkbox
-            type="checkbox"
-            checked={form.termsAccepted}
-            onChange={(event) => updateField('termsAccepted', event.target.checked)}
-          />
-          Aceito os termos financeiros do Biteplaner para criação do recebedor Pagar.me.
-        </S.CheckboxLabel>
+        <CheckboxField
+          checked={acceptedFinancialTerms}
+          onChange={setAcceptedFinancialTerms}
+          label="Autorizo a criação da conta Asaas"
+          description="Entendo que os dados bancários serão preenchidos no Asaas e não serão armazenados na plataforma Nexor."
+          badge="Obrigatório"
+          badgeTone="required"
+        />
 
         <S.Actions>
-          <S.BackLink to="/painel/biteplaner">Voltar ao Biteplaner</S.BackLink>
-          <S.SubmitButton type="submit" disabled={isSubmitDisabled}>
-            {hasFailedRecipient ? <RotateCcw size={16} aria-hidden /> : submitting ? <CheckCircle2 size={16} aria-hidden /> : <Send size={16} aria-hidden />}
-            {submitting
-              ? 'Enviando...'
-              : hasFailedRecipient
-                ? 'Reenviar para o Pagar.me'
-                : 'Enviar para o Pagar.me'}
-          </S.SubmitButton>
+          <S.BackLink to="/painel/biteplaner">
+            <ArrowLeft size={16} aria-hidden />
+            Voltar ao Biteplaner
+          </S.BackLink>
+          <AdminFormButton
+            type="button"
+            variant="secondary"
+            onClick={handleSync}
+            disabled={syncing || selectedAccount === null}
+            leadingIcon={syncing ? <CheckCircle2 size={16} aria-hidden /> : <RefreshCw size={16} aria-hidden />}
+          >
+            {syncing ? 'Sincronizando...' : 'Sincronizar status'}
+          </AdminFormButton>
+          {selectedAccount?.onboardingUrl ? (
+            <S.BackLink to={selectedAccount.onboardingUrl} target="_blank" rel="noreferrer">
+              <ExternalLink size={16} aria-hidden />
+              Continuar cadastro
+            </S.BackLink>
+          ) : (
+            <AdminFormButton
+              type="submit"
+              disabled={
+                submitting ||
+                !acceptedFinancialTerms ||
+                !requiredAsaasDataReady ||
+                selectedAccount === null ||
+                selectedAccount.status === 'active'
+              }
+              leadingIcon={submitting ? <CheckCircle2 size={16} aria-hidden /> : <Send size={16} aria-hidden />}
+            >
+              {submitting ? 'Criando...' : 'Criar conta Asaas'}
+            </AdminFormButton>
+          )}
         </S.Actions>
       </S.Form>
     </S.Page>

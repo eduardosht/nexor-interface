@@ -3,29 +3,25 @@ import { Select, Snackbar, SnackbarStack } from '@nexor/design-system';
 import { CheckCircle2, Clock3, CreditCard, Hourglass, PartyPopper, ShieldCheck } from 'lucide-react';
 import * as S from './styles';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
-import { useAuth } from '../../../hooks/useAuth';
-import {
-  createCheckoutSession,
-  fetchOrders,
-  getAuthToken,
-  type DemoOrderSummary,
-} from '../../../features/demo/biteplanerFlow';
+import type { DemoOrderSummary } from '../../../features/demo/biteplanerFlow';
 import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
 import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
+import { api } from '../../../lib/api';
+import { useAuth } from '../../../hooks/useAuth';
 
 const NEXT_STEPS = [
   {
-    title: 'Cliente revisa a compra',
+    title: 'Dentista revisa o pedido',
     status: 'Atual',
     Icon: Hourglass,
   },
   {
-    title: 'Pagamento seguro no checkout Pagar.me',
+    title: 'Pagamento seguro no checkout Asaas',
     status: 'Pendente',
     Icon: Clock3,
   },
   {
-    title: 'Cliente realiza o pagamento para liberar a produção',
+    title: 'Dentista conclui o pagamento para liberar a produção',
     status: 'Pendente',
     Icon: Clock3,
   },
@@ -117,9 +113,8 @@ type CompraProps = {
 
 export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const { session } = useAuth();
-  const token = getAuthToken(session);
   const [order, setOrder] = useState<DemoOrderSummary | null>(initialOrder);
-  const [loading, setLoading] = useState(!initialOrder);
+  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -134,46 +129,9 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const totalCents = BITEPLANER_UNIT_PRICE_CENTS * quantity;
 
   useEffect(() => {
-    if (initialOrder) {
-      setOrder(initialOrder);
-      setLoading(false);
-      return;
-    }
-
-    if (!token) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadOrder() {
-      try {
-        const response = await fetchOrders('user', token);
-        const nextOrder =
-          response.orders.find((item) => item.status === 'awaiting_payment') ??
-          response.orders.find((item) => isPaymentCompletedStatus(item.status)) ??
-          null;
-
-        if (active) {
-          setOrder(nextOrder);
-        }
-      } catch {
-        if (active) {
-          setError('Não foi possível carregar o pedido de compra.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadOrder();
-
-    return () => {
-      active = false;
-    };
-  }, [initialOrder, token]);
+    setOrder(initialOrder);
+    setLoading(false);
+  }, [initialOrder]);
 
   useEffect(() => {
     if (!orderConfiguration) {
@@ -186,12 +144,12 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   }, [orderConfiguration]);
 
   const ctaDisabled = useMemo(
-    () => submitting || !order || order.status !== 'awaiting_payment' || quantity < 1,
+    () => submitting || quantity < 1,
     [order, quantity, submitting]
   );
 
   async function handleConfirmPurchase() {
-    if (!order || !token || order.status !== 'awaiting_payment') {
+    if (submitting) {
       return;
     }
 
@@ -200,17 +158,22 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
     setError('');
 
     try {
-      const checkoutOrderId = order.checkoutOrderId ?? order.id;
-      const response = await createCheckoutSession(
-        checkoutOrderId,
-        { model: selectedModel, color: selectedColor, quantity },
-        token
+      const origin = window.location.origin;
+      const response = await api.post<{ checkoutUrl: string }>(
+        '/v1/commerce/biteplaner/checkout',
+        {
+          model: selectedModel,
+          color: selectedColor,
+          quantity,
+          successUrl: `${origin}/painel/compra?checkout=success`,
+          cancelUrl: `${origin}/painel/compra?checkout=cancel`,
+        },
+        session?.access_token
       );
-      setNotice('Checkout Pagar.me criado. Redirecionando para o pagamento seguro.');
-      window.open(response.url, '_self', 'noopener');
-    } catch {
-      setError('Não foi possível abrir o checkout Pagar.me agora. Tente novamente em alguns instantes.');
-    } finally {
+
+      window.location.assign(response.checkoutUrl);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Não foi possível iniciar o checkout Asaas.');
       setSubmitting(false);
     }
   }
@@ -232,7 +195,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
       {!embedded && !paymentCompleted ? (
         <OrderStepHeader
           title="Confirmação de compra"
-          description="Confira modelo, cor e quantidade. Ao continuar, você será direcionado ao checkout seguro do Pagar.me para concluir o pagamento."
+          description="Confira modelo, cor e quantidade para sua compra profissional. Ao continuar, você será direcionado ao checkout seguro do Asaas."
           currentStep="purchase"
           order={order}
           orderHelpText="Este pedido está na etapa financeira antes da liberação operacional para produção."
@@ -251,7 +214,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
           {notice ? <S.Banner role="status">{notice}</S.Banner> : null}
 
           {!order ? (
-            <S.Banner>Nenhum pedido aguardando pagamento apareceu neste momento.</S.Banner>
+            <S.Banner>Confira a configuração do Biteplaner. A finalização financeira será feita pelo novo checkout commerce da Nexor.</S.Banner>
           ) : null}
 
           {paymentCompleted && order ? (
@@ -286,9 +249,9 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                 <JourneyNoticeCard
                   tone="success"
                   icon={<ShieldCheck size={18} strokeWidth={2.1} />}
-                  title="Checkout seguro Pagar.me"
-                  description="O pagamento acontece no ambiente hospedado do Pagar.me. A Nexor recebe a confirmação automaticamente para liberar a produção."
-                  testId="pagarme-checkout-card"
+                  title="Checkout seguro Asaas"
+                  description="O pagamento acontece no ambiente hospedado do Asaas. A Nexor recebe a confirmação automaticamente para liberar a produção."
+                  testId="asaas-checkout-card"
                 />
               ) : (
                 <S.SuccessFooter>
@@ -316,8 +279,8 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                   </strong>
                 </S.SummaryRow>
                 <S.PriceNotice>
-                  Este valor representa especificamente a compra do produto Biteplaner. Valores de consulta com o
-                  dentista devem ser acertados diretamente com o profissional no momento da consulta.
+                  Este valor representa a compra do produto Biteplaner pelo dentista. A relação comercial com o paciente
+                  acontece fora da plataforma Nexor.
                 </S.PriceNotice>
                 {!paymentCompleted ? (
                   <S.ConfigurationGrid>
@@ -373,8 +336,8 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                       {submitting
                         ? 'Abrindo checkout...'
                         : purchaseConfirmed
-                          ? 'Reabrir pagamento Pagar.me'
-                          : 'Ir para pagamento Pagar.me'}
+                          ? 'Reabrir pagamento Asaas'
+                          : 'Ir para pagamento Asaas'}
                     </span>
                   </S.CheckoutButton>
                 )}
@@ -387,8 +350,8 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
         <SnackbarStack>
           <Snackbar
             tone="success"
-            title="Checkout Pagar.me criado"
-            message="Você será redirecionado para concluir o pagamento no ambiente seguro do Pagar.me."
+            title="Checkout Asaas criado"
+            message="Você será redirecionado para concluir o pagamento no ambiente seguro do Asaas."
             onClose={() => {
               setNotice('');
             }}

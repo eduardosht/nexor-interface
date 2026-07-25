@@ -14,7 +14,7 @@ interface MeResponse {
   user?: { profileId?: string; email?: string; roles?: string[] };
   profile?: {
     full_name: string;
-    role: 'customer' | 'partner' | 'dentist' | 'lab' | 'admin' | 'user';
+    role: 'customer' | 'partner' | 'dentist' | 'admin' | 'user';
   };
 }
 
@@ -150,10 +150,6 @@ export function Conta() {
       return 'dentist';
     }
 
-    if (backendUser?.labId) {
-      return 'lab';
-    }
-
     if (backendUser?.partnerId) {
       return 'partner';
     }
@@ -161,7 +157,6 @@ export function Conta() {
     return 'customer';
   }, [
     backendUser?.dentistId,
-    backendUser?.labId,
     backendUser?.partnerId,
     backendUser?.roles,
     profile?.role
