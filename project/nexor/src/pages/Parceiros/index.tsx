@@ -52,20 +52,6 @@ const TRACKS = [
     ],
     benefits: ['Atuação como parceiro licenciado', 'Dashboard de acompanhamento', 'Material de apoio para divulgação'],
   },
-  {
-    anchor: 'laboratórios',
-    label: 'Laboratórios licenciados',
-    title: 'Laboratório Licenciado',
-    desc: 'Licenciamento para produção laboratorial de alto padrão do dispositivo Biteplaner. Processos rigorosos, materiais premium e rastreabilidade total.',
-    tipo: 'laboratório',
-    steps: [
-      { title: 'Licenciamento', body: 'Auditoria e validação dos processos laboratoriais para atuação como laboratório licenciado.' },
-      { title: 'Integração', body: 'Conexão com a plataforma de gestão de ordens e recebimento das solicitações técnicas.' },
-      { title: 'Produção', body: 'Produção do dispositivo conforme protocolo Nexor, com rastreabilidade de materiais e etapas.' },
-      { title: 'Controle', body: 'Inspeção de qualidade e envio rastreado ao dentista licenciado ou local de atendimento.' },
-    ],
-    benefits: ['Atuação como laboratório licenciado', 'Integração com plataforma digital', 'Suporte técnico do time Nexor'],
-  },
 ];
 
 export function Parceiros() {
@@ -74,7 +60,7 @@ export function Parceiros() {
       <S.HeroSection>
         <S.HeroLabel>Ecossistema Nexor</S.HeroLabel>
         <S.HeroTitle>Seja licenciado<br />pela Nexor</S.HeroTitle>
-        <S.HeroSubtitle>Faça parte do ecossistema Biteplaner com três trilhas de licenciamento: parceiro, dentista e laboratório licenciados para uma jornada rastreável, técnica e integrada.</S.HeroSubtitle>
+        <S.HeroSubtitle>Faça parte do ecossistema Biteplaner com trilhas de licenciamento para parceiros e dentistas. A produção externa é conduzida por fornecedores administrados pela operação Nexor, sem workspace de fornecedor externo no MVP.</S.HeroSubtitle>
       </S.HeroSection>
 
       {TRACKS.map((track, i) => (

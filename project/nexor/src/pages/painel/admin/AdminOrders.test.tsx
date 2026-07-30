@@ -37,7 +37,7 @@ const order = {
   color: 'Transparente',
   totalFormatted: 'R$ 1.200,00',
   createdAt: '2026-07-16T12:00:00.000Z',
-  canSendToLab: true,
+  canStartExternalProduction: true,
 };
 
 function renderPage() {
@@ -120,7 +120,7 @@ describe('AdminOrders', () => {
     expect(screen.queryByText('refunded')).not.toBeInTheDocument();
   });
 
-  it('creates a lab email draft from a paid order', async () => {
+  it('creates a external production email draft from a paid order', async () => {
     mockApiGet.mockResolvedValueOnce({ orders: [order], pagination: { page: 1, pageSize: 25, hasNextPage: false } });
     mockApiPost.mockResolvedValueOnce({
       email: {
@@ -145,15 +145,15 @@ describe('AdminOrders', () => {
 
     const row = await screen.findByText('Dra. Marina');
     const actionButton = within(row.closest('tr') as HTMLElement).getByRole('button', {
-      name: /criar e-mail para enviar pedido 5a8a8eb5 ao laboratório/i,
+      name: /criar e-mail de produção externa para pedido 5a8a8eb5/i,
     });
 
-    expect(actionButton).not.toHaveTextContent(/enviar ao laboratório/i);
+    expect(actionButton).toHaveAccessibleName(/produção externa/i);
     fireEvent.click(actionButton);
 
     await waitFor(() => {
       expect(mockApiPost).toHaveBeenCalledWith(
-        '/v1/admin/commerce/biteplaner/orders/5a8a8eb5-b63f-4e2a-9e77-a9d78f092333/compose-lab-email',
+        '/v1/admin/commerce/biteplaner/orders/5a8a8eb5-b63f-4e2a-9e77-a9d78f092333/compose-external-production-email',
         {},
         'tok'
       );

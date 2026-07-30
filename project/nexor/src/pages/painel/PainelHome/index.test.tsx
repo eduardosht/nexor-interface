@@ -196,7 +196,7 @@ describe('PainelHome', () => {
     expect(getComputedStyle(availableBadge).color).toBe('rgb(21, 128, 61)');
   });
 
-  it('keeps licensing cards in two desktop columns after removing laboratory onboarding', () => {
+  it('keeps licensing cards in two desktop columns after removing legacy supplier onboarding', () => {
     const source = readFileSync(join(process.cwd(), 'src/pages/painel/PainelHome/styles.ts'), 'utf8');
 
     expect(source).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
@@ -281,7 +281,7 @@ describe('PainelHome', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('sends partner requests to the dedicated registration page and does not expose laboratory requests', async () => {
+  it('sends partner requests to the dedicated registration page and does not expose legacy supplier requests', async () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole('button', { name: /solicitar parceria comercial/i }));

@@ -6,7 +6,7 @@ import {
   type DemoOrderSummary,
 } from '../../../features/demo/biteplanerFlow';
 
-export type OrderStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up';
+export type OrderStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'external_production' | 'follow_up';
 
 export interface OrderStepHeaderProps {
   title: ReactNode;

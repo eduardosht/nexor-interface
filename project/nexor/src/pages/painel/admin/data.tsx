@@ -17,7 +17,7 @@ export interface AdminUserRow {
   id: string;
   name: string;
   email: string;
-  profile: 'Cliente' | 'Dentista' | 'Parceiro' | 'Laboratório';
+  profile: 'Cliente' | 'Dentista' | 'Parceiro';
   status: 'Ativo' | 'Pendente';
   createdAt: string;
   lastAccess: string;
@@ -113,11 +113,10 @@ export const ORDER_FILTERS = [
 ];
 
 export const ADMIN_USER_STATS: AdminStat[] = [
-  { label: 'Total de Usuários', value: '6' },
+  { label: 'Total de Usuários', value: '5' },
   { label: 'Clientes', value: '3' },
   { label: 'Dentistas', value: '1' },
   { label: 'Parceiros', value: '1' },
-  { label: 'Laboratórios', value: '1' },
 ];
 
 export const ADMIN_USERS: AdminUserRow[] = [
@@ -158,15 +157,6 @@ export const ADMIN_USERS: AdminUserRow[] = [
     lastAccess: '02/05/2026',
   },
   {
-    id: 'U005',
-    name: 'LabDental Pro',
-    email: 'lab@dental.com',
-    profile: 'Laboratório',
-    status: 'Ativo',
-    createdAt: '05/01/2026',
-    lastAccess: '04/05/2026',
-  },
-  {
     id: 'U006',
     name: 'Pedro Costa',
     email: 'pedro@email.com',
@@ -181,10 +171,9 @@ export const USER_FILTERS = [
   { value: 'Cliente', label: 'Cliente' },
   { value: 'Dentista', label: 'Dentista' },
   { value: 'Parceiro', label: 'Parceiro' },
-  { value: 'Laboratório', label: 'Laboratório' },
 ];
 
-export const BUSINESS_SETTINGS_CONTENT: Record<'partners' | 'labs' | 'dentists', BusinessSegmentContent> = {
+export const BUSINESS_SETTINGS_CONTENT: Record<'partners' | 'dentists', BusinessSegmentContent> = {
   partners: {
     process: {
       paymentDay: '5',
@@ -208,32 +197,6 @@ export const BUSINESS_SETTINGS_CONTENT: Record<'partners' | 'labs' | 'dentists',
       {
         title: 'Termo de Distrato',
         description: 'Documento padrão de encerramento da parceria e repasses pendentes.',
-      },
-    ],
-  },
-  labs: {
-    process: {
-      paymentDay: '10',
-      commission: '8',
-      processingDeadline: '12',
-      monthlyLimit: 'R$ 120.000,00',
-    },
-    credentialing: {
-      marketCriteria: 'Capacidade de produção por regiao',
-      maxPerRegion: '2',
-    },
-    contracts: [
-      {
-        title: 'Carta de Intencao Laboratorial',
-        description: 'Manifestação inicial de interesse para credenciamento laboratorial.',
-      },
-      {
-        title: 'Contrato de Credenciamento Laboratório',
-        description: 'Acordo de SLA, qualidade, rastreabilidade e repasse financeiro.',
-      },
-      {
-        title: 'Termo de Distrato Laboratório',
-        description: 'Modelo de encerramento contratual com checklist de ativos.',
       },
     ],
   },
@@ -281,7 +244,6 @@ const USER_PROFILE_COLORS: Record<AdminUserRow['profile'], string> = {
   Cliente: '#2563EB',
   Dentista: '#16A34A',
   Parceiro: '#EA580C',
-  Laboratório: '#9333EA',
 };
 
 export function renderUserProfile(profile: AdminUserRow['profile']) {

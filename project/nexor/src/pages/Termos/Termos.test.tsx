@@ -20,35 +20,27 @@ describe('Termos (Nexor)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/termos de uso/i);
     expect(screen.getByRole('button', { name: /geral nexor/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /usuário biteplaner/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /dentista licenciado/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^dentista licenciado/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /parceiro licenciado/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /laboratório licenciado/i })).toBeInTheDocument();
   });
 
   it('renderiza o documento específico ao selecionar um perfil', async () => {
     const user = userEvent.setup();
     render(<Termos />, { wrapper: Wrapper });
 
-    await user.click(screen.getByRole('button', { name: /dentista licenciado/i }));
+    await user.click(screen.getByRole('button', { name: /^dentista licenciado/i }));
 
     expect(screen.getByRole('heading', { level: 2, name: /termos de uso do dentista licenciado/i })).toBeInTheDocument();
-    expect(screen.getByText(/conclusão de cadastros financeiros/i)).toBeInTheDocument();
+    expect(screen.getByText(/compra do Biteplaner é feita pelo dentista diretamente com a Nexor/i)).toBeInTheDocument();
     expect(screen.getByText(/provedor externo/i)).toBeInTheDocument();
     expect(screen.getByText(/terms-dentist-v1\.0\.0/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /baixar pdf/i })).toBeInTheDocument();
   });
 
-  it('mantém documentos diferentes para laboratório e parceiro', async () => {
-    const user = userEvent.setup();
+  it('não publica perfil jurídico legado de fornecedor operacional', async () => {
     render(<Termos />, { wrapper: Wrapper });
 
-    await user.click(screen.getByRole('button', { name: /laboratório licenciado/i }));
-    expect(screen.getByText(/produção, qualidade e confidencialidade/i)).toBeInTheDocument();
-    expect(screen.getByText(/arquivos de scan, dados de clientes, dentistas e ordens/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /parceiro licenciado/i }));
-    expect(screen.getByText(/convites, indicações, link ou QR Code, fluxos comerciais/i)).toBeInTheDocument();
-    expect(screen.queryByText(/produção, qualidade e confidencialidade/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: /laboratório/i })).not.toBeInTheDocument();
   });
 
   it('renderiza termos gerais e condição para menores', async () => {
@@ -61,6 +53,9 @@ describe('Termos (Nexor)', () => {
 
     await user.click(screen.getByRole('button', { name: /usuário biteplaner/i }));
     expect(screen.getByText(/menores de 18 anos somente devem usar/i)).toBeInTheDocument();
+    expect(screen.getByText(/contratação é feita pelo dentista licenciado diretamente com a Nexor/i)).toBeInTheDocument();
+    expect(screen.getByText(/compra do Biteplaner é realizada pelo dentista licenciado no MVP atual/i)).toBeInTheDocument();
+    expect(screen.queryByText(/A compra ocorre após a consulta inicial/i)).not.toBeInTheDocument();
   });
 
   it('não publica placeholders jurídicos', async () => {

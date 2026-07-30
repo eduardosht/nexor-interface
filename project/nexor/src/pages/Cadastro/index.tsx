@@ -193,7 +193,7 @@ export function Cadastro() {
           isApiErrorLike(error) &&
           error.status === 404 &&
           error.code === 'not_found' &&
-          error.message === 'Partner invite link not found.';
+          error.message === 'Referral link not found.';
 
         if (!isStaleInvite || !referralInviteToken) {
           throw error;

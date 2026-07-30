@@ -1269,7 +1269,7 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
           editableWhen: 'dentist_review',
           options: yesNoOptions,
           helpText:
-            'Marque Sim para liberar o cliente para pagamento. Marque Não quando o cliente precisar de nova avaliação antes de seguir.',
+            'Marque Sim quando a avaliação clínica permitir seguir com a compra do dentista. Marque Não quando for necessária nova avaliação antes de avançar.',
         },
         {
           key: 'ineligibilityDescriptionForCustomer',
@@ -1363,7 +1363,7 @@ export const SHARED_INITIAL_EVALUATION_INTAKE: SharedIntakeDefinition = {
       key: 'dentist-biteplaner-order',
       title: 'Pedido biteplaner',
       description:
-        'Campos alinhados pelo dentista com o cliente durante a consulta. A compra do cliente virá preenchida com estes dados, mas o cliente pode confirmar ou alterar antes do pagamento.',
+        'Campos alinhados pelo dentista para preparar o pedido Biteplaner. Estes dados orientam a compra do dentista e a revisão operacional Nexor antes da produção externa.',
       fields: [
         {
           key: 'biteplanerModel',

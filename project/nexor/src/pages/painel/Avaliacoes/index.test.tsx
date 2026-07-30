@@ -131,9 +131,9 @@ describe('Avaliações', () => {
           },
           {
             id: 'BP-DEMO-016',
-            status: 'awaiting_lab_start',
+            status: 'awaiting_external_production',
             statusLabel: 'Aguardando inicio',
-            stage: 'awaiting_lab_start',
+            stage: 'awaiting_external_production',
             created_at: '2026-05-05T15:00:00.000Z',
             customer: { full_name: 'Camila Boxe', email: 'camila@nexor.dev', phone: null },
             dentist: { full_name: 'Dra. Helena Licenciada', email: 'dentista@nexor.dev' },
@@ -167,10 +167,10 @@ describe('Avaliações', () => {
       .mockResolvedValueOnce({
         forms: [
           {
-            id: 'review-dentist-lab',
+            id: 'review-dentist-external-production',
             orderId: 'BP-DEMO-016',
-            templateKey: 'lab_review_by_dentist',
-            stepKey: 'lab_cycle_feedback_from_dentist',
+            templateKey: 'external_production_review_by_dentist',
+            stepKey: 'external_production_feedback_from_dentist',
             status: 'submitted',
             canViewPayload: true,
             summary: { scoreAverage: 9, hasComment: true, responseCount: 1, submittedAt: '2026-05-06T10:00:00.000Z' },
@@ -180,7 +180,7 @@ describe('Avaliações', () => {
               deliveryLeadTime: 8,
               rawDeviceQuality: 9,
               contactEase: 9,
-              comment: 'Laboratório respondeu rápido e entregou bom acabamento.',
+              comment: 'Produção externa avançou rápido e entregou bom acabamento.',
             },
           },
         ],
@@ -190,18 +190,18 @@ describe('Avaliações', () => {
 
     expect(await screen.findByRole('heading', { name: /avaliações do dentista/i })).toBeInTheDocument();
     expect(await screen.findByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: /dentista avalia produção externa/i })).toHaveAttribute('aria-selected', 'false');
     expect(screen.queryByText(/após consulta de adaptação/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/cliente avaliando dentista/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/atendimento claro, pontual/i)).toBeInTheDocument();
-    expect(screen.queryByText(/laboratório respondeu rápido/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/produção externa avançou rápido/i)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: /dentista avalia laboratório/i }));
+    await user.click(screen.getByRole('tab', { name: /dentista avalia produção externa/i }));
 
     expect(screen.getByRole('tab', { name: /cliente avalia dentista/i })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('tab', { name: /dentista avalia laboratório/i })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getAllByText(/dentista avaliando laboratório/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/laboratório respondeu rápido/i)).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /dentista avalia produção externa/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getAllByText(/dentista avaliando produção externa/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/produção externa avançou rápido/i)).toBeInTheDocument();
     expect(screen.queryByText(/atendimento claro, pontual/i)).not.toBeInTheDocument();
     expect(screen.getByText(/templates ativos/i)).toBeInTheDocument();
   });

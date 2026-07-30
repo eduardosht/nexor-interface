@@ -36,7 +36,7 @@ type DashboardResponse = {
     licensedDentists: number;
     pendingDentistLicenses: number;
     biteplanerOrders: number;
-    ordersWaitingForLab: number;
+    ordersWaitingForExternalProduction: number;
   };
   licensedSeries: Array<{ label: string; total: number }>;
 };
@@ -52,7 +52,7 @@ const EMPTY_DASHBOARD: DashboardResponse = {
     licensedDentists: 0,
     pendingDentistLicenses: 0,
     biteplanerOrders: 0,
-    ordersWaitingForLab: 0,
+    ordersWaitingForExternalProduction: 0,
   },
   licensedSeries: [],
 };
@@ -106,7 +106,7 @@ export function AdminHome() {
       { label: 'Dentistas licenciados', value: dashboard.metrics.licensedDentists },
       { label: 'Solicitações pendentes', value: dashboard.metrics.pendingDentistLicenses },
       { label: 'Pedidos Biteplaner', value: dashboard.metrics.biteplanerOrders },
-      { label: 'Aguardando envio ao laboratório', value: dashboard.metrics.ordersWaitingForLab },
+      { label: 'Aguardando produção externa', value: dashboard.metrics.ordersWaitingForExternalProduction },
     ],
     [dashboard.metrics]
   );
@@ -116,7 +116,7 @@ export function AdminHome() {
       <PageHeader>
         <PageTitle>Dashboard administrativo</PageTitle>
         <PageSubtitle>
-          Visão commerce da operação Biteplaner: licenciamento de dentistas, pedidos e fila de envio ao laboratório.
+          Visão commerce da operação Biteplaner: licenciamento de dentistas, pedidos e fila de acionamento de produção externa.
         </PageSubtitle>
       </PageHeader>
 

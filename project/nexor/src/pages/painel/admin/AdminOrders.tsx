@@ -26,7 +26,7 @@ type CommerceOrder = {
   color: string;
   totalFormatted: string;
   createdAt: string;
-  canSendToLab: boolean;
+  canStartExternalProduction: boolean;
 };
 
 type OrdersResponse = {
@@ -38,7 +38,7 @@ type OrdersResponse = {
   };
 };
 
-type LabEmailResponse = {
+type ExternalProductionEmailResponse = {
   email: {
     to: string;
     subject: string;
@@ -129,7 +129,7 @@ function getPaymentStatusLabel(status: string) {
   return paymentStatusLabels[status] ?? statusLabels[status] ?? status;
 }
 
-function buildMailtoUrl(email: LabEmailResponse['email']) {
+function buildMailtoUrl(email: ExternalProductionEmailResponse['email']) {
   const params = new URLSearchParams({
     subject: email.subject,
     body: email.body,
@@ -207,7 +207,7 @@ export function AdminOrders() {
     );
   }, [orders, search]);
 
-  async function composeLabEmail(orderId: string) {
+  async function composeExternalProductionEmail(orderId: string) {
     if (!token || composingOrderId) {
       return;
     }
@@ -216,8 +216,8 @@ export function AdminOrders() {
     setError('');
 
     try {
-      const response = await api.post<LabEmailResponse>(
-        `/v1/admin/commerce/biteplaner/orders/${orderId}/compose-lab-email`,
+      const response = await api.post<ExternalProductionEmailResponse>(
+        `/v1/admin/commerce/biteplaner/orders/${orderId}/compose-external-production-email`,
         {},
         token
       );
@@ -227,7 +227,7 @@ export function AdminOrders() {
         window.location.href = buildMailtoUrl(response.email);
       }
     } catch {
-      setError('Não foi possível criar o e-mail para o laboratório.');
+      setError('Não foi possível criar o e-mail para produção externa.');
     } finally {
       setComposingOrderId(null);
     }
@@ -243,7 +243,7 @@ export function AdminOrders() {
       <PageHeader>
         <PageTitle>Ordens Biteplaner</PageTitle>
         <PageSubtitle>
-          Pedidos commerce feitos por dentistas licenciados. Use esta fila para acompanhar pagamento e preparar o e-mail de envio para operação de laboratório.
+          Pedidos commerce feitos por dentistas licenciados. Use esta fila para acompanhar pagamento e preparar o contato externo de produção conduzido pela Nexor.
         </PageSubtitle>
       </PageHeader>
 
@@ -310,10 +310,10 @@ export function AdminOrders() {
                       <td>
                         <S.IconActionButton
                           type="button"
-                          disabled={!order.canSendToLab || composingOrderId === order.id}
-                          aria-label={`Criar e-mail para enviar pedido ${order.id.slice(0, 8)} ao laboratório`}
-                          title="Criar e-mail para laboratório"
-                          onClick={() => void composeLabEmail(order.id)}
+                          disabled={!order.canStartExternalProduction || composingOrderId === order.id}
+                          aria-label={`Criar e-mail de produção externa para pedido ${order.id.slice(0, 8)}`}
+                          title="Criar e-mail para produção externa"
+                          onClick={() => void composeExternalProductionEmail(order.id)}
                         >
                           <Send size={16} aria-hidden />
                         </S.IconActionButton>

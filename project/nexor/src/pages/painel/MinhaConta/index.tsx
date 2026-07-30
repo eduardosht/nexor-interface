@@ -24,7 +24,7 @@ interface MockProduct {
 type ProductRole = {
   id?: string;
   productKey: string;
-  role: 'customer' | 'partner' | 'dentist' | 'lab';
+  role: 'customer' | 'partner' | 'dentist';
   status: string;
   stage?: string | null;
   metadata: Record<string, unknown>;
@@ -217,7 +217,6 @@ function getRoleLabel(role: ProductRole['role']) {
     customer: 'Cliente Biteplaner',
     partner: 'Parceiro Biteplaner',
     dentist: 'Dentista Biteplaner',
-    lab: 'Laboratório Biteplaner',
   };
 
   return labels[role];
@@ -545,126 +544,6 @@ export function MinhaConta() {
               onChange={(event) => updateRoleMetadata(role.id, 'serviceLocations', splitCsv(event.target.value))}
             />
           )
-        )}
-        {renderOnboardingActions(role, isSavingRole)}
-      </>
-    );
-  }
-
-  function renderLabOnboardingFields(
-    role: ProductRole,
-    metadata: Record<string, unknown>,
-    isSavingRole: boolean
-  ) {
-    const location = getPrimaryMetadataLocation(metadata, 'locations', 'location');
-
-    return (
-      <>
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'labName',
-            'Nome do laboratório',
-            getString(metadata.labName),
-            <S.FieldInput
-              type="text"
-              value={getString(metadata.labName)}
-              onChange={(event) => updateRoleMetadata(role.id, 'labName', event.target.value)}
-            />
-          )}
-          {renderLockedOnboardingField('CNPJ', formatCnpj(getString(metadata.cnpj)))}
-          {renderLockedOnboardingField('CPF', formatCpf(getString(metadata.cpf)))}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'professionalSummary',
-          'Resumo operacional',
-          getString(metadata.professionalSummary),
-          <S.TextArea
-            value={getString(metadata.professionalSummary)}
-            onChange={(event) => updateRoleMetadata(role.id, 'professionalSummary', event.target.value)}
-          />
-        )}
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'locationName',
-            'Nome da unidade',
-            location.name,
-            <S.FieldInput
-              type="text"
-              value={location.name}
-              onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'name', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'locationPhone',
-            'Telefone',
-            location.phone,
-            <S.FieldInput
-              type="text"
-              value={location.phone}
-              onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'phone', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'locationCep',
-            'CEP',
-            location.cep,
-            <S.FieldInput
-              type="text"
-              value={location.cep}
-              onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'cep', event.target.value)}
-            />
-          )}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'locationAddress',
-          'Endereço',
-          location.address,
-          <S.FieldInput
-            type="text"
-            value={location.address}
-            onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'address', event.target.value)}
-          />
-        )}
-        <S.CardRow>
-          {renderOnboardingField(
-            role,
-            'locationCity',
-            'Cidade',
-            location.city,
-            <S.FieldInput
-              type="text"
-              value={location.city}
-              onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'city', event.target.value)}
-            />
-          )}
-          {renderOnboardingField(
-            role,
-            'locationState',
-            'Estado',
-            location.state,
-            <S.FieldInput
-              type="text"
-              value={location.state}
-              onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'state', event.target.value.toUpperCase().slice(0, 2))}
-            />
-          )}
-        </S.CardRow>
-        {renderOnboardingField(
-          role,
-          'locationServiceHours',
-          'Horário de atendimento',
-          location.serviceHours,
-          <S.FieldInput
-            type="text"
-            value={location.serviceHours}
-            onChange={(event) => updateMetadataLocation(role.id, 'locations', 'location', 'serviceHours', event.target.value)}
-          />
         )}
         {renderOnboardingActions(role, isSavingRole)}
       </>
@@ -1315,7 +1194,7 @@ export function MinhaConta() {
                             ? renderCustomerOnboardingFields(metadata)
                             : role.role === 'partner'
                               ? renderPartnerOnboardingFields(role, metadata, false)
-                              : renderLabOnboardingFields(role, metadata, false)}
+                              : null}
                       </S.OnboardingBody>
                     ) : null}
                   </S.OnboardingCardContent>

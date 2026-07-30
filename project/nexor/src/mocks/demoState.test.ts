@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   ACTIVE_DEMO_PERSONA_STORAGE_KEY,
   DemoStateError,
-  approveLabLicenseRequest,
   applyOrderAction,
   createProductRole,
   getAccessOptions,
@@ -12,7 +11,6 @@ import {
   getDemoStateSnapshot,
   getPartnerInviteLinks,
   getTimelineEvents,
-  getWorkflowForm,
   getWorkflowForms,
   listAccountNotifications,
   listOrders,
@@ -67,20 +65,6 @@ describe('shared Biteplaner demo state', () => {
     expect(result.orders[0].status).toBe('awaiting_payment');
   });
 
-  it('licenses the laboratory immediately after admin approval without awaiting payment', () => {
-    const context = { requestHeaders: { authorization: 'Bearer demo-athleteRegistered-token' } };
-    const productRole = createProductRole(context, 'lab', {
-      labName: 'Lab Sem Pagamento',
-      cnpj: '12.345.678/0001-90'
-    });
-
-    const approved = approveLabLicenseRequest(productRole.id);
-    const snapshot = getDemoStateSnapshot();
-    const workflow = snapshot.dentistLicensingWorkflows.find((item) => item.productRoleId === productRole.id);
-
-    expect(approved.request.workflowStatus).toBe('licensed');
-    expect(workflow?.status).toBe('licensed');
-  });
 
   it('returns a valid auth payload for the active persona and fixes the partner role', () => {
     const partnerAuth = getAuthPayload({ requestHeaders: { 'x-demo-persona': 'partner' } });
@@ -200,7 +184,6 @@ describe('shared Biteplaner demo state', () => {
     const athleteOrders = listOrders();
     const partnerOrders = listOrders({ requestHeaders: { 'x-demo-persona': 'partner' } }, 'partner');
     const dentistOrders = listOrders({ requestHeaders: { 'x-demo-persona': 'dentist' } }, 'dentist');
-    const labOrders = listOrders({ requestHeaders: { 'x-demo-persona': 'lab' } }, 'lab');
     const adminOrders = listOrders({ requestHeaders: { 'x-demo-persona': 'admin' } }, 'admin');
 
     expect(athleteOrders.orders.map((order) => order.id)).toEqual(expect.arrayContaining([
@@ -220,11 +203,6 @@ describe('shared Biteplaner demo state', () => {
       'BP-DEMO-005',
       'BP-DEMO-006'
     ]));
-    expect(
-      labOrders.orders.filter((order) => order.productionRequestDraft !== null).map((order) => order.id)
-    ).toEqual(['BP-DEMO-016', 'BP-DEMO-007']);
-    expect(labOrders.orders.find((order) => order.id === 'BP-DEMO-007')?.dentist?.full_name).toBe('Dr. Rafael Demo');
-    expect(labOrders.orders.every((order) => order.preLabChecklistDraft === null)).toBe(true);
     expect(adminOrders.orders.length).toBe(getDemoStateSnapshot().orders.length);
   });
 
@@ -237,7 +215,7 @@ describe('shared Biteplaner demo state', () => {
       ['athleteDentistForms', 'BP-DEMO-004'],
       ['athletePayment', 'BP-DEMO-005'],
       ['athleteTreatmentRequired', 'BP-DEMO-006'],
-      ['athleteLabProduction', 'BP-DEMO-007'],
+      ['athleteExternalProduction', 'BP-DEMO-007'],
       ['athleteAdaptation', 'BP-DEMO-008'],
       ['athleteFollowUp', 'BP-DEMO-009'],
       ['athleteIneligible', 'BP-DEMO-010'],
@@ -270,7 +248,7 @@ describe('shared Biteplaner demo state', () => {
       'in_progress',
       'appointment_confirmed',
       'awaiting_dentist_forms',
-      'awaiting_lab_start'
+      'awaiting_external_production'
     ]));
     expect(licensedDentistOrders.orders.find((order) => order.id === 'BP-DEMO-013')?.statusLabel).toBe(
       'Aguardando confirmação de consulta'
@@ -395,117 +373,23 @@ describe('shared Biteplaner demo state', () => {
       expect.objectContaining({ kind: 'return_30_days', status: 'overdue' })
     ]);
   });
-
-  it('stores workflow form submissions and revisions in the shared state', () => {
-    const before = getWorkflowForms('BP-DEMO-007', { requestHeaders: { 'x-demo-persona': 'lab' } });
-    expect(before.forms[0]?.status).toBe('pending');
-
-    const submitted = applyOrderAction('BP-DEMO-007', {
-      type: 'submit-workflow-form',
-      workflowFormId: 'BP-WF-005-LAB',
-      payload: { scanFileQuality: 4 }
-    }, { requestHeaders: { 'x-demo-persona': 'lab' } });
-
-    expect('status' in submitted).toBe(true);
-    if (!('status' in submitted)) {
-      throw new Error('Workflow form submission did not return a workflow status.');
-    }
-    expect(submitted.status).toBe('submitted');
-
-    const revised = applyOrderAction('BP-DEMO-007', {
-      type: 'revise-workflow-form',
-      workflowFormId: 'BP-WF-005-LAB',
-      payload: { scanFileQuality: 5, comment: 'Revisão operacional final.'.repeat(30) },
-      changeReason: 'Atualizacao operacional do laboratório.'
-    }, { requestHeaders: { 'x-demo-persona': 'lab' } });
-
-    expect('status' in revised).toBe(true);
-    if (!('status' in revised)) {
-      throw new Error('Workflow form revision did not return a workflow status.');
-    }
-    expect(revised.status).toBe('submitted');
-
-    const stored = getWorkflowForm('BP-DEMO-007', 'BP-WF-005-LAB', {
-      requestHeaders: { 'x-demo-persona': 'lab' }
-    });
-    expect(stored.payload).toEqual({
-      scanFileQuality: 5,
-      comment: expect.stringMatching(/^Revisão operacional final\./)
-    });
-    expect((stored.payload?.comment as string).length).toBeLessThanOrEqual(500);
-    expect(stored.summary?.scoreAverage).toBe(5);
-    expect(stored.summary?.hasComment).toBe(true);
-  });
-
-  it('keeps sequential laboratory assignments when the dentist changes labs after returns', () => {
-    applyOrderAction('BP-DEMO-007', { type: 'lab-return-for-adjustment', reason: 'Lab 1 solicitou ajuste.' }, {
-      requestHeaders: { 'x-demo-persona': 'lab' },
-    });
+  it('keeps external supplier assignment outside the platform when the dentist completes production documentation', () => {
     applyOrderAction('BP-DEMO-007', {
       type: 'complete-production-request',
       anamnesisSummary: 'Resumo revisado.',
       anamnesisDownloaded: true,
-      productionRequestSummary: 'Pedido reenviado para o segundo laboratório.',
-      labNotes: 'Nova tentativa com laboratório alternativo.',
+      productionRequestSummary: 'Pedido liberado para revisão operacional Nexor.',
+      opsNotes: 'Fornecedor será acionado externamente pela Nexor.',
       scan3dFileName: 'scan-v2.stl',
       lgpdConfirmed: true,
-      selectedLabId: 'lab-demo-002',
+      externalProductionProviderId: null,
     }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
 
-    const labOneViewAfterLabTwoSelection = listOrders({ requestHeaders: { 'x-demo-persona': 'lab' } }, 'lab')
-      .orders.find((order) => order.id === 'BP-DEMO-007');
-    expect(labOneViewAfterLabTwoSelection?.lab_profile_id).toBe('lab-demo-002');
-    expect(labOneViewAfterLabTwoSelection?.labAssignmentView).toEqual(
-      expect.objectContaining({
-        labProfileId: 'lab-demo-001',
-        status: 'returned_for_adjustment',
-        isCurrent: false,
-      })
-    );
-
-    applyOrderAction('BP-DEMO-007', { type: 'lab-return-for-adjustment', reason: 'Lab 2 também solicitou ajuste.' }, {
-      requestHeaders: { 'x-demo-persona': 'lab' },
-    });
-
-    const reassigned = applyOrderAction('BP-DEMO-007', {
-      type: 'complete-production-request',
-      anamnesisSummary: 'Resumo revisado novamente.',
-      anamnesisDownloaded: true,
-      productionRequestSummary: 'Pedido reenviado para o primeiro laboratório.',
-      labNotes: 'Retorno para o laboratório inicial.',
-      scan3dFileName: 'scan-v3.stl',
-      lgpdConfirmed: true,
-      selectedLabId: 'lab-demo-001',
-    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
-
-    expect('labAssignments' in reassigned).toBe(true);
-    if (!('labAssignments' in reassigned)) {
-      throw new Error('Order response did not include laboratory assignments.');
-    }
-    expect(reassigned.lab_profile_id).toBe('lab-demo-001');
-    expect(reassigned.labAssignmentView).toBeNull();
-    expect(reassigned.labAssignments).toEqual([
-      expect.objectContaining({
-        sequence: 1,
-        labProfileId: 'lab-demo-001',
-        status: 'returned_for_adjustment',
-        returnReason: 'Lab 1 solicitou ajuste.',
-      }),
-      expect.objectContaining({
-        sequence: 2,
-        labProfileId: 'lab-demo-002',
-        status: 'returned_for_adjustment',
-        returnReason: 'Lab 2 também solicitou ajuste.',
-      }),
-      expect.objectContaining({
-        sequence: 3,
-        labProfileId: 'lab-demo-001',
-        status: 'awaiting_acceptance',
-        returnReason: null,
-      }),
-    ]);
+    const order = getDemoStateSnapshot().orders.find((item) => item.id === 'BP-DEMO-007');
+    expect(order?.externalProductionProviderId).toBeNull();
+    expect(order?.visibleTo).not.toContain('lab');
+    expect(order?.externalProductionRecords ?? []).toEqual([]);
   });
-
   it('releases the shared initial evaluation intake during the prerequisite step', () => {
     const forms = getWorkflowForms('BP-DEMO-001', { requestHeaders: { 'x-demo-persona': 'athlete' } });
 
@@ -671,6 +555,28 @@ describe('shared Biteplaner demo state', () => {
     }
   });
 
+  it('lets the dentist complete production documentation without selecting a legacy platform supplier', () => {
+    applyOrderAction('BP-DEMO-004', {
+      type: 'complete-production-request',
+      anamnesisSummary: 'Anamnese clínica concluída.',
+      anamnesisDownloaded: true,
+      productionRequestSummary: 'Solicitação de produção pronta para a operação Nexor.',
+      opsNotes: 'Contato com fornecedor conduzido externamente pela Nexor.',
+      scan3dFileName: 'scan.stl',
+      scan3dFileRef: null,
+      lgpdConfirmed: true,
+      externalProductionProviderId: null,
+      purchaseConfiguration: null
+    }, { requestHeaders: { 'x-demo-persona': 'dentist' } });
+
+    const order = getDemoStateSnapshot().orders.find((item) => item.id === 'BP-DEMO-004');
+
+    expect(order?.productionRequestDraft?.externalProductionProviderId).toBeNull();
+    expect(order?.externalProductionProviderId).toBeNull();
+    expect(order?.visibleTo).not.toContain('lab');
+    expect(order?.externalProductionRecords ?? []).toEqual([]);
+    expect(order?.statusLabel).toBe('Em revisão operacional Nexor');
+  });
   it('moves dentist-marked inaptitude to reassessment instead of refund closure', () => {
     applyOrderAction('BP-DEMO-004', {
       type: 'submit-workflow-form',

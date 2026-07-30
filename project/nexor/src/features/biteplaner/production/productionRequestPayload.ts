@@ -61,17 +61,17 @@ export function getProductionPayloadPurchaseConfiguration(payload: Record<string
 }
 
 export function mapProductionRequestPayload(payload: Record<string, unknown>): ProductionRequestDraft {
-  const selectedLabId = payload.selectedLabId;
+  const externalProductionProviderId = payload.externalProductionProviderId;
 
   return {
     anamnesisSummary: getProductionPayloadString(payload, 'anamnesisSummary'),
     anamnesisDownloaded: getProductionPayloadBoolean(payload, 'anamnesisDownloaded'),
     productionRequestSummary: getProductionPayloadString(payload, 'productionRequestSummary'),
-    labNotes: getProductionPayloadString(payload, 'labNotes'),
+    opsNotes: getProductionPayloadString(payload, 'opsNotes'),
     scan3dFileName: getProductionPayloadString(payload, 'scan3dFileName'),
     scan3dFileRef: getProductionPayloadFileRef(payload, 'scan3dFileRef'),
     lgpdConfirmed: getProductionPayloadBoolean(payload, 'lgpdConfirmed'),
-    selectedLabId: typeof selectedLabId === 'string' && selectedLabId.trim() ? selectedLabId : null,
+    externalProductionProviderId: typeof externalProductionProviderId === 'string' && externalProductionProviderId.trim() ? externalProductionProviderId : null,
     purchaseConfiguration: getProductionPayloadPurchaseConfiguration(payload),
   };
 }

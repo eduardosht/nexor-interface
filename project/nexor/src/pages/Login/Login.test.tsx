@@ -235,7 +235,7 @@ describe('Login', () => {
     expect(screen.getByTestId('demo-login-athlete')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete-prerequisite')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete-payment')).toBeInTheDocument();
-    expect(screen.getByTestId('demo-login-athlete-lab-production')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-login-athlete-external-production')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-athlete-cancelled')).toBeInTheDocument();
     expect(screen.queryByTestId('demo-login-partner')).not.toBeInTheDocument();
 
@@ -249,8 +249,7 @@ describe('Login', () => {
     expect(screen.getByTestId('demo-login-dentist-progress')).toBeInTheDocument();
     expect(screen.getByTestId('demo-login-dentist-licensed')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: /lab/i }));
-    expect(screen.getByTestId('demo-login-lab')).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /lab/i })).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /admin/i }));
     expect(screen.getByTestId('demo-login-admin')).toBeInTheDocument();

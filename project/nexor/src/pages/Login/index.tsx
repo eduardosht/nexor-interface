@@ -43,7 +43,7 @@ const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
   { persona: 'athleteDentistForms', testId: 'demo-login-athlete-dentist-forms' },
   { persona: 'athletePayment', testId: 'demo-login-athlete-payment' },
   { persona: 'athleteTreatmentRequired', testId: 'demo-login-athlete-treatment-required' },
-  { persona: 'athleteLabProduction', testId: 'demo-login-athlete-lab-production' },
+  { persona: 'athleteExternalProduction', testId: 'demo-login-athlete-external-production' },
   { persona: 'athleteAdaptation', testId: 'demo-login-athlete-adaptation' },
   { persona: 'athleteFollowUp', testId: 'demo-login-athlete-follow-up' },
   { persona: 'athleteIneligible', testId: 'demo-login-athlete-ineligible' },
@@ -52,10 +52,6 @@ const DEMO_SHORTCUTS: Array<{ persona: DemoPersona; testId: string }> = [
   { persona: 'dentistApproved', testId: 'demo-login-dentist-approved' },
   { persona: 'dentistProgress', testId: 'demo-login-dentist-progress' },
   { persona: 'dentistLicensed', testId: 'demo-login-dentist-licensed' },
-  { persona: 'lab', testId: 'demo-login-lab' },
-  { persona: 'labApproved', testId: 'demo-login-lab-approved' },
-  { persona: 'labProgress', testId: 'demo-login-lab-progress' },
-  { persona: 'labLicensed', testId: 'demo-login-lab-licensed' },
   { persona: 'admin', testId: 'demo-login-admin' }
 ];
 
@@ -73,7 +69,7 @@ const DEMO_TABS = [
       'athleteDentistForms',
       'athletePayment',
       'athleteTreatmentRequired',
-      'athleteLabProduction',
+      'athleteExternalProduction',
       'athleteAdaptation',
       'athleteFollowUp',
       'athleteIneligible',
@@ -82,7 +78,6 @@ const DEMO_TABS = [
   },
   { key: 'parceiros', label: 'Parceiros', personas: ['partner'] },
   { key: 'dentista', label: 'Dentista', personas: ['dentist', 'dentistApproved', 'dentistProgress', 'dentistLicensed'] },
-  { key: 'lab', label: 'Lab', personas: ['lab', 'labApproved', 'labProgress', 'labLicensed'] },
   { key: 'admin', label: 'Admin', personas: ['admin'] },
 ] as const;
 
@@ -252,7 +247,7 @@ export function Login() {
           <S.FooterDivider />
           <S.FooterLinks>
             <Link to="/cadastro">Criar conta</Link>
-            {' · '}
+            {' / '}
             <Link to="/recuperar-senha">Recuperar senha</Link>
           </S.FooterLinks>
         </AuthCard>

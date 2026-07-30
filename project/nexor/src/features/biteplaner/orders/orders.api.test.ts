@@ -7,7 +7,7 @@ import {
   createProductionScanUploadIntent,
   fetchOrderForm,
   fetchOrders,
-  returnOrderToDentist,
+  requestProductionAdjustment,
 } from './orders.api';
 import { orderQueryKeys } from './orderQueryKeys';
 
@@ -67,11 +67,11 @@ describe('orders api module', () => {
       anamnesisSummary: '',
       anamnesisDownloaded: false,
       productionRequestSummary: 'Solicitação de produção',
-      labNotes: '',
+      opsNotes: '',
       scan3dFileName: 'scan.zip',
       prescriptionFileName: 'prescricao.pdf',
       lgpdConfirmed: true,
-      selectedLabId: 'lab-profile',
+      externalProductionProviderId: 'external-provider',
     };
 
     apiPost.mockResolvedValue({ id: 'form-1' });
@@ -85,13 +85,13 @@ describe('orders api module', () => {
     );
   });
 
-  it('routes lab adjustment requests through the order action endpoint', async () => {
+  it('routes production adjustment requests through the order action endpoint', async () => {
     apiPost.mockResolvedValue({ order: { id: 'order-1' } });
 
-    await returnOrderToDentist('order-1', 'Corrigir arquivo', 'tok');
+    await requestProductionAdjustment('order-1', 'Corrigir arquivo', 'tok');
 
     expect(apiPost).toHaveBeenCalledWith(
-      '/v1/orders/order-1/lab-return-for-adjustment',
+      '/v1/orders/order-1/external-production-adjustment-requested',
       { reason: 'Corrigir arquivo' },
       'tok',
     );
@@ -161,7 +161,7 @@ describe('orders api module', () => {
   });
 
   it('exposes domain query keys', () => {
-    expect(orderQueryKeys.list('lab', 'user-1')).toEqual(['biteplaner', 'orders', 'lab', 'user-1']);
+    expect(orderQueryKeys.list('admin', 'user-1')).toEqual(['biteplaner', 'orders', 'admin', 'user-1']);
     expect(orderQueryKeys.form('order-1', 'form-1')).toEqual([
       'biteplaner',
       'orders',

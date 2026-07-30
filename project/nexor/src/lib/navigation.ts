@@ -14,7 +14,7 @@ export function redirectToExternal(url: string) {
   window.location.href = url;
 }
 
-const ONBOARDING_PATH_PATTERN = /^\/painel\/biteplaner\/cadastro\/(parceiro|dentista|laboratório)$/;
+const ONBOARDING_PATH_PATTERN = /^\/painel\/biteplaner\/cadastro\/(parceiro|dentista)$/;
 
 export function resolvePostLoginPath(roles?: unknown, nextPath?: string | null): string {
   if (Array.isArray(roles) && roles.includes('admin')) {

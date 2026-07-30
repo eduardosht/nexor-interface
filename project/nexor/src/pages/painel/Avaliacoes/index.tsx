@@ -23,7 +23,7 @@ import {
 } from '../biteplanerReviewForms';
 import * as S from './styles';
 
-type ReviewMode = Extract<AccessMode, 'user' | 'partner' | 'dentist' | 'lab'>;
+type ReviewMode = Extract<AccessMode, 'user' | 'partner' | 'dentist'>;
 
 type ReviewRow = {
   id: string;
@@ -50,13 +50,8 @@ const MODE_COPY: Record<ReviewMode, { title: string; description: string; templa
   },
   dentist: {
     title: 'Avaliações do dentista',
-    description: 'Visão das avaliações recebidas de clientes e dos feedbacks trocados com laboratórios.',
-    templates: ['dentist_review_by_customer', 'lab_review_by_dentist', 'dentist_review_by_lab'],
-  },
-  lab: {
-    title: 'Avaliações do laboratório',
-    description: 'Feedbacks técnicos do ciclo laboratório, incluindo avaliações feitas por dentistas e pelo laboratório.',
-    templates: ['lab_review_by_dentist', 'dentist_review_by_lab'],
+    description: 'Visão das avaliações recebidas de clientes e dos feedbacks sobre produção externa.',
+    templates: ['dentist_review_by_customer', 'external_production_review_by_dentist'],
   },
 };
 
@@ -76,18 +71,11 @@ const SURVEY_MOMENTS = [
       'Após consulta de adaptação/entrega do dispositivo, quando o cliente já consegue avaliar atendimento, prazo, consultório e ajuste.',
   },
   {
-    templateKey: 'lab_review_by_dentist',
-    title: 'Dentista avalia laboratório',
+    templateKey: 'external_production_review_by_dentist',
+    title: 'Dentista avalia produção externa',
     actor: 'Dentista',
     moment:
-      'Após o laboratório concluir a produção e o dentista receber ou validar o dispositivo bruto entregue.',
-  },
-  {
-    templateKey: 'dentist_review_by_lab',
-    title: 'Laboratório avalia dentista',
-    actor: 'Laboratório',
-    moment:
-      'Quando o laboratório recebe/inicia a produção e consegue avaliar o arquivo 3D intraoral e a facilidade de contato.',
+      'Após a operação Nexor registrar a produção externa concluída e o dentista receber ou validar o dispositivo entregue.',
   },
 ];
 
@@ -96,7 +84,7 @@ function getDefaultMomentKey(copy: (typeof MODE_COPY)[ReviewMode]) {
 }
 
 function getMode(value: string | null): ReviewMode {
-  if (value === 'user' || value === 'partner' || value === 'lab' || value === 'dentist') {
+  if (value === 'user' || value === 'partner' || value === 'dentist') {
     return value;
   }
 
@@ -145,11 +133,11 @@ function getReviewer(form: DemoWorkflowForm, order: DemoOrderSummary) {
     return order.customer?.full_name ?? 'Cliente Biteplaner';
   }
 
-  if (form.templateKey === 'lab_review_by_dentist') {
+  if (form.templateKey === 'external_production_review_by_dentist') {
     return order.dentist?.full_name ?? 'Dentista Biteplaner';
   }
 
-  return 'Laboratório Biteplaner';
+  return 'Operação Nexor';
 }
 
 function getDirection(templateKey: string) {
@@ -161,13 +149,10 @@ function getDirection(templateKey: string) {
     return 'Cliente avaliando parceiro';
   }
 
-  if (templateKey === 'lab_review_by_dentist') {
-    return 'Dentista avaliando laboratório';
+  if (templateKey === 'external_production_review_by_dentist') {
+    return 'Dentista avaliando produção externa';
   }
 
-  if (templateKey === 'dentist_review_by_lab') {
-    return 'Laboratório avaliando dentista';
-  }
 
   return 'Avaliação operacional';
 }
@@ -217,8 +202,8 @@ function getPendingSurveyContext(form: DemoWorkflowForm, order: DemoOrderSummary
     return `Ordem ${orderLabel} | feedback pós-atendimento`;
   }
 
-  if (form.templateKey === 'lab_review_by_dentist') {
-    return `Ordem ${orderLabel} | laboratório ${order.practice_location?.name ?? 'selecionado'}`;
+  if (form.templateKey === 'external_production_review_by_dentist') {
+    return `Ordem ${orderLabel} | produção externa conduzida pela Nexor`;
   }
 
   return `Ordem ${orderLabel} | dentista ${order.dentist?.full_name ?? 'responsável'}`;

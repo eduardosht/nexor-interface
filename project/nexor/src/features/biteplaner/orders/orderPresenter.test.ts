@@ -19,26 +19,26 @@ describe('orderPresenter', () => {
     expect(getStageLabel({ stage: 'awaiting_initial_consultation' })).toBe('Consulta inicial');
     expect(getStageLabel({ stage: 'awaiting_clinical_decision' })).toBe('Decisão clínica');
     expect(getStageLabel({ stage: 'awaiting_payment' })).toBe('Compra');
-    expect(getStageLabel({ stage: 'payment_confirmed' })).toBe('Laboratório');
-    expect(getStageLabel({ stage: 'awaiting_dentist_forms' })).toBe('Laboratório');
-    expect(getStageLabel({ stage: 'lab_production' })).toBe('Laboratório');
+    expect(getStageLabel({ stage: 'payment_confirmed' })).toBe('Produção externa');
+    expect(getStageLabel({ stage: 'awaiting_dentist_forms' })).toBe('Produção externa');
+    expect(getStageLabel({ stage: 'external_production' })).toBe('Produção externa');
     expect(getStageLabel({ stage: 'awaiting_adaptation' })).toBe('Adaptação e acompanhamento');
     expect(JOURNEY_STAGE_LABELS).toEqual([
       'Pré-consulta',
       'Consulta inicial',
       'Decisão clínica',
       'Compra',
-      'Laboratório',
+      'Produção externa',
       'Adaptação e acompanhamento',
     ]);
   });
 
   it('returns UTF-8 labels for statuses', () => {
     expect(getOrderStatusPresentation({ status: 'awaiting_dentist_forms' }).label).toBe(
-      'Aguardando envio ao laboratório'
+      'Aguardando documentação do dentista'
     );
-    expect(getOrderStatusPresentation({ status: 'awaiting_lab_start' }).label).toBe(
-      'Aguardando aceite do laboratório'
+    expect(getOrderStatusPresentation({ status: 'awaiting_external_production' }).label).toBe(
+      'Em revisão operacional Nexor'
     );
     expect(getOrderStatusPresentation({ status: 'dentist_adjustment_required' }).label).toBe('Ajuste de produção');
   });

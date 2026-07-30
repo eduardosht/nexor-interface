@@ -1,7 +1,7 @@
 import type { DemoWorkflowForm } from '../../../features/demo/biteplanerFlow';
 import type { WorkflowFormActorRole } from './sharedIntakeDefinition';
 
-export type WorkflowPayloadHydrationRole = WorkflowFormActorRole | 'partner' | 'lab';
+export type WorkflowPayloadHydrationRole = WorkflowFormActorRole | 'partner';
 
 export function canHydrateWorkflowFormPayload(
   form: Pick<DemoWorkflowForm, 'canViewPayload' | 'templateKey'>,
@@ -22,13 +22,10 @@ export function canHydrateWorkflowFormPayload(
     return actorRole === 'user';
   }
 
-  if (form.templateKey === 'lab_review_by_dentist') {
+  if (form.templateKey === 'external_production_review_by_dentist') {
     return actorRole === 'dentist';
   }
 
-  if (form.templateKey === 'dentist_review_by_lab') {
-    return actorRole === 'lab';
-  }
 
   if (
     form.templateKey === 'dentist_review_by_customer' ||

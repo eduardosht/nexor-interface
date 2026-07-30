@@ -142,8 +142,8 @@ export const WORKFLOW_FORM_FIELD_DICTIONARIES: Record<WorkflowFormTemplateKey, W
     'flat'
   ),
   dentist_review_by_customer: buildReviewDictionary('dentist_review_by_customer'),
-  lab_review_by_dentist: buildReviewDictionary('lab_review_by_dentist'),
-  dentist_review_by_lab: buildReviewDictionary('dentist_review_by_lab'),
+  external_production_review_by_dentist: buildReviewDictionary('external_production_review_by_dentist'),
+  dentist_documentation_external_review: buildReviewDictionary('dentist_documentation_external_review'),
   partner_review_by_customer: buildReviewDictionary('partner_review_by_customer'),
   influencer_review_by_customer: buildReviewDictionary('influencer_review_by_customer'),
 };

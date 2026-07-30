@@ -40,11 +40,11 @@ export const Error: Story = {
 export const Stacked: Story = {
   render: () => (
     <SnackbarStack>
-      <Snackbar tone="success" title="Pedido encaminhado" message="A ordem BP-DEMO-004 foi enviada ao laboratorio." />
+      <Snackbar tone="success" title="Pedido encaminhado" message="A ordem BP-DEMO-004 foi enviada para produção externa." />
       <Snackbar
         tone="warning"
         title="Aguardando confirmacao"
-        message="O laboratorio ainda nao confirmou o recebimento da ordem."
+        message="A operação Nexor ainda aguarda retorno externo da produção."
         action={<Button variant="ghost" size="sm">Abrir detalhes</Button>}
       />
     </SnackbarStack>

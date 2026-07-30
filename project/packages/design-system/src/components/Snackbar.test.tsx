@@ -14,7 +14,7 @@ describe('Snackbar', () => {
           <Snackbar
             tone="error"
             title="Falha ao concluir"
-            message="Nao foi possivel enviar ao laboratorio."
+            message="Nao foi possivel iniciar a produção externa."
             onClose={handleClose}
           />
         </SnackbarStack>

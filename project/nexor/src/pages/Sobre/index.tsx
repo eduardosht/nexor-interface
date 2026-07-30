@@ -31,14 +31,14 @@ import * as S from './styles';
 
 const PILLARS = [
   { icon: 'P', title: 'Precisão', body: 'Cada produto é desenvolvido com base em dados biométricos e análises individualizadas para máxima eficácia.' },
-  { icon: 'T', title: 'Tecnologia', body: 'Processos digitais integrados com produção laboratorial de alta complexidade e materiais premium.' },
-  { icon: 'A', title: 'Acompanhamento', body: 'Rede de profissionais qualificados para avaliação, produção e monitoramento contínuo dos resultados.' },
+  { icon: 'T', title: 'Tecnologia', body: 'Processos digitais integrados com produção externa de alta complexidade e materiais premium.' },
+  { icon: 'A', title: 'Acompanhamento', body: 'Rede de dentistas licenciados e operação Nexor para avaliação, produção externa e monitoramento contínuo dos resultados.' },
 ];
 
 const APPROACH = [
   { title: 'Pesquisa e Desenvolvimento', body: 'Cada produto parte de pesquisa científica rigorosa. Nenhum lançamento chega ao mercado sem evidência de eficácia e segurança.' },
   { title: 'Personalização Total', body: 'Não existe produto genérico no portfólio Nexor. Cada solução é moldada para o atleta individualmente.' },
-  { title: 'Rede Profissional', body: 'Dentistas licenciados, laboratórios certificados e coaches credenciados compõem o ecossistema de entrega.' },
+  { title: 'Rede Profissional', body: 'Dentistas licenciados, parceiros credenciados e fornecedores técnicos administrados pela Nexor compõem o ecossistema de entrega.' },
   { title: 'Acompanhamento Contínuo', body: 'O produto não termina na entrega. Monitoramento profissional garante resultado sustentado no longo prazo.' },
 ];
 

@@ -546,14 +546,14 @@ export function orderHandlers(server: Server) {
             anamnesisDownloaded: body.anamnesisDownloaded === true,
             productionRequestSummary:
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
-            labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
+            opsNotes: typeof body.opsNotes === 'string' ? body.opsNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
             scan3dFileRef:
               body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
                 ? body.scan3dFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            externalProductionProviderId: typeof body.externalProductionProviderId === 'string' ? body.externalProductionProviderId : null,
             purchaseConfiguration:
               body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
                 ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
@@ -580,14 +580,14 @@ export function orderHandlers(server: Server) {
             anamnesisDownloaded: body.anamnesisDownloaded === true,
             productionRequestSummary:
               typeof body.productionRequestSummary === 'string' ? body.productionRequestSummary : '',
-            labNotes: typeof body.labNotes === 'string' ? body.labNotes : '',
+            opsNotes: typeof body.opsNotes === 'string' ? body.opsNotes : '',
             scan3dFileName: typeof body.scan3dFileName === 'string' ? body.scan3dFileName : '',
             scan3dFileRef:
               body.scan3dFileRef && typeof body.scan3dFileRef === 'object'
                 ? body.scan3dFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: body.lgpdConfirmed === true,
-            selectedLabId: typeof body.selectedLabId === 'string' ? body.selectedLabId : null,
+            externalProductionProviderId: typeof body.externalProductionProviderId === 'string' ? body.externalProductionProviderId : null,
             purchaseConfiguration:
               body.purchaseConfiguration && typeof body.purchaseConfiguration === 'object'
                 ? body.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
@@ -617,14 +617,14 @@ export function orderHandlers(server: Server) {
             anamnesisDownloaded: payload.anamnesisDownloaded === true,
             productionRequestSummary:
               typeof payload.productionRequestSummary === 'string' ? payload.productionRequestSummary : '',
-            labNotes: typeof payload.labNotes === 'string' ? payload.labNotes : '',
+            opsNotes: typeof payload.opsNotes === 'string' ? payload.opsNotes : '',
             scan3dFileName: typeof payload.scan3dFileName === 'string' ? payload.scan3dFileName : '',
             scan3dFileRef:
               payload.scan3dFileRef && typeof payload.scan3dFileRef === 'object'
                 ? payload.scan3dFileRef as Record<string, unknown>
                 : null,
             lgpdConfirmed: payload.lgpdConfirmed === true,
-            selectedLabId: typeof payload.selectedLabId === 'string' ? payload.selectedLabId : null,
+            externalProductionProviderId: typeof payload.externalProductionProviderId === 'string' ? payload.externalProductionProviderId : null,
             purchaseConfiguration:
               payload.purchaseConfiguration && typeof payload.purchaseConfiguration === 'object'
                 ? payload.purchaseConfiguration as { productKey: 'biteplaner'; quantity: number; model: string; color: string }
@@ -636,7 +636,7 @@ export function orderHandlers(server: Server) {
     );
   }));
 
-  server.post('/v1/orders/:orderId/pre-lab-checklist/draft', withDemoErrors((_schema, request) => {
+  const handleOpsProductionReviewChecklistDraft = withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 
     return new Response(
@@ -646,7 +646,7 @@ export function orderHandlers(server: Server) {
         order: applyOrderAction(
           request.params.orderId,
           {
-            type: 'save-pre-lab-checklist-draft',
+            type: 'save-ops-production-review-checklist-draft',
             anamnesisSummary: typeof body.anamnesisSummary === 'string' ? body.anamnesisSummary : '',
             clinicalNotes: typeof body.clinicalNotes === 'string' ? body.clinicalNotes : undefined,
             dentalArchFileName:
@@ -657,9 +657,9 @@ export function orderHandlers(server: Server) {
         )
       }
     );
-  }));
+  });
 
-  server.post('/v1/orders/:orderId/pre-lab-checklist/complete', withDemoErrors((_schema, request) => {
+  const handleOpsProductionReviewChecklistComplete = withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 
     return new Response(
@@ -669,7 +669,7 @@ export function orderHandlers(server: Server) {
         order: applyOrderAction(
           request.params.orderId,
           {
-            type: 'complete-pre-lab-checklist',
+            type: 'complete-ops-production-review-checklist',
             anamnesisSummary: typeof body.anamnesisSummary === 'string' ? body.anamnesisSummary : '',
             clinicalNotes: typeof body.clinicalNotes === 'string' ? body.clinicalNotes : undefined,
             dentalArchFileName:
@@ -680,7 +680,12 @@ export function orderHandlers(server: Server) {
         )
       }
     );
-  }));
+  });
+
+  server.post('/v1/orders/:orderId/ops-production-review-checklist/draft', handleOpsProductionReviewChecklistDraft);
+  server.post('/v1/orders/:orderId/ops-production-review-checklist/complete', handleOpsProductionReviewChecklistComplete);
+  server.post('/v1/orders/:orderId/ops-production-review-checklist/draft', handleOpsProductionReviewChecklistDraft);
+  server.post('/v1/orders/:orderId/ops-production-review-checklist/complete', handleOpsProductionReviewChecklistComplete);
 
   server.post('/v1/orders/:orderId/select-practice-location', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
@@ -735,21 +740,21 @@ export function orderHandlers(server: Server) {
     );
   }));
 
-  server.post('/v1/orders/:orderId/send-to-lab', withDemoErrors((_schema, request) =>
+  server.post('/v1/orders/:orderId/ops-production-review', withDemoErrors((_schema, request) =>
     new Response(
       200,
       {},
       {
         order: applyOrderAction(
           request.params.orderId,
-          { type: 'send-to-lab' },
+          { type: 'request-ops-production-review' },
           { requestHeaders: request.requestHeaders }
         )
       }
     )
   ));
 
-  server.post('/v1/orders/:orderId/lab-return-for-adjustment', withDemoErrors((_schema, request) => {
+  server.post('/v1/orders/:orderId/external-production-adjustment-requested', withDemoErrors((_schema, request) => {
     const body = parseBody(request);
 
     return new Response(
@@ -757,35 +762,35 @@ export function orderHandlers(server: Server) {
       {},
       {
         order: applyOrderAction(request.params.orderId, {
-          type: 'lab-return-for-adjustment',
+          type: 'external-production-adjustment-requested',
           reason: typeof body.reason === 'string' ? body.reason : undefined
         }, { requestHeaders: request.requestHeaders })
       }
     );
   }));
 
-  server.post('/v1/orders/:orderId/lab-production-started', withDemoErrors((_schema, request) =>
+  server.post('/v1/orders/:orderId/external-production-started', withDemoErrors((_schema, request) =>
     new Response(
       200,
       {},
       {
         order: applyOrderAction(
           request.params.orderId,
-          { type: 'lab-production-started' },
+          { type: 'external-production-started' },
           { requestHeaders: request.requestHeaders }
         )
       }
     )
   ));
 
-  server.post('/v1/orders/:orderId/lab-production-completed', withDemoErrors((_schema, request) =>
+  server.post('/v1/orders/:orderId/external-production-completed', withDemoErrors((_schema, request) =>
     new Response(
       200,
       {},
       {
         order: applyOrderAction(
           request.params.orderId,
-          { type: 'lab-production-completed' },
+          { type: 'external-production-completed' },
           { requestHeaders: request.requestHeaders }
         )
       }

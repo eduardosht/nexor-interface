@@ -80,18 +80,18 @@ describe('BiteplanerPage', () => {
     expect(stylesSource).toContain('z-index: 2;');
   });
 
-  it('renders the approved journey with payment after clinical eligibility', () => {
+  it('renders the approved journey with dentist purchase and external production', () => {
     renderPage();
-    expect(screen.getAllByText('Conta Nexor').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pré-consulta').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Dentista licenciado').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pagamento após aptidão').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Elegibilidade clínica').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Pedido do dentista').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Documentação clínica').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Produção personalizada').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Adaptação e acompanhamento').length).toBeGreaterThan(0);
-    expect(screen.getByText(/informe esporte, rotina, histórico e sintomas para selecionar um dentista licenciado/i)).toBeInTheDocument();
-    expect(screen.getByText(/confirmada sua aptidão na primeira consulta, o pagamento será realizado através da plataforma nexor/i)).toBeInTheDocument();
-    expect(screen.getByText(/a fabricação ocorre após confirmação do pagamento/i)).toBeInTheDocument();
-    expect(screen.getByText(/a instalação inicial do dispositivo será feita pelo dentista/i)).toBeInTheDocument();
+    expect(screen.getByText(/o dentista avalia esporte, rotina, histórico, sintomas e condições bucais/i)).toBeInTheDocument();
+    expect(screen.getByText(/o dentista licenciado realiza a compra diretamente com a nexor/i)).toBeInTheDocument();
+    expect(screen.getByText(/a nexor conduz o contato externo com o fornecedor de produção/i)).toBeInTheDocument();
+    expect(screen.getByText(/o produto físico é enviado ao dentista/i)).toBeInTheDocument();
   });
 
   it('renders the process journey map container', () => {

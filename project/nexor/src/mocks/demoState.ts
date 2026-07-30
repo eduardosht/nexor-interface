@@ -14,7 +14,7 @@ export type DemoPersona =
   | 'athleteDentistForms'
   | 'athletePayment'
   | 'athleteTreatmentRequired'
-  | 'athleteLabProduction'
+  | 'athleteExternalProduction'
   | 'athleteAdaptation'
   | 'athleteFollowUp'
   | 'athleteIneligible'
@@ -24,12 +24,8 @@ export type DemoPersona =
   | 'dentistApproved'
   | 'dentistProgress'
   | 'dentistLicensed'
-  | 'lab'
-  | 'labApproved'
-  | 'labProgress'
-  | 'labLicensed'
   | 'admin';
-export type AccessMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+export type AccessMode = 'user' | 'partner' | 'dentist' | 'admin';
 
 type RequestContext = {
   requestHeaders?: Headers | Record<string, string | null | undefined>;
@@ -77,7 +73,7 @@ type DemoUser = {
   clinicIds: string[];
   dentistId: string | null;
   partnerId: string | null;
-  labId: string | null;
+  externalProductionProviderId: string | null;
   status?: 'pending' | 'active' | 'inactive' | 'suspended' | 'blocked';
   persona?: DemoPersona;
   defaultMode?: AccessMode;
@@ -89,7 +85,7 @@ type DemoUser = {
 type ProductRolePayload = {
   id: string;
   productKey: 'biteplaner';
-  role: 'customer' | 'partner' | 'dentist' | 'lab';
+  role: 'customer' | 'partner' | 'dentist';
   status: 'pending' | 'active' | 'rejected' | 'suspended';
   sourceType?: 'self_service' | 'admin' | 'migration' | 'partner_invite';
   metadata: Record<string, unknown>;
@@ -178,8 +174,8 @@ type DemoOrder = {
   practice_location: DemoPracticeLocation | null;
   partnerId: string | null;
   dentistId: string | null;
-  labId: string | null;
-  labAssignments?: DemoLabAssignment[];
+  externalProductionProviderId: string | null;
+  externalProductionRecords?: DemoExternalProductionRecord[];
   visibleTo: DemoPersona[];
   nextActions: string[];
   prerequisiteSubmission?: {
@@ -204,11 +200,11 @@ type DemoOrder = {
     anamnesisSummary: string;
     anamnesisDownloaded: boolean;
     productionRequestSummary: string;
-    labNotes: string;
+    opsNotes: string;
     scan3dFileName: string;
     scan3dFileRef?: Record<string, unknown> | null;
     lgpdConfirmed: boolean;
-    selectedLabId: string | null;
+    externalProductionProviderId: string | null;
     purchaseConfiguration?: {
       productKey: 'biteplaner';
       quantity: number;
@@ -264,20 +260,20 @@ type DemoAppointment = {
   metadata?: Record<string, unknown> | null;
 };
 
-type DemoLabAssignmentStatus =
+type DemoExternalProductionRecordStatus =
   | 'awaiting_acceptance'
   | 'in_production'
   | 'returned_for_adjustment'
-  | 'replaced_by_other_lab'
+  | 'replaced_by_other_external_provider'
   | 'completed'
   | 'cancelled';
 
-type DemoLabAssignment = {
+type DemoExternalProductionRecord = {
   id: string;
   orderId: string;
-  labProfileId: string;
+  externalProductionProviderId: string;
   sequence: number;
-  status: DemoLabAssignmentStatus;
+  status: DemoExternalProductionRecordStatus;
   productionRequestVersionId: string | null;
   returnReason: string | null;
   assignedAt: string;
@@ -447,11 +443,11 @@ type OrderStatusAction =
       anamnesisSummary: string;
       anamnesisDownloaded: boolean;
       productionRequestSummary: string;
-      labNotes: string;
+      opsNotes: string;
       scan3dFileName: string;
       scan3dFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
-      selectedLabId: string | null;
+      externalProductionProviderId: string | null;
       purchaseConfiguration?: {
         productKey: 'biteplaner';
         quantity: number;
@@ -464,11 +460,11 @@ type OrderStatusAction =
       anamnesisSummary: string;
       anamnesisDownloaded: boolean;
       productionRequestSummary: string;
-      labNotes: string;
+      opsNotes: string;
       scan3dFileName: string;
       scan3dFileRef?: Record<string, unknown> | null;
       lgpdConfirmed: boolean;
-      selectedLabId: string | null;
+      externalProductionProviderId: string | null;
       purchaseConfiguration?: {
         productKey: 'biteplaner';
         quantity: number;
@@ -477,34 +473,34 @@ type OrderStatusAction =
       } | null;
     }
   | {
-      type: 'save-pre-lab-checklist-draft';
+      type: 'save-ops-production-review-checklist-draft';
       anamnesisSummary: string;
       clinicalNotes?: string;
       dentalArchFileName: string;
       retentionAcknowledged: boolean;
     }
   | {
-      type: 'complete-pre-lab-checklist';
+      type: 'complete-ops-production-review-checklist';
       anamnesisSummary: string;
       clinicalNotes?: string;
       dentalArchFileName: string;
       retentionAcknowledged: boolean;
     }
-  | { type: 'send-to-lab' }
-  | { type: 'lab-production-started' }
-  | { type: 'lab-return-for-adjustment'; reason?: string }
-  | { type: 'lab-production-completed' }
+  | { type: 'request-ops-production-review' }
+  | { type: 'external-production-started' }
+  | { type: 'external-production-adjustment-requested'; reason?: string }
+  | { type: 'external-production-completed' }
   | { type: 'register-clinical-decision'; decision: 'eligible' | 'ineligible' | 'treatment_required'; reason?: string };
 
 export type DemoOrderAction = AppointmentAction | WorkflowAction | OrderStatusAction;
 
 type OrderSummary = Omit<
   DemoOrder,
-  'visibleTo' | 'nextActions' | 'flags' | 'partnerId' | 'dentistId' | 'labId' | 'stage'
+  'visibleTo' | 'nextActions' | 'flags' | 'partnerId' | 'dentistId' | 'externalProductionProviderId' | 'stage'
 > & {
   stage: string;
-  lab_profile_id?: string | null;
-  labAssignmentView?: (DemoLabAssignment & { isCurrent: boolean }) | null;
+  external_production_provider_id?: string | null;
+  externalProductionView?: (DemoExternalProductionRecord & { isCurrent: boolean }) | null;
   dentist: {
     id: string;
     full_name: string;
@@ -631,7 +627,7 @@ const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athleteDentistForms: 'user',
   athletePayment: 'user',
   athleteTreatmentRequired: 'user',
-  athleteLabProduction: 'user',
+  athleteExternalProduction: 'user',
   athleteAdaptation: 'user',
   athleteFollowUp: 'user',
   athleteIneligible: 'user',
@@ -641,10 +637,6 @@ const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   dentistApproved: 'dentist',
   dentistProgress: 'dentist',
   dentistLicensed: 'dentist',
-  lab: 'lab',
-  labApproved: 'lab',
-  labProgress: 'lab',
-  labLicensed: 'lab',
   admin: 'admin'
 };
 
@@ -652,16 +644,14 @@ const MODE_LABELS: Record<AccessMode, string> = {
   user: 'Cliente',
   partner: 'Parceiro',
   dentist: 'Dentista',
-  lab: 'Laboratório',
   admin: 'Admin'
 };
 
 const MODE_DESCRIPTIONS: Record<AccessMode, string> = {
   user: 'Acompanhe sua jornada e seus pedidos do Biteplaner.',
-  partner: 'Acompanhe a captação e a evolucao comercial dos seus indicados.',
-  dentist: 'Gerencie consultas, decisoes clínicas e formulários operacionais.',
-  lab: 'Acompanhe a fila produtiva e devolucoes do laboratório.',
-  admin: 'Vejá o pipeline transversal da demo compartilhada do Biteplaner.'
+  partner: 'Acompanhe a captação e a evolução comercial dos seus indicados.',
+  dentist: 'Gerencie consultas, decisões clínicas e formulários operacionais.',
+  admin: 'Veja o pipeline transversal da demo compartilhada do Biteplaner.'
 };
 
 const DEFAULT_PERSONA: DemoPersona = 'athlete';
@@ -705,8 +695,8 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
   {
     persona: 'athletePayment',
     orderId: 'BP-DEMO-005',
-    fullName: 'Cliente Pagamento',
-    email: 'cliente.pagamento@nexor.dev'
+    fullName: 'Dentista Comprador',
+    email: 'dentista.comprador@nexor.dev'
   },
   {
     persona: 'athleteTreatmentRequired',
@@ -715,10 +705,10 @@ const CUSTOMER_STAGE_PERSONAS: Array<{
     email: 'cliente.tratamento@nexor.dev'
   },
   {
-    persona: 'athleteLabProduction',
+    persona: 'athleteExternalProduction',
     orderId: 'BP-DEMO-007',
-    fullName: 'Cliente Laboratorio',
-    email: 'cliente.laboratorio@nexor.dev'
+    fullName: 'Cliente Produção Externa',
+    email: 'cliente.producao@nexor.dev'
   },
   {
     persona: 'athleteAdaptation',
@@ -808,7 +798,7 @@ function createCustomerStageUser(item: (typeof CUSTOMER_STAGE_PERSONAS)[number])
     clinicIds: [],
     dentistId: null,
     partnerId: null,
-    labId: null,
+    externalProductionProviderId: null,
     persona: item.persona,
     defaultMode: 'user',
     allowedModes: ['user'],
@@ -831,10 +821,6 @@ const seedState = (): DemoState => ({
     { id: 'demo-session-dentist-approved', persona: 'dentistApproved', accessToken: 'demo-dentistApproved-token', userId: 'demo-user-dentist-approved' },
     { id: 'demo-session-dentist-progress', persona: 'dentistProgress', accessToken: 'demo-dentistProgress-token', userId: 'demo-user-dentist-progress' },
     { id: 'demo-session-dentist-licensed', persona: 'dentistLicensed', accessToken: 'demo-dentistLicensed-token', userId: 'demo-user-dentist-licensed' },
-    { id: 'demo-session-lab', persona: 'lab', accessToken: 'demo-lab-token', userId: 'demo-user-lab' },
-    { id: 'demo-session-lab-approved', persona: 'labApproved', accessToken: 'demo-labApproved-token', userId: 'demo-user-lab-approved' },
-    { id: 'demo-session-lab-progress', persona: 'labProgress', accessToken: 'demo-labProgress-token', userId: 'demo-user-lab-progress' },
-    { id: 'demo-session-lab-licensed', persona: 'labLicensed', accessToken: 'demo-labLicensed-token', userId: 'demo-user-lab-licensed' },
     { id: 'demo-session-admin', persona: 'admin', accessToken: 'demo-admin-token', userId: 'demo-user-admin' }
   ],
   users: [
@@ -849,7 +835,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'athleteRegistered',
       defaultMode: 'user',
       allowedModes: ['user'],
@@ -867,7 +853,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'athlete',
       defaultMode: 'user',
       allowedModes: ['user'],
@@ -890,7 +876,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: 'partner-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'partner',
       defaultMode: 'partner',
       allowedModes: ['partner'],
@@ -912,7 +898,7 @@ const seedState = (): DemoState => ({
       clinicIds: ['practice-demo-001'],
       dentistId: 'dentist-demo-001',
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'dentist',
       defaultMode: 'dentist',
       allowedModes: ['dentist'],
@@ -934,7 +920,7 @@ const seedState = (): DemoState => ({
       clinicIds: ['practice-demo-003'],
       dentistId: 'dentist-demo-approved',
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'dentistApproved',
       defaultMode: 'dentist',
       allowedModes: ['dentist'],
@@ -971,7 +957,7 @@ const seedState = (): DemoState => ({
       clinicIds: ['practice-demo-004'],
       dentistId: 'dentist-demo-progress',
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'dentistProgress',
       defaultMode: 'dentist',
       allowedModes: ['dentist'],
@@ -1008,7 +994,7 @@ const seedState = (): DemoState => ({
       clinicIds: ['practice-demo-001'],
       dentistId: 'dentist-demo-licensed',
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'dentistLicensed',
       defaultMode: 'dentist',
       allowedModes: ['dentist'],
@@ -1035,176 +1021,6 @@ const seedState = (): DemoState => ({
       }
     },
     {
-      id: 'demo-user-lab',
-      authUserId: 'demo-auth-lab',
-      profileId: 'demo-profile-lab',
-      fullName: 'Lab Demo',
-      email: 'laboratorio.demo@nexor.dev',
-      phone: '11999990004',
-      roles: ['lab'],
-      clinicIds: [],
-      dentistId: null,
-      partnerId: null,
-      labId: 'lab-demo-001',
-      persona: 'lab',
-      defaultMode: 'lab',
-      allowedModes: ['lab'],
-      productRoles: [
-        {
-          id: 'demo-product-role-lab',
-          productKey: 'biteplaner',
-          role: 'lab',
-          status: 'active',
-          metadata: {
-            labName: 'Lab Demo',
-            cnpj: '75.865.311/0001-02',
-            professionalSummary: 'Laboratório licenciado Biteplaner para operação produtiva.'
-          },
-          createdAt: '2026-05-01T09:00:00.000Z',
-          updatedAt: '2026-05-01T09:30:00.000Z'
-        }
-      ],
-      enrollment: {
-        id: 'demo-enrollment-lab',
-        status: 'active',
-        source_type: 'internal_demo',
-        created_at: '2026-05-01T09:30:00.000Z'
-      }
-    },
-    {
-      id: 'demo-user-lab-approved',
-      authUserId: 'demo-auth-labApproved',
-      profileId: 'demo-profile-lab-approved',
-      fullName: 'Lab Aprovado Demo',
-      email: 'laboratorio.aprovado@nexor.dev',
-      phone: '11999990013',
-      roles: ['lab'],
-      clinicIds: [],
-      dentistId: null,
-      partnerId: null,
-      labId: 'lab-demo-approved',
-      persona: 'labApproved',
-      defaultMode: 'lab',
-      allowedModes: ['lab'],
-      productRoles: [
-        {
-          id: 'demo-product-role-lab-approved',
-          productKey: 'biteplaner',
-          role: 'lab',
-          status: 'active',
-          metadata: {
-            labName: 'Lab Aprovado Demo',
-            cnpj: '19.131.243/0001-97',
-            professionalSummary: 'Laboratório aprovado e liberado para operar no fluxo Biteplaner.',
-            locations: [
-              {
-                name: 'Unidade Central',
-                cep: '01001-000',
-                address: 'Praca da Se - Se, São Paulo - SP',
-                city: 'São Paulo',
-                state: 'SP',
-                phone: '(11) 3000-1000',
-                serviceHours: 'Segunda a sexta, 8h as 18h'
-              }
-            ]
-          },
-          createdAt: '2026-05-08T09:00:00.000Z',
-          updatedAt: '2026-05-08T09:30:00.000Z'
-        }
-      ],
-      enrollment: {
-        id: 'demo-enrollment-lab-approved',
-        status: 'active',
-        source_type: 'internal_demo',
-        created_at: '2026-05-08T09:30:00.000Z'
-      }
-    },
-    {
-      id: 'demo-user-lab-progress',
-      authUserId: 'demo-auth-labProgress',
-      profileId: 'demo-profile-lab-progress',
-      fullName: 'Lab Em Progresso Demo',
-      email: 'laboratorio.progresso@nexor.dev',
-      phone: '11999990014',
-      roles: ['lab'],
-      clinicIds: [],
-      dentistId: null,
-      partnerId: null,
-      labId: 'lab-demo-progress',
-      persona: 'labProgress',
-      defaultMode: 'lab',
-      allowedModes: ['lab'],
-      productRoles: [
-        {
-          id: 'demo-product-role-lab-progress',
-          productKey: 'biteplaner',
-          role: 'lab',
-          status: 'active',
-          metadata: {
-            labName: 'Lab Em Progresso Demo',
-            cnpj: '42.318.949/0001-84',
-            professionalSummary: 'Laboratório em curso de licenciamento Biteplaner.',
-            locations: [
-              {
-                name: 'Unidade Operacional',
-                cep: '04567-000',
-                address: 'Rua Funchal, 500 - São Paulo - SP',
-                city: 'São Paulo',
-                state: 'SP',
-                phone: '(11) 3000-2000',
-                serviceHours: 'Segunda a sexta, 8h as 18h'
-              }
-            ]
-          },
-          createdAt: '2026-05-07T09:00:00.000Z',
-          updatedAt: '2026-05-07T10:00:00.000Z'
-        }
-      ],
-      enrollment: {
-        id: 'demo-enrollment-lab-progress',
-        status: 'active',
-        source_type: 'internal_demo',
-        created_at: '2026-05-07T10:00:00.000Z'
-      }
-    },
-    {
-      id: 'demo-user-lab-licensed',
-      authUserId: 'demo-auth-labLicensed',
-      profileId: 'demo-profile-lab-licensed',
-      fullName: 'Lab Licenciado Demo',
-      email: 'laboratorio.licenciado@nexor.dev',
-      phone: '11999990015',
-      roles: ['lab'],
-      clinicIds: [],
-      dentistId: null,
-      partnerId: null,
-      labId: 'lab-demo-001',
-      persona: 'labLicensed',
-      defaultMode: 'lab',
-      allowedModes: ['lab'],
-      productRoles: [
-        {
-          id: 'demo-product-role-lab-licensed',
-          productKey: 'biteplaner',
-          role: 'lab',
-          status: 'active',
-          metadata: {
-            labName: 'Lab Licenciado Demo',
-            cnpj: '75.865.311/0001-02',
-            professionalSummary: 'Laboratório licenciado Biteplaner para operação completa.'
-          },
-          createdAt: '2026-05-02T09:00:00.000Z',
-          updatedAt: '2026-05-02T11:00:00.000Z'
-        }
-      ],
-      enrollment: {
-        id: 'demo-enrollment-lab-licensed',
-        status: 'active',
-        source_type: 'internal_demo',
-        created_at: '2026-05-02T11:00:00.000Z'
-      }
-    },
-    {
       id: 'demo-user-admin',
       authUserId: 'demo-auth-admin',
       profileId: 'demo-profile-admin',
@@ -1215,7 +1031,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       persona: 'admin',
       defaultMode: 'admin',
       allowedModes: ['admin'],
@@ -1237,7 +1053,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: null,
-      labId: null,
+      externalProductionProviderId: null,
       productRoles: [
         {
           id: 'demo-product-role-dentist-request-001',
@@ -1251,7 +1067,7 @@ const seedState = (): DemoState => ({
             practiceLocations: [
               {
                 name: 'Clínica Centro',
-                address: 'Praca da Se - Se, São Paulo - SP',
+                address: 'Praça da Sé - Sé, São Paulo - SP',
                 cep: '01001-000',
                 phone: '(11) 99999-9999',
                 dentistName: 'Dra Maria Solicitante',
@@ -1277,7 +1093,7 @@ const seedState = (): DemoState => ({
       clinicIds: [],
       dentistId: null,
       partnerId: null,
-      labId: null
+      externalProductionProviderId: null
     }
   ],
   partnerLinks: [
@@ -1367,7 +1183,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: 'partner-demo-001',
       dentistId: null,
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'partner', 'admin'],
       nextActions: ['complete-prerequisite'],
       productionRequestDraft: null,
@@ -1405,7 +1221,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: 'partner-demo-001',
       dentistId: null,
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'partner', 'dentist', 'admin'],
       nextActions: ['schedule-initial-consultation'],
       productionRequestDraft: null,
@@ -1443,7 +1259,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: ['user-confirmation', 'dentist-confirmation', 'complete-match', 'register-clinical-decision'],
       productionRequestDraft: null,
@@ -1481,17 +1297,17 @@ const seedState = (): DemoState => ({
       },
       partnerId: 'partner-demo-001',
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'partner', 'dentist', 'admin'],
       nextActions: ['save-production-request-draft', 'complete-production-request'],
       productionRequestDraft: {
         anamnesisSummary: 'Consulta realizada. Paciente apto para seguir com a solicitação de produção.',
         anamnesisDownloaded: false,
         productionRequestSummary: '',
-        labNotes: '',
+        opsNotes: '',
         scan3dFileName: '',
         lgpdConfirmed: false,
-        selectedLabId: null
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: null,
       flags: {
@@ -1528,7 +1344,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: ['confirm-payment'],
       productionRequestDraft: null,
@@ -1566,7 +1382,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: ['register-clinical-decision'],
       productionRequestDraft: null,
@@ -1585,9 +1401,9 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-007',
-      status: 'awaiting_lab_start',
-      statusLabel: 'Aguardando aceite do laborat\u00f3rio',
-      stage: 'awaiting_lab_start',
+      status: 'awaiting_external_production',
+      statusLabel: 'Em revisão operacional Nexor',
+      stage: 'awaiting_external_production',
       created_at: '2026-05-03T08:00:00.000Z',
       customer_profile_id: 'demo-profile-marina',
       user_profile_id: 'demo-customer-marina',
@@ -1604,17 +1420,17 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: 'lab-demo-001',
-      visibleTo: ['dentist', 'lab', 'admin'],
-      nextActions: ['lab-production-started', 'lab-return-for-adjustment'],
+      externalProductionProviderId: 'external-provider-demo-001',
+      visibleTo: ['dentist', 'admin'],
+      nextActions: ['external-production-started', 'external-production-adjustment-requested'],
       productionRequestDraft: {
         anamnesisSummary: 'Anamnese final revisada e baixada pelo dentista.',
         anamnesisDownloaded: true,
         productionRequestSummary: 'Solicitação de produção validada para o caso.',
-        labNotes: 'Ajuste fino de mordida para atleta de combate.',
+        opsNotes: 'Ajuste fino de mordida para atleta de combate.',
         scan3dFileName: 'marina-arcada-v2.stl',
         lgpdConfirmed: true,
-        selectedLabId: 'lab-demo-001'
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: {
         anamnesisSummary: 'Anamnese inicial revisada e liberada para a produção.',
@@ -1655,20 +1471,20 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: ['adaptation-completed'],
       productionRequestDraft: {
-        anamnesisSummary: 'Anamnese inicial concluída antes do envio ao laboratório.',
+        anamnesisSummary: 'Anamnese inicial concluída antes da produção externa.',
         anamnesisDownloaded: true,
         productionRequestSummary: 'Caso concluído e enviado com sucesso.',
-        labNotes: 'Sem observações finais.',
+        opsNotes: 'Sem observações finais.',
         scan3dFileName: 'joao-arcada-final.stl',
         lgpdConfirmed: true,
-        selectedLabId: 'lab-demo-001'
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: {
-        anamnesisSummary: 'Anamnese inicial concluída antes do envio ao laboratório.',
+        anamnesisSummary: 'Anamnese inicial concluída antes da produção externa.',
         clinicalNotes: 'Entrega finalizada sem pendencias.',
         dentalArchFileName: 'joao-arcada-final.stl',
         retentionAcknowledged: true
@@ -1706,20 +1522,20 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: [],
       productionRequestDraft: {
-        anamnesisSummary: 'Anamnese inicial concluída antes do envio ao laboratório.',
+        anamnesisSummary: 'Anamnese inicial concluída antes da produção externa.',
         anamnesisDownloaded: true,
         productionRequestSummary: 'Caso finalizado e em acompanhamento.',
-        labNotes: 'Paciente em fase de adaptação funcional.',
+        opsNotes: 'Paciente em fase de adaptação funcional.',
         scan3dFileName: 'joao-arcada-final.stl',
         lgpdConfirmed: true,
-        selectedLabId: 'lab-demo-001'
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: {
-        anamnesisSummary: 'Anamnese inicial concluída antes do envio ao laboratório.',
+        anamnesisSummary: 'Anamnese inicial concluída antes da produção externa.',
         clinicalNotes: 'Entrega finalizada sem pendencias.',
         dentalArchFileName: 'joao-arcada-final.stl',
         retentionAcknowledged: true
@@ -1757,7 +1573,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-001',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'admin'],
       nextActions: ['schedule-initial-consultation'],
       productionRequestDraft: null,
@@ -1795,7 +1611,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: 'partner-demo-001',
       dentistId: null,
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['partner', 'admin'],
       nextActions: [],
       productionRequestDraft: null,
@@ -1833,7 +1649,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-licensed',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'dentistLicensed', 'admin'],
       nextActions: ['accept-initial-consultation'],
       productionRequestDraft: null,
@@ -1871,7 +1687,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-licensed',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'dentistLicensed', 'admin'],
       nextActions: ['dentist-confirmation', 'complete-match', 'no-show'],
       productionRequestDraft: null,
@@ -1909,7 +1725,7 @@ const seedState = (): DemoState => ({
       },
       partnerId: 'partner-demo-001',
       dentistId: 'dentist-demo-licensed',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'partner', 'dentist', 'dentistLicensed', 'admin'],
       nextActions: ['register-clinical-decision'],
       productionRequestDraft: null,
@@ -1947,17 +1763,17 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-licensed',
-      labId: null,
+      externalProductionProviderId: null,
       visibleTo: ['athlete', 'dentist', 'dentistLicensed', 'admin'],
       nextActions: ['save-production-request-draft', 'complete-production-request'],
       productionRequestDraft: {
         anamnesisSummary: 'Atleta apto após consulta inicial. Aguardando documentação produtiva.',
         anamnesisDownloaded: true,
         productionRequestSummary: 'Protetor superior para treino de contato.',
-        labNotes: '',
+        opsNotes: '',
         scan3dFileName: '',
         lgpdConfirmed: false,
-        selectedLabId: null
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: null,
       flags: {
@@ -1974,9 +1790,9 @@ const seedState = (): DemoState => ({
     },
     {
       id: 'BP-DEMO-016',
-      status: 'awaiting_lab_start',
-      statusLabel: 'Aguardando aceite do laborat\u00f3rio',
-      stage: 'awaiting_lab_start',
+      status: 'awaiting_external_production',
+      statusLabel: 'Em revisão operacional Nexor',
+      stage: 'awaiting_external_production',
       created_at: '2026-05-05T15:00:00.000Z',
       customer_profile_id: 'demo-profile-camila',
       user_profile_id: 'demo-user-camila',
@@ -1993,21 +1809,21 @@ const seedState = (): DemoState => ({
       },
       partnerId: null,
       dentistId: 'dentist-demo-licensed',
-      labId: 'lab-demo-001',
-      visibleTo: ['dentist', 'dentistLicensed', 'lab', 'admin'],
+      externalProductionProviderId: 'external-provider-demo-001',
+      visibleTo: ['dentist', 'dentistLicensed', 'admin'],
       nextActions: [],
       productionRequestDraft: {
         anamnesisSummary: 'Anamnese revisada e baixada pela dentista licenciada.',
         anamnesisDownloaded: true,
         productionRequestSummary: 'Protetor personalizado para boxe amador, arcada superior.',
-        labNotes: 'Priorizar conforto posterior e conferir estabilidade em impacto lateral.',
+        opsNotes: 'Priorizar conforto posterior e conferir estabilidade em impacto lateral.',
         scan3dFileName: 'camila-boxe-arcada-superior.stl',
         lgpdConfirmed: true,
-        selectedLabId: 'lab-demo-001'
+        externalProductionProviderId: null
       },
       preLabChecklistDraft: {
         anamnesisSummary: 'Sem impedimentos clínicos para uso esportivo.',
-        clinicalNotes: 'Documentação completa enviada ao laboratório.',
+        clinicalNotes: 'Documentação completa enviada para coordenação externa pela Nexor.',
         dentalArchFileName: 'camila-boxe-arcada-superior.stl',
         retentionAcknowledged: true
       },
@@ -2259,8 +2075,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-WF-006-DENTIST-LAB',
       orderId: 'BP-DEMO-006',
-      templateKey: 'lab_review_by_dentist',
-      stepKey: 'lab_cycle_feedback_from_dentist',
+      templateKey: 'external_production_review_by_dentist',
+      stepKey: 'external_production_feedback_from_dentist',
       status: 'pending',
       canViewPayload: true,
       summary: null,
@@ -2271,8 +2087,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-WF-005-LAB',
       orderId: 'BP-DEMO-007',
-      templateKey: 'dentist_review_by_lab',
-      stepKey: 'lab_cycle_feedback_from_lab',
+      templateKey: 'dentist_documentation_external_review',
+      stepKey: 'external_production_documentation_feedback',
       status: 'pending',
       canViewPayload: true,
       summary: {
@@ -2288,8 +2104,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-WF-006-LAB',
       orderId: 'BP-DEMO-006',
-      templateKey: 'dentist_review_by_lab',
-      stepKey: 'lab_cycle_feedback_from_lab',
+      templateKey: 'dentist_documentation_external_review',
+      stepKey: 'external_production_documentation_feedback',
       status: 'submitted',
       canViewPayload: true,
       summary: {
@@ -2302,7 +2118,7 @@ const seedState = (): DemoState => ({
       submittedAt: '2026-05-04T10:00:00.000Z',
       payload: {
         scanFileQuality: 9,
-        comment: 'Laboratório finalizou a revisão e liberou o caso.'
+        comment: 'Fornecedor externo finalizou a revisão e liberou o caso.'
       }
     },
     {
@@ -2368,8 +2184,8 @@ const seedState = (): DemoState => ({
     {
       id: 'BP-WF-016-DENTIST-LAB',
       orderId: 'BP-DEMO-016',
-      templateKey: 'lab_review_by_dentist',
-      stepKey: 'lab_cycle_feedback_from_dentist',
+      templateKey: 'external_production_review_by_dentist',
+      stepKey: 'external_production_feedback_from_dentist',
       status: 'submitted',
       canViewPayload: true,
       summary: {
@@ -2384,14 +2200,14 @@ const seedState = (): DemoState => ({
         deliveryLeadTime: 8,
         rawDeviceQuality: 9,
         contactEase: 9,
-        comment: 'Laboratório respondeu rápido e entregou dispositivo bruto com bom acabamento.'
+        comment: 'A produção externa teve retorno rápido e dispositivo bruto com bom acabamento.'
       }
     },
     {
       id: 'BP-WF-016-LAB-DENTIST',
       orderId: 'BP-DEMO-016',
-      templateKey: 'dentist_review_by_lab',
-      stepKey: 'lab_cycle_feedback_from_lab',
+      templateKey: 'dentist_documentation_external_review',
+      stepKey: 'external_production_documentation_feedback',
       status: 'submitted',
       canViewPayload: true,
       summary: {
@@ -2417,7 +2233,7 @@ const seedState = (): DemoState => ({
       revision: 1,
       payload: {
         scanFileQuality: 9,
-        comment: 'Laboratório finalizou a revisão e liberou o caso.'
+        comment: 'Fornecedor externo finalizou a revisão e liberou o caso.'
       },
       summary: {
         scoreAverage: 9,
@@ -2425,7 +2241,7 @@ const seedState = (): DemoState => ({
         responseCount: 1,
         submittedAt: '2026-05-04T10:00:00.000Z'
       },
-      changeReason: 'Primeiro envio operacional do laboratório.',
+      changeReason: 'Primeiro acionamento operacional de produção externa.',
       createdAt: '2026-05-04T10:00:00.000Z'
     }
   ],
@@ -2501,15 +2317,15 @@ const seedState = (): DemoState => ({
       orderId: 'BP-DEMO-004',
       fromStatus: 'in_progress',
       toStatus: 'payment_confirmed',
-      reason: 'Atleta apto, pagamento mock confirmado e pedido de produção preenchido. Falta revisar a avaliação inicial e anexar o arquivo 3D para liberar o laboratório.',
+      reason: 'Atleta apto, pagamento mock confirmado e pedido de produção preenchido. Falta revisar a avaliação inicial e anexar o arquivo 3D para liberar a revisão operacional Nexor.',
       createdAt: '2026-05-02T12:00:00.000Z'
     },
     {
       id: 'timeline-005',
       orderId: 'BP-DEMO-005',
       fromStatus: 'payment_confirmed',
-      toStatus: 'awaiting_lab_start',
-      reason: 'Pedido enviado para a fila inicial do laboratório.',
+      toStatus: 'awaiting_external_production',
+      reason: 'Dentista concluiu a solicitação de produção; Nexor deve revisar e acionar fornecedor externo.',
       createdAt: '2026-05-03T08:00:00.000Z'
     },
     {
@@ -2556,8 +2372,8 @@ const seedState = (): DemoState => ({
       id: 'timeline-016',
       orderId: 'BP-DEMO-016',
       fromStatus: 'awaiting_dentist_forms',
-      toStatus: 'awaiting_lab_start',
-      reason: 'Documentação completa enviada ao laboratório licenciado.',
+      toStatus: 'awaiting_external_production',
+      reason: 'Documentação completa enviada para revisão operacional Nexor.',
       createdAt: '2026-05-05T15:00:00.000Z'
     }
   ],
@@ -2597,54 +2413,6 @@ const seedState = (): DemoState => ({
       testPassed: true,
       certificateIssuedAt: '2026-05-03T14:00:00.000Z',
       metadata: { courseProgress: { fundamentos: true, operacao: true, qualidade: true } }
-    },
-    {
-      id: 'demo-lab-licensing-operational',
-      profileId: 'demo-profile-lab',
-      productRoleId: 'demo-product-role-lab',
-      dentistId: null,
-      status: 'licensed',
-      paymentStatus: 'confirmed',
-      testAttempts: 1,
-      testPassed: true,
-      certificateIssuedAt: '2026-05-01T14:00:00.000Z',
-      metadata: { courseProgress: { fundamentos: true, operacao: true, qualidade: true }, licenseeType: 'lab' }
-    },
-    {
-      id: 'demo-lab-licensing-approved',
-      profileId: 'demo-profile-lab-approved',
-      productRoleId: 'demo-product-role-lab-approved',
-      dentistId: null,
-      status: 'licensed',
-      paymentStatus: 'not_started',
-      testAttempts: 0,
-      testPassed: false,
-      certificateIssuedAt: null,
-      metadata: { courseProgress: {}, licenseeType: 'lab' }
-    },
-    {
-      id: 'demo-lab-licensing-progress',
-      profileId: 'demo-profile-lab-progress',
-      productRoleId: 'demo-product-role-lab-progress',
-      dentistId: null,
-      status: 'course_in_progress',
-      paymentStatus: 'confirmed',
-      testAttempts: 1,
-      testPassed: false,
-      certificateIssuedAt: null,
-      metadata: { courseProgress: { fundamentos: true, operacao: true }, licenseeType: 'lab' }
-    },
-    {
-      id: 'demo-lab-licensing-licensed',
-      profileId: 'demo-profile-lab-licensed',
-      productRoleId: 'demo-product-role-lab-licensed',
-      dentistId: null,
-      status: 'licensed',
-      paymentStatus: 'confirmed',
-      testAttempts: 1,
-      testPassed: true,
-      certificateIssuedAt: '2026-05-03T16:00:00.000Z',
-      metadata: { courseProgress: { fundamentos: true, operacao: true, qualidade: true }, licenseeType: 'lab' }
     }
   ],
   notifications: [
@@ -2665,7 +2433,7 @@ const seedState = (): DemoState => ({
       scope: 'global',
       profileId: null,
       title: 'Avaliações disponíveis',
-      message: 'As avaliações do fluxo Biteplaner já estão disponíveis para clientes, parceiros, dentistas e laboratórios.',
+      message: 'As avaliações do fluxo Biteplaner já estão disponíveis para clientes, parceiros e dentistas.',
       type: 'biteplaner_reviews_available',
       read: false,
       readAtByProfileId: {
@@ -2703,36 +2471,6 @@ const seedState = (): DemoState => ({
       type: 'biteplaner_dentist_licensed',
       read: false,
       createdAt: '2026-05-03T14:00:00.000Z'
-    },
-    {
-      id: 'demo-notification-lab-approved',
-      scope: 'profile',
-      profileId: 'demo-profile-lab-approved',
-      title: 'Cadastro aprovado',
-      message: 'Seu cadastro de laboratório foi aprovado pela Nexor. Realize o pagamento e avance pelo licenciamento.',
-      type: 'biteplaner_lab_licensing_approved',
-      read: false,
-      createdAt: '2026-05-08T09:30:00.000Z'
-    },
-    {
-      id: 'demo-notification-lab-progress',
-      scope: 'profile',
-      profileId: 'demo-profile-lab-progress',
-      title: 'Licenciamento em andamento',
-      message: 'Seu curso de licenciamento laboratorial está em progresso. Conclua os conteúdos e realize a prova.',
-      type: 'biteplaner_lab_licensing_progress',
-      read: false,
-      createdAt: '2026-05-07T10:30:00.000Z'
-    },
-    {
-      id: 'demo-notification-lab-licensed',
-      scope: 'profile',
-      profileId: 'demo-profile-lab-licensed',
-      title: 'Certificado emitido',
-      message: 'Parabéns. Seu licenciamento laboratorial Biteplaner está ativo e o certificado já pode ser baixado.',
-      type: 'biteplaner_lab_licensed',
-      read: false,
-      createdAt: '2026-05-03T16:00:00.000Z'
     }
   ],
   counters: {
@@ -2878,7 +2616,7 @@ function isDemoPersona(value: string | null | undefined): value is DemoPersona {
     value === 'athleteDentistForms' ||
     value === 'athletePayment' ||
     value === 'athleteTreatmentRequired' ||
-    value === 'athleteLabProduction' ||
+    value === 'athleteExternalProduction' ||
     value === 'athleteAdaptation' ||
     value === 'athleteFollowUp' ||
     value === 'athleteIneligible' ||
@@ -2888,16 +2626,12 @@ function isDemoPersona(value: string | null | undefined): value is DemoPersona {
     value === 'dentistApproved' ||
     value === 'dentistProgress' ||
     value === 'dentistLicensed' ||
-    value === 'lab' ||
-    value === 'labApproved' ||
-    value === 'labProgress' ||
-    value === 'labLicensed' ||
     value === 'admin'
   );
 }
 
 function isAccessMode(value: string | null | undefined): value is AccessMode {
-  return value === 'user' || value === 'partner' || value === 'dentist' || value === 'lab' || value === 'admin';
+  return value === 'user' || value === 'partner' || value === 'dentist' || value === 'admin';
 }
 
 function getHeaderValue(headers: RequestContext['requestHeaders'], targetName: string) {
@@ -2968,8 +2702,8 @@ function isOperationalDentistPersona(persona: DemoPersona) {
   return persona === 'dentist' || persona === 'dentistLicensed';
 }
 
-function isOperationalLabPersona(persona: DemoPersona) {
-  return persona === 'lab' || persona === 'labLicensed';
+function isOperationalLabPersona(_persona: DemoPersona) {
+  return false;
 }
 
 function isCustomerPersona(persona: DemoPersona) {
@@ -2983,10 +2717,9 @@ function canPersonaReadOrder(order: DemoOrder, persona: DemoPersona) {
     return order.id === scopedOrderId;
   }
 
-  return (
+    return (
     order.visibleTo.includes(persona) ||
-    (isOperationalDentistPersona(persona) && order.visibleTo.includes('dentist')) ||
-    (isOperationalLabPersona(persona) && order.visibleTo.includes('lab'))
+    (isOperationalDentistPersona(persona) && order.visibleTo.includes('dentist'))
   );
 }
 
@@ -2994,15 +2727,15 @@ function getNowIso() {
   return new Date().toISOString();
 }
 
-function getLatestLabAssignment(order: DemoOrder) {
-  ensureLabAssignmentHistory(order);
-  const assignments = order.labAssignments ?? [];
+function getLatestExternalProductionRecord(order: DemoOrder) {
+  ensureExternalProductionRecordHistory(order);
+  const assignments = order.externalProductionRecords ?? [];
 
   return assignments.length > 0 ? assignments[assignments.length - 1] : null;
 }
 
-function getInitialLabAssignmentStatus(order: DemoOrder): DemoLabAssignmentStatus {
-  if (order.status === 'lab_processing') {
+function getInitialExternalProductionRecordStatus(order: DemoOrder): DemoExternalProductionRecordStatus {
+  if (order.status === 'external_production_processing') {
     return 'in_production';
   }
 
@@ -3018,18 +2751,18 @@ function getInitialLabAssignmentStatus(order: DemoOrder): DemoLabAssignmentStatu
   return 'awaiting_acceptance';
 }
 
-function ensureLabAssignmentHistory(order: DemoOrder) {
-  if ((order.labAssignments ?? []).length > 0 || !order.labId) {
+function ensureExternalProductionRecordHistory(order: DemoOrder) {
+  if ((order.externalProductionRecords ?? []).length > 0 || !order.externalProductionProviderId) {
     return;
   }
 
-  order.labAssignments = [
+  order.externalProductionRecords = [
     {
-      id: `${order.id}-lab-assignment-1`,
+      id: `${order.id}-external-production-record-1`,
       orderId: order.id,
-      labProfileId: order.labId,
+      externalProductionProviderId: order.externalProductionProviderId,
       sequence: 1,
-      status: getInitialLabAssignmentStatus(order),
+      status: getInitialExternalProductionRecordStatus(order),
       productionRequestVersionId: null,
       returnReason: null,
       assignedAt: order.created_at,
@@ -3040,50 +2773,14 @@ function ensureLabAssignmentHistory(order: DemoOrder) {
   ];
 }
 
-function createLabAssignment(order: DemoOrder, labProfileId: string) {
-  ensureLabAssignmentHistory(order);
-  const assignments = order.labAssignments ?? [];
-  const sequence = assignments.length + 1;
-  const now = getNowIso();
-  const assignment: DemoLabAssignment = {
-    id: `${order.id}-lab-assignment-${sequence}`,
-    orderId: order.id,
-    labProfileId,
-    sequence,
-    status: 'awaiting_acceptance',
-    productionRequestVersionId: null,
-    returnReason: null,
-    assignedAt: now,
-    returnedAt: null,
-    replacedAt: null,
-    completedAt: null,
-  };
-
-  order.labAssignments = [...assignments, assignment];
-
-  return assignment;
-}
-
-function replaceOpenLabAssignments(order: DemoOrder, nextLabProfileId: string) {
-  ensureLabAssignmentHistory(order);
-  const now = getNowIso();
-  const openStatuses: DemoLabAssignmentStatus[] = ['awaiting_acceptance', 'in_production'];
-
-  order.labAssignments = (order.labAssignments ?? []).map((assignment) =>
-    assignment.labProfileId !== nextLabProfileId && openStatuses.includes(assignment.status)
-      ? { ...assignment, status: 'replaced_by_other_lab', replacedAt: now }
-      : assignment
-  );
-}
-
-function updateLatestLabAssignment(order: DemoOrder, update: Partial<DemoLabAssignment>) {
-  const latest = getLatestLabAssignment(order);
+function updateLatestExternalProductionRecord(order: DemoOrder, update: Partial<DemoExternalProductionRecord>) {
+  const latest = getLatestExternalProductionRecord(order);
 
   if (!latest) {
     return;
   }
 
-  order.labAssignments = (order.labAssignments ?? []).map((assignment) =>
+  order.externalProductionRecords = (order.externalProductionRecords ?? []).map((assignment) =>
     assignment.id === latest.id ? { ...assignment, ...update } : assignment
   );
 }
@@ -3139,27 +2836,27 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
     }
 
     if (!order.flags.retentionAcknowledged) {
-      pendingItems.push('Ciencia de responsabilidade e LGPD pendente');
+      pendingItems.push('Ciência de responsabilidade e LGPD pendente');
     }
 
-    if (!order.labId) {
-      pendingItems.push('Laboratório licenciado ainda não selecionado');
+    if (!order.externalProductionProviderId) {
+      pendingItems.push('Liberação operacional da Nexor para produção externa pendente');
     }
   }
 
   const canReadProductionRequestDraft = isOperationalDentistPersona(activePersona) || isOperationalLabPersona(activePersona);
   const canReadClinicalDraft = isOperationalDentistPersona(activePersona);
-  ensureLabAssignmentHistory(order);
-  const labAssignments = order.labAssignments ?? [];
-  const activeLabId = isOperationalLabPersona(activePersona) ? getPersonaUser(activePersona).labId : null;
-  const latestLabAssignment = labAssignments.length > 0 ? labAssignments[labAssignments.length - 1] : null;
-  const labAssignmentForActor = activeLabId
-    ? [...labAssignments].reverse().find((assignment) => assignment.labProfileId === activeLabId) ?? null
+  ensureExternalProductionRecordHistory(order);
+  const externalProductionRecords = order.externalProductionRecords ?? [];
+  const activeExternalProductionProviderId = null;
+  const latestExternalProductionRecord = externalProductionRecords.length > 0 ? externalProductionRecords[externalProductionRecords.length - 1] : null;
+  const externalProductionRecordForActor = activeExternalProductionProviderId
+    ? [...externalProductionRecords].reverse().find((assignment) => assignment.externalProductionProviderId === activeExternalProductionProviderId) ?? null
     : null;
-  const labAssignmentView = labAssignmentForActor
+  const externalProductionView = externalProductionRecordForActor
     ? {
-        ...clone(labAssignmentForActor),
-        isCurrent: latestLabAssignment?.id === labAssignmentForActor.id,
+        ...clone(externalProductionRecordForActor),
+        isCurrent: latestExternalProductionRecord?.id === externalProductionRecordForActor.id,
       }
     : null;
 
@@ -3175,9 +2872,9 @@ function sanitizeOrder(order: DemoOrder, activePersona: DemoPersona): OrderSumma
     customer_profile_id: order.customer_profile_id,
     user_profile_id: order.user_profile_id,
     practice_location_id: order.practice_location_id,
-    lab_profile_id: order.labId,
-    labAssignments: clone(labAssignments),
-    labAssignmentView,
+    external_production_provider_id: order.externalProductionProviderId,
+    externalProductionRecords: clone(externalProductionRecords),
+    externalProductionView,
     customer: clone(order.customer),
     dentist: dentistUser
       ? {
@@ -3292,7 +2989,7 @@ function assertMutationAccess(orderId: string, action: DemoOrderAction, context?
     athleteDentistForms: customerActions,
     athletePayment: customerActions,
     athleteTreatmentRequired: customerActions,
-    athleteLabProduction: customerActions,
+    athleteExternalProduction: customerActions,
     athleteAdaptation: customerActions,
     athleteFollowUp: customerActions,
     athleteIneligible: customerActions,
@@ -3306,9 +3003,9 @@ function assertMutationAccess(orderId: string, action: DemoOrderAction, context?
       'register-clinical-decision',
       'save-production-request-draft',
       'complete-production-request',
-      'save-pre-lab-checklist-draft',
-      'complete-pre-lab-checklist',
-      'send-to-lab',
+      'save-ops-production-review-checklist-draft',
+      'complete-ops-production-review-checklist',
+      'request-ops-production-review',
       'product-received',
       'adaptation-completed',
       'submit-workflow-form',
@@ -3324,18 +3021,15 @@ function assertMutationAccess(orderId: string, action: DemoOrderAction, context?
       'register-clinical-decision',
       'save-production-request-draft',
       'complete-production-request',
-      'save-pre-lab-checklist-draft',
-      'complete-pre-lab-checklist',
-      'send-to-lab',
+      'save-ops-production-review-checklist-draft',
+      'complete-ops-production-review-checklist',
+      'request-ops-production-review',
       'product-received',
       'adaptation-completed',
       'submit-workflow-form',
       'revise-workflow-form'
     ],
-    lab: ['submit-workflow-form', 'revise-workflow-form', 'lab-production-started', 'lab-return-for-adjustment', 'lab-production-completed'],
-    labApproved: [],
-    labProgress: [],
-    labLicensed: ['submit-workflow-form', 'revise-workflow-form', 'lab-production-started', 'lab-return-for-adjustment', 'lab-production-completed'],
+
     admin: []
   };
 
@@ -3449,7 +3143,7 @@ export function getAuthPayload(context?: RequestContext) {
       clinicIds: clone(user.clinicIds),
       dentistId: user.dentistId,
       partnerId: user.partnerId,
-      labId: user.labId
+      externalProductionProviderId: user.externalProductionProviderId
     }
   };
 }
@@ -3459,7 +3153,7 @@ function roleForMode(mode: AccessMode): ProductRolePayload['role'] | null {
     return 'customer';
   }
 
-  if (mode === 'partner' || mode === 'dentist' || mode === 'lab') {
+  if (mode === 'partner' || mode === 'dentist') {
     return mode;
   }
 
@@ -3469,7 +3163,7 @@ function roleForMode(mode: AccessMode): ProductRolePayload['role'] | null {
 function generatedProductRoles(user: DemoUser): ProductRolePayload[] {
   return user.roles
     .filter((role): role is ProductRolePayload['role'] =>
-      role === 'customer' || role === 'partner' || role === 'dentist' || role === 'lab'
+      role === 'customer' || role === 'partner' || role === 'dentist'
     )
     .map((role) => ({
       id: `demo-product-role-${user.profileId}-${role}`,
@@ -3514,7 +3208,7 @@ function mapNotificationForProfile(notification: AccountNotification, profileId:
 function isReviewWorkflowTemplate(templateKey: string) {
   return templateKey.endsWith('_review_by_customer') ||
     templateKey.endsWith('_review_by_dentist') ||
-    templateKey.endsWith('_review_by_lab');
+    templateKey.endsWith('_external_review');
 }
 
 function assertReviewPayloadScale(templateKey: string, payload: Record<string, unknown>) {
@@ -3682,7 +3376,7 @@ function ensureInitialCustomerOrder(user: DemoUser, activePersona: DemoPersona, 
     practice_location: clone(practiceLocation),
     partnerId: null,
     dentistId: null,
-    labId: null,
+    externalProductionProviderId: null,
     visibleTo: [activePersona, 'admin'],
     nextActions: ['submit-workflow-form'],
     productionRequestDraft: null,
@@ -3842,29 +3536,6 @@ function mapDentistLicenseRequest(role: ProductRolePayload, user: DemoUser) {
   };
 }
 
-function mapLabLicenseRequest(role: ProductRolePayload, user: DemoUser) {
-  const metadata = role.metadata;
-  const locations = Array.isArray(metadata.locations)
-    ? metadata.locations
-    : metadata.location
-      ? [metadata.location]
-      : [];
-  const workflow = state.dentistLicensingWorkflows.find((item) => item.productRoleId === role.id);
-
-  return {
-    id: role.id,
-    profileId: user.profileId,
-    status: role.status,
-    workflowStatus: workflow?.status ?? (role.status === 'rejected' ? 'admin_rejected' : 'admin_review_pending'),
-    labName: typeof metadata.labName === 'string' ? metadata.labName : user.fullName,
-    cnpj: typeof metadata.cnpj === 'string' ? metadata.cnpj : '',
-    professionalSummary: typeof metadata.professionalSummary === 'string' ? metadata.professionalSummary : '',
-    submittedAt: role.createdAt,
-    locations,
-    metadata
-  };
-}
-
 export function listDentistLicenseRequests(status?: string) {
   const requests = state.users.flatMap((user) =>
     (user.productRoles ?? [])
@@ -3876,16 +3547,6 @@ export function listDentistLicenseRequests(status?: string) {
   return { requests };
 }
 
-export function listLabLicenseRequests(status?: string) {
-  const requests = state.users.flatMap((user) =>
-    (user.productRoles ?? [])
-      .filter((role) => role.productKey === 'biteplaner' && role.role === 'lab')
-      .filter((role) => !status || role.status === status)
-      .map((role) => mapLabLicenseRequest(role, user))
-  );
-
-  return { requests };
-}
 
 export function approveDentistLicenseRequest(productRoleId: string) {
   const user = state.users.find((candidate) =>
@@ -3934,53 +3595,6 @@ export function approveDentistLicenseRequest(productRoleId: string) {
   return { request: mapDentistLicenseRequest(role, user) };
 }
 
-export function approveLabLicenseRequest(productRoleId: string) {
-  const user = state.users.find((candidate) =>
-    candidate.productRoles?.some((role) => role.id === productRoleId)
-  );
-  const role = user?.productRoles?.find((item) => item.id === productRoleId);
-
-  if (!user || !role) {
-    throw new DemoStateError(404, 'request_not_found', 'Solicitação de laboratório não encontrada.');
-  }
-
-  role.status = 'active';
-  role.updatedAt = new Date().toISOString();
-  if (!user.roles.includes('lab')) user.roles.push('lab');
-  user.allowedModes = Array.from(new Set([...(user.allowedModes ?? []), 'lab']));
-
-  state.counters.dentistLicensing += 1;
-  const workflow: DentistLicensingWorkflow = {
-    id: `demo-lab-licensing-${state.counters.dentistLicensing}`,
-    profileId: user.profileId,
-    productRoleId: role.id,
-    dentistId: null,
-    status: 'licensed',
-    paymentStatus: 'not_started',
-    testAttempts: 0,
-    testPassed: false,
-    certificateIssuedAt: null,
-    metadata: { courseProgress: {}, licenseeType: 'lab' }
-  };
-  state.dentistLicensingWorkflows = [
-    ...state.dentistLicensingWorkflows.filter((item) => item.productRoleId !== role.id),
-    workflow
-  ];
-
-  state.counters.notifications += 1;
-  state.notifications.push({
-    id: `demo-notification-${state.counters.notifications}`,
-    profileId: user.profileId,
-    title: 'Cadastro aprovado',
-    message: 'Seu cadastro de laboratório foi aprovado pela Nexor. Seu laboratório já está licenciado para operar no fluxo do produto.',
-    type: 'biteplaner_lab_licensing_approved',
-    read: false,
-    createdAt: new Date().toISOString()
-  });
-
-  return { request: mapLabLicenseRequest(role, user) };
-}
-
 export function rejectDentistLicenseRequest(productRoleId: string, reason: string) {
   const user = state.users.find((candidate) =>
     candidate.productRoles?.some((role) => role.id === productRoleId)
@@ -3996,23 +3610,6 @@ export function rejectDentistLicenseRequest(productRoleId: string, reason: strin
   role.metadata = { ...role.metadata, adminReview: { status: 'rejected', reason } };
 
   return { request: mapDentistLicenseRequest(role, user) };
-}
-
-export function rejectLabLicenseRequest(productRoleId: string, reason: string) {
-  const user = state.users.find((candidate) =>
-    candidate.productRoles?.some((role) => role.id === productRoleId)
-  );
-  const role = user?.productRoles?.find((item) => item.id === productRoleId);
-
-  if (!user || !role) {
-    throw new DemoStateError(404, 'request_not_found', 'Solicitação de laboratório não encontrada.');
-  }
-
-  role.status = 'rejected';
-  role.updatedAt = new Date().toISOString();
-  role.metadata = { ...role.metadata, adminReview: { status: 'rejected', reason } };
-
-  return { request: mapLabLicenseRequest(role, user) };
 }
 
 const DENTIST_LICENSING_COURSE = [
@@ -4036,43 +3633,12 @@ const DENTIST_LICENSING_COURSE = [
   }
 ];
 
-const LAB_LICENSING_COURSE = [
-  {
-    id: 'fundamentos',
-    title: 'Fundamentos laboratoriais do Biteplaner',
-    videoTitle: 'Vídeo 1 - Fundamentos laboratoriais',
-    documentTitle: 'Protocolo laboratorial Biteplaner'
-  },
-  {
-    id: 'operacao',
-    title: 'Fluxo de produção e documentação',
-    videoTitle: 'Vídeo 2 - Produção e documentação',
-    documentTitle: 'Checklist de produção'
-  },
-  {
-    id: 'qualidade',
-    title: 'Controle de qualidade e rastreabilidade',
-    videoTitle: 'Vídeo 3 - Qualidade e rastreabilidade',
-    documentTitle: 'Guia de controle laboratorial'
-  }
-];
-
 export function getDentistLicensing(context?: RequestContext) {
   const user = getPersonaUser(resolveActiveDemoPersona(context));
   const workflow = state.dentistLicensingWorkflows.find((item) => item.profileId === user.profileId) ?? null;
   return {
     workflow: clone(workflow),
     course: clone(DENTIST_LICENSING_COURSE),
-    notifications: clone(state.notifications.filter((item) => item.profileId === user.profileId))
-  };
-}
-
-export function getLabLicensing(context?: RequestContext) {
-  const user = getPersonaUser(resolveActiveDemoPersona(context));
-  const workflow = state.dentistLicensingWorkflows.find((item) => item.profileId === user.profileId) ?? null;
-  return {
-    workflow: clone(workflow),
-    course: clone(LAB_LICENSING_COURSE),
     notifications: clone(state.notifications.filter((item) => item.profileId === user.profileId))
   };
 }
@@ -4107,10 +3673,6 @@ export function updateDentistLicensing(context: RequestContext | undefined, acti
   return { workflow: clone(workflow) };
 }
 
-export function updateLabLicensing(context: RequestContext | undefined, action: string, payload: Record<string, unknown> = {}) {
-  return updateDentistLicensing(context, action, payload);
-}
-
 export function getEnrollment(context?: RequestContext) {
   const user = getPersonaUser(resolveActiveDemoPersona(context));
   return clone(user.enrollment ?? null);
@@ -4126,7 +3688,7 @@ export function getAccessOptions(context?: RequestContext): AccessPayload {
     productKey: 'biteplaner',
     defaultMode,
     enrollment: clone(user.enrollment ?? null),
-    modes: (['user', 'partner', 'dentist', 'lab', 'admin'] as AccessMode[]).map((mode) => {
+    modes: (['user', 'partner', 'dentist', 'admin'] as AccessMode[]).map((mode) => {
       const productRole = roleForMode(mode);
       const status = productRole
         ? productRoles.find((item) => item.role === productRole)?.status ?? (allowedModes.has(mode) ? 'active' : 'missing')
@@ -4358,8 +3920,8 @@ export function getPartnerInviteLinks(context?: RequestContext) {
     'awaiting_dentist_acceptance',
     'in_progress',
     'appointment_confirmed',
-    'awaiting_lab_start',
-    'lab_processing',
+    'awaiting_external_production',
+    'external_production_processing',
     'dentist_adjustment_required',
     'product_received_by_clinic',
     'awaiting_adaptation'
@@ -4878,7 +4440,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         422,
         'guardian_required',
-        'Usuário menor de idade exige responsável legal identificado.'
+        'Usuário menor de idade exige responsóvel legal identificado.'
       );
     }
 
@@ -5135,18 +4697,18 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       anamnesisSummary: action.anamnesisSummary.trim(),
       anamnesisDownloaded: action.anamnesisDownloaded,
       productionRequestSummary: action.productionRequestSummary.trim(),
-      labNotes: action.labNotes.trim(),
+      opsNotes: action.opsNotes.trim(),
       scan3dFileName: action.scan3dFileName.trim(),
       scan3dFileRef: action.scan3dFileRef ?? null,
       lgpdConfirmed: action.lgpdConfirmed,
-      selectedLabId: action.selectedLabId?.trim() ? action.selectedLabId : null,
+      externalProductionProviderId: null,
       purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
     };
 
     pushTimeline(
       orderId,
       order.status,
-      'Dentista salvou um rascunho da solicitação de produção com documentos e laboratório em andamento.'
+      'Dentista salvou um rascunho da solicitação de produção com documentos para revisão operacional Nexor.'
     );
 
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
@@ -5157,7 +4719,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     const anamnesisSummary = action.anamnesisSummary.trim();
     const productionRequestSummary = action.productionRequestSummary.trim();
     const scan3dFileName = action.scan3dFileName.trim();
-    const selectedLabId = action.selectedLabId?.trim() ? action.selectedLabId : null;
+
 
     if (!anamnesisSummary) {
       throw new DemoStateError(422, 'missing_anamnesis_summary', 'Preencha o resumo da avaliação inicial / anamnese.');
@@ -5187,23 +4749,15 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       );
     }
 
-    if (!selectedLabId) {
-      throw new DemoStateError(
-        422,
-        'missing_lab_selection',
-        'Selecione um laboratório licenciado antes de concluir.'
-      );
-    }
-
     order.productionRequestDraft = {
       anamnesisSummary,
       anamnesisDownloaded: action.anamnesisDownloaded,
       productionRequestSummary,
-      labNotes: action.labNotes.trim(),
+      opsNotes: action.opsNotes.trim(),
       scan3dFileName,
       scan3dFileRef: action.scan3dFileRef ?? null,
       lgpdConfirmed: true,
-      selectedLabId,
+      externalProductionProviderId: null,
       purchaseConfiguration: action.purchaseConfiguration ?? order.purchaseConfiguration ?? null
     };
     order.flags.initialEvaluationCompleted = true;
@@ -5211,29 +4765,28 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     order.flags.dentalArchFileAttached = true;
     order.flags.retentionAcknowledged = true;
     order.flags.sentToLab = true;
-    replaceOpenLabAssignments(order, selectedLabId);
-    createLabAssignment(order, selectedLabId);
-    order.labId = selectedLabId;
-    ensureVisibility(order, 'lab');
+    order.externalProductionProviderId = null;
+    order.externalProductionRecords = [];
+
 
     pushTimeline(
       orderId,
       order.status,
-      `Dentista concluiu a solicitação de produção, anexou ${scan3dFileName} e selecionou o laboratório ${selectedLabId}.`
+      `Dentista concluiu a solicitação de produção e anexou ${scan3dFileName} para revisão operacional Nexor.`
     );
 
     updateOrderStatus(
       orderId,
-      'awaiting_lab_start',
-      'Aguardando aceite do laborat\u00f3rio',
-      'awaiting_lab_start',
-      'Dentista concluiu a solicitação de produção e enviou a ordem para a fila inicial do laboratório.'
+      'awaiting_external_production',
+      'Em revisão operacional Nexor',
+      'awaiting_external_production',
+      'Dentista concluiu a solicitação de produção; Nexor deve revisar e acionar fornecedor externo.'
     );
 
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'save-pre-lab-checklist-draft') {
+  if (action.type === 'save-ops-production-review-checklist-draft') {
     const order = getOrderOrThrow(orderId);
 
     order.preLabChecklistDraft = {
@@ -5246,13 +4799,13 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     pushTimeline(
       orderId,
       order.status,
-      'Dentista salvou um rascunho da avaliação inicial/anamnese e do anexo 3D antes do envio ao laboratório.'
+      'Dentista salvou um rascunho da avaliação inicial/anamnese e do anexo 3D antes do envio para revisão operacional Nexor.'
     );
 
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'complete-pre-lab-checklist') {
+  if (action.type === 'complete-ops-production-review-checklist') {
     const order = getOrderOrThrow(orderId);
     const anamnesisSummary = action.anamnesisSummary.trim();
     const dentalArchFileName = action.dentalArchFileName.trim();
@@ -5261,7 +4814,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       throw new DemoStateError(
         422,
         'missing_anamnesis_summary',
-        'Preencha o resumo da avaliação inicial/anamnese antes de liberar o laboratório.'
+        'Preencha o resumo da avaliação inicial/anamnese antes de liberar a revisão operacional Nexor.'
       );
     }
 
@@ -5311,7 +4864,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     pushTimeline(
       orderId,
       order.status,
-      `Dentista revisou a avaliação inicial/anamnese e anexou o arquivo 3D ${dentalArchFileName} para liberar o laboratório.`
+      `Dentista revisou a avaliação inicial/anamnese e anexou o arquivo 3D ${dentalArchFileName} para liberar a revisão operacional Nexor.`
     );
 
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
@@ -5357,7 +4910,7 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'send-to-lab') {
+  if (action.type === 'request-ops-production-review') {
     const order = getOrderOrThrow(orderId);
 
     if (
@@ -5368,42 +4921,41 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
     ) {
       throw new DemoStateError(
         422,
-        'pre_lab_requirements_missing',
-        'Revise a avaliação inicial/anamnese, confirme a guarda do registro e anexe o arquivo 3D antes de enviar ao laboratório.'
+        'ops_production_review_requirements_missing',
+        'Revise a avaliação inicial/anamnese, confirme a guarda do registro e anexe o arquivo 3D antes da revisão operacional Nexor.'
       );
     }
 
     order.flags.sentToLab = true;
-    ensureVisibility(order, 'lab');
     updateOrderStatus(
       orderId,
-      'awaiting_lab_start',
-      'Aguardando aceite do laboratório',
-      'awaiting_lab_start',
-      'Dentista liberou o pedido para a fila inicial do laboratório.'
+      'awaiting_external_production',
+      'Em revisão operacional Nexor',
+      'awaiting_external_production',
+      'Dentista concluiu a solicitação de produção; Nexor deve revisar e acionar fornecedor externo.'
     );
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'lab-production-started') {
+  if (action.type === 'external-production-started') {
     const order = getOrderOrThrow(orderId);
-    updateLatestLabAssignment(order, { status: 'in_production' });
+    updateLatestExternalProductionRecord(order, { status: 'in_production' });
     updateOrderStatus(
       orderId,
-      'lab_processing',
+      'external_production_processing',
       'Em produção',
-      'lab_production',
-      'Laboratório iniciou formalmente a produção na demo.'
+      'external_production',
+      'Nexor registrou o início da produção externa na demo.'
     );
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'lab-return-for-adjustment') {
+  if (action.type === 'external-production-adjustment-requested') {
     const order = getOrderOrThrow(orderId);
     order.flags.sentToLab = false;
-    updateLatestLabAssignment(order, {
+    updateLatestExternalProductionRecord(order, {
       status: 'returned_for_adjustment',
-      returnReason: action.reason ?? 'Laboratório devolveu o pedido para ajuste na demo.',
+      returnReason: action.reason ?? 'Nexor registrou retorno externo para ajuste na demo.',
       returnedAt: getNowIso(),
     });
     updateOrderStatus(
@@ -5411,22 +4963,22 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
       'dentist_adjustment_required',
       'Ajuste de produção',
       'dentist_adjustment_required',
-      action.reason ?? 'Laboratório devolveu o pedido para ajuste na demo.'
+      action.reason ?? 'Nexor registrou retorno externo para ajuste na demo.'
     );
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
 
-  if (action.type === 'lab-production-completed') {
+  if (action.type === 'external-production-completed') {
     const order = getOrderOrThrow(orderId);
     order.flags.productReceived = false;
-    updateLatestLabAssignment(order, { status: 'completed', completedAt: getNowIso() });
+    updateLatestExternalProductionRecord(order, { status: 'completed', completedAt: getNowIso() });
     ensureVisibility(order, 'athlete');
     updateOrderStatus(
       orderId,
       'product_received_by_clinic',
       'Aguardando recebimento pelo dentista',
       'product_received_by_clinic',
-      'Laboratório concluiu a produção e enviou o produto para recebimento pelo dentista na demo.'
+      'Nexor registrou a conclusão da produção externa e envio direto ao dentista na demo.'
     );
     return sanitizeOrder(order, resolveActiveDemoPersona(context));
   }
@@ -5456,4 +5008,16 @@ export function applyOrderAction(orderId: string, action: DemoOrderAction, conte
   }
 
   throw new DemoStateError(422, 'unsupported_order_action', 'Unsupported order action.');
+}
+
+export function listExternalSupplierRequests() {
+  return { requests: [] };
+}
+
+export function approveExternalSupplierRequest() {
+  throw new DemoStateError(410, 'external_supplier_platform_account_removed', 'Fornecedor externo não possui conta na plataforma.');
+}
+
+export function rejectExternalSupplierRequest() {
+  throw new DemoStateError(410, 'external_supplier_platform_account_removed', 'Fornecedor externo não possui conta na plataforma.');
 }

@@ -2,7 +2,6 @@ const ADMINISTRATIVE_ROLES = new Set([
   'admin',
   'support',
   'finance',
-  'clinical',
   'operations',
   'management',
   'compliance',

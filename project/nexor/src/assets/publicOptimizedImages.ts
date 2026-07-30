@@ -2,10 +2,10 @@ import homeHeroPosterDesktopAvif from './generated/public/home/hero-poster-1440.
 import homeHeroPosterDesktopWebp from './generated/public/home/hero-poster-1440.webp';
 import homeHeroPosterMobileAvif from './generated/public/home/hero-poster-768.avif';
 import homeHeroPosterMobileWebp from './generated/public/home/hero-poster-768.webp';
-import homeLabDesktopAvif from './generated/public/home/lab-1440.avif';
-import homeLabDesktopWebp from './generated/public/home/lab-1440.webp';
-import homeLabMobileAvif from './generated/public/home/lab-768.avif';
-import homeLabMobileWebp from './generated/public/home/lab-768.webp';
+import homeProductionDesktopAvif from './generated/public/home/production-1440.avif';
+import homeProductionDesktopWebp from './generated/public/home/production-1440.webp';
+import homeProductionMobileAvif from './generated/public/home/production-768.avif';
+import homeProductionMobileWebp from './generated/public/home/production-768.webp';
 import homeProductDesktopAvif from './generated/public/home/product-760.avif';
 import homeProductDesktopWebp from './generated/public/home/product-760.webp';
 import homeProductMobileAvif from './generated/public/home/product-480.avif';
@@ -48,9 +48,9 @@ export const publicOptimizedImages = {
       avif: homeHeroPosterDesktopAvif,
       webp: homeHeroPosterDesktopWebp,
     },
-    lab: {
-      desktop: { avif: homeLabDesktopAvif, webp: homeLabDesktopWebp },
-      mobile: { avif: homeLabMobileAvif, webp: homeLabMobileWebp },
+    production: {
+      desktop: { avif: homeProductionDesktopAvif, webp: homeProductionDesktopWebp },
+      mobile: { avif: homeProductionMobileAvif, webp: homeProductionMobileWebp },
     },
     product: {
       desktop: { avif: homeProductDesktopAvif, webp: homeProductDesktopWebp },

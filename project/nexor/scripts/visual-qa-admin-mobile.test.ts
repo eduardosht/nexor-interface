@@ -13,7 +13,6 @@ describe('admin mobile visual QA script', () => {
       '/painel/admin/parceiros',
       '/painel/admin/remocoes-conta',
       '/painel/admin/dentistas',
-      '/painel/admin/laboratorios',
       '/painel/admin/usuarios',
       '/painel/admin/configuracoes/negocio',
       '/painel/admin/configuracoes/sistema',

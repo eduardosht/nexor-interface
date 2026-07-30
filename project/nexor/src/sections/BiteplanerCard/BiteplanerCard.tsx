@@ -3,7 +3,7 @@ import * as S from './styles';
 
 const FEATURES = [
   'Avaliação odontológica completa com profissionais licenciados',
-  'Produção laboratorial personalizada baseada em moldagem individual',
+  'Produção externa personalizada coordenada pela Nexor',
   'Acompanhamento profissional durante todo o ciclo de uso',
 ];
 
@@ -21,7 +21,7 @@ export function BiteplanerCard() {
           decoding="async"
         />
         <S.Tagline>
-          Protetor bucal personalizado desenvolvido com avaliação odontológica profissional e produção laboratorial de precisão.
+          Protetor bucal personalizado desenvolvido com avaliação odontológica profissional e produção externa coordenada pela Nexor.
         </S.Tagline>
       </S.CardHero>
 

@@ -1,7 +1,7 @@
 export type BiteplanerReviewTemplateKey =
   | 'dentist_review_by_customer'
-  | 'lab_review_by_dentist'
-  | 'dentist_review_by_lab'
+  | 'external_production_review_by_dentist'
+  | 'dentist_documentation_external_review'
   | 'partner_review_by_customer'
   | 'influencer_review_by_customer';
 
@@ -24,7 +24,7 @@ export interface BiteplanerReviewFieldDefinition {
 export interface BiteplanerReviewTemplateDefinition {
   key: BiteplanerReviewTemplateKey;
   label: string;
-  actorMode: 'user' | 'dentist' | 'lab';
+  actorMode: 'user' | 'dentist' | 'admin';
   enabled: boolean;
   fields: BiteplanerReviewFieldDefinition[];
 }
@@ -33,7 +33,7 @@ export interface BiteplanerReviewMomentDefinition {
   templateKey: BiteplanerReviewTemplateKey;
   title: string;
   promptTitle: string;
-  actor: 'Cliente' | 'Dentista' | 'Laboratório';
+  actor: 'Cliente' | 'Dentista' | 'Fornecedor externo' | 'Operação Nexor';
   moment: string;
   priority: number;
 }
@@ -101,9 +101,9 @@ export const BITEPLANER_REVIEW_TEMPLATES: Record<
   BiteplanerReviewTemplateKey,
   BiteplanerReviewTemplateDefinition
 > = {
-  lab_review_by_dentist: {
-    key: 'lab_review_by_dentist',
-    label: 'Dentista avaliando laboratório',
+  external_production_review_by_dentist: {
+    key: 'external_production_review_by_dentist',
+    label: 'Dentista avaliando produção externa',
     actorMode: 'dentist',
     enabled: true,
     fields: [
@@ -144,11 +144,11 @@ export const BITEPLANER_REVIEW_TEMPLATES: Record<
       }
     ]
   },
-  dentist_review_by_lab: {
-    key: 'dentist_review_by_lab',
-    label: 'Laboratório avaliando dentista',
-    actorMode: 'lab',
-    enabled: true,
+  dentist_documentation_external_review: {
+    key: 'dentist_documentation_external_review',
+    label: 'Registro externo sobre documentação do dentista',
+    actorMode: 'admin',
+    enabled: false,
     fields: [
       {
         key: 'scanFileQuality',
@@ -344,22 +344,22 @@ export const BITEPLANER_REVIEW_MOMENTS: Record<BiteplanerReviewTemplateKey, Bite
       'Após consulta de adaptação/entrega do dispositivo, quando o cliente já consegue avaliar atendimento, prazo, consultório e ajuste.',
     priority: 90,
   },
-  lab_review_by_dentist: {
-    templateKey: 'lab_review_by_dentist',
-    title: 'Dentista avalia laboratório',
-    promptTitle: 'Avalie o laboratório',
+  external_production_review_by_dentist: {
+    templateKey: 'external_production_review_by_dentist',
+    title: 'Dentista avalia produção externa',
+    promptTitle: 'Avalie a produção externa',
     actor: 'Dentista',
     moment:
-      'Após o laboratório concluir a produção e o dentista receber ou validar o dispositivo bruto entregue.',
+      'Após a operação Nexor registrar a produção externa concluída e o dentista receber ou validar o dispositivo entregue.',
     priority: 90,
   },
-  dentist_review_by_lab: {
-    templateKey: 'dentist_review_by_lab',
-    title: 'Laboratório avalia dentista',
-    promptTitle: 'Avalie o envio do dentista',
-    actor: 'Laboratório',
+  dentist_documentation_external_review: {
+    templateKey: 'dentist_documentation_external_review',
+    title: 'Registro externo sobre documentação do dentista',
+    promptTitle: 'Registrar retorno externo sobre documentação',
+    actor: 'Operação Nexor',
     moment:
-      'Quando o laboratório recebe/inicia a produção e consegue avaliar o arquivo 3D intraoral e a facilidade de contato.',
+      'Quando a operação Nexor recebe retorno externo sobre arquivo 3D intraoral, documentação técnica e facilidade de contato.',
     priority: 85,
   },
   influencer_review_by_customer: {
@@ -391,11 +391,11 @@ function getPendingReviewContext(templateKey: BiteplanerReviewTemplateKey, order
     return `Ordem ${orderLabel} | feedback pós-atendimento`;
   }
 
-  if (templateKey === 'lab_review_by_dentist') {
-    return `Ordem ${orderLabel} | laboratório ${order?.practice_location?.name ?? 'selecionado'}`;
+  if (templateKey === 'external_production_review_by_dentist') {
+    return `Ordem ${orderLabel} | produção externa conduzida pela Nexor`;
   }
 
-  if (templateKey === 'dentist_review_by_lab') {
+  if (templateKey === 'dentist_documentation_external_review') {
     return `Ordem ${orderLabel} | dentista ${order?.dentist?.full_name ?? 'responsável'}`;
   }
 
@@ -412,7 +412,7 @@ export function getPendingReviewOpportunities({
   orders,
   suppressedFormIds = new Set<string>(),
 }: {
-  mode: 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+  mode: 'user' | 'partner' | 'dentist' | 'admin';
   forms: ReviewOpportunityForm[];
   orders: ReviewOpportunityOrder[];
   suppressedFormIds?: Set<string>;

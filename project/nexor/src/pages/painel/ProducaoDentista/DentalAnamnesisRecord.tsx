@@ -451,8 +451,8 @@ export function DentalAnamnesisRecord({
           title: 'Pedido biteplaner',
           description:
             purchasedConfiguration
-              ? 'Configuração confirmada pelo cliente na compra para seguir para produção.'
-              : 'Configuração recomendada pelo dentista durante a consulta para pré-preencher a compra do cliente.',
+              ? 'Configuração confirmada pelo dentista na compra com a Nexor para seguir para produção.'
+              : 'Configuração recomendada pelo dentista durante a consulta para orientar a compra com a Nexor.',
           status: purchasedConfiguration ? 'Compra confirmada' : 'Recomendado',
           content: (
             <S.Grid>
@@ -473,7 +473,7 @@ export function DentalAnamnesisRecord({
               />
               <FieldItem
                 label="Origem"
-                value={purchasedConfiguration ? 'Confirmado pelo cliente na compra' : 'Recomendado pelo dentista na consulta'}
+                value={purchasedConfiguration ? 'Confirmado pelo dentista na compra' : 'Recomendado pelo dentista na consulta'}
               />
               {purchasedConfiguration && recommendedConfiguration ? (
                 <FieldItem

@@ -14,7 +14,7 @@ describe('AdminMobileRecordCard', () => {
           subtitle="Marina Demo"
           status={<span>Em análise</span>}
           metadata={[
-            { label: 'Etapa', value: 'Laboratório' },
+            { label: 'Etapa', value: 'Produção externa' },
             { label: 'Atualizado', value: '17/06/2026' },
           ]}
           primaryAction={<button type="button">Analisar</button>}

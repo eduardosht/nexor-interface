@@ -19,7 +19,7 @@ import {
   PortalSectionTitle,
 } from '../styles/portalTypography';
 
-type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+type WorkspaceHeroMode = 'user' | 'partner' | 'dentist' | 'admin';
 
 const workspaceHeroBackground = (mode: WorkspaceHeroMode | undefined, fallback: string) => {
   switch (mode) {
@@ -32,11 +32,6 @@ const workspaceHeroBackground = (mode: WorkspaceHeroMode | undefined, fallback: 
       return `radial-gradient(circle at 88% 16%, rgba(14, 165, 233, 0.18), transparent 31%),
     radial-gradient(circle at 7% 12%, rgba(45, 212, 191, 0.13), transparent 28%),
     linear-gradient(135deg, rgba(250, 253, 255, 0.99) 0%, rgba(239, 250, 255, 0.94) 58%, rgba(236, 254, 255, 0.9) 100%),
-    ${fallback}`;
-    case 'lab':
-      return `radial-gradient(circle at 88% 16%, rgba(124, 58, 237, 0.16), transparent 31%),
-    radial-gradient(circle at 7% 12%, rgba(59, 130, 246, 0.12), transparent 28%),
-    linear-gradient(135deg, rgba(252, 251, 255, 0.99) 0%, rgba(245, 243, 255, 0.94) 58%, rgba(239, 246, 255, 0.9) 100%),
     ${fallback}`;
     default:
       return `radial-gradient(circle at 92% 18%, rgba(245, 158, 11, 0.2), transparent 30%),
@@ -52,8 +47,6 @@ const workspaceHeroAccent = (mode: WorkspaceHeroMode | undefined) => {
       return '#16a34a';
     case 'dentist':
       return '#0891b2';
-    case 'lab':
-      return '#7c3aed';
     default:
       return '#f59e0b';
   }
@@ -584,74 +577,6 @@ export const Banner = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 14px;
   line-height: 1.6;
-`;
-
-export const FinancialOnboardingNotice = styled.div<{ $tone: 'warning' | 'error' }>`
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid ${({ $tone, theme }) =>
-    $tone === 'error' ? theme.colors.errorBorder : 'rgba(245, 158, 11, 0.34)'};
-  background: ${({ $tone, theme }) => ($tone === 'error' ? theme.colors.errorBg : '#fffbeb')};
-  color: ${({ theme }) => theme.colors.textPrimary};
-
-  @media (max-width: 720px) {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-`;
-
-export const FinancialOnboardingIcon = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: rgba(245, 158, 11, 0.16);
-  color: #92400e;
-`;
-
-export const FinancialOnboardingContent = styled.div`
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-`;
-
-export const FinancialOnboardingTitle = styled.strong`
-  font-size: 14px;
-  line-height: 1.3;
-`;
-
-export const FinancialOnboardingText = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 13px;
-  line-height: 1.45;
-`;
-
-export const FinancialOnboardingLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 0 12px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.textPrimary};
-  color: ${({ theme }) => theme.colors.bgBase};
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-
-  @media (max-width: 720px) {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
 `;
 
 const skeletonPulse = keyframes`

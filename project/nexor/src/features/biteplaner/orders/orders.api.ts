@@ -152,15 +152,15 @@ export const createProductionScanDownloadUrl = (
     token,
   );
 
-export const startLabProduction = (orderId: string, token?: string) =>
-  api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/lab-production-started`, {}, token);
+export const startExternalProduction = (orderId: string, token?: string) =>
+  api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/external-production-started`, {}, token);
 
-export const completeLabProduction = (orderId: string, token?: string) =>
-  api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/lab-production-completed`, {}, token);
+export const completeExternalProduction = (orderId: string, token?: string) =>
+  api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/external-production-completed`, {}, token);
 
-export const returnOrderToDentist = (orderId: string, reason: string, token?: string) =>
+export const requestProductionAdjustment = (orderId: string, reason: string, token?: string) =>
   api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/lab-return-for-adjustment`,
+    `/v1/orders/${orderId}/external-production-adjustment-requested`,
     { reason },
     token,
   );

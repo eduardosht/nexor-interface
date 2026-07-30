@@ -20,7 +20,7 @@ export const Default: Story = {
           <Tab value="a">Cliente</Tab>
           <Tab value="b">Parceiro</Tab>
           <Tab value="c">Dentista</Tab>
-          <Tab value="d">Laboratório</Tab>
+          <Tab value="d">Operação</Tab>
         </TabList>
       </Tabs>
     );

@@ -5,7 +5,7 @@ describe('publicOptimizedImages', () => {
   it('exposes modern image variants for public Home and Biteplaner assets', () => {
     expect(publicOptimizedImages.home.heroPoster.avif).toMatch(/\.avif$/);
     expect(publicOptimizedImages.home.heroPoster.webp).toMatch(/\.webp$/);
-    expect(publicOptimizedImages.home.lab.desktop.avif).toMatch(/\.avif$/);
+    expect(publicOptimizedImages.home.production.desktop.avif).toMatch(/\.avif$/);
     expect(publicOptimizedImages.home.product.desktop.webp).toMatch(/\.webp$/);
     expect(publicOptimizedImages.biteplaner.hero.desktop.avif).toMatch(/\.avif$/);
     expect(publicOptimizedImages.biteplaner.process.mobile.webp).toMatch(/\.webp$/);

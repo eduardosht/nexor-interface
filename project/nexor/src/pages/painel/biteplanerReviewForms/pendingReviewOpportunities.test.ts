@@ -52,7 +52,7 @@ describe('getPendingReviewOpportunities', () => {
     const opportunities = select('user', [
       form('partner_review_by_customer', 'pending', '2026-05-01T10:08:00.000Z'),
       form('dentist_review_by_customer', 'submitted', '2026-05-04T15:00:00.000Z'),
-      form('lab_review_by_dentist', 'pending', '2026-05-04T09:00:00.000Z'),
+      form('external_production_review_by_dentist', 'pending', '2026-05-04T09:00:00.000Z'),
       form('customer_pre_consultation_intake', 'pending', '2026-05-01T10:05:00.000Z'),
     ]);
 
@@ -68,16 +68,24 @@ describe('getPendingReviewOpportunities', () => {
 
   it('prioritizes higher value prompts before older lower priority prompts', () => {
     const opportunities = select('dentist', [
-      form('lab_review_by_dentist', 'pending', '2026-05-01T09:00:00.000Z'),
-      form('lab_review_by_dentist', 'pending', '2026-05-05T09:00:00.000Z', 'BP-DEMO-002'),
+      form('external_production_review_by_dentist', 'pending', '2026-05-01T09:00:00.000Z'),
+      form('external_production_review_by_dentist', 'pending', '2026-05-05T09:00:00.000Z', 'BP-DEMO-002'),
     ]);
 
     expect(opportunities.map((item) => item.orderId)).toEqual(['BP-DEMO-002', 'BP-DEMO-001']);
   });
 
+
+  it('does not create pending opportunities for disabled legacy external supplier review forms', () => {
+    const opportunities = select('dentist', [
+      form('dentist_documentation_external_review', 'pending', '2026-05-03T08:30:00.000Z'),
+    ]);
+
+    expect(opportunities).toEqual([]);
+  });
   it('filters dismissed prompts without submitting the survey', () => {
     const suppressionKey = getFeedbackPromptSuppressionKey(
-      form('dentist_review_by_lab', 'pending', '2026-05-03T08:30:00.000Z').id
+      form('dentist_documentation_external_review', 'pending', '2026-05-03T08:30:00.000Z').id
     );
     const now = new Date('2026-05-10T12:00:00.000Z').getTime();
 

@@ -115,6 +115,8 @@ describe('MinhaConta', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/cadastro centralizado/i);
   });
 
+
+
   it('keeps LGPD self-service actions on supported routes only', async () => {
     const createObjectURL = vi.fn(() => 'blob:nexor-export');
     const revokeObjectURL = vi.fn();

@@ -1,5 +1,5 @@
 export type NotificationActionRole = 'customer' | 'dentist';
-export type NotificationActionKind = 'order' | 'financial_onboarding';
+export type NotificationActionKind = 'order';
 
 export type ActionableNotification = {
   title: string;
@@ -17,7 +17,6 @@ export type NotificationAction = {
 
 const ACTION_INTENT_PATTERN = /(acao necessaria|ação necessária|precisa|pendente|aguardando|action|required)/i;
 const ORDER_CONTEXT_PATTERN = /(pedido|ordem|order|consulta|consultation|producao|production)/i;
-const FINANCIAL_ONBOARDING_PATH_PREFIX = '/painel/biteplaner/financeiro';
 
 function normalize(value: unknown) {
   return String(value ?? '')
@@ -87,29 +86,8 @@ function hasOrderContext(notification: ActionableNotification): boolean {
   return ORDER_CONTEXT_PATTERN.test(searchableText);
 }
 
-function readFinancialOnboardingPath(metadata?: Record<string, unknown> | null): string | null {
-  const path = metadata?.financialOnboardingPath;
-
-  if (typeof path !== 'string' || !path.startsWith(FINANCIAL_ONBOARDING_PATH_PREFIX)) {
-    return null;
-  }
-
-  return path;
-}
-
-export function getNotificationCardAction(notification: ActionableNotification): NotificationAction | null {
-  const financialOnboardingPath = readFinancialOnboardingPath(notification.metadata);
-
-  if (financialOnboardingPath === null) {
-    return null;
-  }
-
-  return {
-    role: inferRole(notification) ?? undefined,
-    kind: 'financial_onboarding',
-    label: 'Completar cadastro financeiro',
-    path: financialOnboardingPath,
-  };
+export function getNotificationCardAction(_notification: ActionableNotification): NotificationAction | null {
+  return null;
 }
 
 export function getNotificationAction(notification: ActionableNotification): NotificationAction | null {

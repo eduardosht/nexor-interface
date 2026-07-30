@@ -13,8 +13,8 @@ const PARTNERS = [
     body: 'Aumento do Valuation e upgrade profissional.',
   },
   {
-    title: 'Laboratório Licenciado',
-    body: 'Upgrade de produtos e novos nichos de mercado.',
+    title: 'Fornecedor técnico',
+    body: 'Produção externa administrada pela operação Nexor, sem workspace na plataforma.',
   },
 ];
 
@@ -39,7 +39,7 @@ export function ParceirosTeaserSection() {
           </S.Grid>
 
           <S.CtaRow as={motion.div} variants={fadeUp}>
-            <S.CtaLink to="/parceiros">Veja como ser licenciado</S.CtaLink>
+            <S.CtaLink to="/parceiros">Conheça a rede Nexor</S.CtaLink>
           </S.CtaRow>
         </motion.div>
       </S.Section>

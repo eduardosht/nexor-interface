@@ -55,9 +55,8 @@ describe('AdminHome', () => {
       expect(screen.getByRole('heading', { name: /dashboard administrativo/i })).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/ordens do biteplaner/i)).toBeInTheDocument();
-    expect(screen.getByText(/ordens no período/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /ordens por semana/i })).toBeInTheDocument();
+    expect(screen.getByText(/fila de acionamento de produção externa/i)).toBeInTheDocument();
+    expect(screen.queryByText(/envio para produção externa/i)).not.toBeInTheDocument();
   });
 
   it('keeps rendering the selected product dashboard when a product is already stored', async () => {
@@ -68,7 +67,7 @@ describe('AdminHome', () => {
       expect(screen.getByRole('heading', { name: /dashboard administrativo/i })).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/acompanhe a evolução operacional semanal das ordens do biteplaner/i)).toBeInTheDocument();
+    expect(screen.getByText(/fila de acionamento de produção externa/i)).toBeInTheDocument();
   });
 
   it('uses compact density for shared administrative cards and licensing modals', () => {

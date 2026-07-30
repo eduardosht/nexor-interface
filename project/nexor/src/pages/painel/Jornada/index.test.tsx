@@ -1030,14 +1030,14 @@ describe('Jornada', () => {
     expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/atual/i);
   });
 
-  it('advances the journey to laboratory after payment confirmation without showing payment details', async () => {
+  it('advances the journey to external production after payment confirmation without showing payment details', async () => {
     mockApiGet
       .mockResolvedValueOnce({
         orders: [
           {
             id: 'BP-DEMO-004',
             status: 'payment_confirmed',
-            statusLabel: 'Aguardando envio ao laboratório',
+            statusLabel: 'Aguardando produção externa',
             stage: 'payment_confirmed',
             created_at: '2026-05-02T15:56:00.000Z',
             customer: { full_name: 'Joao Demo', email: 'joao@nexor.dev', phone: null },
@@ -1064,7 +1064,7 @@ describe('Jornada', () => {
 
     const nextStepBox = await screen.findByTestId('journey-payment-next-step');
     expect(screen.getByTestId('journey-step-purchase')).toHaveTextContent(/conclu.do/i);
-    expect(screen.getByTestId('journey-step-laboratory')).toHaveTextContent(/atual/i);
+    expect(screen.getByTestId('journey-step-external_production')).toHaveTextContent(/atual/i);
     expect(screen.queryByTestId('journey-payment-confirmation')).not.toBeInTheDocument();
     expect(screen.queryByText(/detalhes do pagamento/i)).not.toBeInTheDocument();
     expect(nextStepBox).toHaveTextContent(/o que acontece agora/i);

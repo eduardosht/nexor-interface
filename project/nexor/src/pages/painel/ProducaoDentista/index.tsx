@@ -1,16 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, ClipboardCheck, Search, Star } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ClipboardCheck } from 'lucide-react';
 import {
   AdminFormButton,
-  Field,
   Snackbar,
   SnackbarStack,
 } from '@nexor/design-system';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
-import { divIcon, latLngBounds } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -33,16 +29,9 @@ import {
   type ProductionRequestDraft,
 } from '../../../features/demo/biteplanerFlow';
 import { uploadProductionRequestFile } from '../../../features/demo/externalUploadGateway';
-import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
-import type {
-  DemoLicensedLabSelection,
-  LicensedLabSelectionApiRecord,
-} from '../../../features/biteplaner/labs/labs.types';
 import { mapProductionRequestPayload } from '../../../features/biteplaner/production/productionRequestPayload';
 import { biteplanerQueryKeys } from '../../../features/demo/biteplanerQueryKeys';
-import { getLicensedLab, listLicensedLabsByCep } from '../../../features/demo/labLocations';
 import {
-  FieldsGrid,
   PageStack,
 } from '../admin/styles';
 import { SHARED_INITIAL_EVALUATION_INTAKE } from '../components/sharedIntakeDefinition';
@@ -54,114 +43,6 @@ import { DentalAnamnesisRecord } from './DentalAnamnesisRecord';
 import { ProductionRequestFields } from './ProductionRequestFields';
 import * as S from './styles';
 
-type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-
-type CepLocation = {
-  lat: number;
-  lng: number;
-  label: string;
-};
-
-type ViaCepResponse = {
-  cep?: string;
-  logradouro?: string;
-  bairro?: string;
-  localidade?: string;
-  uf?: string;
-  erro?: boolean;
-};
-
-type NominatimResult = {
-  lat: string;
-  lon: string;
-};
-
-type AwesomeCepResponse = {
-  cep?: string;
-  district?: string;
-  city?: string;
-  state?: string;
-  lat?: string;
-  lng?: string;
-};
-
-const EARTH_RADIUS_KM = 6371;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const markerIcon = divIcon({
-  className: 'licensed-lab-map-pin',
-  html: `
-    <div style="
-      width: 18px;
-      height: 18px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      background: #171717;
-      border: 2px solid #fafafa;
-      box-shadow: 0 6px 16px rgba(23, 23, 23, 0.18);
-    "></div>
-  `,
-  iconSize: [18, 18],
-  iconAnchor: [9, 18],
-  popupAnchor: [0, -16],
-});
-
-const cepMarkerIcon = divIcon({
-  className: 'licensed-lab-map-pin licensed-lab-map-pin-home',
-  html: `
-    <div style="
-      width: 34px;
-      height: 34px;
-      display: grid;
-      place-items: center;
-      border-radius: 999px;
-      background: #ffffff;
-      border: 2px solid #171717;
-      box-shadow: 0 12px 28px rgba(23, 23, 23, 0.22);
-      color: #171717;
-    ">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m3 11 9-8 9 8"></path>
-        <path d="M5 10v10h14V10"></path>
-        <path d="M9 20v-6h6v6"></path>
-      </svg>
-    </div>
-  `,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-  popupAnchor: [0, -18],
-});
 
 const STEP_DEFINITIONS = [
   {
@@ -179,14 +60,8 @@ const STEP_DEFINITIONS = [
   {
     key: 'production-request',
     label: 'Solicitação de produção',
-    description: 'Preencha a solicitação clínica, observações e anexos obrigatórios para o laboratório.',
+    description: 'Preencha a solicitação clínica, observações e anexos obrigatórios para a operação Nexor.',
     shortLabel: 'Formulário produtivo',
-  },
-  {
-    key: 'lab-selection',
-    label: 'Escolha do laboratório',
-    description: 'Selecione um laboratório licenciado para encaminhar a ordem com todos os dados.',
-    shortLabel: 'Destino licenciado',
   },
 ] as const;
 
@@ -194,11 +69,11 @@ const EMPTY_DRAFT: ProductionRequestDraft = {
   anamnesisSummary: '',
   anamnesisDownloaded: false,
   productionRequestSummary: '',
-  labNotes: '',
+  opsNotes: '',
   scan3dFileName: '',
   scan3dFileRef: null,
   lgpdConfirmed: false,
-  selectedLabId: null,
+  externalProductionProviderId: null,
   purchaseConfiguration: null,
   purchaseDivergenceConfirmed: false,
 };
@@ -231,10 +106,6 @@ function hasPurchaseConfigurationDivergence(
     purchased.color.trim().toLowerCase() !== recommended.color.trim().toLowerCase()
   );
 }
-function getLabPayloadId(lab: DemoLicensedLabSelection) {
-  return lab.profileId ?? lab.id;
-}
-
 function hasDentistComplement(form: DemoWorkflowForm | undefined) {
   if (!form) {
     return false;
@@ -391,253 +262,12 @@ function getDentistSystemValues(backendUser: unknown, sessionEmail?: string | nu
   };
 }
 
-function formatCep(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 8);
-
-  if (digits.length <= 5) {
-    return digits;
-  }
-
-  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-}
-
 function formatAnamnesisDownloadDate(date: Date) {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}${month}${day}`;
-}
-
-function normalizeCep(value: string) {
-  return value.replace(/\D/g, '').slice(0, 8);
-}
-
-function toRadians(value: number) {
-  return (value * Math.PI) / 180;
-}
-
-function calculateDistanceKm(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
-  const latDelta = toRadians(to.lat - from.lat);
-  const lngDelta = toRadians(to.lng - from.lng);
-  const fromLat = toRadians(from.lat);
-  const toLat = toRadians(to.lat);
-  const haversine =
-    Math.sin(latDelta / 2) ** 2 +
-    Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lngDelta / 2) ** 2;
-
-  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
-}
-
-function withDistances(labs: DemoLicensedLabSelection[], cepLocation: CepLocation | null) {
-  if (!cepLocation) {
-    return labs;
-  }
-
-  return labs.map((lab) => ({
-    ...lab,
-    distanceKm: calculateDistanceKm(cepLocation, lab.coordinates),
-  }));
-}
-
-function formatDistanceKm(value: number) {
-  return value < 10 ? value.toFixed(1) : value.toFixed(0);
-}
-
-function LicensedLabMapController({ points }: { points: Array<[number, number]> }) {
-  const map = useMap();
-  const pointsKey = points.map(([lat, lng]) => `${lat.toFixed(6)},${lng.toFixed(6)}`).join('|');
-
-  useEffect(() => {
-    if (points.length === 0) {
-      return;
-    }
-
-    if (points.length === 1) {
-      map.setView(points[0], 14);
-      return;
-    }
-
-    map.fitBounds(latLngBounds(points), {
-      padding: [44, 44],
-      maxZoom: 14,
-    });
-  }, [map, points, pointsKey]);
-
-  return null;
-}
-
-async function geocodeAddress(query: string): Promise<{ lat: number; lng: number } | null> {
-  if (!query.trim() || typeof fetch !== 'function') {
-    return null;
-  }
-
-  const url = new URL('https://nominatim.openstreetmap.org/search');
-  url.searchParams.set('format', 'json');
-  url.searchParams.set('limit', '1');
-  url.searchParams.set('countrycodes', 'br');
-  url.searchParams.set('q', query);
-
-  const response = await fetch(url.toString(), {
-    headers: {
-      Accept: 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const data = (await response.json()) as NominatimResult[];
-  const first = data[0];
-
-  if (!first) {
-    return null;
-  }
-
-  const lat = Number(first.lat);
-  const lng = Number(first.lon);
-
-  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
-}
-
-async function resolveCepWithCoordinates(cep: string): Promise<CepLocation | null> {
-  const normalizedCep = normalizeCep(cep);
-  const response = await fetch(`https://cep.awesomeapi.com.br/json/${normalizedCep}`);
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const data = (await response.json()) as AwesomeCepResponse;
-  const lat = Number(data.lat);
-  const lng = Number(data.lng);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return null;
-  }
-
-  return {
-    lat,
-    lng,
-    label: [
-      `CEP ${formatCep(normalizedCep)}`,
-      data.district,
-      [data.city, data.state].filter(Boolean).join(' - '),
-    ]
-      .filter(Boolean)
-      .join(' - '),
-  };
-}
-
-async function resolveCepLocation(cep: string): Promise<CepLocation> {
-  const normalizedCep = normalizeCep(cep);
-
-  if (normalizedCep.length !== 8) {
-    throw new Error('invalid_cep');
-  }
-
-  const cepWithCoordinates = await resolveCepWithCoordinates(normalizedCep);
-
-  if (cepWithCoordinates) {
-    return cepWithCoordinates;
-  }
-
-  const viaCepResponse = await fetch(`https://viacep.com.br/ws/${normalizedCep}/json/`);
-
-  if (!viaCepResponse.ok) {
-    throw new Error('cep_lookup_failed');
-  }
-
-  const viaCep = (await viaCepResponse.json()) as ViaCepResponse;
-
-  if (viaCep.erro) {
-    throw new Error('cep_not_found');
-  }
-
-  const locationLabel = [
-    `CEP ${formatCep(normalizedCep)}`,
-    viaCep.bairro,
-    [viaCep.localidade, viaCep.uf].filter(Boolean).join(' - '),
-  ]
-    .filter(Boolean)
-    .join(' - ');
-  const geocodeQuery = [
-    viaCep.logradouro,
-    viaCep.bairro,
-    viaCep.localidade,
-    viaCep.uf,
-    normalizedCep,
-    'Brasil',
-  ]
-    .filter(Boolean)
-    .join(', ');
-  const coordinates = await geocodeAddress(geocodeQuery);
-
-  if (!coordinates) {
-    const fallbackCoordinates = await geocodeAddress(
-      [viaCep.bairro, viaCep.localidade, viaCep.uf, 'Brasil'].filter(Boolean).join(', ')
-    );
-
-    if (!fallbackCoordinates) {
-      throw new Error('cep_geocode_failed');
-    }
-
-    return {
-      ...fallbackCoordinates,
-      label: locationLabel,
-    };
-  }
-
-  return {
-    ...coordinates,
-    label: locationLabel,
-  };
-}
-
-function mapLicensedLabRecord(
-  lab: LicensedLabSelectionApiRecord,
-  index: number
-): DemoLicensedLabSelection {
-  const fallbackLat = -23.5618 + index * 0.0025;
-  const fallbackLng = -46.6565 + index * 0.0025;
-
-  return {
-    id: lab.id,
-    profileId: lab.profileId,
-    name: lab.labName,
-    cnpj: lab.cnpj,
-    professionalSummary: lab.professionalSummary,
-    address: lab.address,
-    cep: lab.cep,
-    phone: lab.phone || 'Telefone não informado',
-    serviceHours: lab.serviceHours,
-    city: lab.city,
-    state: lab.state,
-    reviewScore: 4,
-    distanceKm: Number((1.2 + index * 0.7).toFixed(1)),
-    coordinates: lab.coordinates ?? {
-      lat: fallbackLat,
-      lng: fallbackLng,
-    },
-  };
-}
-
-function RatingStars({ score, label }: { score: number; label: string }) {
-  const roundedScore = Math.round(score);
-
-  return (
-    <S.RatingBadge aria-label={`${score.toFixed(1)} de 5 ${label}`}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <Star
-          key={index}
-          size={14}
-          fill={index < roundedScore ? 'currentColor' : 'none'}
-          aria-hidden
-        />
-      ))}
-    </S.RatingBadge>
-  );
 }
 
 export function ProducaoDentista() {
@@ -656,13 +286,6 @@ export function ProducaoDentista() {
   const [selectedProductionScanFile, setSelectedProductionScanFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<ProductionRequestDraft>(EMPTY_DRAFT);
   const [currentStep, setCurrentStep] = useState(0);
-  const [labCep, setLabCep] = useState('01310-100');
-  const [labCepLocation, setLabCepLocation] = useState<CepLocation | null>(null);
-  const [locatingLabCep, setLocatingLabCep] = useState(false);
-  const [labLookupError, setLabLookupError] = useState('');
-  const [visibleLabs, setVisibleLabs] = useState<DemoLicensedLabSelection[]>([]);
-  const [activeLab, setActiveLab] = useState<DemoLicensedLabSelection | null>(null);
-  const [selectedLab, setSelectedLab] = useState<DemoLicensedLabSelection | null>(null);
   const draftRef = useRef<ProductionRequestDraft>(EMPTY_DRAFT);
   const hydratedOrderIdRef = useRef<string | null>(null);
   const queryOwnerId = backendUser?.id ?? session?.user.id ?? 'anonymous';
@@ -732,27 +355,6 @@ export function ProducaoDentista() {
 
     return order?.productionRequestDraft ?? null;
   }, [order?.productionRequestDraft, productionFormDetailQuery.data?.payload]);
-  const licensedLabsQuery = useQuery({
-    queryKey: biteplanerQueryKeys.licensedLabs(queryOwnerId),
-    queryFn: async () => {
-      const response = await fetchLicensedLabs(token);
-      return response.labs.map(mapLicensedLabRecord);
-    },
-    enabled: Boolean(token && currentStep === 3),
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-  });
-  const licensedLabs = useMemo(() => {
-    if (currentStep !== 3) {
-      return [];
-    }
-
-    if (licensedLabsQuery.data) {
-      return licensedLabsQuery.data.length > 0 ? licensedLabsQuery.data : listLicensedLabsByCep('');
-    }
-
-    return [];
-  }, [currentStep, labCep, licensedLabsQuery.data]);
   const intakeFormFromList = workflowForms.find((form) => form.templateKey === 'customer_pre_consultation_intake');
   const onboardingFormFromList = workflowForms.find((form) => form.templateKey === 'customer_new_user_onboarding');
   const intakeFormDetailQuery = useQuery({
@@ -811,18 +413,12 @@ export function ProducaoDentista() {
     ? 'Nao foi possivel carregar o intake compartilhado desta ordem.'
     : '';
 
-  const labsError = licensedLabsQuery.isError
-    ? 'Nao foi possivel carregar os laboratorios licenciados aprovados.'
-    : '';
-  const displayedLabs = useMemo(() => withDistances(visibleLabs, labCepLocation), [labCepLocation, visibleLabs]);
 
   useEffect(() => {
     if (!order) {
       hydratedOrderIdRef.current = null;
       draftRef.current = EMPTY_DRAFT;
       setDraft(EMPTY_DRAFT);
-      setActiveLab(null);
-      setSelectedLab(null);
       return;
     }
 
@@ -855,65 +451,7 @@ export function ProducaoDentista() {
     savedProductionDraft,
   ]);
 
-  useEffect(() => {
-    const selectedLabId = draft.selectedLabId;
 
-    if (!selectedLabId) {
-      setActiveLab(null);
-      setSelectedLab(null);
-      return;
-    }
-
-    const lab =
-      licensedLabs.find((item) => item.id === selectedLabId || item.profileId === selectedLabId) ??
-      getLicensedLab(selectedLabId);
-    if (!lab) {
-      return;
-    }
-
-    setSelectedLab(lab);
-    setActiveLab((current) => (current?.id === lab.id ? current : lab));
-  }, [draft.selectedLabId, licensedLabs]);
-
-  useEffect(() => {
-    setVisibleLabs(licensedLabs);
-  }, [licensedLabs]);
-
-  useEffect(() => {
-    if (displayedLabs.length === 0) {
-      setActiveLab(null);
-      return;
-    }
-
-    setActiveLab((current) => {
-      if (current) {
-        const currentDisplayed = displayedLabs.find((lab) => lab.id === current.id);
-        if (currentDisplayed) {
-          return currentDisplayed;
-        }
-      }
-
-      if (selectedLab) {
-        const selectedDisplayed = displayedLabs.find((lab) => lab.id === selectedLab.id);
-        if (selectedDisplayed) {
-          return selectedDisplayed;
-        }
-      }
-
-      return displayedLabs[0] ?? null;
-    });
-  }, [displayedLabs, selectedLab]);
-
-  useEffect(() => {
-    if (!selectedLab) {
-      return;
-    }
-
-    const selectedDisplayed = displayedLabs.find((lab) => lab.id === selectedLab.id);
-    if (selectedDisplayed) {
-      setSelectedLab(selectedDisplayed);
-    }
-  }, [displayedLabs, selectedLab]);
 
   useEffect(() => {
     if (!isAnamnesisRecordDeepLink) {
@@ -941,7 +479,6 @@ export function ProducaoDentista() {
     });
   }, [currentStep, isAnamnesisRecordDeepLink, location.hash]);
 
-  const selectedLabId = draft.selectedLabId;
   const dentistPendingRequiredFields = getDentistPendingRequiredFields(intakeForm);
   const dentistReviewCompleted = hasDentistComplement(intakeForm) && dentistPendingRequiredFields.length === 0;
   const anamnesisCompleted = dentistReviewCompleted;
@@ -957,20 +494,16 @@ export function ProducaoDentista() {
     order?.dentistRecommendedPurchaseConfiguration ?? null
   );
   const purchaseDivergenceCompleted = !purchaseDivergenceRequiresConfirmation || draft.purchaseDivergenceConfirmed === true;
-  const labSelectionCompleted = Boolean(selectedLabId);
-  const finalReviewCompleted = labSelectionCompleted && purchaseDivergenceCompleted;
   const canComplete =
     anamnesisCompleted &&
     productionRequestCompleted &&
     attachmentsCompleted &&
-    labSelectionCompleted &&
     purchaseDivergenceCompleted;
 
   const stepCompletion = [
     dentistReviewCompleted,
     anamnesisCompleted,
     productionRequestCompleted && attachmentsCompleted && purchaseDivergenceCompleted,
-    finalReviewCompleted,
   ];
   const currentStepData = STEP_DEFINITIONS[currentStep];
   const currentStepCompleted = stepCompletion[currentStep] ?? false;
@@ -993,8 +526,8 @@ export function ProducaoDentista() {
       title: 'Pagamento do Biteplaner pendente',
       label: 'Pagamento do Biteplaner pendente',
       description:
-        'O cliente precisa concluir o pagamento do Biteplaner antes do dentista prosseguir para a solicitação de produção ao laboratório.',
-      actionLabel: 'Aguardando pagamento do cliente',
+        'O dentista precisa concluir o pagamento do Biteplaner com a Nexor antes de prosseguir para a solicitação de produção.',
+      actionLabel: 'Aguardando pagamento do dentista',
     };
   const anamnesisSourceDataReady = hasFormPayload(intakeForm);
   const dentistProfessionalObservations = getDentistProfessionalObservations(intakeForm);
@@ -1028,64 +561,6 @@ export function ProducaoDentista() {
     updateDraft({ anamnesisSummary: dentistProfessionalObservations });
   }, [dentistProfessionalObservations]);
 
-  const mapCenter = useMemo<[number, number]>(() => {
-    if (activeLab) {
-      return [activeLab.coordinates.lat, activeLab.coordinates.lng];
-    }
-
-    if (labCepLocation) {
-      return [labCepLocation.lat, labCepLocation.lng];
-    }
-
-    const fallback = displayedLabs[0];
-    return fallback ? [fallback.coordinates.lat, fallback.coordinates.lng] : [-23.5618, -46.6565];
-  }, [activeLab, displayedLabs, labCepLocation]);
-  const mapPoints = useMemo<Array<[number, number]>>(() => {
-    const points = displayedLabs.map((lab) => [lab.coordinates.lat, lab.coordinates.lng] as [number, number]);
-
-    if (labCepLocation) {
-      return [[labCepLocation.lat, labCepLocation.lng], ...points];
-    }
-
-    return points;
-  }, [displayedLabs, labCepLocation]);
-  const completionIssues = useMemo(() => {
-    const issues: string[] = [];
-
-    if (!anamnesisCompleted) {
-      issues.push('completar a revisão clínica do dentista');
-    }
-
-    if (!productionRequestCompleted) {
-      issues.push('preencher a solicitação de produção');
-    }
-
-    if (!draft.scan3dFileName.trim()) {
-      issues.push('anexar o escaneamento 3D intraoral');
-    }
-
-
-    if (!draft.lgpdConfirmed) {
-      issues.push('confirmar o aceite de retenção e rastreabilidade');
-    }
-
-    if (!labSelectionCompleted) {
-      issues.push('selecionar um laboratório licenciado');
-    }
-
-    if (!purchaseDivergenceCompleted) {
-      issues.push('confirmar a divergência entre recomendação clínica e compra do cliente');
-    }
-
-    return issues;
-  }, [
-    anamnesisCompleted,
-    draft.lgpdConfirmed,
-    draft.scan3dFileName,
-    labSelectionCompleted,
-    productionRequestCompleted,
-    purchaseDivergenceCompleted,
-  ]);
 
   function updateDraft(patch: Partial<ProductionRequestDraft>) {
     setDraft((current) => {
@@ -1138,54 +613,6 @@ export function ProducaoDentista() {
     }
 
     setCurrentStep((current) => (current === 0 ? 1 : current));
-  }
-
-  async function handleSearchLabs() {
-    const normalizedCep = normalizeCep(labCep);
-
-    if (normalizedCep.length !== 8) {
-      setLabLookupError('Informe um CEP válido com 8 dígitos.');
-      return;
-    }
-
-    setLabLookupError('');
-
-    try {
-      const nextCepLocation = await resolveCepLocation(normalizedCep);
-      setLabCepLocation(nextCepLocation);
-    } catch {
-      setLabLookupError('Não foi possível localizar este CEP no mapa. Confira o número e tente novamente.');
-    }
-  }
-
-  function handleUseCurrentLocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setLabLookupError('Seu navegador não disponibilizou a localização atual.');
-      return;
-    }
-
-    setLocatingLabCep(true);
-    setLabLookupError('');
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLabCepLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          label: 'Sua localização atual',
-        });
-        setLocatingLabCep(false);
-      },
-      () => {
-        setLabLookupError('Não foi possível acessar sua localização atual. Verifique a permissão do navegador.');
-        setLocatingLabCep(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000,
-      }
-    );
   }
 
   async function ensureProductionScanFileRef(): Promise<NonNullable<ProductionRequestDraft['scan3dFileRef']>> {
@@ -1245,11 +672,11 @@ export function ProducaoDentista() {
       navigate('/painel/biteplaner?mode=dentist', {
         replace: true,
         state: {
-          notice: `Solicitação de produção da ordem ${getOrderDisplayId(order)} concluída e enviada ao laboratório.`,
+          notice: `Solicitação de produção da ordem ${getOrderDisplayId(order)} concluída para revisão da operação Nexor.`,
         },
       });
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Não foi possível concluir o envio ao laboratório.');
+      setActionError(error instanceof Error ? error.message : 'Não foi possível concluir a solicitação de produção.');
     } finally {
       setCompleting(false);
     }
@@ -1428,13 +855,13 @@ export function ProducaoDentista() {
               </S.HeroEyebrow>
               <S.ProductionTitle>Solicitação de produção</S.ProductionTitle>
               <S.ProductionLead>
-                Complete a revisão clínica, gere a anamnese e envie somente os dados necessários ao laboratório licenciado.
+                Complete a revisão clínica, gere a anamnese e envie somente os dados necessários para a operação Nexor.
               </S.ProductionLead>
             </S.ProductionHeroCopy>
 
             <OrderInfoCard
               order={order}
-              orderHelpText="Complete a revisão clínica e envie os dados necessários ao laboratório licenciado."
+              orderHelpText="Complete a revisão clínica e envie os dados necessários para a operação Nexor."
               showMetadata={false}
             />
           </S.ProductionHero>
@@ -1527,154 +954,6 @@ export function ProducaoDentista() {
                     onChange={updateDraft}
                   />
                 ) : null}
-                {currentStep === 3 ? (
-                  <>
-                    <FieldsGrid>
-                      <Field
-                        as="input"
-                        label="CEP atual"
-                        value={labCep}
-                        onChange={(event: FieldChangeEvent) => setLabCep(formatCep(event.target.value))}
-                      />
-                      <S.SearchActionsGroup>
-                        <S.SearchActionSlot>
-                          <AdminFormButton
-                            type="button"
-                            onClick={() => void handleSearchLabs()}
-                            trailingIcon={<Search size={16} aria-hidden="true" />}
-                          >
-                            Buscar laboratórios
-                          </AdminFormButton>
-                        </S.SearchActionSlot>
-                        <S.SearchActionSlot>
-                          <AdminFormButton type="button" variant="secondary" onClick={handleUseCurrentLocation}>
-                            {locatingLabCep ? 'Localizando...' : 'Usar minha localização'}
-                          </AdminFormButton>
-                        </S.SearchActionSlot>
-                      </S.SearchActionsGroup>
-                    </FieldsGrid>
-
-                    <S.LabLayout>
-                      <S.MapCard>
-                        <S.SectionTitle>Laboratórios próximos ao CEP</S.SectionTitle>
-                        <S.Description>
-                          Revise o parceiro licenciado e selecione o laboratório que vai receber esta ordem.
-                        </S.Description>
-                        <S.MapViewport>
-                          <MapContainer center={mapCenter} zoom={13} scrollWheelZoom={false}>
-                            <TileLayer
-                              attribution="&copy; OpenStreetMap contributors"
-                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            />
-                            <LicensedLabMapController points={mapPoints} />
-                            {displayedLabs.map((lab) => (
-                              <Marker
-                                key={lab.id}
-                                position={[lab.coordinates.lat, lab.coordinates.lng]}
-                                icon={markerIcon}
-                                eventHandlers={{
-                                  click: () => {
-                                    setActiveLab(lab);
-                                    setSelectedLab(lab);
-                                    updateDraft({ selectedLabId: getLabPayloadId(lab) });
-                                  },
-                                }}
-                              >
-                                <Popup>{lab.name}</Popup>
-                              </Marker>
-                            ))}
-                            {labCepLocation ? (
-                              <Marker position={[labCepLocation.lat, labCepLocation.lng]} icon={cepMarkerIcon} zIndexOffset={1500}>
-                                <Popup>{labCepLocation.label}</Popup>
-                              </Marker>
-                            ) : null}
-                          </MapContainer>
-                        </S.MapViewport>
-
-                        {licensedLabsQuery.isLoading ? (
-                          <S.EmptyState>Carregando laboratórios licenciados...</S.EmptyState>
-                        ) : null}
-                        {labLookupError ? <S.Banner role="alert">{labLookupError}</S.Banner> : null}
-
-                        <S.LabList>
-                          {displayedLabs.map((lab) => (
-                            <S.LabButton
-                              key={lab.id}
-                              type="button"
-                              $active={activeLab?.id === lab.id}
-                              onClick={() => {
-                                setActiveLab(lab);
-                                setSelectedLab(lab);
-                                updateDraft({ selectedLabId: getLabPayloadId(lab) });
-                              }}
-                            >
-                              <S.LabName>{lab.name}</S.LabName>
-                              <S.LabMeta>{lab.address}</S.LabMeta>
-                              <S.LabFooter>
-                                <S.LabMeta>{lab.phone} - {formatDistanceKm(lab.distanceKm)} km</S.LabMeta>
-                                <RatingStars score={lab.reviewScore} label="avaliações do laboratório" />
-                              </S.LabFooter>
-                            </S.LabButton>
-                          ))}
-                        </S.LabList>
-                      </S.MapCard>
-
-                      <S.SideCard>
-                        <S.SectionTitle>Informações do laboratório</S.SectionTitle>
-                        {activeLab ? (
-                          <>
-                            <S.GuidanceCard>
-                              Use esta etapa como a seleção de clínicas: revise o cadastro aprovado e confirme o destino operacional da ordem.
-                            </S.GuidanceCard>
-                            <S.DetailList>
-                              <S.DetailTerm>Laboratorio</S.DetailTerm>
-                              <S.DetailValue>{activeLab.name}</S.DetailValue>
-
-                              <S.DetailTerm>Endereço</S.DetailTerm>
-                              <S.DetailValue>{activeLab.address}</S.DetailValue>
-
-                              <S.DetailTerm>CEP</S.DetailTerm>
-                              <S.DetailValue>{activeLab.cep || '-'}</S.DetailValue>
-
-                              <S.DetailTerm>Telefone</S.DetailTerm>
-                              <S.DetailValue>{activeLab.phone}</S.DetailValue>
-
-                              <S.DetailTerm>CNPJ</S.DetailTerm>
-                              <S.DetailValue>{activeLab.cnpj || '-'}</S.DetailValue>
-
-                              <S.DetailTerm>Horário</S.DetailTerm>
-                              <S.DetailValue>{activeLab.serviceHours || '-'}</S.DetailValue>
-
-                              <S.DetailTerm>Distancia</S.DetailTerm>
-                              <S.DetailValue>{formatDistanceKm(activeLab.distanceKm)} km</S.DetailValue>
-                            </S.DetailList>
-
-                            {activeLab.professionalSummary ? (
-                              <S.GuidanceCard>{activeLab.professionalSummary}</S.GuidanceCard>
-                            ) : null}
-                          </>
-                        ) : (
-                          <S.Description>Selecione um laboratório da lista para ver os detalhes completos.</S.Description>
-                        )}
-                      </S.SideCard>
-                    </S.LabLayout>
-
-                    {labsError ? <S.Banner role="alert">{labsError}</S.Banner> : null}
-
-                    {selectedLab ? (
-                      <S.Banner>Laboratório selecionado: {selectedLab.name}</S.Banner>
-                    ) : (
-                      <S.EmptyState>Selecione um laboratório licenciado para concluir o envio da ordem.</S.EmptyState>
-                    )}
-
-                    {!canComplete ? (
-                      <S.EmptyState>
-                        Para finalizar ainda faltam: {completionIssues.join(', ')}.
-                      </S.EmptyState>
-                    ) : null}
-                  </>
-                ) : null}
-
                 {isAnamnesisRecordDeepLink ? (
                   <S.DeepLinkStepActions>
                     <span />

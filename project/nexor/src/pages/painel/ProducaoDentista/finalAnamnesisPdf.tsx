@@ -564,13 +564,13 @@ function FinalAnamnesisDocument({
                     <PdfFieldItem label="Profissional responsável" rawValue={dentist.dentistName ?? 'Dentista licenciado'} />
                     <PdfFieldItem label="Guarda do registro" rawValue="Responsabilidade do dentista" />
                     <PdfFieldItem label="LGPD operacional da produção" rawValue={draft.lgpdConfirmed ? 'Ciente' : 'Pendente'} />
-                    <PdfFieldItem label="Laboratório selecionado" rawValue={draft.selectedLabId} />
+                    <PdfFieldItem label="Encaminhamento operacional" rawValue="Conduzido externamente pela Nexor" />
                   </Section>
 
                   <Section number={payloadSections.length + 2} title="OBSERVAÇÕES E CONDUTA">
                     <PdfFieldItem label="Resumo da anamnese" rawValue={draft.anamnesisSummary} />
                     <PdfFieldItem label="Solicitação de produção" rawValue={draft.productionRequestSummary} />
-                    <PdfFieldItem label="Observações para o laboratório" rawValue={draft.labNotes} />
+                    <PdfFieldItem label="Observações para a operação Nexor" rawValue={draft.opsNotes} />
                     <PdfFieldItem label="Escaneamento 3D intraoral" rawValue={draft.scan3dFileName} />
                   </Section>
                 </>
@@ -601,7 +601,7 @@ function FinalAnamnesisDocument({
             Suas informações estão protegidas. Esta ficha segue diretrizes de privacidade e segurança clínica da jornada odontológica.
           </Text>
           <Text style={styles.footerText}>
-            Ordem {getOrderDisplayId(order)} | Laboratório: {value(draft.selectedLabId)} | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
+            Ordem {getOrderDisplayId(order)} | Produção externa: Nexor | LGPD: {draft.lgpdConfirmed ? 'Ciente' : 'Pendente'}
           </Text>
         </View>
       </Page>

@@ -19,7 +19,6 @@ const Sobre = lazy(() => import('../pages/Sobre').then(({ Sobre }) => ({ default
 const BiteplanerPage = lazy(() => import('../pages/BiteplanerPage').then(({ BiteplanerPage }) => ({ default: BiteplanerPage })));
 const ConhecaOBiteplaner = lazy(() => import('../pages/ConhecaOBiteplaner').then(({ ConhecaOBiteplaner }) => ({ default: ConhecaOBiteplaner })));
 const Parceiros = lazy(() => import('../pages/Parceiros').then(({ Parceiros }) => ({ default: Parceiros })));
-const DemoAdm = lazy(() => import('../pages/DemoAdm').then(({ DemoAdm }) => ({ default: DemoAdm })));
 const PainelHome = lazy(() => import('../pages/painel/PainelHome').then(({ PainelHome }) => ({ default: PainelHome })));
 const CadastroPerfilBiteplaner = lazy(() => import('../pages/painel/CadastroPerfilBiteplaner').then(({ CadastroPerfilBiteplaner }) => ({ default: CadastroPerfilBiteplaner })));
 const MinhaConta = lazy(() => import('../pages/painel/MinhaConta').then(({ MinhaConta }) => ({ default: MinhaConta })));
@@ -29,13 +28,11 @@ const BiteplanerHome = lazy(() => import('../pages/painel/BiteplanerHome').then(
 const BiteplanerOrders = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrders }) => ({ default: BiteplanerOrders })));
 const BiteplanerOrderDetail = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrderDetail }) => ({ default: BiteplanerOrderDetail })));
 const BiteplanerOrderCompletion = lazy(() => import('../pages/painel/BiteplanerOrders').then(({ BiteplanerOrderCompletion }) => ({ default: BiteplanerOrderCompletion })));
-const FinanceiroRecebedor = lazy(() => import('../pages/painel/FinanceiroRecebedor').then(({ FinanceiroRecebedor }) => ({ default: FinanceiroRecebedor })));
 const PartnerReferralPage = lazy(() => import('../pages/painel/PartnerReferralPage').then(({ PartnerReferralPage }) => ({ default: PartnerReferralPage })));
 const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBiteplaner').then(({ RelatoriosBiteplaner }) => ({ default: RelatoriosBiteplaner })));
 const AdminHome = lazy(() => import('../pages/painel/admin/AdminHome').then(({ AdminHome }) => ({ default: AdminHome })));
 const AdminOrders = lazy(() => import('../pages/painel/admin/AdminOrders').then(({ AdminOrders }) => ({ default: AdminOrders })));
 const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
-const AdminLaboratories = lazy(() => import('../pages/painel/admin/AdminLaboratories').then(({ AdminLaboratories }) => ({ default: AdminLaboratories })));
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return (
@@ -134,7 +131,6 @@ export const router = createBrowserRouter([
   { path: '/entrar', element: <LazyRoute><Login /></LazyRoute> },
   { path: '/cadastro', element: <LazyRoute><Cadastro /></LazyRoute> },
   { path: '/recuperar-senha', element: <LazyRoute><RecuperarSenha /></LazyRoute> },
-  { path: '/demo-adm', element: <LazyRoute><DemoAdm /></LazyRoute> },
   { path: '/conta', element: <ProtectedRedirect><AccountRedirect /></ProtectedRedirect> },
   { path: '/painel', element: <ProtectedRedirect><PortalRootRedirect /></ProtectedRedirect> },
   { path: '/painel/home', element: <PainelRoute><PainelHome /></PainelRoute> },
@@ -151,7 +147,6 @@ export const router = createBrowserRouter([
   { path: '/painel/biteplaner/ordens', element: <PainelRoute><BiteplanerOrders /></PainelRoute> },
   { path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><BiteplanerOrderDetail /></PainelRoute> },
   { path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><BiteplanerOrderCompletion /></PainelRoute> },
-  { path: '/painel/biteplaner/financeiro', element: <PainelRoute><FinanceiroRecebedor /></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },
   { path: '/painel/biteplaner/avaliacoes', element: <Navigate to="/painel/home" replace /> },
   { path: '/painel/biteplaner/jornada', element: <Navigate to="/painel/home" replace /> },
@@ -160,6 +155,5 @@ export const router = createBrowserRouter([
   { path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> },
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
   { path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> },
-  { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLaboratories /></AdminPainelRoute> },
   { path: '*', element: <Navigate to="/" replace /> },
 ]);

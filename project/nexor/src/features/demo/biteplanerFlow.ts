@@ -8,7 +8,7 @@ export {
   type StatusPresentation,
 } from '../biteplaner/orders/orderPresenter';
 
-export type AccessMode = 'user' | 'partner' | 'dentist' | 'lab' | 'admin';
+export type AccessMode = 'user' | 'partner' | 'dentist' | 'admin';
 
 export type AccessOption = {
   key: AccessMode;
@@ -77,9 +77,9 @@ export type DemoOrderSummary = {
   customer_profile_id?: string | null;
   user_profile_id?: string | null;
   practice_location_id?: string | null;
-  lab_profile_id?: string | null;
-  labAssignments?: DemoLabAssignmentSummary[];
-  labAssignmentView?: (DemoLabAssignmentSummary & { isCurrent: boolean }) | null;
+  external_production_provider_id?: string | null;
+  externalProductionRecords?: DemoExternalProductionRecordSummary[];
+  externalProductionView?: (DemoExternalProductionRecordSummary & { isCurrent: boolean }) | null;
   customer?: {
     id?: string | null;
     full_name: string | null;
@@ -124,16 +124,16 @@ export type DemoOrderSummary = {
   clinicalLinkSnapshot?: ClinicalLinkSnapshot | null;
 };
 
-export type DemoLabAssignmentSummary = {
+export type DemoExternalProductionRecordSummary = {
   id: string;
   orderId: string;
-  labProfileId: string;
+  externalProductionProviderId: string;
   sequence: number;
   status:
     | 'awaiting_acceptance'
     | 'in_production'
     | 'returned_for_adjustment'
-    | 'replaced_by_other_lab'
+    | 'replaced_by_other_external_provider'
     | 'completed'
     | 'cancelled';
   productionRequestVersionId: string | null;
@@ -217,11 +217,11 @@ export type ProductionRequestDraft = {
   anamnesisSummary: string;
   anamnesisDownloaded: boolean;
   productionRequestSummary: string;
-  labNotes: string;
+  opsNotes: string;
   scan3dFileName: string;
   scan3dFileRef?: ExternalFileReference | null;
   lgpdConfirmed: boolean;
-  selectedLabId: string | null;
+  externalProductionProviderId: string | null;
   purchaseConfiguration?: BiteplanerPurchaseConfiguration | null;
   purchaseDivergenceConfirmed?: boolean;
 };
@@ -317,45 +317,6 @@ export type PracticeLocationApiRecord = {
     license_status?: string | null;
     training_status?: string | null;
   } | null;
-};
-
-export type DemoLicensedLabSelection = {
-  id: string;
-  profileId?: string;
-  name: string;
-  cnpj?: string;
-  professionalSummary?: string;
-  address: string;
-  cep: string;
-  phone: string;
-  serviceHours?: string;
-  city?: string;
-  state?: string;
-  reviewScore: number;
-  distanceKm: number;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
-};
-
-export type LicensedLabSelectionApiRecord = {
-  id: string;
-  profileId: string;
-  labName: string;
-  cnpj: string;
-  professionalSummary: string;
-  address: string;
-  cep: string;
-  phone: string;
-  email?: string;
-  serviceHours: string;
-  city?: string;
-  state?: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
 };
 
 export type DemoAppointment = {
@@ -475,29 +436,6 @@ export type DentistLicenseRequest = {
   metadata?: Record<string, unknown>;
 };
 
-export type LabLicenseRequest = {
-  id: string;
-  profileId: string;
-  status: 'pending' | 'active' | 'rejected' | 'suspended';
-  workflowStatus: string;
-  labName: string;
-  cnpj: string;
-  cpf?: string;
-  professionalSummary: string;
-  submittedAt: string;
-  locations: Array<{
-    name: string;
-    address: string;
-    cep: string;
-    complement?: string;
-    phone?: string;
-    serviceHours: string;
-    city?: string;
-    state?: string;
-  }>;
-  metadata?: Record<string, unknown>;
-};
-
 export type AccountNotification = {
   id: string;
   title: string;
@@ -517,7 +455,7 @@ export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   athleteDentistForms: 'user',
   athletePayment: 'user',
   athleteTreatmentRequired: 'user',
-  athleteLabProduction: 'user',
+  athleteExternalProduction: 'user',
   athleteAdaptation: 'user',
   athleteFollowUp: 'user',
   athleteIneligible: 'user',
@@ -527,10 +465,6 @@ export const PERSONA_MODE: Record<DemoPersona, AccessMode> = {
   dentistApproved: 'dentist',
   dentistProgress: 'dentist',
   dentistLicensed: 'dentist',
-  lab: 'lab',
-  labApproved: 'lab',
-  labProgress: 'lab',
-  labLicensed: 'lab',
   admin: 'admin'
 };
 
@@ -550,8 +484,8 @@ export function getAthletePrimaryOrder(orders: DemoOrderSummary[]) {
     'awaiting_scheduling',
     'awaiting_dentist_acceptance',
     'in_progress',
-    'awaiting_lab_start',
-    'lab_processing',
+    'awaiting_external_production',
+    'external_production_processing',
     'product_received_by_clinic',
     'awaiting_adaptation',
     'follow_up',
@@ -757,40 +691,12 @@ export async function rejectDentistLicenseRequest(productRoleId: string, reason:
   );
 }
 
-export async function fetchLabLicenseRequests(token?: string, status?: string) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : '';
-  return api.get<{ requests: LabLicenseRequest[] }>(
-    `/v1/admin/biteplaner/lab-license-requests${query}`,
-    token
-  );
-}
-
-export async function approveLabLicenseRequest(productRoleId: string, token?: string) {
-  return api.post<{ request: LabLicenseRequest }>(
-    `/v1/admin/biteplaner/laboratories/${productRoleId}/approve`,
-    {},
-    token
-  );
-}
-
-export async function rejectLabLicenseRequest(productRoleId: string, reason: string, token?: string) {
-  return api.post<{ request: LabLicenseRequest }>(
-    `/v1/admin/biteplaner/laboratories/${productRoleId}/reject`,
-    { reason },
-    token
-  );
-}
-
 export async function markAccountNotificationRead(notificationId: string, token?: string) {
   return api.patch<{ notification: AccountNotification }>(
     `/v1/account/notifications/${notificationId}/read`,
     {},
     token
   );
-}
-
-export async function fetchLicensedLabs(token?: string) {
-  return api.get<{ labs: LicensedLabSelectionApiRecord[] }>('/v1/account/biteplaner/licensed-labs', token);
 }
 
 export async function createPartnerInviteLink(
@@ -1027,11 +933,7 @@ export async function registerClinicalDecision(
   return { order };
 }
 
-export async function sendToLab(orderId: string, token?: string) {
-  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/send-to-lab`, {}, token);
-}
-
-export async function completePreLabChecklist(
+export async function completeOpsProductionReviewChecklist(
   orderId: string,
   payload: {
     anamnesisSummary: string;
@@ -1041,10 +943,10 @@ export async function completePreLabChecklist(
   },
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/pre-lab-checklist/complete`, payload, token);
+  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/ops-production-review-checklist/complete`, payload, token);
 }
 
-export async function savePreLabChecklistDraft(
+export async function saveOpsProductionReviewChecklistDraft(
   orderId: string,
   payload: {
     anamnesisSummary: string;
@@ -1054,7 +956,7 @@ export async function savePreLabChecklistDraft(
   },
   token?: string
 ) {
-  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/pre-lab-checklist/draft`, payload, token);
+  return api.post<{ order: DemoOrderSummary }>(`/v1/orders/${orderId}/ops-production-review-checklist/draft`, payload, token);
 }
 
 export async function saveProductionRequestDraft(
@@ -1073,25 +975,25 @@ export async function completeProductionRequest(
   return api.post<unknown>(`/v1/orders/${orderId}/forms/production-request`, { payload }, token);
 }
 
-export async function returnToDentist(orderId: string, reason: string, token?: string) {
+export async function requestExternalProductionAdjustment(orderId: string, reason: string, token?: string) {
   return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/lab-return-for-adjustment`,
+    `/v1/orders/${orderId}/external-production-adjustment-requested`,
     { reason },
     token
   );
 }
 
-export async function startLabProduction(orderId: string, token?: string) {
+export async function startExternalProduction(orderId: string, token?: string) {
   return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/lab-production-started`,
+    `/v1/orders/${orderId}/external-production-started`,
     {},
     token
   );
 }
 
-export async function completeLabProduction(orderId: string, token?: string) {
+export async function completeExternalProduction(orderId: string, token?: string) {
   return api.post<{ order: DemoOrderSummary }>(
-    `/v1/orders/${orderId}/lab-production-completed`,
+    `/v1/orders/${orderId}/external-production-completed`,
     {},
     token
   );

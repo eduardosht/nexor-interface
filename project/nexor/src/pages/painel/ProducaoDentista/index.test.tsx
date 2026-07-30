@@ -31,7 +31,7 @@ function readSourceFiles(root: string): string[] {
       return readSourceFiles(path);
     }
 
-    return /\.(ts|tsx)$/.test(entry) ? [readFileSync(path, 'utf8')] : [];
+    return /\.(test|spec)\.(ts|tsx)$/.test(entry) ? [] : /\.(ts|tsx)$/.test(entry) ? [readFileSync(path, 'utf8')] : [];
   });
 }
 
@@ -47,8 +47,8 @@ vi.mock('../../../lib/api', () => ({
 }));
 
 vi.mock('react-leaflet', () => ({
-  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="lab-map">{children}</div>,
-  TileLayer: () => <div data-testid="lab-tiles" />,
+  MapContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="provider-map">{children}</div>,
+  TileLayer: () => <div data-testid="provider-tiles" />,
   useMap: () => ({
     fitBounds: vi.fn(),
     setView: vi.fn(),
@@ -60,7 +60,7 @@ vi.mock('react-leaflet', () => ({
     children?: React.ReactNode;
     eventHandlers?: { click?: () => void };
   }) => (
-    <button type="button" data-testid="lab-marker" onClick={() => eventHandlers?.click?.()}>
+    <button type="button" data-testid="provider-marker" onClick={() => eventHandlers?.click?.()}>
       {children}
     </button>
   ),
@@ -240,40 +240,14 @@ function getExpectedAgeYears(birthDateValue: string) {
   return String(age);
 }
 
-function licensedLabsResponse(overrides: Array<Record<string, unknown>> = []) {
-  const [first = {}] = overrides;
-
-  return {
-    labs: [
-      {
-        id: 'lab-role-edu',
-        profileId: 'profile-lab-edu',
-        labName: 'Laboratorio do Edu',
-        cnpj: '27.122.387/0001-05',
-        professionalSummary: 'Laboratorio do Edu com um resumo operacional',
-        address: 'Rua Conselheiro Brotero - Santa Cecilia, São Paulo - SP',
-        cep: '01232-011',
-        phone: '(11) 1111-1111',
-        serviceHours: 'Segunda a Sexta - 06h a 19h',
-        city: 'São Paulo',
-        state: 'SP',
-        coordinates: { lat: -23.533456, lng: -46.6594115 },
-        ...first,
-      },
-    ],
-  };
-}
-
 function configureApiGet({
   order = createOrder(),
   forms = [reviewedSharedIntake()],
   orderForms = [],
-  licensedLabs = licensedLabsResponse(),
 }: {
   order?: ReturnType<typeof createOrder>;
   forms?: Array<Record<string, unknown>>;
   orderForms?: unknown[];
-  licensedLabs?: ReturnType<typeof licensedLabsResponse>;
 } = {}) {
   const configuredOrderId = String(order.id);
 
@@ -292,10 +266,6 @@ function configureApiGet({
 
     if (url === `/v1/orders/${configuredOrderId}/forms`) {
       return Promise.resolve({ forms: orderForms });
-    }
-
-    if (url === '/v1/account/biteplaner/licensed-labs') {
-      return Promise.resolve(licensedLabs);
     }
 
     return Promise.resolve({});
@@ -353,11 +323,11 @@ function createProductionRequestDraft(overrides: Partial<ProductionRequestDraft>
     anamnesisSummary: 'Resumo clínico completo.',
     anamnesisDownloaded: false,
     productionRequestSummary: 'Solicitação preenchida.',
-    labNotes: '',
+    opsNotes: '',
     scan3dFileName: '',
     scan3dFileRef: null,
     lgpdConfirmed: true,
-    selectedLabId: 'profile-lab-edu',
+    externalProductionProviderId: 'external-provider-edu',
     purchaseConfiguration: null,
     purchaseDivergenceConfirmed: false,
     ...overrides,
@@ -389,7 +359,7 @@ function renderProductionRequestFields() {
           disabled={
             (!draft.scan3dFileRef && !selectedScanFile) ||
             !draft.scan3dFileName ||
-            !draft.selectedLabId ||
+            !draft.externalProductionProviderId ||
             !draft.lgpdConfirmed
           }
         >
@@ -440,19 +410,19 @@ async function ensureAnamnesisSummaryStep() {
   await waitFor(
     () => {
       expect(
-        screen.queryByText(/etapa 1 de 4/i) ??
-          screen.queryByText(/etapa 2 de 4/i) ??
-          screen.queryByText(/etapa 3 de 4/i)
+        screen.queryByText(/etapa 1 de 3/i) ??
+          screen.queryByText(/etapa 2 de 3/i) ??
+          screen.queryByText(/etapa 3 de 3/i)
       ).toBeTruthy();
     },
     { timeout: 5000 }
   );
 
-  if (screen.queryByText(/etapa 3 de 4/i)) {
+  if (screen.queryByText(/etapa 3 de 3/i)) {
     return;
   }
 
-  if (screen.queryByText(/etapa 2 de 4/i)) {
+  if (screen.queryByText(/etapa 2 de 3/i)) {
     await screen.findByTestId('dental-anamnesis-record');
     return;
   }
@@ -541,7 +511,7 @@ function getGeneratedClass(element: Element) {
   return generatedClass;
 }
 
-async function fillProductionRequestUntilLabSelection() {
+async function fillProductionRequestUntilReadyToComplete() {
   await screen.findByTestId('athlete-order-card');
   await ensureAnamnesisSummaryStep();
 
@@ -563,9 +533,7 @@ async function fillProductionRequestUntilLabSelection() {
 
   await uploadProductionScan();
   fireEvent.click(screen.getByRole('checkbox'));
-  await clickWizardNextButton();
-
-  fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+  await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
 }
 
 async function uploadProductionScan(fileName = 'scan.stl', type = 'model/stl') {
@@ -717,9 +685,9 @@ describe('ProducaoDentista', () => {
     expect(productionRequestFieldsSource).toContain('}, delayMs);');
     expect(productionRequestFieldsSource).toContain('function useDebouncedDraftText(value: string, onCommit: (value: string) => void, delayMs = 300)');
     expect(productionRequestFieldsSource).toContain('const productionRequestSummaryField = useDebouncedDraftText');
-    expect(productionRequestFieldsSource).toContain('const labNotesField = useDebouncedDraftText');
+    expect(productionRequestFieldsSource).toContain('const opsNotesField = useDebouncedDraftText');
     expect(productionRequestFieldsSource).not.toContain('onChange={(event: FieldChangeEvent) => onChange({ productionRequestSummary: event.target.value })}');
-    expect(productionRequestFieldsSource).not.toContain('onChange={(event: FieldChangeEvent) => onChange({ labNotes: event.target.value })}');
+    expect(productionRequestFieldsSource).not.toContain('onChange={(event: FieldChangeEvent) => onChange({ opsNotes: event.target.value })}');
   });
 
   it('keeps the dental anamnesis card free of redundant order metadata', () => {
@@ -803,7 +771,7 @@ describe('ProducaoDentista', () => {
     expect(productionSource).not.toContain('<Button');
     expect(dentalAnamnesisSource).toContain('AdminFormButton');
     expect(dentalAnamnesisSource).not.toContain('<Button');
-    expect(productionSource).toMatch(/<AdminFormButton(?=[\s\S]*?onClick=\{\(\) => void handleSearchLabs\(\)\})(?=[\s\S]*?trailingIcon=\{<Search)/);
+    expect(productionSource).not.toContain('handleSearchLabs');
     expect(productionSource).toMatch(/<AdminFormButton(?=[\s\S]*?variant="secondary")(?=[\s\S]*?leadingIcon=\{<ArrowLeft)/);
     expect(productionSource).toContain('hideProceedActionIcons');
     expect(productionSource).not.toMatch(/<AdminFormButton(?=[\s\S]*?onClick=\{handleNextStep\})(?=[\s\S]*?trailingIcon=\{<ChevronRight)/);
@@ -837,7 +805,7 @@ describe('ProducaoDentista', () => {
     expect(productionStyles).toContain('flex-wrap: nowrap;');
     expect(productionStyles).not.toContain('flex-direction: column;');
     expect(workflowFormsStyles).toContain('flex: 1 1 calc(50% - 7px);');
-    expect(workflowFormsStyles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr));');
+    expect(workflowFormsStyles).toContain('grid-template-columns: repeat(2, minmax(0, 1fr));');
     expect(workflowFormsStyles).toContain('position: fixed;');
     expect(workflowFormsStyles).toContain('bottom: max(8px, env(safe-area-inset-bottom));');
     expect(workflowFormsStyles).toContain('export const PrivacyActions = styled(Actions)``;');
@@ -883,12 +851,16 @@ describe('ProducaoDentista', () => {
       expect(labelBlock).not.toContain('text-transform: uppercase');
       expect(labelBlock).not.toContain('letter-spacing');
     });
-
     [
-      ...readSourceFiles(join(process.cwd(), 'src/pages/painel')),
+      readFileSync(join(process.cwd(), 'src/pages/painel/admin/AdminDentistLicensing.tsx'), 'utf8'),
+      readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/index.tsx'), 'utf8'),
+      readFileSync(join(process.cwd(), 'src/pages/painel/ProducaoDentista/ProductionRequestFields.tsx'), 'utf8'),
       ...readSourceFiles(join(process.cwd(), '../packages/design-system/src/components')),
     ].forEach((source) => {
-      const sourceWithAllowedTinyMetadataRemoved = source.replace(/const PartnerEmail = styled\.span`[\s\S]*?`;/g, '');
+      const sourceWithAllowedTinyMetadataRemoved = source
+        .replace(/const PartnerEmail = styled\.span`[\s\S]*?`;/g, '')
+        .replace(/const CompactModalDetailValue = styled\(AdminModalDetailValue\)`[\s\S]*?`;/g, '')
+        .replace(/const CompactModalDetailLabel = styled\(AdminModalDetailLabel\)`[\s\S]*?`;/g, '');
       expect(sourceWithAllowedTinyMetadataRemoved).not.toMatch(
         /font-size:\s*(0|10|11)px|font-size:\s*0;|font-size:\s*0\.(?:[0-6][0-9]*|7[0-4])rem/
       );
@@ -900,7 +872,7 @@ describe('ProducaoDentista', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders the dentist production wizard with four steps and blocks completion until all required data exists', async () => {
+  it('renders the dentist production wizard with three steps and blocks completion until all required data exists', async () => {
     configureApiGet();
 
     renderPage();
@@ -915,7 +887,7 @@ describe('ProducaoDentista', () => {
     expect(orderCard).not.toHaveTextContent(/status atual/i);
     expect(orderCard).not.toHaveTextContent(/última atualização/i);
     expect(orderCard).not.toHaveTextContent(/etapa atual/i);
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.queryByLabelText(/resumo da avaliação inicial \/ anamnese/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
@@ -925,9 +897,9 @@ describe('ProducaoDentista', () => {
     expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
     expect(getWizardNextButton()).toBeEnabled();
 
-    await fillProductionRequestUntilLabSelection();
-    expect(screen.getAllByLabelText(/4\.0 de 5 avaliações do laboratório/i).length).toBeGreaterThan(0);
-    expect(screen.queryByText(/2 avaliações/i)).not.toBeInTheDocument();
+    await fillProductionRequestUntilReadyToComplete();
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
+    expect(screen.queryByTestId('provider-map')).not.toBeInTheDocument();
   }, 10_000);
 
   it('marks required fields with (*) in the production request step', async () => {
@@ -935,7 +907,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     await clickWizardNextButton();
 
     expect(await screen.findByLabelText(/solicitação de produção \(\*\)/i)).toBeInTheDocument();
@@ -958,7 +930,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getAllByText(/pedido biteplaner/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^linha impact$/i).length).toBeGreaterThan(0);
@@ -1014,11 +986,11 @@ describe('ProducaoDentista', () => {
             anamnesisSummary: 'Resumo clínico salvo.',
             anamnesisDownloaded: true,
             productionRequestSummary: 'Solicitação de produção já salva no banco.',
-            labNotes: 'Observações salvas para o laboratório.',
+            opsNotes: 'Observações salvas para a operação Nexor.',
             scan3dFileName: 'scan-salvo.stl',
             purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
             lgpdConfirmed: true,
-            selectedLabId: 'profile-lab-edu',
+            externalProductionProviderId: null,
           },
         });
       }
@@ -1029,12 +1001,12 @@ describe('ProducaoDentista', () => {
     renderPage('/painel/dentista/producao/BP-DEMO-004#production-request');
 
     expect(await screen.findByDisplayValue('Solicitação de produção já salva no banco.')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Observações salvas para o laboratório.')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Observações salvas para a operação Nexor.')).toBeInTheDocument();
     expect(screen.getByText(/scan-salvo\.stl/i)).toBeInTheDocument();
-    expect(screen.getByText(/pedido biteplaner confirmado pelo cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/pedido biteplaner confirmado pelo dentista/i)).toBeInTheDocument();
     expect(screen.getByText(/^preto$/i)).toBeInTheDocument();
     expect(screen.getByText(/^2$/i)).toBeInTheDocument();
-    expect(screen.getByText(/o cliente alterou o pedido antes do pagamento/i)).toBeInTheDocument();
+    expect(screen.getByText(/o dentista alterou o pedido antes do pagamento/i)).toBeInTheDocument();
   });
 
   it('opens directly on the anamnesis summary when the anamnesis was already saved', async () => {
@@ -1072,10 +1044,10 @@ describe('ProducaoDentista', () => {
             anamnesisSummary: 'Resumo clínico salvo.',
             anamnesisDownloaded: true,
             productionRequestSummary: '',
-            labNotes: '',
+            opsNotes: '',
             scan3dFileName: '',
             lgpdConfirmed: false,
-            selectedLabId: '',
+            externalProductionProviderId: '',
           },
         });
       }
@@ -1085,7 +1057,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.getAllByText(/resumo clínico completo/i).length).toBeGreaterThan(0);
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
@@ -1109,11 +1081,11 @@ describe('ProducaoDentista', () => {
 
     renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /salvar complemento do dentista/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /aguardando pagamento do cliente/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /aguardando pagamento do dentista/i })).toBeDisabled();
   });
 
   it('allows the dentist to continue production after payment releases dentist forms', async () => {
@@ -1121,7 +1093,7 @@ describe('ProducaoDentista', () => {
       order: createOrder({
         id: 'BP-DEMO-004',
         status: 'awaiting_dentist_forms',
-        statusLabel: 'Aguardando envio ao laboratório',
+        statusLabel: 'Aguardando documentação do dentista',
         stage: 'awaiting_dentist_forms',
         productionRequestDraft: null,
       }),
@@ -1130,13 +1102,13 @@ describe('ProducaoDentista', () => {
 
     renderPage('/painel/dentista/producao/BP-DEMO-004');
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(getWizardNextButton()).toBeEnabled();
-    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do dentista/i })).not.toBeInTheDocument();
   });
 
-  it('allows the dentist to resend production after the laboratory returns an adjustment', async () => {
+  it('allows the dentist to resend production after external production requests an adjustment', async () => {
     configureApiGet({
       order: createOrder({
         id: 'BP-DEMO-004',
@@ -1146,10 +1118,10 @@ describe('ProducaoDentista', () => {
         productionRequestDraft: {
           anamnesisSummary: 'Resumo clínico salvo.',
           productionRequestSummary: 'Solicitação devolvida para ajuste.',
-          labNotes: 'Revisar escaneamento solicitado pelo laboratório.',
+          opsNotes: 'Revisar escaneamento solicitado pela operação Nexor.',
           scan3dFileName: 'scan.stl',
           lgpdConfirmed: true,
-          selectedLabId: 'lab-demo-001',
+          externalProductionProviderId: null,
         },
       }),
       forms: [reviewedSharedIntake()],
@@ -1157,10 +1129,10 @@ describe('ProducaoDentista', () => {
 
     renderPage('/painel/dentista/producao/BP-DEMO-004');
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.queryByText(/pagamento do biteplaner pendente/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do dentista/i })).not.toBeInTheDocument();
     expect(getWizardNextButton()).toBeEnabled();
   });
 
@@ -1198,7 +1170,7 @@ describe('ProducaoDentista', () => {
 
     renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
 
-    expect(await screen.findByText(/etapa 1 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 1 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Dra Maria Solicitante')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Cliente inapto na consulta anterior.')).not.toBeInTheDocument();
@@ -1241,7 +1213,7 @@ describe('ProducaoDentista', () => {
 
     renderPage('/painel/dentista/producao/c3dfd202-f15a-4c53-83f8-b82f6948c8be');
 
-    expect(await screen.findByText(/etapa 1 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 1 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('workflow-forms-panel')).toBeInTheDocument();
     expect(screen.getAllByText(/formulário clínico biteplaner/i)).toHaveLength(1);
     expect(screen.queryByDisplayValue('dentista2@gmail.com')).not.toBeInTheDocument();
@@ -1367,13 +1339,13 @@ describe('ProducaoDentista', () => {
     renderPage();
 
     await screen.findByTestId('athlete-order-card');
-    await screen.findByText(/etapa 2 de 4/i);
+    await screen.findByText(/etapa 2 de 3/i);
 
-    expect(screen.getByText(/etapa 2 de 4/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /aguardando pagamento do cliente/i })).toBeDisabled();
+    expect(screen.getByText(/etapa 2 de 3/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /aguardando pagamento do dentista/i })).toBeDisabled();
     expect(screen.queryByRole('button', { name: /^pr.*ximo$/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^solicita.*produ/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/o cliente precisa concluir o pagamento/i)).toBeInTheDocument();
+    expect(screen.getByText(/o dentista precisa concluir o pagamento/i)).toBeInTheDocument();
   });
 
   it('explains the reassessment path when the client is ineligible instead of mentioning payment', async () => {
@@ -1388,13 +1360,13 @@ describe('ProducaoDentista', () => {
     renderPage();
 
     await screen.findByTestId('athlete-order-card');
-    await screen.findByText(/etapa 2 de 4/i);
+    await screen.findByText(/etapa 2 de 3/i);
 
     expect(screen.getByText(/cliente inapto para o biteplaner/i)).toBeInTheDocument();
     expect(screen.getByText(/selecionar outra clínica ou reagendar uma consulta com a mesma clínica/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /aguardando reagendamento do cliente/i })).toBeDisabled();
     expect(screen.queryByText(/concluir o pagamento do biteplaner/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /aguardando pagamento do cliente/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /aguardando pagamento do dentista/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^solicita.*produ/i)).not.toBeInTheDocument();
   });
 
@@ -1547,8 +1519,8 @@ describe('ProducaoDentista', () => {
 
     await uploadProductionScan();
 
-    expect(screen.queryByRole('button', { name: /finalizar/i })).not.toBeInTheDocument();
-    expect(getWizardNextButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^pr.*ximo$/i })).not.toBeInTheDocument();
   });
 
   it('keeps the intraoral scan selected locally before production request submission', async () => {
@@ -1577,7 +1549,7 @@ describe('ProducaoDentista', () => {
     );
   }, 15000);
 
-  it('requires purchase divergence confirmation before moving from production request to lab selection', async () => {
+  it('requires purchase divergence confirmation before completing the production request', async () => {
     configureApiGet({
       order: createOrder({
         purchaseConfiguration: { productKey: 'biteplaner', quantity: 2, model: 'impacto', color: 'preto' },
@@ -1593,7 +1565,7 @@ describe('ProducaoDentista', () => {
     renderPage();
 
     await screen.findByTestId('athlete-order-card');
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     await clickWizardNextButton();
 
@@ -1606,15 +1578,15 @@ describe('ProducaoDentista', () => {
     await act(async () => {
       await new Promise((resolve) => window.setTimeout(resolve, 350));
     });
-    await waitFor(() => expect(getWizardNextButton()).toBeDisabled());
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeDisabled());
     expect(screen.getByRole('checkbox', { name: /confirmo que revisei a divergência/i })).not.toBeChecked();
 
     fireEvent.click(screen.getByRole('checkbox', { name: /confirmo que revisei a divergência/i }));
 
-    await waitFor(() => expect(getWizardNextButton()).toBeEnabled());
-  });
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
+  }, 10_000);
 
-  it('keeps the production request draft filled after moving to the lab step and back', async () => {
+  it('keeps the dentist production request as the final step without requiring external provider selection', async () => {
     configureApiGet();
     renderPage();
 
@@ -1626,24 +1598,15 @@ describe('ProducaoDentista', () => {
     fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
       target: { value: 'Solicitação preenchida.' },
     });
-    fireEvent.change(screen.getByLabelText(/observações para o laboratório/i), {
+    fireEvent.change(screen.getByLabelText(/observações para a operação Nexor/i), {
       target: { value: 'Observações operacionais.' },
     });
     await uploadProductionScan();
     await waitFor(() => expect(screen.getByText('scan.stl')).toBeInTheDocument());
     fireEvent.click(screen.getByRole('checkbox'));
 
-    await clickWizardNextButton();
-    expect(await screen.findByText(/selecionar um laboratório licenciado/i)).toBeInTheDocument();
-    expect(screen.queryByText(/preencher a solicitação de produção/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/anexar o escaneamento 3d intraoral/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/confirmar o aceite de retenção e rastreabilidade/i)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /voltar/i }));
-
-    expect(await screen.findByDisplayValue('Solicitação preenchida.')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Observações operacionais.')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).toBeChecked();
+    expect(screen.getByText(/etapa 3 de 3/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
     expect(mockApiPost.mock.calls.some(([url]) => url === '/v1/orders/BP-DEMO-004/production-request/draft')).toBe(false);
   });
 
@@ -1713,9 +1676,9 @@ describe('ProducaoDentista', () => {
       if (url === '/v1/orders/BP-DEMO-004/clinical-evaluation') {
         return Promise.resolve({
           order: createOrder({
-            status: 'lab_processing',
-            statusLabel: 'Em processo - Laboratório',
-            stage: 'lab_production',
+            status: 'external_production_processing',
+            statusLabel: 'Em revisão operacional Nexor',
+            stage: 'external_production',
           }),
         });
       }
@@ -1740,9 +1703,7 @@ describe('ProducaoDentista', () => {
 
     await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
-    await clickWizardNextButton();
-
-    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
 
     const concludeButton = screen.getByRole('button', { name: /finalizar/i });
     expect(concludeButton).toBeEnabled();
@@ -1772,7 +1733,7 @@ describe('ProducaoDentista', () => {
               scanStatus: 'not_scanned',
             }),
             lgpdConfirmed: true,
-            selectedLabId: 'profile-lab-edu',
+            externalProductionProviderId: null,
             anamnesisDownloaded: false,
           }),
         },
@@ -1791,7 +1752,7 @@ describe('ProducaoDentista', () => {
     expect(await screen.findByText(LOCAL_FILE_READY)).toBeInTheDocument();
     expect(screen.getByTestId('scan-name')).toHaveTextContent('scan.stl');
     expect(screen.getByTestId('scan-ref')).toHaveTextContent('none');
-    expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
     expect(onUploadStateChange).not.toHaveBeenCalledWith(true);
     expect(mockApiPost).not.toHaveBeenCalledWith(
       '/v1/orders/BP-DEMO-004/attachments/production-scan3d/upload-intent',
@@ -1873,8 +1834,7 @@ describe('ProducaoDentista', () => {
     );
 
     fireEvent.click(screen.getByRole('checkbox'));
-    await clickWizardNextButton();
-    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
     await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
@@ -1910,7 +1870,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await fillProductionRequestUntilLabSelection();
+    await fillProductionRequestUntilReadyToComplete();
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
     await waitFor(() => expect(putFile).toHaveBeenCalledTimes(1));
@@ -1955,7 +1915,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await fillProductionRequestUntilLabSelection();
+    await fillProductionRequestUntilReadyToComplete();
     const concludeButton = screen.getByRole('button', { name: /finalizar/i });
 
     fireEvent.click(concludeButton);
@@ -1992,7 +1952,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await fillProductionRequestUntilLabSelection();
+    await fillProductionRequestUntilReadyToComplete();
 
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
@@ -2023,7 +1983,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await fillProductionRequestUntilLabSelection();
+    await fillProductionRequestUntilReadyToComplete();
 
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
@@ -2061,7 +2021,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    await fillProductionRequestUntilLabSelection();
+    await fillProductionRequestUntilReadyToComplete();
 
     fireEvent.click(screen.getByRole('button', { name: /finalizar/i }));
 
@@ -2075,7 +2035,7 @@ describe('ProducaoDentista', () => {
     expect(URL.createObjectURL).not.toHaveBeenCalled();
   });
 
-  it('shows licensed labs on the map and allows selecting one before completion', async () => {
+  it('does not expose external supplier selection to the dentist in the MVP production request', async () => {
     configureApiGet();
 
     renderPage();
@@ -2090,33 +2050,12 @@ describe('ProducaoDentista', () => {
 
     await uploadProductionScan();
     fireEvent.click(screen.getByRole('checkbox'));
-    await clickWizardNextButton();
 
-    expect(screen.getByTestId('lab-map')).toBeInTheDocument();
-    fireEvent.click((await screen.findAllByRole('button', { name: /laboratorio do edu/i }))[1]);
-
-    expect(screen.getByText(/laboratório selecionado: laboratorio do edu/i)).toBeInTheDocument();
+    expect(screen.getByText(/etapa 3 de 3/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('provider-map')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /fornecedor do edu/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: /finalizar/i })).toBeEnabled());
   });
-
-  it('shows the approved laboratory address from the licensed lab account in the selection step', async () => {
-    configureApiGet();
-
-    renderPage();
-
-    await screen.findByTestId('athlete-order-card');
-    await ensureAnamnesisSummaryStep();
-    await clickWizardNextButton();
-    fireEvent.change(screen.getByLabelText(/solicitação de produção/i), {
-      target: { value: 'Solicitação preenchida.' },
-    });
-    await uploadProductionScan();
-    fireEvent.click(screen.getByRole('checkbox'));
-    await clickWizardNextButton();
-
-    expect(await screen.findByText(/rua conselheiro brotero - santa cecilia, são paulo - sp/i)).toBeInTheDocument();
-    expect(screen.getByText(/\(11\) 1111-1111 - 1\.2 km/i)).toBeInTheDocument();
-  });
-
   it('keeps the dentist data retention checkbox text regular with only keywords highlighted', async () => {
     configureApiGet();
 
@@ -2218,7 +2157,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     expect(screen.queryByTestId('workflow-forms-panel')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /editar/i })).not.toBeInTheDocument();
@@ -2566,7 +2505,7 @@ describe('ProducaoDentista', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/etapa 2 de 4/i)).toBeInTheDocument();
+    expect(await screen.findByText(/etapa 2 de 3/i)).toBeInTheDocument();
     expect(await screen.findByTestId('dental-anamnesis-record')).toBeInTheDocument();
     const originalCreateElement = document.createElement.bind(document);
     const createdAnchors: HTMLAnchorElement[] = [];

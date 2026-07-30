@@ -24,7 +24,7 @@ export const JOURNEY_STAGE_LABELS = [
   'Consulta inicial',
   'Decisão clínica',
   'Compra',
-  'Laboratório',
+  'Produção externa',
   'Adaptação e acompanhamento',
 ] as const;
 
@@ -42,13 +42,13 @@ export const STAGE_LABELS: Record<string, (typeof JOURNEY_STAGE_LABELS)[number]>
   treatment_required: 'Decisão clínica',
   ineligible_reassessment: 'Consulta inicial',
   awaiting_payment: 'Compra',
-  payment_confirmed: 'Laboratório',
-  awaiting_dentist_forms: 'Laboratório',
-  awaiting_lab_start: 'Laboratório',
-  ready_for_lab: 'Laboratório',
-  lab_production: 'Laboratório',
-  lab_processing: 'Laboratório',
-  dentist_adjustment_required: 'Laboratório',
+  payment_confirmed: 'Produção externa',
+  awaiting_dentist_forms: 'Produção externa',
+  awaiting_external_production: 'Produção externa',
+  ready_for_external_production: 'Produção externa',
+  external_production: 'Produção externa',
+  external_production_processing: 'Produção externa',
+  dentist_adjustment_required: 'Produção externa',
   product_received_by_clinic: 'Adaptação e acompanhamento',
   awaiting_adaptation: 'Adaptação e acompanhamento',
   follow_up: 'Adaptação e acompanhamento',
@@ -57,9 +57,9 @@ export const STAGE_LABELS: Record<string, (typeof JOURNEY_STAGE_LABELS)[number]>
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  awaiting_dentist_forms: 'Aguardando envio ao laboratório',
-  awaiting_lab_start: 'Aguardando aceite do laboratório',
-  lab_processing: 'Em produção',
+  awaiting_dentist_forms: 'Aguardando documentação do dentista',
+  awaiting_external_production: 'Em revisão operacional Nexor',
+  external_production_processing: 'Em produção',
   dentist_adjustment_required: 'Ajuste de produção',
   product_received_by_clinic: 'Aguardando recebimento pelo dentista',
   awaiting_adaptation: 'Aguardando adaptação',
@@ -105,7 +105,7 @@ export function getOrderStatusPresentation(order: OrderStatusSummary): StatusPre
     order.status === 'awaiting_dentist_acceptance' ||
     order.status === 'awaiting_payment' ||
     order.status === 'awaiting_dentist_forms' ||
-    order.status === 'awaiting_lab_start' ||
+    order.status === 'awaiting_external_production' ||
     order.status === 'dentist_adjustment_required' ||
     order.status === 'product_received_by_clinic' ||
     order.status === 'awaiting_adaptation' ||
@@ -118,7 +118,7 @@ export function getOrderStatusPresentation(order: OrderStatusSummary): StatusPre
     return { color: '#15803D', label };
   }
 
-  if (order.status === 'lab_processing' || order.status === 'in_progress' || order.status === 'appointment_confirmed') {
+  if (order.status === 'external_production_processing' || order.status === 'in_progress' || order.status === 'appointment_confirmed') {
     return { color: '#2563EB', label };
   }
 

@@ -20,9 +20,8 @@ describe('Privacidade (Nexor)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/políticas de privacidade/i);
     expect(screen.getByRole('button', { name: /geral nexor/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /usuário biteplaner/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /dentista licenciado/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^dentista licenciado/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /parceiro licenciado/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /laboratório licenciado/i })).toBeInTheDocument();
   });
 
   it('renderiza política específica do usuário Biteplaner com dados sensíveis de saúde', async () => {
@@ -36,20 +35,21 @@ describe('Privacidade (Nexor)', () => {
     expect(screen.getByText(/dados clínicos, dados de saúde/i)).toBeInTheDocument();
     expect(screen.getByText(/menores de 18 anos somente devem usar/i)).toBeInTheDocument();
     expect(screen.getByText(/geolocalização usada para encontrar clínicas próximas/i)).toBeInTheDocument();
+    expect(screen.getByText(/dados de compra e pagamento são tratados principalmente em relação ao dentista comprador/i)).toBeInTheDocument();
+    expect(screen.getByText(/dados mínimos podem ser compartilhados com fornecedor externo por contato externo conduzido pela Nexor/i)).toBeInTheDocument();
+    expect(screen.queryByText(/envio ocorre pelo dentista no fluxo operacional/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /baixar pdf/i })).toBeInTheDocument();
   });
 
-  it('explica que dentista e laboratório não têm dados bancários armazenados na Nexor', async () => {
+  it('explica dados financeiros do dentista sem publicar perfil legado de fornecedor operacional', async () => {
     const user = userEvent.setup();
     render(<Privacidade />, { wrapper: Wrapper });
 
-    await user.click(screen.getByRole('button', { name: /dentista licenciado/i }));
+    await user.click(screen.getByRole('button', { name: /^dentista licenciado/i }));
     expect(screen.getByText(/dados bancários não devem ser armazenados pela Nexor/i)).toBeInTheDocument();
-    expect(screen.getByText(/provedor externo de pagamento ou repasse/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /laboratório licenciado/i }));
-    expect(screen.getByText(/receba o scan da arcada dentária necessário à produção/i)).toBeInTheDocument();
-    expect(screen.getByText(/dado pessoal sensível\/de saúde/i)).toBeInTheDocument();
+    expect(screen.getByText(/provedor externo de pagamento/i)).toBeInTheDocument();
+    expect(screen.getByText(/acompanhar produção externa conduzida pela Nexor/i)).toBeInTheDocument();
+    expect(screen.queryByText(/enviar scan da arcada dentária ao fornecedor externo/i)).not.toBeInTheDocument();
   });
 
   it('mantém canal LGPD e direitos do titular em todos os documentos', async () => {

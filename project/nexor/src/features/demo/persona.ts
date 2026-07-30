@@ -16,7 +16,7 @@ export type DemoPersona =
   | 'athleteDentistForms'
   | 'athletePayment'
   | 'athleteTreatmentRequired'
-  | 'athleteLabProduction'
+  | 'athleteExternalProduction'
   | 'athleteAdaptation'
   | 'athleteFollowUp'
   | 'athleteIneligible'
@@ -26,10 +26,6 @@ export type DemoPersona =
   | 'dentistApproved'
   | 'dentistProgress'
   | 'dentistLicensed'
-  | 'lab'
-  | 'labApproved'
-  | 'labProgress'
-  | 'labLicensed'
   | 'admin';
 
 export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
@@ -42,7 +38,7 @@ export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
   athleteDentistForms: 'Cliente - Formulários do dentista',
   athletePayment: 'Cliente - Pagamento',
   athleteTreatmentRequired: 'Cliente - Tratamento prévio',
-  athleteLabProduction: 'Cliente - Laboratório',
+  athleteExternalProduction: 'Cliente - Produção externa',
   athleteAdaptation: 'Cliente - Adaptação',
   athleteFollowUp: 'Cliente - Acompanhamento',
   athleteIneligible: 'Cliente - Inapto para reavaliação',
@@ -52,10 +48,6 @@ export const DEMO_PERSONA_LABELS: Record<DemoPersona, string> = {
   dentistApproved: 'Dentista não licenciado - aprovado',
   dentistProgress: 'Dentista não licenciado - progresso',
   dentistLicensed: 'Dentista licenciado',
-  lab: 'Laboratório',
-  labApproved: 'Laboratório não licenciado - aprovado',
-  labProgress: 'Laboratório não licenciado - progresso',
-  labLicensed: 'Laboratório licenciado',
   admin: 'Admin',
 };
 
@@ -74,7 +66,7 @@ export function isDemoPersona(value: string | null | undefined): value is DemoPe
     value === 'athleteDentistForms' ||
     value === 'athletePayment' ||
     value === 'athleteTreatmentRequired' ||
-    value === 'athleteLabProduction' ||
+    value === 'athleteExternalProduction' ||
     value === 'athleteAdaptation' ||
     value === 'athleteFollowUp' ||
     value === 'athleteIneligible' ||
@@ -84,10 +76,6 @@ export function isDemoPersona(value: string | null | undefined): value is DemoPe
     value === 'dentistApproved' ||
     value === 'dentistProgress' ||
     value === 'dentistLicensed' ||
-    value === 'lab' ||
-    value === 'labApproved' ||
-    value === 'labProgress' ||
-    value === 'labLicensed' ||
     value === 'admin'
   );
 }

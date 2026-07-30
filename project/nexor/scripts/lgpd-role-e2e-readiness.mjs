@@ -27,16 +27,9 @@ const scenarios = [
     apiAssertions: ['/v1/biteplaner/orders', '/v1/partner/referrals'],
     forbiddenData: ['payload clinico', 'documentos medicos', 'scan 3D de producao']
   },
-  {
-    id: 'lab-production-queue-minimized',
-    role: 'lab',
-    route: '/painel/biteplaner?mode=lab',
-    apiAssertions: ['/v1/biteplaner/orders', '/v1/biteplaner/production-requests'],
-    forbiddenData: ['anamnesisSummary', 'productionRequestSummary', 'prescriptionFileRef', 'lgpdConfirmed']
-  }
 ];
 
-const requiredRoles = ['admin', 'customer', 'dentist', 'partner', 'lab'];
+const requiredRoles = ['admin', 'customer', 'dentist', 'partner'];
 const findings = [];
 
 for (const role of requiredRoles) {

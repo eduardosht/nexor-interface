@@ -4,7 +4,6 @@ export type {
   ClinicalFollowUpKind,
   ClinicalFollowUpStatus,
   DemoAppointment,
-  DemoLicensedLabSelection,
   DemoOrderSummary,
   DemoTimelineEvent,
   DemoWorkflowForm,

@@ -6,7 +6,7 @@ import * as S from './styles';
 
 const FEATURES = [
   'Avaliação odontológica completa com especialistas licenciados',
-  'Produção laboratorial personalizada com padrão de excelência',
+  'Produção personalizada conduzida pela operação Nexor',
   'Ajuste fino de oclusão e adaptação individual',
   'Acompanhamento e retornos periódicos para máxima performance',
 ];

@@ -42,8 +42,8 @@ const BITEPLANER_UNIT_PRICE_CENTS = 137000;
 const PAYMENT_COMPLETED_STATUSES = new Set([
   'payment_confirmed',
   'awaiting_dentist_forms',
-  'awaiting_lab_start',
-  'lab_processing',
+  'awaiting_external_production',
+  'external_production_processing',
   'dentist_adjustment_required',
   'product_received_by_clinic',
   'awaiting_adaptation',

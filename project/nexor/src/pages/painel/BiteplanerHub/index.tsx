@@ -40,7 +40,7 @@ import {
 import { useAuth } from '../../../hooks/useAuth';
 import * as S from './styles';
 import {
-  completeLabProduction,
+  completeExternalProduction,
   createProductionScanDownloadUrl,
   fetchAppointments,
   fetchOrderForm,
@@ -50,8 +50,8 @@ import {
   fetchWorkflowForm,
   fetchWorkflowForms,
   receiveProduct as confirmProductReceived,
-  returnOrderToDentist as returnToDentist,
-  startLabProduction,
+  requestProductionAdjustment,
+  startExternalProduction,
 } from '../../../features/biteplaner/orders/orders.api';
 import {
   createPartnerInviteLink,
@@ -61,15 +61,9 @@ import {
   fetchAccessOptions,
 } from '../../../features/biteplaner/licensing/licensing.api';
 import {
-  getFinancialOnboarding,
-  type FinancialAccountStatusRecord,
-} from '../../../features/financialOnboarding/asaasFinancialAccount.api';
-import { fetchLicensedLabs } from '../../../features/biteplaner/labs/labs.api';
-import {
   PartnerDashboardChart,
 } from '../../../features/biteplaner/hub/partnerDashboard';
 import { MODE_COPY, MODE_TAB_ICONS } from '../../../features/biteplaner/hub/hubModeConfig';
-import type { LicensedLabSelectionApiRecord } from '../../../features/biteplaner/labs/labs.types';
 import type {
   AccessOption,
 } from '../../../features/biteplaner/licensing/licensing.types';
@@ -167,7 +161,8 @@ const PARTNER_DASHBOARD_PERIODS: Array<{ key: PartnerDashboardPeriod; label: str
   { key: 'all', label: 'Tudo' },
 ];
 
-const FIRST_ACCESS_MODE_PRIORITY: AccessMode[] = ['lab', 'dentist', 'partner', 'user'];
+const SUPPORTED_ACCESS_MODES: AccessMode[] = ['user', 'partner', 'dentist', 'admin'];
+const FIRST_ACCESS_MODE_PRIORITY: AccessMode[] = ['dentist', 'partner', 'user', 'admin'];
 
 function formatDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -239,18 +234,30 @@ function serializeOperationalOrderDateRange(range: OperationalOrderDateRange) {
 }
 
 function isAccessMode(value: string | null): value is AccessMode {
-  return value === 'user' || value === 'partner' || value === 'dentist' || value === 'lab' || value === 'admin';
+  return SUPPORTED_ACCESS_MODES.includes(value as AccessMode);
 }
 
-function canUseAccessMode(access: { modes: AccessOption[] }, mode: AccessMode) {
-  return access.modes.some((option) => option.key === mode && option.allowed);
+function isSupportedAccessMode(mode: AccessMode) {
+  return SUPPORTED_ACCESS_MODES.includes(mode);
+}
+
+function canUseAccessMode(access: { modes?: AccessOption[] }, mode: AccessMode) {
+  return isSupportedAccessMode(mode) && (access.modes ?? []).some((option) => option.key === mode && option.allowed);
+}
+
+function canShowAccessMode(access: { defaultMode?: AccessMode; modes?: AccessOption[] }, mode: AccessMode) {
+  return (
+    canUseAccessMode(access, mode) ||
+    mode === 'dentist' &&
+      access.defaultMode === 'dentist' &&
+      (access.modes ?? []).some((option) => option.key === mode)
+  );
 }
 
 export function getFirstAccessMode(access: { defaultMode: AccessMode; modes: AccessOption[] }): AccessMode {
   return (
-    FIRST_ACCESS_MODE_PRIORITY.find((modeKey) =>
-      access.modes.some((mode) => mode.key === modeKey && mode.allowed)
-    ) ?? access.defaultMode
+    FIRST_ACCESS_MODE_PRIORITY.find((modeKey) => canUseAccessMode(access, modeKey)) ??
+    (canUseAccessMode(access, access.defaultMode) ? access.defaultMode : 'user')
   );
 }
 
@@ -325,7 +332,7 @@ function getStatusTone(status: string): 'success' | 'warning' | 'neutral' {
     return 'warning';
   }
 
-  if (status === 'lab_processing' || status === 'in_progress') {
+  if (status === 'external_production_processing' || status === 'in_progress') {
     return 'warning';
   }
 
@@ -344,8 +351,8 @@ const TIMELINE_STATUS_LABELS: Record<string, string> = {
   payment_confirmed: 'Pagamento confirmado',
   awaiting_dentist_forms: 'Formulários do dentista pendentes',
   ineligible_reassessment: 'Inaptidão',
-  awaiting_lab_start: 'Aguardando aceite do laboratório',
-  lab_processing: 'Em produção',
+  awaiting_external_production: 'Em revisão operacional Nexor',
+  external_production_processing: 'Em produção',
   dentist_adjustment_required: 'Ajuste de produção',
   product_received_by_clinic: 'Aguardando recebimento pelo dentista',
   awaiting_adaptation: 'Aguardando adaptação',
@@ -383,8 +390,8 @@ const TIMELINE_REASON_DESCRIPTIONS: Record<string, string> = {
   follow_up_completed: 'Ciclo de acompanhamento concluído.',
   account_deletion_approved:
     'Jornada interrompida por remoção de conta aprovada pela Nexor. A ordem foi cancelada e não foi gerado ressarcimento automático.',
-  pre_lab_requirements_missing:
-    'A ordem ainda possui pendências antes de ser enviada ao laboratório.',
+  ops_production_review_requirements_missing:
+    'A ordem ainda possui pendências antes da revisão operacional Nexor.',
 };
 
 const TIMELINE_TRANSITION_DESCRIPTIONS: Record<string, string> = {
@@ -410,18 +417,18 @@ const TIMELINE_TRANSITION_DESCRIPTIONS: Record<string, string> = {
     'Pagamento do produto foi confirmado.',
   'awaiting_payment->awaiting_dentist_forms':
     'Pagamento confirmado; dentista precisa finalizar a documentação de produção.',
-  'appointment_confirmed->awaiting_lab_start':
-    'Ordem enviada para aceite do laboratório.',
-  'awaiting_dentist_forms->awaiting_lab_start':
-    'Documentação finalizada e pedido enviado para a fila do laboratório.',
-  'awaiting_lab_start->lab_processing':
-    'Laboratório aceitou a ordem e iniciou a produção do Biteplaner.',
-  'lab_processing->product_received_by_clinic':
-    'Laboratório concluiu a produção e entregou o produto ao dentista/local.',
-  'lab_processing->dentist_adjustment_required':
-    'Laboratório solicitou ajuste de produção antes de continuar.',
-  'dentist_adjustment_required->awaiting_lab_start':
-    'Dentista reenviou a solicitação de produção ajustada para aceite do laboratório.',
+  'appointment_confirmed->awaiting_external_production':
+    'Ordem enviada para revisão operacional Nexor.',
+  'awaiting_dentist_forms->awaiting_external_production':
+    'Documentação finalizada e pedido enviado para revisão da operação Nexor.',
+  'awaiting_external_production->external_production_processing':
+    'Operação Nexor confirmou o início da produção externa do Biteplaner.',
+  'external_production_processing->product_received_by_clinic':
+    'Fornecedor externo concluiu a produção e enviou o produto diretamente ao dentista.',
+  'external_production_processing->dentist_adjustment_required':
+    'Operação Nexor registrou um ajuste solicitado pelo fornecedor externo antes de continuar.',
+  'dentist_adjustment_required->awaiting_external_production':
+    'Dentista reenviou a documentação ajustada para revisão da operação Nexor.',
   'product_received_by_clinic->awaiting_adaptation':
     'Dentista confirmou recebimento do produto; adaptação foi liberada.',
   'awaiting_adaptation->completed':
@@ -536,7 +543,7 @@ function getLeadOrderPresentation(funnelStage: PartnerOverviewResponse['leads'][
 }
 
 export function isLegacyLicensedLabStatus(mode: AccessMode | null, status?: string | null) {
-  return (mode === 'lab' || mode === 'dentist') && status === 'approved_pending_payment';
+  return mode === 'dentist' && status === 'approved_pending_payment';
 }
 
 export function getDentistLicensingStatusLabel(mode: AccessMode | null, status?: string | null) {
@@ -559,12 +566,12 @@ export function getDentistLicensingStatusLabel(mode: AccessMode | null, status?:
   return 'Sem processo de licenciamento';
 }
 
-function getLicenseeNoun(mode: AccessMode | null) {
-  return mode === 'lab' ? 'laboratório' : 'dentista';
+function getLicenseeNoun(_mode: AccessMode | null) {
+  return 'dentista';
 }
 
-function getLicenseePlural(mode: AccessMode | null) {
-  return mode === 'lab' ? 'laboratórios' : 'dentistas';
+function getLicenseePlural(_mode: AccessMode | null) {
+  return 'dentistas';
 }
 
 export function getDentistLicensingStatusTone(
@@ -1049,25 +1056,7 @@ function getAdjustmentReason(event: DemoTimelineEvent | null) {
     return event.reason;
   }
 
-  return 'O laboratório solicitou ajustes nos informativos de produção antes de continuar.';
-}
-
-function getProductionRequestLabId(order: DemoOrderSummary | null, draft: ProductionRequestDraft | null) {
-  return order?.lab_profile_id ?? draft?.selectedLabId ?? null;
-}
-
-function findLicensedLabByProductionRequest(
-  labs: LicensedLabSelectionApiRecord[],
-  order: DemoOrderSummary | null,
-  draft: ProductionRequestDraft | null
-) {
-  const labId = getProductionRequestLabId(order, draft);
-
-  if (!labId) {
-    return null;
-  }
-
-  return labs.find((lab) => lab.profileId === labId || lab.id === labId) ?? null;
+  return 'A operação Nexor registrou ajustes solicitados pelo fornecedor externo antes de continuar.';
 }
 
 function normalizeBrazilianPhone(phone?: string | null) {
@@ -1298,29 +1287,27 @@ export function BiteplanerHub() {
   const [dentistDateRange, setDentistDateRange] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
   const [dentistDateDraft, setDentistDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
   const [dentistDateRangeError, setDentistDateRangeError] = useState('');
-  const [labStatusFilters, setLabStatusFilters] = useState<string[]>([]);
-  const [labDateRange, setLabDateRange] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
-  const [labDateDraft, setLabDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
-  const [labDateRangeError, setLabDateRangeError] = useState('');
+  const [externalProductionStatusFilters, setExternalProductionStatusFilters] = useState<string[]>([]);
+  const [externalProductionDateRange, setExternalProductionDateRange] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [externalProductionDateDraft, setExternalProductionDateDraft] = useState<OperationalOrderDateRange>(() => buildDefaultOperationalOrderDateRange());
+  const [externalProductionDateRangeError, setExternalProductionDateRangeError] = useState('');
   const [pendingOrderAction, setPendingOrderAction] = useState<QueueActionConfig | null>(null);
   const [selectedPendingPatientConfirmationOrderId, setSelectedPendingPatientConfirmationOrderId] = useState<string | null>(null);
   const [selectedAdjustmentOrderId, setSelectedAdjustmentOrderId] = useState<string | null>(null);
   const [selectedAdaptationOrderId, setSelectedAdaptationOrderId] = useState<string | null>(null);
   const [adaptationCustomerPhones, setAdaptationCustomerPhones] = useState<Record<string, string>>({});
   const [adaptationScheduledAt, setAdaptationScheduledAt] = useState('');
-  const [licensedLabs, setLicensedLabs] = useState<LicensedLabSelectionApiRecord[]>([]);
   const [selectedDocumentationOrderId, setSelectedDocumentationOrderId] = useState<string | null>(null);
   const [selectedProductionRequestDraft, setSelectedProductionRequestDraft] = useState<ProductionRequestDraft | null>(null);
   const [productionRequestLoading, setProductionRequestLoading] = useState(false);
   const [productionRequestError, setProductionRequestError] = useState('');
   const [partnerDashboardPeriod, setPartnerDashboardPeriod] = useState<PartnerDashboardPeriod>('month');
-  const [financialRecipients, setFinancialRecipients] = useState<FinancialAccountStatusRecord[]>([]);
 
   const requestedMode = searchParams.get('mode');
   const fallbackMode = demoPersona ? PERSONA_MODE[demoPersona] : null;
   const selectedMode = useMemo<AccessMode | null>(() => {
     if (access) {
-      if (isAccessMode(requestedMode) && canUseAccessMode(access, requestedMode)) {
+      if (isAccessMode(requestedMode) && canShowAccessMode(access, requestedMode)) {
         return requestedMode;
       }
 
@@ -1355,8 +1342,6 @@ export function BiteplanerHub() {
     const orderDateRange =
       activeMode === 'dentist'
         ? dentistDateRange
-        : activeMode === 'lab'
-          ? labDateRange
           : null;
 
     const ordersResponse = await fetchOrders(
@@ -1467,7 +1452,7 @@ export function BiteplanerHub() {
         setAccess(response);
 
         const nextMode =
-          isAccessMode(requestedMode) && canUseAccessMode(response, requestedMode)
+          isAccessMode(requestedMode) && canShowAccessMode(response, requestedMode)
             ? requestedMode
             : getFirstAccessMode(response);
 
@@ -1531,36 +1516,7 @@ export function BiteplanerHub() {
     return () => {
       active = false;
     };
-    }, [selectedMode, token, dentistDateRange, labDateRange]);
-
-  useEffect(() => {
-    if (!token || (selectedMode !== 'dentist' && selectedMode !== 'lab')) {
-      setFinancialRecipients([]);
-      return;
-    }
-
-    let active = true;
-
-    async function loadFinancialOnboarding() {
-      try {
-        const response = await getFinancialOnboarding(token);
-
-        if (active) {
-          setFinancialRecipients(Array.isArray(response.accounts) ? response.accounts : []);
-        }
-      } catch {
-        if (active) {
-          setFinancialRecipients([]);
-        }
-      }
-    }
-
-    void loadFinancialOnboarding();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedMode, token]);
+    }, [selectedMode, token, dentistDateRange, externalProductionDateRange]);
 
   useEffect(() => {
     const productionRequestOrderId = selectedDocumentationOrderId ?? selectedAdjustmentOrderId;
@@ -1629,37 +1585,6 @@ export function BiteplanerHub() {
       active = false;
     };
   }, [orders, selectedAdjustmentOrderId, selectedDocumentationOrderId, token]);
-
-  useEffect(() => {
-    if (!token || selectedMode !== 'dentist' || !selectedAdjustmentOrderId) {
-      if (!selectedAdjustmentOrderId) {
-        setLicensedLabs([]);
-      }
-      return;
-    }
-
-    let active = true;
-
-    async function loadLicensedLabs() {
-      try {
-        const response = await fetchLicensedLabs(token);
-
-        if (active) {
-          setLicensedLabs(response.labs);
-        }
-      } catch {
-        if (active) {
-          setLicensedLabs([]);
-        }
-      }
-    }
-
-    void loadLicensedLabs();
-
-    return () => {
-      active = false;
-    };
-  }, [selectedAdjustmentOrderId, selectedMode, token]);
 
   async function refreshWorkspace() {
     if (!token || !selectedMode || selectedMode === 'admin') {
@@ -1918,8 +1843,8 @@ export function BiteplanerHub() {
         orders.filter((order) =>
           selectedMode === 'dentist'
             ? ['awaiting_dentist_acceptance', 'in_progress', 'appointment_confirmed', 'treatment_required', 'awaiting_payment', 'awaiting_dentist_forms', 'dentist_adjustment_required', 'product_received_by_clinic'].includes(order.status)
-            : ['awaiting_lab_start', 'lab_processing', 'awaiting_adaptation'].includes(order.status) &&
-              !(order.labAssignmentView && !order.labAssignmentView.isCurrent)
+            : ['awaiting_external_production', 'external_production_processing', 'awaiting_adaptation'].includes(order.status) &&
+              !(order.externalProductionView && !order.externalProductionView.isCurrent)
         ).length
       ),
       hint: 'Itens que ainda dependem de uma ação do perfil atual.',
@@ -1929,7 +1854,7 @@ export function BiteplanerHub() {
     {
       label: 'Atualizados hoje',
       value: String(
-        Object.values(timeline).reduce((count, events) => count + events.slice(0, 1).length, 0)
+        Object.values(timeline).reduce((count, events) => count + (Array.isArray(events) ? events.slice(0, 1).length : 0), 0)
       ),
       hint: 'Indicador simples para leitura rapida durante a apresentação.',
       icon: <RefreshCw size={28} aria-hidden />,
@@ -1937,21 +1862,15 @@ export function BiteplanerHub() {
     }
   ];
 
-  const isLicensingActorMode = selectedMode === 'dentist' || selectedMode === 'lab';
-  const currentModeAccessAllowed = Boolean(access?.modes.some((mode) => mode.key === selectedMode && mode.allowed));
+  const isLicensingActorMode = selectedMode === 'dentist';
+  const currentModeAccessAllowed = Boolean(access?.modes?.some((mode) => mode.key === selectedMode && mode.allowed));
   const operationalAccessApproved = isLicensingActorMode && currentModeAccessAllowed;
   const licenseeNoun = getLicenseeNoun(selectedMode);
   const licenseePlural = getLicenseePlural(selectedMode);
   const dentistWorkspaceLoading = isLicensingActorMode && loading;
-  const currentFinancialRecipient = financialRecipients.find((recipient) => recipient.role === selectedMode) ?? null;
-  const showFinancialOnboardingNotice =
-    isLicensingActorMode &&
-    (currentFinancialRecipient?.status === 'pending_onboarding' ||
-      currentFinancialRecipient?.status === 'awaiting_approval' ||
-      currentFinancialRecipient?.status === 'creation_failed');
   const showDentistLockedPanel = isLicensingActorMode && !dentistWorkspaceLoading && !operationalAccessApproved;
   const showOperationalPanel =
-    isLicensingActorMode && !dentistWorkspaceLoading && operationalAccessApproved && !showFinancialOnboardingNotice;
+    isLicensingActorMode && !dentistWorkspaceLoading && operationalAccessApproved;
   const dentistStatusLabel = operationalAccessApproved ? 'Licenciado' : 'Cadastro pendente';
   const dentistStatusTone = operationalAccessApproved ? 'success' : 'warning';
   const currentAccessMode = access?.modes.find((mode) => mode.key === selectedMode);
@@ -2090,14 +2009,6 @@ export function BiteplanerHub() {
   ];
 
   function renderOrderStatus(order: DemoOrderSummary) {
-    if (selectedMode === 'lab' && order.labAssignmentView && !order.labAssignmentView.isCurrent) {
-      return (
-        <S.StatusCellStack>
-          <StatusIndicator color="#D18A00" label="Mudança de lab." />
-          <S.TableCellHint>Encaminhado para outro laboratório</S.TableCellHint>
-        </S.StatusCellStack>
-      );
-    }
 
     const presentation = getOrderStatusPresentation(order);
     return <StatusIndicator color={presentation.color} label={presentation.label} />;
@@ -2297,7 +2208,7 @@ export function BiteplanerHub() {
           id: `${order.id}:adjustment-details`,
           title: 'Ver detalhes',
           ariaLabel: `Ver detalhes do ajuste de produção da ordem ${orderLabel}`,
-          testId: 'dentist-order-action-view-lab-adjustment',
+          testId: 'dentist-order-action-view-production-adjustment',
           icon: <MessageCircle size={15} aria-hidden />,
           tone: 'warning',
           confirmTitle: 'Ver detalhes',
@@ -2366,8 +2277,8 @@ export function BiteplanerHub() {
     return [];
   }
 
-  function getLabActionConfigs(order: DemoOrderSummary): QueueActionConfig[] {
-    if (order.labAssignmentView && !order.labAssignmentView.isCurrent) {
+  function getOpsProductionActionConfigs(order: DemoOrderSummary): QueueActionConfig[] {
+    if (order.externalProductionView && !order.externalProductionView.isCurrent) {
       return [];
     }
 
@@ -2377,7 +2288,7 @@ export function BiteplanerHub() {
       id: `${order.id}:documentation`,
       title: 'Verificar documentação',
       ariaLabel: `Verificar documentação da ordem ${orderLabel}`,
-      testId: 'lab-order-action-documentation',
+      testId: 'ops-production-action-documentation',
       icon: <FileText size={15} aria-hidden />,
       tone: 'neutral',
       confirmTitle: 'Verificar documentação',
@@ -2387,39 +2298,39 @@ export function BiteplanerHub() {
       execute: async () => undefined
     };
 
-    if (order.status === 'awaiting_lab_start') {
+    if (order.status === 'awaiting_external_production') {
       return [
         documentationAction,
         {
           id: `${order.id}:start`,
           title: 'Aprovar e iniciar produ\u00e7\u00e3o',
           ariaLabel: `Aprovar e iniciar produ\u00e7\u00e3o da ordem ${orderLabel}`,
-          testId: 'lab-order-action-start',
+          testId: 'ops-production-action-start',
           icon: <Check size={15} aria-hidden />,
           tone: 'success',
           confirmTitle: 'Aprovar e iniciar produ\u00e7\u00e3o',
           confirmDescription: `Deseja aprovar a ordem ${orderLabel} e iniciar a produ\u00e7\u00e3o?`,
           actionKey: `${order.id}:start`,
-          successMessage: `${orderLabel} entrou em produ\u00e7\u00e3o no laborat\u00f3rio.`,
-          execute: () => startLabProduction(order.id, token)
+          successMessage: `${orderLabel} entrou em produção externa.`,
+          execute: () => startExternalProduction(order.id, token)
         },
         {
           id: `${order.id}:return`,
           title: 'Devolver ao dentista',
           ariaLabel: `Devolver ao dentista a ordem ${orderLabel}`,
-          testId: 'lab-order-action-return',
+          testId: 'ops-production-action-return',
           icon: <XCircle size={15} aria-hidden />,
           tone: 'danger',
           confirmTitle: 'Devolver para o dentista',
           confirmDescription: `Deseja devolver a ordem ${orderLabel} para ajuste do dentista?`,
           actionKey: `${order.id}:return`,
           successMessage: `${orderLabel} voltou para ajuste do dentista.`,
-          execute: () => returnToDentist(order.id, 'Laborat\u00f3rio solicitou ajuste adicional na demo compartilhada.', token)
+          execute: () => requestProductionAdjustment(order.id, 'Fornecedor externo solicitou ajuste adicional via operação Nexor na demo compartilhada.', token)
         }
       ];
     }
 
-    if (order.status !== 'lab_processing') {
+    if (order.status !== 'external_production_processing') {
       return [];
     }
 
@@ -2429,27 +2340,27 @@ export function BiteplanerHub() {
         id: `${order.id}:return`,
         title: 'Devolver ao dentista',
         ariaLabel: `Devolver ao dentista a ordem ${orderLabel}`,
-        testId: 'lab-order-action-return',
+        testId: 'ops-production-action-return',
         icon: <XCircle size={15} aria-hidden />,
         tone: 'danger',
         confirmTitle: 'Devolver para o dentista',
         confirmDescription: `Deseja devolver a ordem ${orderLabel} para ajuste do dentista?`,
         actionKey: `${order.id}:return`,
         successMessage: `${orderLabel} voltou para ajuste do dentista.`,
-        execute: () => returnToDentist(order.id, 'Laborat\u00f3rio solicitou ajuste adicional na demo compartilhada.', token)
+        execute: () => requestProductionAdjustment(order.id, 'Fornecedor externo solicitou ajuste adicional via operação Nexor na demo compartilhada.', token)
       },
       {
         id: `${order.id}:complete`,
         title: 'Entrega para o dentista',
         ariaLabel: `Registrar entrega para o dentista da ordem ${orderLabel}`,
-      testId: 'lab-order-action-complete',
+      testId: 'ops-production-action-complete',
       icon: <Check size={15} aria-hidden />,
       tone: 'success',
         confirmTitle: 'Entrega para o dentista',
         confirmDescription: `Deseja registrar que a produ\u00e7\u00e3o da ordem ${orderLabel} foi entregue ao dentista?`,
         actionKey: `${order.id}:complete`,
         successMessage: `${orderLabel} foi entregue ao dentista e aguarda confirma\u00e7\u00e3o de recebimento.`,
-        execute: () => completeLabProduction(order.id, token)
+        execute: () => completeExternalProduction(order.id, token)
       }
     ];
   }
@@ -2482,7 +2393,7 @@ export function BiteplanerHub() {
     [dentistOrders, dentistStatusFilters]
   );
 
-  const labStatusOptions = useMemo(
+  const externalProductionStatusOptions = useMemo(
     () =>
       Array.from(new Set(orders.map((order) => order.status))).map((status) => {
         const matchingOrder = orders.find((order) => order.status === status);
@@ -2498,16 +2409,16 @@ export function BiteplanerHub() {
     [orders]
   );
 
-  const filteredLabOrders = useMemo(
+  const filteredExternalProductionOrders = useMemo(
     () => {
       const visibleOrders =
-        labStatusFilters.length === 0
+        externalProductionStatusFilters.length === 0
           ? orders
-          : orders.filter((order) => labStatusFilters.includes(order.status));
+          : orders.filter((order) => externalProductionStatusFilters.includes(order.status));
 
       return sortOrdersByLatestFirst(visibleOrders);
     },
-    [labStatusFilters, orders]
+    [externalProductionStatusFilters, orders]
   );
 
   const dentistColumns: AdminDataTableColumn<DemoOrderSummary>[] = [
@@ -2596,7 +2507,7 @@ export function BiteplanerHub() {
     }
   ];
 
-  const labColumns: AdminDataTableColumn<DemoOrderSummary>[] = [
+  const externalProductionColumns: AdminDataTableColumn<DemoOrderSummary>[] = [
     { key: 'order', label: 'Pedido', width: '9%', render: (row) => getOrderLabel(row), sortValue: (row) => getOrderLabel(row) },
     {
       key: 'updated-at',
@@ -2645,7 +2556,7 @@ export function BiteplanerHub() {
       label: 'Ações',
       width: '14%',
       render: (row) => {
-        const actions = getLabActionConfigs(row).filter(
+        const actions = getOpsProductionActionConfigs(row).filter(
           (action) => !action.id.endsWith(':start') && !action.id.endsWith(':return')
         );
 
@@ -2773,17 +2684,17 @@ export function BiteplanerHub() {
     );
   }
 
-  function renderLabTableActions() {
+  function renderExternalProductionTableActions() {
     return (
       <S.TableToolbarActions>
         {renderStatusFilterActions(
           'Filtrar status',
-          labStatusOptions,
-          labStatusFilters,
-          setLabStatusFilters
+          externalProductionStatusOptions,
+          externalProductionStatusFilters,
+          setExternalProductionStatusFilters
         )}
-        {renderDateRangeFilter(labDateDraft, setLabDateDraft, labDateRangeError, () =>
-          handleApplyOperationalDateRange(labDateDraft, setLabDateRangeError, setLabDateRange)
+        {renderDateRangeFilter(externalProductionDateDraft, setExternalProductionDateDraft, externalProductionDateRangeError, () =>
+          handleApplyOperationalDateRange(externalProductionDateDraft, setExternalProductionDateRangeError, setExternalProductionDateRange)
         )}
       </S.TableToolbarActions>
     );
@@ -2831,8 +2742,8 @@ export function BiteplanerHub() {
     );
   }
 
-  function renderLabQueueMobileCard(row: DemoOrderSummary) {
-    const actions = getLabActionConfigs(row).filter(
+  function renderExternalProductionQueueMobileCard(row: DemoOrderSummary) {
+    const actions = getOpsProductionActionConfigs(row).filter(
       (action) => !action.id.endsWith(':start') && !action.id.endsWith(':return')
     );
 
@@ -2904,14 +2815,6 @@ export function BiteplanerHub() {
   const selectedAdjustmentEvent = selectedAdjustmentOrderId
     ? getLatestLabAdjustmentEvent(timeline[selectedAdjustmentOrderId] ?? [])
     : null;
-  const selectedAdjustmentLab = findLicensedLabByProductionRequest(
-    licensedLabs,
-    selectedAdjustmentOrder,
-    selectedAdjustmentDraft
-  );
-  const selectedAdjustmentLabAddress = selectedAdjustmentLab
-    ? [selectedAdjustmentLab.address, selectedAdjustmentLab.city, selectedAdjustmentLab.state].filter(Boolean).join(' - ')
-    : '';
   const productionScanFileRef = productionRequestDraft?.scan3dFileRef ?? null;
   const productionScanFileName = productionRequestDraft
     ? getAttachmentFileName(productionRequestDraft.scan3dFileName, productionScanFileRef)
@@ -2919,7 +2822,7 @@ export function BiteplanerHub() {
   const productionPurchaseConfiguration =
     productionRequestDraft?.purchaseConfiguration ?? selectedDocumentationOrder?.purchaseConfiguration ?? null;
   const selectedDocumentationActions = selectedDocumentationOrder
-    ? getLabActionConfigs(selectedDocumentationOrder).filter(
+    ? getOpsProductionActionConfigs(selectedDocumentationOrder).filter(
         (action) => action.id.endsWith(':start') || action.id.endsWith(':return')
       )
     : [];
@@ -3023,39 +2926,13 @@ export function BiteplanerHub() {
         </SnackbarStack>
       ) : null}
 
-      {showFinancialOnboardingNotice ? (
-        <S.FinancialOnboardingNotice
-          $tone={currentFinancialRecipient.status === 'creation_failed' ? 'error' : 'warning'}
-          role="status"
-        >
-          <S.FinancialOnboardingIcon aria-hidden>
-            <AlertTriangle size={18} />
-          </S.FinancialOnboardingIcon>
-          <S.FinancialOnboardingContent>
-            <S.FinancialOnboardingTitle>
-              {currentFinancialRecipient.status === 'creation_failed'
-                ? 'Corrija seu cadastro financeiro'
-                : 'Complete seu cadastro financeiro'}
-            </S.FinancialOnboardingTitle>
-            <S.FinancialOnboardingText>
-              Para receber a porcentagem da sua parte no fluxo Biteplaner, complete a Parte 2 com os dados financeiros.
-              Não salvamos dados bancários na plataforma; eles são preenchidos e validados no ambiente seguro do Asaas.
-            </S.FinancialOnboardingText>
-          </S.FinancialOnboardingContent>
-          <S.FinancialOnboardingLink to={`/painel/biteplaner/financeiro?role=${selectedMode}`}>
-            Completar Parte 2
-            <ChevronRight size={16} aria-hidden />
-          </S.FinancialOnboardingLink>
-        </S.FinancialOnboardingNotice>
-      ) : null}
-
       {selectedMode ? (
         <PendingFeedbackPrompt mode={selectedMode} orders={orders} forms={allWorkflowForms} />
       ) : null}
 
       {access ? (
         <S.RoleTabs aria-label="Alternar modo de acesso Biteplaner">
-          {access.modes.filter((mode) => mode.allowed).map((mode) => {
+          {access.modes.filter((mode) => mode.allowed && isSupportedAccessMode(mode.key)).map((mode) => {
             const Icon = MODE_TAB_ICONS[mode.key] ?? User;
             const isActive = (selectedMode ?? access.defaultMode) === mode.key;
 
@@ -3448,7 +3325,7 @@ export function BiteplanerHub() {
                   <ListChecks size={22} aria-hidden />
                 </S.PartnerPanelIcon>
                 <span>
-                  <S.PanelTitle>Fila operacional do laboratório</S.PanelTitle>
+                  <S.PanelTitle>Fila de produção externa Nexor</S.PanelTitle>
                   <S.PanelText>
                     Cada ação abaixo modifica o mesmo conjunto de pedidos e deve refletir nas outras personas da demo.
                   </S.PanelText>
@@ -3471,17 +3348,17 @@ export function BiteplanerHub() {
                 />
               </S.OperationalTableShell>
             ) : (
-              <S.OperationalTableShell data-testid="lab-queue-table">
+              <S.OperationalTableShell data-testid="external-production-queue-table">
                 <AdminDataTable
-                  data={filteredLabOrders}
-                  columns={labColumns}
+                  data={filteredExternalProductionOrders}
+                  columns={externalProductionColumns}
                   keyExtractor={(row) => row.id}
-                  renderMobileCard={renderLabQueueMobileCard}
-                  mobileTestId="lab-queue-table-mobile"
-                  actions={renderLabTableActions()}
+                  renderMobileCard={renderExternalProductionQueueMobileCard}
+                  mobileTestId="external-production-queue-table-mobile"
+                  actions={renderExternalProductionTableActions()}
                   pageSize={4}
                   initialSortKey="order"
-                  emptyMessage="Nenhuma ordem do laboratório nesta etapa da demo."
+                  emptyMessage="Nenhuma ordem de produção externa nesta etapa da demo."
                 />
               </S.OperationalTableShell>
             )}
@@ -3618,7 +3495,7 @@ export function BiteplanerHub() {
 
             <S.DocumentationGrid>
               <S.AdjustmentReasonItem data-testid="dentist-adjustment-reason-card">
-                <S.DocumentationLabel>Mensagem do laboratório</S.DocumentationLabel>
+                <S.DocumentationLabel>Mensagem da operação Nexor</S.DocumentationLabel>
                 <S.DocumentationValue>{getAdjustmentReason(selectedAdjustmentEvent)}</S.DocumentationValue>
               </S.AdjustmentReasonItem>
               <S.DocumentationItem>
@@ -3628,20 +3505,20 @@ export function BiteplanerHub() {
                 </S.DocumentationValue>
               </S.DocumentationItem>
               <S.DocumentationItem>
-                <S.DocumentationLabel>Laboratório</S.DocumentationLabel>
-                <S.DocumentationValue>{selectedAdjustmentLab?.labName ?? 'Laboratório selecionado'}</S.DocumentationValue>
+                <S.DocumentationLabel>Fornecedor externo</S.DocumentationLabel>
+                <S.DocumentationValue>Contato conduzido externamente pela Nexor</S.DocumentationValue>
               </S.DocumentationItem>
               <S.DocumentationItem>
                 <S.DocumentationLabel>Telefone</S.DocumentationLabel>
-                <S.DocumentationValue>{selectedAdjustmentLab?.phone || 'Não informado'}</S.DocumentationValue>
+                <S.DocumentationValue>Canal operacional externo</S.DocumentationValue>
               </S.DocumentationItem>
               <S.DocumentationItem>
                 <S.DocumentationLabel>E-mail</S.DocumentationLabel>
-                <S.DocumentationValue>{selectedAdjustmentLab?.email || 'Não informado'}</S.DocumentationValue>
+                <S.DocumentationValue>Canal operacional externo</S.DocumentationValue>
               </S.DocumentationItem>
               <S.DocumentationItem>
                 <S.DocumentationLabel>Endereço</S.DocumentationLabel>
-                <S.DocumentationValue>{selectedAdjustmentLabAddress || 'Não informado'}</S.DocumentationValue>
+                <S.DocumentationValue>Não exposto na plataforma</S.DocumentationValue>
               </S.DocumentationItem>
             </S.DocumentationGrid>
 
@@ -3678,7 +3555,7 @@ export function BiteplanerHub() {
           }}
           onConfirm={(action, reason) => {
             const callback = action.id.endsWith(':return')
-              ? () => returnToDentist(action.id.split(':')[0], reason, token)
+              ? () => requestProductionAdjustment(action.id.split(':')[0], reason, token)
               : action.execute;
 
             void runOrderAction(action.actionKey, callback, action.successMessage).then(() => {
@@ -3947,8 +3824,8 @@ export function BiteplanerHub() {
                     ) : null}
                   </S.DocumentationItem>
                   <S.DocumentationFullWidthItem>
-                    <S.DocumentationLabel>Observações para o laboratório</S.DocumentationLabel>
-                    <S.DocumentationValue>{productionRequestDraft.labNotes || 'Não informado'}</S.DocumentationValue>
+                    <S.DocumentationLabel>Observações para a operação Nexor</S.DocumentationLabel>
+                    <S.DocumentationValue>{productionRequestDraft.opsNotes || 'Não informado'}</S.DocumentationValue>
                   </S.DocumentationFullWidthItem>
                 </S.DocumentationGrid>
               </S.DocumentationContent>
@@ -3964,7 +3841,7 @@ export function BiteplanerHub() {
                     key={action.id}
                     type="button"
                     $tone={action.tone ?? 'neutral'}
-                    data-testid={`lab-documentation-action-${action.id.endsWith(':start') ? 'start' : 'return'}`}
+                    data-testid={`external-production-documentation-action-${action.id.endsWith(':start') ? 'start' : 'return'}`}
                     disabled={activeAction === action.actionKey}
                     onClick={() => {
                       setPendingOrderAction(action);

@@ -151,10 +151,10 @@ describe('biteplanerFlow backend route adapters', () => {
       anamnesisSummary: 'Resumo clínico.',
       anamnesisDownloaded: true,
       productionRequestSummary: 'Solicitação preenchida.',
-      labNotes: 'Observação operacional.',
+      opsNotes: 'Observação operacional.',
       scan3dFileName: 'scan.stl',
       lgpdConfirmed: true,
-      selectedLabId: 'lab-1',
+      externalProductionProviderId: 'external-provider-1',
     };
     apiPost.mockResolvedValue({ id: 'form-1' });
 

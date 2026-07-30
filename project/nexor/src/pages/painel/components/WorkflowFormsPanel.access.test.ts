@@ -11,7 +11,6 @@ describe('WorkflowFormsPanel payload access', () => {
     expect(canHydrateWorkflowFormPayload(form('customer_pre_consultation_intake'), 'user')).toBe(true);
     expect(canHydrateWorkflowFormPayload(form('customer_pre_consultation_intake'), 'dentist')).toBe(true);
     expect(canHydrateWorkflowFormPayload(form('customer_pre_consultation_intake'), 'partner')).toBe(false);
-    expect(canHydrateWorkflowFormPayload(form('customer_pre_consultation_intake'), 'lab')).toBe(false);
   });
 
   it('does not hydrate customer-only payloads for operational roles', () => {

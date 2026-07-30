@@ -48,7 +48,7 @@ import { ClinicalFollowUpCards } from '../components/ClinicalFollowUpCards';
 import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
 import * as S from './styles';
 
-type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'laboratory' | 'follow_up' | 'checkups';
+type JourneyStepKey = 'prerequisite' | 'consultation' | 'clinical_decision' | 'purchase' | 'external_production' | 'follow_up' | 'checkups';
 type VisualJourneyStepKey = 'registration' | JourneyStepKey;
 
 type JourneyStep = {
@@ -90,9 +90,9 @@ const JOURNEY_STEPS: JourneyStep[] = [
     icon: CreditCard,
   },
   {
-    key: 'laboratory',
-    title: 'Laboratório',
-    description: 'Ordem liberada para produção, retorno por ajuste ou conclusão laboratorial.',
+    key: 'external_production',
+    title: 'Produção externa',
+    description: 'Ordem revisada pela operação Nexor e conduzida com fornecedor externo.',
     icon: FlaskConical,
   },
   {
@@ -215,7 +215,7 @@ function getJourneySummary(order: DemoOrderSummary, currentStep: VisualJourneySt
       estimate: '3 minutos',
       buttonLabel: 'Confirmar compra',
       whyTitle: 'Por que o pagamento libera a jornada?',
-      whyText: 'A confirmação do pagamento autoriza a continuidade operacional com dentista e laboratório licenciados.',
+      whyText: 'A confirmação do pagamento autoriza a continuidade operacional com o dentista e a produção externa conduzida pela Nexor.',
     };
   }
 
@@ -244,15 +244,15 @@ function getPassiveStepActionText(order: DemoOrderSummary, currentStep: VisualJo
   }
 
   if (order.status === 'payment_confirmed' || order.status === 'awaiting_dentist_forms') {
-    return 'O pagamento foi confirmado. Aguarde o dentista concluir os registros operacionais para enviar o caso ao laboratório.';
+    return 'O pagamento foi confirmado. Aguarde o dentista concluir os registros operacionais para revisão da operação Nexor.';
   }
 
-  if (order.status === 'awaiting_lab_start') {
-    return 'A solicitação chegou ao laboratório. Agora é preciso aguardar o aceite e o início da produção.';
+  if (order.status === 'awaiting_external_production') {
+    return 'A solicitação chegou à operação Nexor. Agora é preciso aguardar a revisão e o início da produção externa.';
   }
 
-  if (order.status === 'lab_processing') {
-    return 'O Biteplaner está em produção. Nenhuma ação do usuário é necessária enquanto o laboratório conclui esta etapa.';
+  if (order.status === 'external_production_processing') {
+    return 'O Biteplaner está em produção externa. Nenhuma ação do usuário é necessária enquanto a Nexor acompanha esta etapa.';
   }
 
   if (order.status === 'awaiting_adaptation') {
@@ -287,8 +287,8 @@ function getPassiveStepEstimate(order: DemoOrderSummary) {
     return 'Aguardando dentista';
   }
 
-  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
-    return 'Aguardando laboratório';
+  if (order.status === 'awaiting_external_production' || order.status === 'external_production_processing') {
+    return 'Aguardando produção externa';
   }
 
   return 'Acompanhe por aqui';
@@ -320,8 +320,8 @@ function getCurrentStepIndex(order: DemoOrderSummary) {
   if (
     order.status === 'payment_confirmed' ||
     order.status === 'awaiting_dentist_forms' ||
-    order.status === 'awaiting_lab_start' ||
-    order.status === 'lab_processing'
+    order.status === 'awaiting_external_production' ||
+    order.status === 'external_production_processing'
   ) {
     return 4;
   }
@@ -429,8 +429,8 @@ function getPaymentMethodLabel(value: string) {
 const PAYMENT_DETAILS_STATUSES = new Set([
   'payment_confirmed',
   'awaiting_dentist_forms',
-  'awaiting_lab_start',
-  'lab_processing',
+  'awaiting_external_production',
+  'external_production_processing',
   'dentist_adjustment_required',
   'product_received_by_clinic',
   'awaiting_adaptation',
@@ -586,12 +586,12 @@ function getCurrentStepNotice(
     return `Pagamento confirmado. A jornada aguarda os registros operacionais do dentista para seguir.`;
   }
 
-  if (order.status === 'awaiting_lab_start') {
-    return `A solicitação foi enviada ao laboratório. Acompanhe por aqui enquanto a produção é aceita e iniciada.`;
+  if (order.status === 'awaiting_external_production') {
+    return `A solicitação foi enviada para revisão operacional Nexor. Acompanhe por aqui enquanto a produção externa é acionada e iniciada.`;
   }
 
-  if (order.status === 'lab_processing') {
-    return `O Biteplaner está em etapa laboratorial. Acompanhe o progresso por aqui enquanto o laboratório conclui a produção.`;
+  if (order.status === 'external_production_processing') {
+    return `O Biteplaner está em produção externa. Acompanhe o progresso por aqui enquanto a Nexor registra os avanços operacionais.`;
   }
 
   if (order.status === 'awaiting_adaptation') {
@@ -642,10 +642,10 @@ function getCurrentStepDisclaimer(order: DemoOrderSummary, initialAppointment: D
     };
   }
 
-  if (order.status === 'awaiting_lab_start' || order.status === 'lab_processing') {
+  if (order.status === 'awaiting_external_production' || order.status === 'external_production_processing') {
     return {
       tone: 'info' as const,
-      title: 'Etapa laboratorial',
+      title: 'Produção externa',
       icon: <Clock3 size={18} aria-hidden />,
     };
   }
@@ -1161,7 +1161,7 @@ export function Jornada() {
                 <S.NextStepTitle>O que acontece agora?</S.NextStepTitle>
                 <S.Description>
                   Aguarde o dentista confirmar os dados operacionais. Assim que confirmado, seu caso seguirá para
-                  produção no laboratório licenciado.
+                  produção externa conduzida pela Nexor.
                 </S.Description>
               </S.NextStepCopy>
             </S.NextStepCard>

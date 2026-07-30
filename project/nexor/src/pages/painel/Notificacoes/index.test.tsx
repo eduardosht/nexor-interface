@@ -124,23 +124,19 @@ describe('Notificacoes', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /abrir notificação ação necessária do dentista/i }));
     fireEvent.click(await screen.findByRole('button', { name: /ver ordens do dentista/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner?mode=dentist');
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/ordens');
   });
 
-  it('shows the financial onboarding action in the notification card', async () => {
+  it('does not show retired finance onboarding actions in notification cards', async () => {
     mockApiGet.mockResolvedValue({
       unreadCount: 1,
       notifications: [
         {
-          id: 'financial-onboarding',
-          title: 'Cadastro financeiro pendente',
-          message:
-            'Seu cadastro de dentista Biteplaner foi aprovado. Finalize a Parte 2 no Asaas para configurar os dados financeiros.',
+          id: 'retired-finance',
+          title: 'Atualização de cadastro',
+          message: 'Seu cadastro de dentista Biteplaner foi aprovado.',
           type: 'biteplaner_dentist_licensing_approved',
-          metadata: {
-            financialOnboardingRequired: true,
-            financialOnboardingPath: '/painel/biteplaner/financeiro?role=dentist',
-          },
+          metadata: {},
           read: false,
           createdAt: '2026-07-03T09:30:00.000Z',
         },
@@ -149,14 +145,10 @@ describe('Notificacoes', () => {
 
     renderPage();
 
-    fireEvent.click(await screen.findByRole('button', { name: /completar cadastro financeiro/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação atualização de cadastro/i }));
 
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/financeiro?role=dentist');
-    expect(screen.queryByRole('dialog', { name: /cadastro financeiro pendente/i })).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /abrir notificação cadastro financeiro pendente/i }));
-
-    expect(screen.queryByRole('button', { name: /ver ordens do dentista/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: /cadastro financeiro pendente/i })).toHaveTextContent(/dados financeiros/i);
+    expect(screen.queryByRole('button', { name: /cadastro financeiro|completar parte 2/i })).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringMatching(/financeiro/));
   });
 
   it('opens a modal with the notification message when clicking a notification', async () => {

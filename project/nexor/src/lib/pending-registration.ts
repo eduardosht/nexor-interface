@@ -12,7 +12,7 @@ export type PendingRegistrationConsent = {
 export type PendingRegistration = {
   email: string;
   fullName: string;
-  role: 'customer' | 'partner' | 'dentist' | 'lab';
+  role: 'customer' | 'partner' | 'dentist';
   companyName?: string;
   consents: PendingRegistrationConsent[];
 };
@@ -23,7 +23,7 @@ export type LegacyPendingRegistration = PendingRegistration & {
 };
 
 const STORAGE_KEY = 'nexor_pending_registration';
-const ROLES = new Set(['customer', 'partner', 'dentist', 'lab']);
+const ROLES = new Set(['customer', 'partner', 'dentist']);
 const CONSENT_TYPES = new Set(['terms', 'privacy', 'marketing']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {

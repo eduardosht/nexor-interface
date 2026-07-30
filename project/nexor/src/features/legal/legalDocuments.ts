@@ -2,8 +2,7 @@ export type LegalProfileKey =
   | 'general'
   | 'biteplaner-client'
   | 'licensed-dentist'
-  | 'licensed-partner'
-  | 'licensed-lab';
+  | 'licensed-partner';
 
 export type LegalDocumentKind = 'privacy' | 'terms';
 
@@ -37,7 +36,7 @@ export const legalProfiles: Array<{
   {
     key: 'biteplaner-client',
     title: 'Usuário Biteplaner',
-    description: 'Pessoa que compra ou utiliza a jornada Biteplaner como paciente/cliente.'
+    description: 'Pessoa relacionada ao uso do Biteplaner; no MVP atual, não compra nem paga pela plataforma. A compra é feita pelo dentista licenciado diretamente com a Nexor.'
   },
   {
     key: 'licensed-dentist',
@@ -48,11 +47,6 @@ export const legalProfiles: Array<{
     key: 'licensed-partner',
     title: 'Parceiro licenciado',
     description: 'Parceiro comercial autorizado para indicação, link/QR Code e comissão.'
-  },
-  {
-    key: 'licensed-lab',
-    title: 'Laboratório licenciado',
-    description: 'Laboratório aprovado para produção e recebimento de arquivos de scan.'
   }
 ];
 
@@ -99,7 +93,7 @@ const privacySharedProviders: LegalSectionContent = {
 const privacySharedInternationalTransfer: LegalSectionContent = {
   title: 'Transferência internacional',
   body: [
-    'Atualmente a Nexor não realiza transferência internacional intencional de dados como parte do fluxo operacional principal. Caso a operação passe a envolver fornecedores, infraestrutura ou laboratório localizado fora do Brasil, a política será atualizada e a transferência observará as bases legais e salvaguardas exigidas pela LGPD.'
+    'Atualmente a Nexor não realiza transferência internacional intencional de dados como parte do fluxo operacional principal. Caso a operação passe a envolver fornecedores, infraestrutura ou fornecedor externo localizado fora do Brasil, a política será atualizada e a transferência observará as bases legais e salvaguardas exigidas pela LGPD.'
   ]
 };
 
@@ -196,7 +190,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
             'Dados de conta e identificação: nome, e-mail, telefone, CPF, data de nascimento quando aplicável, autenticação, status da conta, preferências e consentimentos.',
             'Dados da jornada: pré-consulta, respostas de formulários, informações clínicas e odontológicas, necessidades de clínica adaptada, escolha de clínica, agendamento, status da ordem, suporte e comunicações.',
             'Dados de localização: CEP informado, localização aproximada da busca por clínicas e, se autorizado no navegador, geolocalização usada para encontrar clínicas próximas.',
-            'Dados de compra e pagamento: pedido, valor, status, meio de pagamento, cobrança, reembolso, conciliação, comprovantes e identificadores do provedor de pagamento contratado.'
+            'Dados da ordem vinculada: pedido, configuração do produto, status, comunicações, suporte e informações mínimas necessárias para acompanhamento. No MVP atual, dados de compra e pagamento são tratados principalmente em relação ao dentista comprador.'
           ]
         },
         {
@@ -208,16 +202,16 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Finalidades',
           items: [
-            'Realizar pré-consulta para agilizar atendimento e avaliar informações necessárias antes da compra.',
-            'Permitir escolha de clínica licenciada, agendamento, acompanhamento da jornada, compra, pagamento e suporte.',
-            'Compartilhar dados mínimos necessários com dentistas, laboratórios, parceiros operacionais e fornecedores autorizados para execução da jornada.',
+            'Coletar informações clínicas e operacionais necessárias para atendimento, elegibilidade, adaptação e acompanhamento da jornada.',
+            'Permitir acompanhamento da jornada, suporte, comunicações e interação com dentista licenciado quando aplicável ao fluxo vigente.',
+            'Compartilhar dados mínimos necessários com dentistas, parceiros operacionais, administradores Nexor e fornecedores autorizados para execução da jornada. Quando houver produção externa, o compartilhamento com fornecedor externo é conduzido pela Nexor fora da plataforma.',
             'Cumprir obrigações legais, fiscais, regulatórias, auditoria, segurança, prevenção a fraude e defesa de direitos.'
           ]
         },
         {
           title: 'Compartilhamento específico',
           body: [
-            'Dados do usuário podem ser acessados por profissionais e operadores autorizados, como dentistas responsáveis, laboratórios quando necessário para produção, administradores Nexor e fornecedores de infraestrutura, comunicação e pagamento. O usuário não envia arquivos de scan diretamente; quando houver scan da arcada, o envio ocorre pelo dentista no fluxo operacional.'
+            'Dados do usuário podem ser acessados por profissionais e operadores autorizados, como dentistas responsáveis, administradores Nexor e fornecedores de infraestrutura, comunicação e pagamento. Quando houver produção externa, dados mínimos podem ser compartilhados com fornecedor externo por contato externo conduzido pela Nexor. O usuário não envia arquivos de scan diretamente; quando houver scan da arcada, o dentista o registra na plataforma para revisão operacional Nexor.'
           ]
         },
         privacySharedRetention,
@@ -236,25 +230,25 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Dados tratados',
           items: [
-            'Dados cadastrais e profissionais: nome profissional, e-mail, telefone, CPF, CNPJ, CRO, resumo profissional, documentos profissionais e cadastrais enviados no onboarding, histórico de aprovação e status do licenciamento.',
+            'Dados cadastrais e profissionais: nome profissional, e-mail, telefone, CPF, CNPJ, CRO, resumo profissional, documentos profissionais e cadastrais enviados no onboarding, histórico de aprovação e status do cadastro administrativo.',
             'Dados de clínica: nome da clínica, CEP, cidade, estado, endereço, complemento, telefone, dias e horários de atendimento, indicação de clínica adaptada e coordenadas obtidas a partir do CEP quando aplicável.',
             'Dados operacionais: ordens, interações com clientes, pré-consulta, formulários, registros de análise, arquivos de scan da arcada dentária, produção, notificações, logs e auditoria.',
-            'Dados financeiros e fiscais: informações necessárias para comissões, repasses, conciliação, contratos e obrigações fiscais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento ou repasse.'
+            'Dados financeiros e fiscais: informações necessárias para compra, conciliação, contratos e obrigações fiscais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento.'
           ]
         },
         {
           title: 'Finalidades',
           items: [
             'Validar elegibilidade profissional, liberar acesso, exibir clínicas ao usuário e permitir seleção de clínica na jornada.',
-            'Executar ordens Biteplaner, enviar scan da arcada dentária ao laboratório, acompanhar produção e registrar responsabilidades técnicas.',
-            'Calcular comissões, repasses, registros financeiros e obrigações fiscais, conforme o modelo comercial vigente.',
+            'Executar ordens Biteplaner, registrar documentação técnica e scan da arcada dentária na plataforma, acompanhar produção externa conduzida pela Nexor e registrar responsabilidades técnicas.',
+            'Registrar compra, conciliação, obrigações fiscais e suporte financeiro conforme o modelo comercial vigente.',
             'Cumprir contrato, obrigações legais, auditoria, prevenção a fraude, segurança e defesa de direitos.'
           ]
         },
         {
           title: 'Compartilhamento específico',
           body: [
-            'Dados do dentista e da clínica podem ser exibidos ao usuário para escolha da consulta inicial. Dados operacionais podem ser compartilhados com laboratório, administradores Nexor, fornecedores autorizados e autoridades quando necessário. O scan da arcada dentária deve ser tratado como dado pessoal sensível/de saúde e acessado apenas por perfis autorizados para atendimento, produção, suporte, auditoria ou obrigação legal.'
+            'Dados do dentista e da clínica podem ser exibidos ao usuário quando necessários ao atendimento. Dados operacionais podem ser compartilhados com administradores Nexor, fornecedores autorizados, autoridades e, quando houver produção externa, fornecedor externo por contato externo conduzido pela Nexor. O scan da arcada dentária deve ser tratado como dado pessoal sensível/de saúde e acessado apenas por perfis autorizados para atendimento, produção, suporte, auditoria ou obrigação legal.'
           ]
         },
         privacySharedRetention,
@@ -273,7 +267,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Dados tratados',
           items: [
-            'Dados cadastrais: nome da empresa ou parceiro, CNPJ, tipo de parceiro, endereço quando aplicável, locais de atuação, histórico de aprovação e status do licenciamento.',
+            'Dados cadastrais: nome da empresa ou parceiro, CNPJ, tipo de parceiro, endereço quando aplicável, locais de atuação, histórico de aprovação e status do cadastro administrativo.',
             'Dados de indicação: nome do indicado informado pelo parceiro, link ou QR Code de indicação, status operacional, métricas e, quando o parceiro informar, e-mail do indicado para facilitar envio do convite.',
             'Dados financeiros e fiscais: informações necessárias para comissão, prestação de contas, contratos, conciliação e obrigações legais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento ou repasse.'
           ]
@@ -290,43 +284,6 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           title: 'Compartilhamento específico',
           body: [
             'Dados do parceiro podem ser compartilhados com administradores Nexor, fornecedores autorizados, áreas financeiras, consultores e autoridades quando necessário. Dados de indicados devem ser usados somente para a finalidade de indicação e comunicação relacionada ao convite.'
-          ]
-        },
-        privacySharedRetention,
-        privacySharedRights
-      ]
-    },
-    'licensed-lab': {
-      kind: 'privacy',
-      profile: 'licensed-lab',
-      version: 'privacy-lab-v1.0.0',
-      title: 'Aviso de Privacidade do Laboratório Licenciado',
-      subtitle: 'Tratamento de dados do laboratório aprovado para produção Biteplaner.',
-      updatedAt: 'Última atualização: julho de 2026',
-      pdfFileName: 'politica-privacidade-laboratorio-licenciado.pdf',
-      sections: [
-        {
-          title: 'Dados tratados',
-          items: [
-            'Dados cadastrais e empresariais: nome do laboratório, CNPJ, CPF do responsável quando necessário, resumo operacional, histórico de aprovação e status do licenciamento.',
-            'Dados do local operacional: nome do local, CEP, cidade, estado, endereço, complemento, telefone, dias e horários de operação e coordenadas obtidas a partir do CEP quando aplicável.',
-            'Dados de produção: ordens, status, prazos, comunicações, arquivos de scan da arcada dentária enviados pelo dentista, registros de produção, suporte, logs e auditoria.',
-            'Dados financeiros e fiscais: informações necessárias para repasses, comissões, conciliação, prestação de contas e obrigações legais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento ou repasse.'
-          ]
-        },
-        {
-          title: 'Finalidades',
-          items: [
-            'Validar o laboratório, liberar produção, acompanhar ordens, registrar qualidade, prazos, rastreabilidade e comunicação operacional.',
-            'Permitir que o laboratório receba o scan da arcada dentária necessário à produção, com acesso restrito à finalidade de produção e suporte.',
-            'Calcular repasses, conciliação, registros financeiros e obrigações fiscais, conforme o modelo comercial vigente.',
-            'Cumprir contrato, obrigações legais, auditoria, prevenção a fraude, segurança e defesa de direitos.'
-          ]
-        },
-        {
-          title: 'Compartilhamento específico',
-          body: [
-            'Dados do laboratório podem ser compartilhados com dentistas, administradores Nexor, fornecedores autorizados, consultores e autoridades quando necessário. O laboratório deve tratar o scan recebido como dado pessoal sensível/de saúde, mantendo confidencialidade e uso restrito à produção autorizada.'
           ]
         },
         privacySharedRetention,
@@ -362,14 +319,14 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
       profile: 'biteplaner-client',
       version: 'terms-biteplaner-client-v1.0.0',
       title: 'Termos de Uso do Usuário Biteplaner',
-      subtitle: 'Condições aplicáveis a quem adquire ou utiliza a jornada Biteplaner.',
+      subtitle: 'Condições aplicáveis à pessoa relacionada ao uso do Biteplaner, sem compra direta no MVP atual.',
       updatedAt: 'Última atualização: julho de 2026',
       pdfFileName: 'termos-uso-usuario-biteplaner.pdf',
       sections: [
         {
           title: 'Objeto',
           body: [
-            'Estes termos regulam cadastro, pré-consulta, escolha de clínica, consulta inicial, compra, pagamento, acompanhamento da jornada Biteplaner, comunicações, suporte e uso do painel pelo usuário cliente.'
+            'Estes termos regulam informações clínicas eventualmente relacionadas ao uso do Biteplaner, comunicações e suporte. No MVP atual, a pessoa relacionada ao uso do produto não atua como compradora, pagadora ou operadora de painel; a contratação é feita pelo dentista licenciado diretamente com a Nexor.'
           ]
         },
         {
@@ -381,9 +338,9 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Compra, jornada e cancelamento',
           items: [
-            'Preços, prazos, elegibilidade, pagamento, reembolso e cancelamento seguem as condições apresentadas no fluxo de contratação.',
-            'A compra ocorre após a consulta inicial e depende das informações necessárias à jornada.',
-            'Ordens, pagamentos e registros mínimos podem ser retidos quando necessários para obrigações legais, auditoria, suporte e defesa de direitos.'
+            'Preços, prazos, elegibilidade, pagamento, reembolso e cancelamento seguem as condições apresentadas ao dentista comprador no fluxo de contratação vigente.',
+            'A continuidade operacional depende das informações clínicas e técnicas necessárias; a compra do Biteplaner é realizada pelo dentista licenciado no MVP atual.',
+            'Ordens e registros mínimos podem ser retidos quando necessários para obrigações legais, auditoria, suporte e defesa de direitos. Registros de pagamento podem ser mantidos quando vinculados ao dentista comprador, à ordem ou a obrigações legais.'
           ]
         },
         ...termsSharedSections
@@ -401,7 +358,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Objeto e elegibilidade',
           body: [
-            'O acesso como dentista depende de aprovação operacional, documentação válida, dados profissionais corretos e conclusão de cadastros financeiros quando o perfil tiver direito a repasses ou comissões.'
+            'O acesso como dentista depende de aprovação operacional, documentação válida e dados profissionais corretos. No MVP atual, a compra do Biteplaner é feita pelo dentista diretamente com a Nexor.'
           ]
         },
         {
@@ -448,38 +405,6 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           title: 'Comissões',
           body: [
             'O parceiro poderá receber comissão conforme regras comerciais vigentes, registros de indicação, elegibilidade, conciliação e obrigações fiscais.'
-          ]
-        },
-        ...termsSharedSections
-      ]
-    },
-    'licensed-lab': {
-      kind: 'terms',
-      profile: 'licensed-lab',
-      version: 'terms-lab-v1.0.0',
-      title: 'Termos de Uso do Laboratório Licenciado',
-      subtitle: 'Condições aplicáveis ao laboratório aprovado para produção Biteplaner.',
-      updatedAt: 'Última atualização: julho de 2026',
-      pdfFileName: 'termos-uso-laboratorio-licenciado.pdf',
-      sections: [
-        {
-          title: 'Objeto e aprovação',
-          body: [
-            'O acesso como laboratório depende de aprovação operacional, dados empresariais corretos, capacidade produtiva e conclusão de cadastros financeiros quando houver repasses.'
-          ]
-        },
-        {
-          title: 'Produção, qualidade e confidencialidade',
-          items: [
-            'Executar ordens conforme especificações, prazos, padrões de qualidade e orientações operacionais.',
-            'Tratar arquivos de scan, dados de clientes, dentistas e ordens com confidencialidade e finalidade restrita.',
-            'Comunicar inconsistências, atrasos, falhas ou necessidades de correção pelos canais oficiais.'
-          ]
-        },
-        {
-          title: 'Pagamentos e repasses',
-          body: [
-            'Repasses podem depender de provedor de pagamento contratado. A Nexor não deve armazenar dados bancários quando o fluxo financeiro for realizado por provedor externo.'
           ]
         },
         ...termsSharedSections

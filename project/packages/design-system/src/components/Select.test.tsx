@@ -36,12 +36,12 @@ describe('Select', () => {
       <DesignSystemProvider brand="nexor">
         <Select
           label="Ano"
-          hint="DescriÃ§Ã£o longa do campo"
+          hint="Descrição longa do campo"
           value=""
           onChange={() => undefined}
           options={[
             { value: '2026', label: '2026', description: 'Base atual' },
-            { value: '2025', label: '2025', description: 'Base histÃ³rica' },
+            { value: '2025', label: '2025', description: 'Base histórica' },
           ]}
         />
       </DesignSystemProvider>,

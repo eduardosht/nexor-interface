@@ -126,7 +126,7 @@ export function ProductionRequestFields({
   const productionRequestSummaryField = useDebouncedDraftText(draft.productionRequestSummary, (value) =>
     onChange({ productionRequestSummary: value })
   );
-  const labNotesField = useDebouncedDraftText(draft.labNotes, (value) => onChange({ labNotes: value }));
+  const opsNotesField = useDebouncedDraftText(draft.opsNotes, (value) => onChange({ opsNotes: value }));
   const wasChangedByCustomer =
     purchaseConfiguration &&
     dentistRecommendedPurchaseConfiguration &&
@@ -181,7 +181,7 @@ export function ProductionRequestFields({
     <>
       {purchaseConfiguration ? (
         <S.PurchaseConfigurationBox>
-          <S.PurchaseConfigurationTitle>Pedido biteplaner confirmado pelo cliente</S.PurchaseConfigurationTitle>
+          <S.PurchaseConfigurationTitle>Pedido Biteplaner confirmado pelo dentista</S.PurchaseConfigurationTitle>
           <S.PurchaseConfigurationList>
             <span><strong>Modelo:</strong> {purchaseConfiguration.model}</span>
             <span><strong>Cor:</strong> {purchaseConfiguration.color}</span>
@@ -191,15 +191,15 @@ export function ProductionRequestFields({
             <S.PurchaseConfigurationHint>
               <strong>Recomendado na consulta:</strong> {formatPurchaseConfiguration(dentistRecommendedPurchaseConfiguration)}.
               {wasChangedByCustomer
-                ? ' O cliente alterou o pedido antes do pagamento. Entre em contato com o cliente para alinhar a alteração antes de prosseguir.'
-                : ' O cliente manteve o pedido acordado.'}
+                ? ' O dentista alterou o pedido antes do pagamento. Alinhe a alteração com a operação Nexor antes de prosseguir.'
+                : ' O dentista manteve o pedido acordado.'}
             </S.PurchaseConfigurationHint>
           ) : null}
           {wasChangedByCustomer ? (
             <CheckboxField
               checked={Boolean(draft.purchaseDivergenceConfirmed)}
               onChange={(checked) => onChange({ purchaseDivergenceConfirmed: checked })}
-              label="Confirmo que revisei a divergência entre recomendação clínica e compra do cliente e autorizo o envio para produção. (*)"
+              label="Confirmo que revisei a divergência entre recomendação clínica e compra do dentista e autorizo a liberação para produção. (*)"
             />
           ) : null}
         </S.PurchaseConfigurationBox>
@@ -218,12 +218,12 @@ export function ProductionRequestFields({
         />
         <Field
           as="textarea"
-          label="Observações para o laboratório"
+          label="Observações para a operação Nexor"
           maxLength={500}
-          placeholder="Inclua somente orientações técnicas necessárias ao laboratório. Evite dados clínicos não essenciais."
-          value={labNotesField.value}
-          onBlur={labNotesField.onBlur}
-          onChange={labNotesField.onChange}
+          placeholder="Inclua somente orientações técnicas necessárias para a operação Nexor acionar a produção externa. Evite dados clínicos não essenciais."
+          value={opsNotesField.value}
+          onBlur={opsNotesField.onBlur}
+          onChange={opsNotesField.onChange}
         />
       </FieldsGrid>
 
@@ -264,7 +264,7 @@ export function ProductionRequestFields({
             Estou ciente de que a plataforma reterá estes dados apenas pelo{' '}
             <strong>tempo necessário para entrega, rastreabilidade e auditoria</strong>, que a{' '}
             <strong>guarda principal do registro clínico</strong> permanece sob minha responsabilidade e
-            que o laboratório deve receber apenas <strong>dados operacionais indispensáveis</strong> para fabricação. (*)
+            que a operação Nexor deve compartilhar externamente apenas <strong>dados operacionais indispensáveis</strong> para fabricação. (*)
           </S.RetentionConsentLabel>
         }
       />
