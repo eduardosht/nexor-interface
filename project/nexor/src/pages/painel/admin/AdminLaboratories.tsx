@@ -1,4 +1,4 @@
-import { AdminFormButton } from '@nexor/design-system';
+import { AdminFormButton, Select, formatPhoneValue } from '@nexor/design-system';
 import { Eye, EyeOff, Factory, Info, Pencil, Plus, RefreshCw, ShieldCheck, ToggleLeft, ToggleRight, Trash2, Inbox } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
@@ -120,9 +120,9 @@ export function AdminLaboratories() {
             <S.FieldWrap><span>Razão social</span><input required value={form.legalName} onChange={(event) => change('legalName', event.target.value)} /></S.FieldWrap>
             <S.FieldWrap><span>CNPJ</span><input required value={form.cnpj} onChange={(event) => change('cnpj', event.target.value)} /></S.FieldWrap>
             <S.FieldWrap><span>E-mail</span><input required type="email" value={form.email} onChange={(event) => change('email', event.target.value)} /></S.FieldWrap>
-            <S.FieldWrap><span>Telefone</span><input value={form.phone} onChange={(event) => change('phone', event.target.value)} /></S.FieldWrap>
-            <S.FieldWrap><span>Modo Asaas</span><select value={form.asaasMode} onChange={(event) => change('asaasMode', event.target.value as Form['asaasMode'])}><option value="linked_account">Vincular conta existente</option><option value="created_subaccount">Criar subconta Nexor</option></select></S.FieldWrap>
-            <S.FieldWrap><span>Wallet Asaas</span><input required={form.asaasMode === 'linked_account'} value={form.asaasWalletId} onChange={(event) => change('asaasWalletId', event.target.value)} placeholder="wallet_..." /></S.FieldWrap>
+            <S.FieldWrap><span>Telefone</span><input inputMode="tel" value={form.phone} onChange={(event) => change('phone', formatPhoneValue(event.target.value))} placeholder="(11) 99999-9999" /></S.FieldWrap>
+            <Select label="Modo Asaas" required options={[{ value: 'linked_account', label: 'Vincular conta existente' }, { value: 'created_subaccount', label: 'Criar subconta Nexor' }]} value={form.asaasMode} onChange={(value) => change('asaasMode', value as Form['asaasMode'])} />
+            {form.asaasMode === 'linked_account' ? <S.FieldWrap><span>Wallet Asaas</span><input required value={form.asaasWalletId} onChange={(event) => change('asaasWalletId', event.target.value)} placeholder="wallet_..." /></S.FieldWrap> : null}
             <S.FieldWrap><span>Split fixo (R$)</span><input required inputMode="decimal" value={form.splitFixedValue} onChange={(event) => change('splitFixedValue', event.target.value)} placeholder="0,00" /></S.FieldWrap>
             <S.FieldWrap><span>Peso de distribuição (%)</span><input required inputMode="decimal" value={form.weight} onChange={(event) => change('weight', event.target.value)} placeholder="50,00" /></S.FieldWrap>
           </S.FormGrid>

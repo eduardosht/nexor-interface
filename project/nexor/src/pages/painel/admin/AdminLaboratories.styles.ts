@@ -18,6 +18,7 @@ export const Panel = styled(Surface)`
   gap: 18px;
   box-shadow: none;
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
+  padding: 16px;
 `;
 
 export const PanelHeader = styled.header`
