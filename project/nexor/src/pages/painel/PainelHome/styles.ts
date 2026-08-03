@@ -711,6 +711,33 @@ export const RoleActionMeta = styled.span`
   }
 `;
 
+export const PendingLicensingNotice = styled.div`
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(180, 83, 9, 0.34);
+  border-left: 4px solid #b45309;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #78350f;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.42;
+
+  svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
+  }
+
+  @media (max-width: 640px) {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    font-size: 12px;
+  }
+`;
 export const RoleStatusPill = styled.span<{ $tone?: 'success' | 'warning' | 'available' | 'neutral' }>`
   position: absolute;
   top: clamp(20px, 2.1vw, 26px);

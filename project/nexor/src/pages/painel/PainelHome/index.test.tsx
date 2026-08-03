@@ -289,6 +289,22 @@ describe('PainelHome', () => {
     expect(screen.queryByRole('button', { name: /solicitar cadastro de laborat.rio/i })).not.toBeInTheDocument();
   });
 
+  it('shows a review notice inside pending licensing cards', async () => {
+    renderPage(
+      {},
+      {
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'pending' }],
+        orders: [],
+      }
+    );
+
+    const pendingCard = (await screen.findByText(/licença de dentista biteplaner/i)).closest('article');
+
+    expect(pendingCard).toBeInTheDocument();
+    expect(pendingCard).toHaveTextContent(
+      'Cadastro enviado. Aguarde a Nexor verificar seus dados para seguir para aprovação.'
+    );
+  });
   it('blocks other operational role requests while dentist licensing is pending', async () => {
     renderPage(
       {},

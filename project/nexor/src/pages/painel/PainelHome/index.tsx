@@ -297,6 +297,12 @@ export function PainelHome() {
                   <S.RoleActionTitle>{actionTitle}</S.RoleActionTitle>
                   <S.RoleCardRule aria-hidden="true" />
                   <S.RoleActionMeta>{actionDescription}</S.RoleActionMeta>
+                  {isPending ? (
+                    <S.PendingLicensingNotice role="status">
+                      <Clock3 size={18} aria-hidden="true" />
+                      <span>Cadastro enviado. Aguarde a Nexor verificar seus dados para seguir para aprovação.</span>
+                    </S.PendingLicensingNotice>
+                  ) : null}
                   {shouldShowActionButton ? (
                     <S.RoleActionButton
                       type="button"
