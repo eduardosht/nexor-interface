@@ -32,6 +32,7 @@ const PartnerReferralPage = lazy(() => import('../pages/painel/PartnerReferralPa
 const RelatoriosBiteplaner = lazy(() => import('../pages/painel/RelatoriosBiteplaner').then(({ RelatoriosBiteplaner }) => ({ default: RelatoriosBiteplaner })));
 const AdminHome = lazy(() => import('../pages/painel/admin/AdminHome').then(({ AdminHome }) => ({ default: AdminHome })));
 const AdminOrders = lazy(() => import('../pages/painel/admin/AdminOrders').then(({ AdminOrders }) => ({ default: AdminOrders })));
+const AdminLaboratories = lazy(() => import('../pages/painel/admin/AdminLaboratories').then(({ AdminLaboratories }) => ({ default: AdminLaboratories })));
 const AdminDentistLicensing = lazy(() => import('../pages/painel/admin/AdminDentistLicensing').then(({ AdminDentistLicensing }) => ({ default: AdminDentistLicensing })));
 
 function LazyRoute({ children }: { children: ReactNode }) {
@@ -153,6 +154,7 @@ export const router = createBrowserRouter([
   { path: '/painel/dentista/producao/:orderId', element: <Navigate to="/painel/home" replace /> },
   { path: '/painel/admin/home', element: <AdminPainelRoute><AdminHome /></AdminPainelRoute> },
   { path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> },
+  { path: '/painel/admin/laboratorios', element: <AdminPainelRoute><AdminLaboratories /></AdminPainelRoute> },
   { path: '/painel/admin/relatorios', element: <AdminPainelRoute><RelatoriosBiteplaner /></AdminPainelRoute> },
   { path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> },
   { path: '*', element: <Navigate to="/" replace /> },

@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, Stethoscope, X, ClipboardList, Home, FileText, Menu, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, LogOut, Bell, Check, ChevronLeft, ChevronRight, User, ShieldCheck, Stethoscope, X, ClipboardList, Home, FileText, Menu, ShoppingCart, Factory } from 'lucide-react';
 import { useAuth, type BackendUser } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import { publicOptimizedImages } from '../../../assets/publicOptimizedImages';
@@ -173,6 +173,7 @@ const ACCOUNT_SUBNAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { to: '/painel/admin/home', label: 'Dashboard', Icon: LayoutDashboard },
   { to: '/painel/admin/ordens', label: 'Ordens', Icon: ClipboardList },
+  { to: '/painel/admin/laboratorios', label: 'Laboratórios', Icon: Factory },
   { to: '/painel/admin/dentistas', label: 'Dentistas', Icon: Stethoscope },
   { to: '/painel/admin/relatorios', label: 'Relatórios', Icon: FileText },
 ];
