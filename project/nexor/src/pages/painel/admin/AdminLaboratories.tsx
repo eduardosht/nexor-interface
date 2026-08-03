@@ -1,9 +1,10 @@
+import { AdminFormButton } from '@nexor/design-system';
+import { Eye, EyeOff, Factory, Info, Pencil, Plus, RefreshCw, ShieldCheck, ToggleLeft, ToggleRight, Trash2, Inbox } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Factory, Pencil, Plus, RefreshCw, ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
 import * as S from './AdminLaboratories.styles';
-import { PageHeader, PageStack, PageSubtitle, PageTitle, TableSection } from './styles';
+import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
 
 type Laboratory = {
   id: string; name: string; legalName: string; cnpj: string; email: string; phone: string | null;
@@ -12,24 +13,122 @@ type Laboratory = {
   splitFixedValueCents: number; distributionWeightBasisPoints: number; active: boolean;
 };
 type Response = { laboratories: Laboratory[] };
-type Form = { name: string; legalName: string; cnpj: string; email: string; phone: string; asaasMode: Laboratory['asaasMode']; asaasWalletId: string; splitFixedValue: string; weight: string; };
+type Form = { name: string; legalName: string; cnpj: string; email: string; phone: string; asaasMode: Laboratory['asaasMode']; asaasWalletId: string; splitFixedValue: string; weight: string };
 const emptyForm: Form = { name: '', legalName: '', cnpj: '', email: '', phone: '', asaasMode: 'linked_account', asaasWalletId: '', splitFixedValue: '', weight: '' };
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const percent = (basis: number) => `${(basis / 100).toFixed(2).replace('.', ',')}%`;
 const toCents = (value: string) => Math.round(Number(value.replace(',', '.')) * 100);
 
 export function AdminLaboratories() {
-  const { session } = useAuth(); const token = session?.access_token;
-  const [items, setItems] = useState<Laboratory[]>([]); const [form, setForm] = useState<Form>(emptyForm); const [editingId, setEditingId] = useState<string | null>(null);
-  const [includeInactive, setIncludeInactive] = useState(true); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false); const [message, setMessage] = useState(''); const [error, setError] = useState('');
-  const load = useCallback(async () => { if (!token) return; setLoading(true); setError(''); try { const q = includeInactive ? '?includeInactive=true' : ''; const r = await api.get<Response>(`/v1/admin/commerce/laboratories${q}`, token); setItems(r.laboratories); } catch { setError('Não foi possível carregar os laboratórios.'); } finally { setLoading(false); } }, [includeInactive, token]);
+  const { session } = useAuth();
+  const token = session?.access_token;
+  const [items, setItems] = useState<Laboratory[]>([]);
+  const [form, setForm] = useState<Form>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [includeInactive, setIncludeInactive] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true); setError('');
+    try {
+      const query = includeInactive ? '?includeInactive=true' : '';
+      const response = await api.get<Response>(`/v1/admin/commerce/laboratories${query}`, token);
+      setItems(response.laboratories);
+    } catch {
+      setError('Não foi possível carregar os laboratórios.');
+    } finally { setLoading(false); }
+  }, [includeInactive, token]);
+
   useEffect(() => { void load(); }, [load]);
-  const totalWeight = useMemo(() => items.filter((x) => x.active && x.integrationStatus === 'ready').reduce((sum, x) => sum + x.distributionWeightBasisPoints, 0), [items]);
-  function edit(item: Laboratory) { setEditingId(item.id); setForm({ name: item.name, legalName: item.legalName, cnpj: item.cnpj, email: item.email, phone: item.phone ?? '', asaasMode: item.asaasMode, asaasWalletId: item.asaasWalletId ?? '', splitFixedValue: (item.splitFixedValueCents / 100).toFixed(2), weight: (item.distributionWeightBasisPoints / 100).toFixed(2) }); setMessage(''); }
-  function reset() { setEditingId(null); setForm(emptyForm); }
+
+  const totalWeight = useMemo(
+    () => items.filter((item) => item.active && item.integrationStatus === 'ready').reduce((sum, item) => sum + item.distributionWeightBasisPoints, 0),
+    [items]
+  );
+
   function change<K extends keyof Form>(key: K, value: Form[K]) { setForm((current) => ({ ...current, [key]: value })); }
-  async function save(event: FormEvent) { event.preventDefault(); if (!token) return; setSaving(true); setError(''); setMessage(''); try { const base = { name: form.name, legalName: form.legalName, cnpj: form.cnpj, email: form.email, phone: form.phone || undefined, splitFixedValueCents: toCents(form.splitFixedValue), distributionWeightBasisPoints: Math.round(Number(form.weight.replace(',', '.')) * 100) }; const payload = form.asaasMode === 'linked_account' ? { ...base, asaasMode: 'linked_account' as const, asaasWalletId: form.asaasWalletId } : { ...base, asaasMode: 'created_subaccount' as const, cep: '00000000', addressLine: 'A preencher', addressNumber: 's/n', neighborhood: 'A preencher', city: 'A preencher', state: 'SP' };
-    if (editingId) await api.patch(`/v1/admin/commerce/laboratories/${editingId}`, payload, token); else await api.post('/v1/admin/commerce/laboratories', payload, token); reset(); setMessage('Laboratório salvo com sucesso.'); await load(); } catch { setError('Não foi possível salvar. Verifique os dados e a integração Asaas.'); } finally { setSaving(false); } }
-  async function action(id: string, path: string, body: Record<string, unknown> = {}) { if (!token) return; setError(''); try { await api.post(`/v1/admin/commerce/laboratories/${id}/${path}`, body, token); await load(); } catch { setError('Não foi possível concluir a ação do laboratório.'); } }
-  return <PageStack><PageHeader><PageTitle><Factory size={24} aria-hidden /> Laboratórios</PageTitle><PageSubtitle>Cadastre os recebedores Asaas e configure como os pedidos Biteplaner serão distribuídos.</PageSubtitle></PageHeader>{error ? <p role="alert">{error}</p> : null}{message ? <p role="status">{message}</p> : null}<S.Grid><TableSection padding="lg"><S.Actions><S.Button type="button" onClick={() => setIncludeInactive((v) => !v)}>{includeInactive ? 'Ocultar inativos' : 'Exibir inativos'}</S.Button><S.Button type="button" onClick={() => void load()} disabled={loading}><RefreshCw size={15} aria-hidden /> Atualizar</S.Button></S.Actions><S.Notice>Peso pronto: <strong>{percent(totalWeight)}</strong>. Para distribuir corretamente, os laboratórios ativos e prontos devem somar 100%.</S.Notice><S.TableScroller><S.Table><thead><tr><th>Laboratório</th><th>Asaas</th><th>Split fixo</th><th>Peso</th><th>Status</th><th>Ações</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong><span>{item.email}</span></td><td>{item.asaasMode === 'linked_account' ? 'Conta vinculada' : 'Subconta Nexor'}<span>{item.asaasWalletId ?? 'Wallet pendente'}</span></td><td>{money(item.splitFixedValueCents)}</td><td>{percent(item.distributionWeightBasisPoints)}</td><td><S.Badge $ok={item.active && item.integrationStatus === 'ready'}>{item.active ? item.integrationStatus : 'inativo'}</S.Badge></td><td><S.Actions><S.Button type="button" onClick={() => edit(item)} aria-label={`Editar ${item.name}`}><Pencil size={15} aria-hidden /></S.Button><S.Button type="button" onClick={() => void action(item.id, item.active ? 'deactivate' : 'activate')} aria-label={item.active ? `Desativar ${item.name}` : `Ativar ${item.name}`}>{item.active ? <ToggleRight size={15} aria-hidden /> : <ToggleLeft size={15} aria-hidden />}</S.Button>{item.asaasMode === 'linked_account' && item.asaasWalletId ? <S.Button type="button" onClick={() => void action(item.id, 'validate-asaas')} aria-label="Validar Asaas"><ShieldCheck size={15} /></S.Button> : null}</S.Actions></td></tr>)}{items.length === 0 && !loading ? <tr><td colSpan={6}>Nenhum laboratório cadastrado.</td></tr> : null}</tbody></S.Table></S.TableScroller></TableSection><S.Panel as="form" onSubmit={save}><h2>{editingId ? 'Editar laboratório' : 'Novo laboratório'}</h2><S.Notice>O peso é a participação da fila de pedidos, não um percentual de split dentro da mesma cobrança.</S.Notice><S.FormGrid><S.FieldWrap><span>Nome fantasia</span><input required value={form.name} onChange={(e) => change('name', e.target.value)} /></S.FieldWrap><S.FieldWrap><span>Razão social</span><input required value={form.legalName} onChange={(e) => change('legalName', e.target.value)} /></S.FieldWrap><S.FieldWrap><span>CNPJ</span><input required value={form.cnpj} onChange={(e) => change('cnpj', e.target.value)} /></S.FieldWrap><S.FieldWrap><span>E-mail</span><input required type="email" value={form.email} onChange={(e) => change('email', e.target.value)} /></S.FieldWrap><S.FieldWrap><span>Telefone</span><input value={form.phone} onChange={(e) => change('phone', e.target.value)} /></S.FieldWrap><S.FieldWrap><span>Modo Asaas</span><select value={form.asaasMode} onChange={(e) => change('asaasMode', e.target.value as Form['asaasMode'])}><option value="linked_account">Vincular conta existente</option><option value="created_subaccount">Criar subconta Nexor</option></select></S.FieldWrap><S.FieldWrap><span>Wallet Asaas</span><input required={form.asaasMode === 'linked_account'} value={form.asaasWalletId} onChange={(e) => change('asaasWalletId', e.target.value)} placeholder="wallet_..." /></S.FieldWrap><S.FieldWrap><span>Split fixo (R$)</span><input required inputMode="decimal" value={form.splitFixedValue} onChange={(e) => change('splitFixedValue', e.target.value)} placeholder="0,00" /></S.FieldWrap><S.FieldWrap><span>Peso de distribuição (%)</span><input required inputMode="decimal" value={form.weight} onChange={(e) => change('weight', e.target.value)} placeholder="50,00" /></S.FieldWrap></S.FormGrid><S.Actions><S.Button $tone="primary" type="submit" disabled={saving}><Plus size={15} aria-hidden /> {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar laboratório'}</S.Button>{editingId ? <S.Button type="button" onClick={reset}><Trash2 size={15} aria-hidden /> Cancelar</S.Button> : null}</S.Actions></S.Panel></S.Grid></PageStack>;
+  function reset() { setEditingId(null); setForm(emptyForm); }
+  function edit(item: Laboratory) {
+    setEditingId(item.id);
+    setForm({ name: item.name, legalName: item.legalName, cnpj: item.cnpj, email: item.email, phone: item.phone ?? '', asaasMode: item.asaasMode, asaasWalletId: item.asaasWalletId ?? '', splitFixedValue: (item.splitFixedValueCents / 100).toFixed(2), weight: (item.distributionWeightBasisPoints / 100).toFixed(2) });
+    setMessage('');
+  }
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    if (!token) return;
+    setSaving(true); setError(''); setMessage('');
+    try {
+      const base = { name: form.name, legalName: form.legalName, cnpj: form.cnpj, email: form.email, phone: form.phone || undefined, splitFixedValueCents: toCents(form.splitFixedValue), distributionWeightBasisPoints: Math.round(Number(form.weight.replace(',', '.')) * 100) };
+      const payload = form.asaasMode === 'linked_account'
+        ? { ...base, asaasMode: 'linked_account' as const, asaasWalletId: form.asaasWalletId }
+        : { ...base, asaasMode: 'created_subaccount' as const, cep: '00000000', addressLine: 'A preencher', addressNumber: 's/n', neighborhood: 'A preencher', city: 'A preencher', state: 'SP' };
+      if (editingId) await api.patch(`/v1/admin/commerce/laboratories/${editingId}`, payload, token);
+      else await api.post('/v1/admin/commerce/laboratories', payload, token);
+      reset(); setMessage('Laboratório salvo com sucesso.'); await load();
+    } catch { setError('Não foi possível salvar. Verifique os dados e a integração Asaas.'); }
+    finally { setSaving(false); }
+  }
+
+  async function action(id: string, path: string, body: Record<string, unknown> = {}) {
+    if (!token) return;
+    setError('');
+    try { await api.post(`/v1/admin/commerce/laboratories/${id}/${path}`, body, token); await load(); }
+    catch { setError('Não foi possível concluir a ação do laboratório.'); }
+  }
+
+  return (
+    <PageStack>
+      <PageHeader>
+        <PageTitle><Factory size={28} aria-hidden /> Laboratórios</PageTitle>
+        <PageSubtitle>Cadastre os recebedores Asaas e configure como os pedidos Biteplaner serão distribuídos.</PageSubtitle>
+      </PageHeader>
+
+      {error ? <S.Alert role="alert"><Info size={20} aria-hidden /><div><strong>{error}</strong><span>Verifique sua conexão ou tente novamente mais tarde.</span></div></S.Alert> : null}
+      {message ? <S.SuccessText role="status">{message}</S.SuccessText> : null}
+
+      <S.Grid>
+        <S.Panel>
+          <S.Toolbar>
+            <AdminFormButton type="button" variant="secondary" leadingIcon={includeInactive ? <EyeOff size={16} aria-hidden /> : <Eye size={16} aria-hidden />} onClick={() => setIncludeInactive((value) => !value)}>
+              {includeInactive ? 'Ocultar inativos' : 'Exibir inativos'}
+            </AdminFormButton>
+            <AdminFormButton type="button" variant="secondary" leadingIcon={<RefreshCw size={16} aria-hidden />} disabled={loading} onClick={() => void load()}>
+              Atualizar
+            </AdminFormButton>
+          </S.Toolbar>
+          <S.WeightSummary>Peso pronto: <strong>{percent(totalWeight)}</strong>.<br />Para distribuir corretamente, os laboratórios ativos e prontos devem somar 100%.</S.WeightSummary>
+          <S.TableScroller>
+            {items.length === 0 && !loading ? (
+              <S.EmptyState><S.EmptyIcon><Inbox size={24} aria-hidden /></S.EmptyIcon><S.EmptyTitle>Nenhum laboratório cadastrado.</S.EmptyTitle><S.EmptyText>Cadastre um novo laboratório para começar.</S.EmptyText></S.EmptyState>
+            ) : (
+              <S.Table><thead><tr><th>Laboratório</th><th>Asaas</th><th>Split fixo (R$)</th><th>Peso (%)</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+                {items.map((item) => <tr key={item.id}><td><strong>{item.name}</strong><span>{item.email}</span></td><td>{item.asaasMode === 'linked_account' ? 'Conta vinculada' : 'Subconta Nexor'}<span>{item.asaasWalletId ?? 'Wallet pendente'}</span></td><td>{money(item.splitFixedValueCents)}</td><td>{percent(item.distributionWeightBasisPoints)}</td><td><S.Badge $ok={item.active && item.integrationStatus === 'ready'}>{item.active ? item.integrationStatus : 'inativo'}</S.Badge></td><td><S.Actions><S.IconButton type="button" onClick={() => edit(item)} aria-label={`Editar ${item.name}`} title="Editar"><Pencil size={15} aria-hidden /></S.IconButton><S.IconButton type="button" onClick={() => void action(item.id, item.active ? 'deactivate' : 'activate')} aria-label={item.active ? `Desativar ${item.name}` : `Ativar ${item.name}`} title={item.active ? 'Desativar' : 'Ativar'}>{item.active ? <ToggleRight size={15} aria-hidden /> : <ToggleLeft size={15} aria-hidden />}</S.IconButton>{item.asaasMode === 'linked_account' && item.asaasWalletId ? <S.IconButton type="button" onClick={() => void action(item.id, 'validate-asaas')} aria-label="Validar Asaas" title="Validar Asaas"><ShieldCheck size={15} aria-hidden /></S.IconButton> : null}</S.Actions></td></tr>)}
+              </tbody></S.Table>
+            )}
+          </S.TableScroller>
+        </S.Panel>
+
+        <S.Panel as="form" onSubmit={save}>
+          <S.PanelHeader><div><S.PanelTitle>{editingId ? 'Editar laboratório' : 'Novo laboratório'}</S.PanelTitle><S.PanelDescription>O peso é a participação da fila de pedidos, não um percentual de split dentro da mesma cobrança.</S.PanelDescription></div></S.PanelHeader>
+          <S.FormGrid>
+            <S.FieldWrap><span>Nome fantasia</span><input required value={form.name} onChange={(event) => change('name', event.target.value)} /></S.FieldWrap>
+            <S.FieldWrap><span>Razão social</span><input required value={form.legalName} onChange={(event) => change('legalName', event.target.value)} /></S.FieldWrap>
+            <S.FieldWrap><span>CNPJ</span><input required value={form.cnpj} onChange={(event) => change('cnpj', event.target.value)} /></S.FieldWrap>
+            <S.FieldWrap><span>E-mail</span><input required type="email" value={form.email} onChange={(event) => change('email', event.target.value)} /></S.FieldWrap>
+            <S.FieldWrap><span>Telefone</span><input value={form.phone} onChange={(event) => change('phone', event.target.value)} /></S.FieldWrap>
+            <S.FieldWrap><span>Modo Asaas</span><select value={form.asaasMode} onChange={(event) => change('asaasMode', event.target.value as Form['asaasMode'])}><option value="linked_account">Vincular conta existente</option><option value="created_subaccount">Criar subconta Nexor</option></select></S.FieldWrap>
+            <S.FieldWrap><span>Wallet Asaas</span><input required={form.asaasMode === 'linked_account'} value={form.asaasWalletId} onChange={(event) => change('asaasWalletId', event.target.value)} placeholder="wallet_..." /></S.FieldWrap>
+            <S.FieldWrap><span>Split fixo (R$)</span><input required inputMode="decimal" value={form.splitFixedValue} onChange={(event) => change('splitFixedValue', event.target.value)} placeholder="0,00" /></S.FieldWrap>
+            <S.FieldWrap><span>Peso de distribuição (%)</span><input required inputMode="decimal" value={form.weight} onChange={(event) => change('weight', event.target.value)} placeholder="50,00" /></S.FieldWrap>
+          </S.FormGrid>
+          <S.Actions><AdminFormButton type="submit" variant="primary" leadingIcon={<Plus size={16} aria-hidden />} disabled={saving}>{saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar laboratório'}</AdminFormButton>{editingId ? <AdminFormButton type="button" variant="secondary" leadingIcon={<Trash2 size={16} aria-hidden />} onClick={reset}>Cancelar</AdminFormButton> : null}</S.Actions>
+        </S.Panel>
+      </S.Grid>
+    </PageStack>
+  );
 }
