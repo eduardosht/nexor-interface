@@ -140,6 +140,28 @@ describe('AdminLaboratories', () => {
     ));
   });
 
+  it('updates only configurable split fields for a ready laboratory', async () => {
+    mockGet.mockResolvedValue({ laboratories: [laboratory] });
+    mockPatch.mockResolvedValue({ laboratory });
+    renderPage();
+
+    await screen.findByText('Lab Prime');
+    fireEvent.click(screen.getByRole('button', { name: /editar lab prime/i }));
+    const modal = screen.getByRole('dialog', { name: /editar/i });
+    fireEvent.change(within(modal).getByLabelText('Split fixo (R$)'), { target: { value: '200,00' } });
+    fireEvent.change(within(modal).getByLabelText(/peso de distribui/i), { target: { value: '75' } });
+    fireEvent.click(within(modal).getByRole('button', { name: /salvar/i }));
+
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledWith(
+      '/v1/admin/commerce/laboratories/lab-1',
+      {
+        splitFixedValueCents: 20000,
+        distributionWeightBasisPoints: 75
+      },
+      'tok'
+    ));
+  });
+
   it('validates a pending linked account through the Asaas action', async () => {
     const pending = { ...laboratory, integrationStatus: 'pending' as const };
     mockGet.mockResolvedValueOnce({ laboratories: [pending] }).mockResolvedValueOnce({ laboratories: [laboratory] });

@@ -387,12 +387,19 @@ export function AdminLaboratories() {
     setError('');
     setMessage('');
     try {
-      const base = {
-        name: form.name,
+      const splitPayload = {
         splitFixedValueCents: toCents(form.splitFixedValue),
         distributionWeightBasisPoints: toPercentage(form.weight)
       };
-      const payload = { ...base, asaasMode: 'linked_account' as const, asaasWalletId: form.asaasWalletId };
+      const editingLaboratory = editingId ? items.find((item) => item.id === editingId) : undefined;
+      const payload = editingLaboratory?.integrationStatus === 'ready'
+        ? splitPayload
+        : {
+            name: form.name,
+            ...splitPayload,
+            asaasMode: 'linked_account' as const,
+            asaasWalletId: form.asaasWalletId
+          };
       if (editingId) await api.patch(`/v1/admin/commerce/laboratories/${editingId}`, payload, token);
       else await api.post('/v1/admin/commerce/laboratories', payload, token);
       reset();
