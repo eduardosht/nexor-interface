@@ -310,6 +310,35 @@ describe('AdminLaboratories', () => {
     expect(screen.getByText(/Peso pronto:/)).toHaveTextContent('0,00%');
   });
 
+  it('does not approve or count a matching test while the Asaas integration is pending', async () => {
+    mockGet.mockResolvedValue({
+      laboratories: [
+        {
+          ...laboratory,
+          integrationStatus: 'pending',
+          asaasValidationStatus: 'approved',
+          asaasSplitTest: {
+            status: 'approved',
+            walletId: 'wallet-1',
+            paymentStatus: 'RECEIVED',
+            splitStatus: 'DONE',
+            failureReason: null,
+            verifiedAt: '2026-08-06T14:00:00.000Z',
+            lastWebhookEventAt: '2026-08-06T14:05:00.000Z'
+          }
+        }
+      ]
+    });
+    renderPage();
+
+    const row = (await screen.findByText('Lab Prime')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText('Integração Asaas pendente')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).getByText('Pendente Asaas')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).queryByText('Aprovado para split')).not.toBeInTheDocument();
+    expect(screen.getByText(/Peso pronto:/)).toHaveTextContent('0,00%');
+  });
+
   it('suppresses stale failure reasons when the persisted test is approved for the current wallet', async () => {
     mockGet.mockResolvedValue({
       laboratories: [
