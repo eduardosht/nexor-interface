@@ -266,6 +266,81 @@ describe('AdminLaboratories', () => {
     expect(screen.getByRole('button', { name: /consultar resultado do split de lab prime/i })).toBeDisabled();
   });
 
+  it('enables consulting after the backend returns the persisted split test', async () => {
+    const persistedTest = {
+      status: 'awaiting_payment' as const,
+      amountCents: 500,
+      splitFixedValueCents: 100,
+      paymentStatus: 'PENDING',
+      splitStatus: null,
+      failureReason: null,
+      verifiedAt: null,
+      lastWebhookEventAt: null
+    };
+    mockGet
+      .mockResolvedValueOnce({ laboratories: [laboratory] })
+      .mockResolvedValueOnce({
+        laboratories: [{
+          ...laboratory,
+          asaasValidationStatus: 'awaiting_payment',
+          asaasSplitTest: persistedTest
+        }]
+      })
+      .mockResolvedValueOnce({
+        test: {
+          id: 'split-test-1',
+          laboratoryPartnerId: 'lab-1',
+          externalReference: 'external-1',
+          checkoutId: 'checkout-1',
+          paymentId: null,
+          walletId: 'wallet-1',
+          amountCents: 500,
+          splitFixedValueCents: 100,
+          status: 'awaiting_payment',
+          paymentStatus: 'PENDING',
+          splitId: null,
+          splitStatus: null,
+          failureReason: null,
+          verifiedAt: null,
+          createdAt: '2026-08-06T11:00:00.000Z',
+          updatedAt: '2026-08-06T11:00:00.000Z',
+          lastWebhookEventAt: null
+        },
+        reconciliation: {
+          attempted: false,
+          error: null
+        }
+      });
+    mockPost.mockResolvedValue({
+      test: {
+        url: 'https://sandbox.example/checkout',
+        amountCents: 500,
+        splitFixedValueCents: 100,
+        testId: 'split-test-1',
+        status: 'awaiting_payment'
+      }
+    });
+    renderPage();
+
+    await screen.findByText('Lab Prime');
+    const consultButton = screen.getByRole('button', { name: /consultar resultado do split de lab prime/i });
+    expect(consultButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: /enviar teste de split de lab prime/i }));
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledWith(
+      '/v1/admin/commerce/laboratories/lab-1/test-split',
+      {},
+      'tok'
+    ));
+    await waitFor(() => expect(consultButton).toBeEnabled());
+    expect(mockWindowOpen).toHaveBeenCalledWith(
+      'https://sandbox.example/checkout',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
   it('retries a failed split test explicitly and blocks repeat submission while the request is in flight', async () => {
     let resolvePost: ((value: { test: { url: string; amountCents: number; splitFixedValueCents: number; testId: string; status: string } }) => void) | undefined;
     mockGet.mockResolvedValue({
@@ -302,6 +377,8 @@ describe('AdminLaboratories', () => {
       'tok'
     ));
     expect(retryButton).toBeDisabled();
+    fireEvent.click(retryButton);
+    expect(mockPost).toHaveBeenCalledTimes(1);
 
     resolvePost?.({
       test: {
