@@ -2,17 +2,19 @@ import { Surface } from '@nexor/design-system';
 import styled from 'styled-components';
 
 export const Grid = styled.div`
+  width: 100%;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.22fr) minmax(360px, 0.78fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  align-items: stretch;
 
-  @media (max-width: 1100px) { grid-template-columns: minmax(0, 1fr); }
   @media (max-width: 768px) { gap: 16px; }
 `;
 
 export const Panel = styled(Surface)`
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -22,6 +24,7 @@ export const Panel = styled(Surface)`
 `;
 
 export const PanelHeader = styled.header`
+  width: 100%;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -38,7 +41,7 @@ export const PanelTitle = styled.h2`
 `;
 
 export const PanelDescription = styled.p`
-  max-width: 520px;
+  max-width: 640px;
   margin: 0;
   color: ${({ theme }) => theme.colors.textSecondary};
   font-size: 13px;
@@ -50,6 +53,7 @@ export const Toolbar = styled.div`
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  justify-content: flex-end;
 `;
 
 export const WeightSummary = styled.div`
@@ -69,14 +73,14 @@ export const TableScroller = styled.div`
 
 export const Table = styled.table`
   width: 100%;
-  min-width: 760px;
+  min-width: 1120px;
   border-collapse: collapse;
 
   th, td {
     padding: 14px 10px;
     border-bottom: 1px solid ${({ theme }) => theme.colors.borderDefault};
     text-align: left;
-    vertical-align: middle;
+    vertical-align: top;
   }
 
   th {
@@ -88,7 +92,7 @@ export const Table = styled.table`
   }
 
   td { color: ${({ theme }) => theme.colors.textPrimary}; font-size: 13px; }
-  td span { display: block; margin-top: 4px; color: ${({ theme }) => theme.colors.textSecondary}; font-size: 12px; }
+  td > span { display: block; margin-top: 4px; color: ${({ theme }) => theme.colors.textSecondary}; font-size: 12px; }
 `;
 
 export const EmptyState = styled.div`
@@ -122,11 +126,17 @@ export const EmptyText = styled.span`
   font-size: 13px;
 `;
 
+export const ModalForm = styled.form`
+  display: grid;
+  gap: 18px;
+`;
+
 export const FormGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 
+  @media (max-width: 920px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (max-width: 620px) { grid-template-columns: 1fr; }
 `;
 
@@ -170,21 +180,55 @@ export const IconButton = styled.button`
   background: ${({ theme }) => theme.colors.bgElevated};
   color: ${({ theme }) => theme.colors.textPrimary};
   cursor: pointer;
+  flex: 0 0 auto;
 
-  &:hover { border-color: ${({ theme }) => theme.colors.textPrimary}; }
+  &:hover:not(:disabled) { border-color: ${({ theme }) => theme.colors.textPrimary}; }
   &:focus-visible { outline: 2px solid rgba(17, 24, 39, .22); outline-offset: 2px; }
+  &:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
 `;
 
-export const Badge = styled.span<{ $ok?: boolean }>`
+export const StatusStack = styled.div`
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+`;
+
+const badgeThemes = {
+  success: { background: 'rgba(21,128,61,.12)', color: '#15803d' },
+  warning: { background: 'rgba(209,138,0,.14)', color: '#a16207' },
+  info: { background: 'rgba(37,99,235,.12)', color: '#1d4ed8' },
+  danger: { background: 'rgba(185,28,28,.12)', color: '#b91c1c' },
+  neutral: { background: 'rgba(71,85,105,.12)', color: '#475569' }
+};
+
+export const Badge = styled.span<{ $ok?: boolean; $tone?: keyof typeof badgeThemes }>`
   display: inline-flex !important;
   width: fit-content;
   margin: 0 !important;
   padding: 4px 8px;
   border-radius: 999px;
-  background: ${({ $ok }) => ($ok ? 'rgba(21,128,61,.12)' : 'rgba(209,138,0,.14)')};
-  color: ${({ $ok }) => ($ok ? '#15803d' : '#a16207')} !important;
+  background: ${({ $ok, $tone = 'neutral' }) => ($ok ? badgeThemes.success.background : badgeThemes[$tone].background)};
+  color: ${({ $ok, $tone = 'neutral' }) => ($ok ? badgeThemes.success.color : badgeThemes[$tone].color)} !important;
   font-size: 11px !important;
   font-weight: 800;
+`;
+
+export const StatusMeta = styled.span`
+  display: block;
+  margin: 0 !important;
+  color: ${({ theme }) => theme.colors.textSecondary} !important;
+  font-size: 12px !important;
+  line-height: 1.45;
+`;
+
+export const HelperText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 12px;
+  line-height: 1.45;
 `;
 
 export const Alert = styled.div`
@@ -205,7 +249,8 @@ export const Alert = styled.div`
 export const ErrorText = styled.p`
   margin: 0;
   color: #b91c1c;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.45;
 `;
 
 export const SuccessText = styled.p`
