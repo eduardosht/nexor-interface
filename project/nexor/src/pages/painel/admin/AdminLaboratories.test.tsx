@@ -163,6 +163,21 @@ describe('AdminLaboratories', () => {
         laboratory,
         {
           ...laboratory,
+          id: 'lab-created',
+          name: 'Lab Created',
+          distributionWeightBasisPoints: 5,
+          asaasValidationStatus: 'created',
+          asaasSplitTest: {
+            status: 'created',
+            paymentStatus: null,
+            splitStatus: null,
+            failureReason: null,
+            verifiedAt: null,
+            lastWebhookEventAt: null
+          },
+        },
+        {
+          ...laboratory,
           id: 'lab-2',
           name: 'Lab Awaiting',
           distributionWeightBasisPoints: 10,
@@ -250,11 +265,16 @@ describe('AdminLaboratories', () => {
 
     await screen.findByText('Lab Failed');
     expect(screen.getByText('Teste não enviado')).toBeInTheDocument();
+    expect(screen.getByText('Teste criado; aguardando processamento')).toBeInTheDocument();
     expect(screen.getByText('Aguardando pagamento')).toBeInTheDocument();
     expect(screen.getByText('Checkout pago; aguardando confirmação')).toBeInTheDocument();
     expect(screen.getByText('Pagamento recebido; validando split')).toBeInTheDocument();
     expect(screen.getByText('Aprovado para split')).toBeInTheDocument();
     expect(screen.getByText('Falha na validação')).toBeInTheDocument();
+    expect(screen.getAllByText('Aprovado para split')).toHaveLength(1);
+    const createdRow = screen.getByText('Lab Created').closest('tr');
+    expect(createdRow).not.toBeNull();
+    expect(within(createdRow as HTMLTableRowElement).getByRole('button', { name: /enviar teste de split de lab created/i })).toBeDisabled();
     expect(screen.getAllByText('50,00%').length).toBeGreaterThanOrEqual(2);
   });
 
@@ -606,16 +626,16 @@ describe('AdminLaboratories', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('schedules a moderate refresh while a split test is pending', async () => {
+  it('schedules a moderate refresh while a created split test is pending', async () => {
     const timeoutSpy = vi.spyOn(window, 'setTimeout');
     mockGet.mockResolvedValue({
       laboratories: [
         {
           ...laboratory,
-          asaasValidationStatus: 'awaiting_payment',
+          asaasValidationStatus: 'created',
           asaasSplitTest: {
-            status: 'awaiting_payment',
-            paymentStatus: 'PENDING',
+            status: 'created',
+            paymentStatus: null,
             splitStatus: null,
             failureReason: null,
             verifiedAt: null,
@@ -626,7 +646,7 @@ describe('AdminLaboratories', () => {
     });
     renderPage();
 
-    await screen.findByText('Aguardando pagamento');
+    await screen.findByText('Teste criado; aguardando processamento');
     expect(timeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
   });
 });

@@ -6,7 +6,7 @@ import { api } from '../../../lib/api';
 import * as S from './AdminLaboratories.styles';
 import { PageHeader, PageStack, PageSubtitle, PageTitle } from './styles';
 
-type SplitValidationStatus = 'awaiting_payment' | 'checkout_paid' | 'payment_received' | 'approved' | 'failed';
+type SplitValidationStatus = 'created' | 'awaiting_payment' | 'checkout_paid' | 'payment_received' | 'approved' | 'failed';
 type SplitActionKind = 'activate' | 'deactivate' | 'create-split' | 'refresh-split' | 'validate-asaas';
 
 type SplitTestSummary = {
@@ -131,6 +131,7 @@ const emptyForm: Form = {
 };
 
 const splitStatusLabels: Record<SplitValidationStatus, string> = {
+  created: 'Teste criado; aguardando processamento',
   awaiting_payment: 'Aguardando pagamento',
   checkout_paid: 'Checkout pago; aguardando confirmação',
   payment_received: 'Pagamento recebido; validando split',
@@ -145,7 +146,7 @@ const integrationStatusLabels: Record<Laboratory['integrationStatus'], string> =
   disabled: 'Integração Asaas desativada'
 };
 
-const pendingSplitStatuses = new Set<SplitValidationStatus>(['awaiting_payment', 'checkout_paid', 'payment_received']);
+const pendingSplitStatuses = new Set<SplitValidationStatus>(['created', 'awaiting_payment', 'checkout_paid', 'payment_received']);
 const numberFormatter = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short',
   timeStyle: 'short',
@@ -230,7 +231,7 @@ const getSplitStatusTone = (status: SplitValidationStatus | null) => {
   if (status === 'approved') return 'success';
   if (status === 'failed') return 'danger';
   if (status === 'checkout_paid' || status === 'payment_received') return 'info';
-  if (status === 'awaiting_payment') return 'warning';
+  if (status === 'created' || status === 'awaiting_payment') return 'warning';
   return 'neutral';
 };
 const getSplitStatusMessage = (status: SplitValidationStatus) => `Status atualizado: ${splitStatusLabels[status]}.`;
