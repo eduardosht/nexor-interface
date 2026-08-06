@@ -151,6 +151,8 @@ const numberFormatter = new Intl.DateTimeFormat('pt-BR', {
   timeStyle: 'short',
   timeZone: 'America/Sao_Paulo'
 });
+const conclusiveSplitStatuses = new Set<SplitValidationStatus>(['approved', 'failed']);
+const isConclusiveSplitStatus = (status: SplitValidationStatus | null) => status !== null && conclusiveSplitStatuses.has(status);
 
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const percent = (value: number) => `${value.toFixed(2).replace('.', ',')}%`;
@@ -255,15 +257,31 @@ export function AdminLaboratories() {
   const inflightActions = useRef(new Set<string>());
 
   const load = useCallback(async () => {
-    if (!token) return;
+    if (!token) return null;
     setLoading(true);
     setError('');
     try {
       const query = includeInactive ? '?includeInactive=true' : '';
       const response = await api.get<Response>(`/v1/admin/commerce/laboratories${query}`, token);
       setItems(response.laboratories);
+      const conclusiveIds = new Set(
+        response.laboratories
+          .filter((item) => isConclusiveSplitStatus(getSplitValidationStatus(item)))
+          .map((item) => item.id)
+      );
+      if (conclusiveIds.size > 0) {
+        setSplitReconciliationErrors((current) => {
+          const next = { ...current };
+          for (const id of conclusiveIds) {
+            delete next[id];
+          }
+          return next;
+        });
+      }
+      return response.laboratories;
     } catch {
       setError('Não foi possível carregar os laboratórios.');
+      return null;
     } finally {
       setLoading(false);
     }
@@ -385,7 +403,8 @@ export function AdminLaboratories() {
     if (!token) return null;
     const response = await api.get<SplitTestStatusResponse>(`/v1/admin/commerce/laboratories/${item.id}/test-split`, token);
     setSplitTestDetails((current) => ({ ...current, [item.id]: response.test }));
-    const reconciliationError = response.reconciliation.error;
+    const detailIsConclusive = isConclusiveSplitStatus(response.test.status);
+    const reconciliationError = detailIsConclusive ? null : response.reconciliation.error;
     if (reconciliationError !== null) {
       setSplitReconciliationErrors((current) => ({ ...current, [item.id]: reconciliationError }));
       if (options?.showMessage) {
@@ -445,8 +464,10 @@ export function AdminLaboratories() {
     setRowAction({ id: item.id, kind: 'refresh-split' });
     try {
       const response = await loadSplitTestStatus(item, { showMessage: true });
-      await load();
-      if (response?.reconciliation.error) {
+      const refreshedLaboratories = await load();
+      const refreshedItem = refreshedLaboratories?.find((laboratory) => laboratory.id === item.id) ?? null;
+      const refreshedStatus = refreshedItem === null ? null : getSplitValidationStatus(refreshedItem);
+      if (response?.reconciliation.error && refreshedLaboratories !== null && !isConclusiveSplitStatus(refreshedStatus)) {
         setError(response.reconciliation.error);
         setMessage('');
       }

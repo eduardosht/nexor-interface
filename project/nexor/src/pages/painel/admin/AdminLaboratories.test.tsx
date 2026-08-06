@@ -487,6 +487,28 @@ describe('AdminLaboratories', () => {
             }
           }
         ]
+      })
+      .mockResolvedValueOnce({
+        laboratories: [
+          {
+            ...laboratory,
+            asaasValidationStatus: 'approved',
+            asaasValidationReason: null,
+            paymentStatus: 'RECEIVED',
+            splitStatus: 'DONE',
+            verifiedAt: '2026-08-06T13:00:00.000Z',
+            asaasSplitTest: {
+              status: 'approved',
+              amountCents: 500,
+              splitFixedValueCents: 100,
+              paymentStatus: 'RECEIVED',
+              splitStatus: 'DONE',
+              failureReason: null,
+              verifiedAt: '2026-08-06T13:00:00.000Z',
+              lastWebhookEventAt: '2026-08-06T13:00:00.000Z'
+            }
+          }
+        ]
       });
     renderPage();
 
@@ -498,6 +520,13 @@ describe('AdminLaboratories', () => {
     const row = screen.getByText('Lab Prime').closest('tr');
     expect(row).not.toBeNull();
     expect(within(row as HTMLTableRowElement).getByText(reconciliationError)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^atualizar$/i }));
+    await screen.findByText('Aprovado para split');
+    const approvedRow = screen.getByText('Lab Prime').closest('tr');
+    expect(approvedRow).not.toBeNull();
+    expect(within(approvedRow as HTMLTableRowElement).queryByText(reconciliationError)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('schedules a moderate refresh while a split test is pending', async () => {
