@@ -134,7 +134,7 @@ const emptyForm: Form = {
 const splitStatusLabels: Record<SplitValidationStatus, string> = {
   created: 'Teste criado; aguardando processamento',
   awaiting_payment: 'Aguardando pagamento',
-  checkout_paid: 'Checkout pago; aguardando confirmação',
+  checkout_paid: 'Checkout pago; aguardando evento de pagamento do Asaas',
   payment_received: 'Pagamento recebido; validando split',
   approved: 'Aprovado para split',
   failed: 'Falha na validação'

@@ -290,7 +290,7 @@ describe('AdminLaboratories', () => {
     expect(screen.getByText('Teste não enviado')).toBeInTheDocument();
     expect(screen.getByText('Teste criado; aguardando processamento')).toBeInTheDocument();
     expect(screen.getByText('Aguardando pagamento')).toBeInTheDocument();
-    expect(screen.getByText('Checkout pago; aguardando confirmação')).toBeInTheDocument();
+    expect(screen.getByText('Checkout pago; aguardando evento de pagamento do Asaas')).toBeInTheDocument();
     expect(screen.getByText('Pagamento recebido; validando split')).toBeInTheDocument();
     expect(screen.getByText('Aprovado para split')).toBeInTheDocument();
     expect(screen.getByText('Falha na validação')).toBeInTheDocument();
