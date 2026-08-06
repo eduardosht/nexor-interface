@@ -234,6 +234,7 @@ describe('AdminLaboratories', () => {
           verifiedAt: '2026-08-06T14:00:00.000Z',
           asaasSplitTest: {
             status: 'approved',
+            walletId: 'wallet-1',
             paymentStatus: 'CONFIRMED',
             splitStatus: 'DONE',
             failureReason: null,
@@ -276,6 +277,64 @@ describe('AdminLaboratories', () => {
     expect(createdRow).not.toBeNull();
     expect(within(createdRow as HTMLTableRowElement).getByRole('button', { name: /enviar teste de split de lab created/i })).toBeDisabled();
     expect(screen.getAllByText('50,00%').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not approve the current wallet when the persisted test belongs to another wallet', async () => {
+    mockGet.mockResolvedValue({
+      laboratories: [
+        {
+          ...laboratory,
+          asaasWalletId: 'wallet-current',
+          integrationStatus: 'ready',
+          asaasValidationStatus: 'approved',
+          asaasSplitTest: {
+            status: 'approved',
+            walletId: 'wallet-previous',
+            paymentStatus: 'RECEIVED',
+            splitStatus: 'DONE',
+            failureReason: null,
+            verifiedAt: '2026-08-06T14:00:00.000Z',
+            lastWebhookEventAt: '2026-08-06T14:05:00.000Z'
+          }
+        }
+      ]
+    });
+    renderPage();
+
+    const row = (await screen.findByText('Lab Prime')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText('Wallet atual pendente de validação')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).getByText('Wallet validado: wallet-previous')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).queryByText('Aprovado para split')).not.toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).queryByText('Integração Asaas pronta')).not.toBeInTheDocument();
+    expect(screen.getByText(/Peso pronto:/)).toHaveTextContent('0,00%');
+  });
+
+  it('suppresses stale failure reasons when the persisted test is approved for the current wallet', async () => {
+    mockGet.mockResolvedValue({
+      laboratories: [
+        {
+          ...laboratory,
+          asaasValidationStatus: 'approved',
+          asaasValidationReason: 'Motivo antigo de inelegibilidade.',
+          asaasSplitTest: {
+            status: 'approved',
+            walletId: 'wallet-1',
+            paymentStatus: 'RECEIVED',
+            splitStatus: 'DONE',
+            failureReason: 'Motivo antigo de inelegibilidade.',
+            verifiedAt: '2026-08-06T14:00:00.000Z',
+            lastWebhookEventAt: '2026-08-06T14:05:00.000Z'
+          }
+        }
+      ]
+    });
+    renderPage();
+
+    const row = (await screen.findByText('Lab Prime')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText('Aprovado para split')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).queryByText('Motivo antigo de inelegibilidade.')).not.toBeInTheDocument();
   });
 
   it('keeps consulting disabled until a split test exists', async () => {
@@ -596,6 +655,7 @@ describe('AdminLaboratories', () => {
             verifiedAt: '2026-08-06T13:00:00.000Z',
             asaasSplitTest: {
               status: 'approved',
+              walletId: 'wallet-1',
               amountCents: 500,
               splitFixedValueCents: 100,
               paymentStatus: 'RECEIVED',

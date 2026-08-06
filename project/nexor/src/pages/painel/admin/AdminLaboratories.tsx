@@ -11,6 +11,7 @@ type SplitActionKind = 'activate' | 'deactivate' | 'create-split' | 'refresh-spl
 
 type SplitTestSummary = {
   status: SplitValidationStatus;
+  walletId: string | null;
   failureReason: string | null;
   amountCents?: number;
   splitFixedValueCents?: number;
@@ -201,6 +202,7 @@ const getPersistedSplitTest = (item: Laboratory): SplitTestSummary | null => {
   return {
     status: item.asaasValidationStatus,
     failureReason: item.asaasValidationReason ?? null,
+    walletId: null,
     paymentStatus: item.paymentStatus ?? null,
     splitStatus: item.splitStatus ?? null,
     verifiedAt: item.verifiedAt ?? null,
@@ -208,17 +210,33 @@ const getPersistedSplitTest = (item: Laboratory): SplitTestSummary | null => {
   };
 };
 const getSplitValidationStatus = (item: Laboratory) => item.asaasValidationStatus ?? getPersistedSplitTest(item)?.status ?? null;
-const isSplitApproved = (item: Laboratory) => item.active && item.asaasValidationStatus === 'approved';
+const doesSplitTestMatchCurrentWallet = (item: Laboratory) => {
+  const currentWalletId = item.asaasWalletId?.trim() ?? '';
+  const testedWalletId = getPersistedSplitTest(item)?.walletId?.trim() ?? '';
+  return currentWalletId !== '' && testedWalletId !== '' && currentWalletId === testedWalletId;
+};
+const isSplitApproved = (item: Laboratory) =>
+  item.active &&
+  item.asaasValidationStatus === 'approved' &&
+  getPersistedSplitTest(item)?.status === 'approved' &&
+  doesSplitTestMatchCurrentWallet(item);
+const isCurrentWalletPendingValidation = (item: Laboratory) =>
+  item.active && item.asaasValidationStatus === 'approved' && !doesSplitTestMatchCurrentWallet(item);
 const isSplitPending = (item: Laboratory) => {
   const status = getSplitValidationStatus(item);
   return status !== null && pendingSplitStatuses.has(status);
 };
 const integrationStatusLabel = (item: Laboratory) => (item.active ? integrationStatusLabels[item.integrationStatus] : 'Laboratório inativo');
+const readinessAwareIntegrationStatusLabel = (item: Laboratory) => {
+  if (!item.active) return integrationStatusLabel(item);
+  if (item.integrationStatus === 'ready' && !isSplitApproved(item)) return integrationStatusLabels.pending;
+  return integrationStatusLabel(item);
+};
 const canGuaranteeAsaasIntegration = (item: Laboratory) =>
   item.active &&
   item.asaasMode === 'linked_account' &&
   hasAsaasWallet(item) &&
-  item.integrationStatus !== 'ready';
+  !isSplitApproved(item);
 const asaasActionLabel = () => 'Validar integração Asaas';
 const getCreateSplitLabel = (item: Laboratory) => {
   const status = getSplitValidationStatus(item);
@@ -235,8 +253,11 @@ const getSplitStatusTone = (status: SplitValidationStatus | null) => {
   return 'neutral';
 };
 const getSplitStatusMessage = (status: SplitValidationStatus) => `Status atualizado: ${splitStatusLabels[status]}.`;
-const getFailureReason = (item: Laboratory, detail: SplitTestDetails | null) =>
-  detail?.failureReason ?? getPersistedSplitTest(item)?.failureReason ?? item.asaasValidationReason ?? null;
+const getFailureReason = (item: Laboratory, detail: SplitTestDetails | null) => {
+  const persistedTest = getPersistedSplitTest(item);
+  if (persistedTest?.status === 'approved' || detail?.status === 'approved') return null;
+  return detail?.failureReason ?? persistedTest?.failureReason ?? item.asaasValidationReason ?? null;
+};
 const getSplitDisplayAmount = (persistedTest: SplitTestSummary | null, detail: SplitTestDetails | null) =>
   detail?.amountCents ?? persistedTest?.amountCents ?? null;
 
@@ -533,11 +554,14 @@ export function AdminLaboratories() {
                   const reconciliationError = splitReconciliationErrors[item.id] ?? null;
                   const failureReason = reconciliationError ?? getFailureReason(item, splitDetails);
                   const amountCents = getSplitDisplayAmount(persistedSplitTest, splitDetails);
+                  const splitApproved = isSplitApproved(item);
+                  const currentWalletPendingValidation = isCurrentWalletPendingValidation(item);
+                  const validatedWalletId = persistedSplitTest?.walletId ?? splitDetails?.walletId ?? null;
                   const actionDisabled = rowAction?.id === item.id;
                   const consultDisabled = persistedSplitTest === null || rowAction?.id === item.id;
                   const createDisabled = !item.active || !hasAsaasWallet(item) || isSplitPending(item) || rowAction?.id === item.id;
                   const createdAt = splitDetails?.createdAt ?? null;
-                  const verificationDate = persistedSplitTest?.verifiedAt ?? null;
+                  const verificationDate = splitApproved ? persistedSplitTest?.verifiedAt ?? null : null;
                   const lastWebhookEventAt = splitDetails?.lastWebhookEventAt ?? persistedSplitTest?.lastWebhookEventAt ?? null;
 
                   return (
@@ -546,22 +570,23 @@ export function AdminLaboratories() {
                       <td>
                         Conta Asaas vinculada
                         <span>{item.asaasWalletId ?? 'Wallet pendente'}</span>
-                        <span>{integrationStatusLabel(item)}</span>
+                        <span>{readinessAwareIntegrationStatusLabel(item)}</span>
                         {item.integrationErrorMessage ? <span>{item.integrationErrorMessage}</span> : null}
                       </td>
                       <td>{money(item.splitFixedValueCents)}</td>
                       <td>{percent(item.distributionWeightBasisPoints)}</td>
                       <td>
                         <S.StatusStack>
-                          <S.Badge $tone={getSplitStatusTone(splitStatus)} $ok={isSplitApproved(item)}>{getSplitStatusLabel(splitStatus)}</S.Badge>
+                          <S.Badge $tone={currentWalletPendingValidation ? 'warning' : getSplitStatusTone(splitStatus)} $ok={splitApproved}>{currentWalletPendingValidation ? 'Wallet atual pendente de validação' : getSplitStatusLabel(splitStatus)}</S.Badge>
                           {createdAt ? <S.StatusMeta>Teste criado em {formatDateTime(createdAt)}</S.StatusMeta> : null}
                           {persistedSplitTest !== null ? <S.StatusMeta>Valor do teste: {amountCents !== null ? money(amountCents) : 'não disponível'}</S.StatusMeta> : null}
-                          {persistedSplitTest !== null ? <S.StatusMeta>Wallet validado: {splitDetails?.walletId ?? item.asaasWalletId ?? 'Wallet pendente'}</S.StatusMeta> : null}
+                          {persistedSplitTest !== null ? <S.StatusMeta>Wallet validado: {validatedWalletId ?? 'não disponível'}</S.StatusMeta> : null}
                           {persistedSplitTest?.paymentStatus ? <S.StatusMeta>Pagamento Asaas: {persistedSplitTest.paymentStatus}</S.StatusMeta> : null}
                           {persistedSplitTest?.splitStatus ? <S.StatusMeta>Split Asaas: {persistedSplitTest.splitStatus}</S.StatusMeta> : null}
                           {verificationDate ? <S.StatusMeta>Aprovado em {formatDateTime(verificationDate)}</S.StatusMeta> : null}
                           {!verificationDate && lastWebhookEventAt ? <S.StatusMeta>Último webhook em {formatDateTime(lastWebhookEventAt)}</S.StatusMeta> : null}
                           {failureReason ? <S.ErrorText>{failureReason}</S.ErrorText> : null}
+                          {currentWalletPendingValidation ? <S.HelperText>O wallet atual precisa de um novo teste aprovado antes de operar em produção.</S.HelperText> : null}
                           {splitStatus === 'failed' ? <S.HelperText>Após corrigir o wallet ou a conta no Asaas, envie um novo teste.</S.HelperText> : null}
                           {!item.active ? <S.HelperText>Laboratório inativo; operação indisponível.</S.HelperText> : null}
                         </S.StatusStack>
