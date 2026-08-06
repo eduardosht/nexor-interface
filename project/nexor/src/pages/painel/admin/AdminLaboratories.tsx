@@ -12,6 +12,8 @@ type SplitActionKind = 'activate' | 'deactivate' | 'create-split' | 'refresh-spl
 type SplitTestSummary = {
   status: SplitValidationStatus;
   failureReason: string | null;
+  amountCents?: number;
+  splitFixedValueCents?: number;
   paymentStatus: string | null;
   splitStatus: string | null;
   verifiedAt: string | null;
@@ -232,10 +234,8 @@ const getSplitStatusTone = (status: SplitValidationStatus | null) => {
 const getSplitStatusMessage = (status: SplitValidationStatus) => `Status atualizado: ${splitStatusLabels[status]}.`;
 const getFailureReason = (item: Laboratory, detail: SplitTestDetails | null) =>
   detail?.failureReason ?? getPersistedSplitTest(item)?.failureReason ?? item.asaasValidationReason ?? null;
-const getSplitDisplayAmount = (persistedTest: SplitTestSummary | null, detail: SplitTestDetails | null) => {
-  if (detail !== null) return detail.amountCents;
-  return persistedTest !== null ? 500 : null;
-};
+const getSplitDisplayAmount = (persistedTest: SplitTestSummary | null, detail: SplitTestDetails | null) =>
+  detail?.amountCents ?? persistedTest?.amountCents ?? null;
 
 export function AdminLaboratories() {
   const { session } = useAuth();
@@ -251,6 +251,7 @@ export function AdminLaboratories() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [splitTestDetails, setSplitTestDetails] = useState<Record<string, SplitTestDetails>>({});
+  const [splitReconciliationErrors, setSplitReconciliationErrors] = useState<Record<string, string>>({});
   const inflightActions = useRef(new Set<string>());
 
   const load = useCallback(async () => {
@@ -384,8 +385,22 @@ export function AdminLaboratories() {
     if (!token) return null;
     const response = await api.get<SplitTestStatusResponse>(`/v1/admin/commerce/laboratories/${item.id}/test-split`, token);
     setSplitTestDetails((current) => ({ ...current, [item.id]: response.test }));
-    if (options?.showMessage) {
-      setMessage(getSplitStatusMessage(response.test.status));
+    const reconciliationError = response.reconciliation.error;
+    if (reconciliationError !== null) {
+      setSplitReconciliationErrors((current) => ({ ...current, [item.id]: reconciliationError }));
+      if (options?.showMessage) {
+        setError(reconciliationError);
+        setMessage('');
+      }
+    } else {
+      setSplitReconciliationErrors((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      if (options?.showMessage) {
+        setMessage(getSplitStatusMessage(response.test.status));
+      }
     }
     return response;
   }
@@ -429,8 +444,12 @@ export function AdminLaboratories() {
     setMessage('');
     setRowAction({ id: item.id, kind: 'refresh-split' });
     try {
-      await loadSplitTestStatus(item, { showMessage: true });
+      const response = await loadSplitTestStatus(item, { showMessage: true });
       await load();
+      if (response?.reconciliation.error) {
+        setError(response.reconciliation.error);
+        setMessage('');
+      }
     } catch {
       setError('Não foi possível consultar o resultado do teste de split. Envie um teste antes de consultar.');
     } finally {
@@ -489,7 +508,8 @@ export function AdminLaboratories() {
                   const persistedSplitTest = getPersistedSplitTest(item);
                   const splitStatus = getSplitValidationStatus(item);
                   const splitDetails = splitTestDetails[item.id] ?? null;
-                  const failureReason = getFailureReason(item, splitDetails);
+                  const reconciliationError = splitReconciliationErrors[item.id] ?? null;
+                  const failureReason = reconciliationError ?? getFailureReason(item, splitDetails);
                   const amountCents = getSplitDisplayAmount(persistedSplitTest, splitDetails);
                   const actionDisabled = rowAction?.id === item.id;
                   const consultDisabled = persistedSplitTest === null || rowAction?.id === item.id;
@@ -513,7 +533,7 @@ export function AdminLaboratories() {
                         <S.StatusStack>
                           <S.Badge $tone={getSplitStatusTone(splitStatus)} $ok={isSplitApproved(item)}>{getSplitStatusLabel(splitStatus)}</S.Badge>
                           {createdAt ? <S.StatusMeta>Teste criado em {formatDateTime(createdAt)}</S.StatusMeta> : null}
-                          {amountCents !== null ? <S.StatusMeta>Valor do teste: {money(amountCents)}</S.StatusMeta> : null}
+                          {persistedSplitTest !== null ? <S.StatusMeta>Valor do teste: {amountCents !== null ? money(amountCents) : 'não disponível'}</S.StatusMeta> : null}
                           {persistedSplitTest !== null ? <S.StatusMeta>Wallet validado: {splitDetails?.walletId ?? item.asaasWalletId ?? 'Wallet pendente'}</S.StatusMeta> : null}
                           {persistedSplitTest?.paymentStatus ? <S.StatusMeta>Pagamento Asaas: {persistedSplitTest.paymentStatus}</S.StatusMeta> : null}
                           {persistedSplitTest?.splitStatus ? <S.StatusMeta>Split Asaas: {persistedSplitTest.splitStatus}</S.StatusMeta> : null}

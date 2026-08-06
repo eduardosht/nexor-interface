@@ -395,8 +395,109 @@ describe('AdminLaboratories', () => {
       expect(within(currentRow).getByText(/wallet validado: wallet-1/i)).toBeInTheDocument();
       expect(within(currentRow).getByText(/valor do teste: r\$ 5,00/i)).toBeInTheDocument();
       expect(within(currentRow).getByText(/split cancelado\. corrija o wallet no asaas e tente novamente\./i)).toBeInTheDocument();
-      expect(within(currentRow).getByText(/06\/08\/2026/)).toBeInTheDocument();
+      expect(within(currentRow).getAllByText(/06\/08\/2026/)).toHaveLength(2);
     });
+  });
+
+  it('does not fabricate the test amount when the persisted summary omits it', async () => {
+    mockGet.mockResolvedValue({
+      laboratories: [
+        {
+          ...laboratory,
+          asaasValidationStatus: 'awaiting_payment',
+          asaasSplitTest: {
+            status: 'awaiting_payment',
+            paymentStatus: 'PENDING',
+            splitStatus: null,
+            failureReason: null,
+            verifiedAt: null,
+            lastWebhookEventAt: null
+          }
+        }
+      ]
+    });
+    renderPage();
+
+    const row = (await screen.findByText('Lab Prime')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText('Valor do teste: não disponível')).toBeInTheDocument();
+    expect(within(row as HTMLTableRowElement).queryByText(/valor do teste: r\$ 5,00/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the reconciliation error instead of a generic success message', async () => {
+    const reconciliationError = 'Consulta manual indisponível no Asaas. Aguarde o webhook e tente novamente.';
+    mockGet
+      .mockResolvedValueOnce({
+        laboratories: [
+          {
+            ...laboratory,
+            asaasValidationStatus: 'awaiting_payment',
+            asaasSplitTest: {
+              status: 'awaiting_payment',
+              amountCents: 500,
+              splitFixedValueCents: 100,
+              paymentStatus: 'PENDING',
+              splitStatus: null,
+              failureReason: null,
+              verifiedAt: null,
+              lastWebhookEventAt: null
+            }
+          }
+        ]
+      })
+      .mockResolvedValueOnce({
+        test: {
+          id: 'split-test-1',
+          laboratoryPartnerId: 'lab-1',
+          externalReference: 'external-1',
+          checkoutId: 'checkout-1',
+          paymentId: null,
+          walletId: 'wallet-1',
+          amountCents: 500,
+          splitFixedValueCents: 100,
+          status: 'awaiting_payment',
+          paymentStatus: 'PENDING',
+          splitId: null,
+          splitStatus: null,
+          failureReason: null,
+          verifiedAt: null,
+          createdAt: '2026-08-06T11:00:00.000Z',
+          updatedAt: '2026-08-06T12:00:00.000Z',
+          lastWebhookEventAt: null
+        },
+        reconciliation: {
+          attempted: true,
+          error: reconciliationError
+        }
+      })
+      .mockResolvedValueOnce({
+        laboratories: [
+          {
+            ...laboratory,
+            asaasValidationStatus: 'awaiting_payment',
+            asaasSplitTest: {
+              status: 'awaiting_payment',
+              amountCents: 500,
+              splitFixedValueCents: 100,
+              paymentStatus: 'PENDING',
+              splitStatus: null,
+              failureReason: null,
+              verifiedAt: null,
+              lastWebhookEventAt: null
+            }
+          }
+        ]
+      });
+    renderPage();
+
+    await screen.findByText('Aguardando pagamento');
+    fireEvent.click(screen.getByRole('button', { name: /consultar resultado do split de lab prime/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(reconciliationError);
+    expect(screen.queryByText(/status atualizado:/i)).not.toBeInTheDocument();
+    const row = screen.getByText('Lab Prime').closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLTableRowElement).getByText(reconciliationError)).toBeInTheDocument();
   });
 
   it('schedules a moderate refresh while a split test is pending', async () => {
