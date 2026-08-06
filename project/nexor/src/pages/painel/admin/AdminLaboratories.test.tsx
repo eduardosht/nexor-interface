@@ -715,8 +715,9 @@ describe('AdminLaboratories', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('schedules a moderate refresh while a created split test is pending', async () => {
-    const timeoutSpy = vi.spyOn(window, 'setTimeout');
+  it('refreshes every 30 seconds while a created split test is pending and stops on unmount', async () => {
+    const intervalSpy = vi.spyOn(window, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
     mockGet.mockResolvedValue({
       laboratories: [
         {
@@ -733,9 +734,31 @@ describe('AdminLaboratories', () => {
         }
       ]
     });
-    renderPage();
+    const { unmount } = renderPage();
 
     await screen.findByText('Teste criado; aguardando processamento');
-    expect(timeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
+    const pollingCallIndex = intervalSpy.mock.calls.findIndex(([, delay]) => delay === 30000);
+    expect(pollingCallIndex).toBeGreaterThanOrEqual(0);
+    const refresh = intervalSpy.mock.calls[pollingCallIndex]?.[0];
+    const pollingTimer = intervalSpy.mock.results[pollingCallIndex]?.value;
+    expect(mockGet).toHaveBeenCalledTimes(1);
+
+    if (typeof refresh === 'function') refresh();
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2));
+    if (typeof refresh === 'function') refresh();
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(3));
+
+    unmount();
+    expect(clearIntervalSpy).toHaveBeenCalledWith(pollingTimer);
+  });
+
+  it('does not poll when no split test is pending', async () => {
+    const intervalSpy = vi.spyOn(window, 'setInterval');
+    mockGet.mockResolvedValue({ laboratories: [laboratory] });
+
+    renderPage();
+
+    await screen.findByText('Lab Prime');
+    expect(intervalSpy.mock.calls.some(([, delay]) => delay === 30000)).toBe(false);
   });
 });

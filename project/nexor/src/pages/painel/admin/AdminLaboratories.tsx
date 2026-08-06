@@ -323,10 +323,10 @@ export function AdminLaboratories() {
 
   useEffect(() => {
     if (!token || pendingSplitIds.length === 0) return undefined;
-    const timer = window.setTimeout(() => {
+    const timer = window.setInterval(() => {
       void load();
     }, 30_000);
-    return () => window.clearTimeout(timer);
+    return () => window.clearInterval(timer);
   }, [load, pendingSplitIds, token]);
 
   const totalWeight = useMemo(
