@@ -109,7 +109,7 @@ describe('AdminLaboratories', () => {
     const modal = screen.getByRole('dialog', { name: /novo laboratório/i });
 
     expect(within(modal).getByLabelText('Wallet Asaas')).toBeInTheDocument();
-    expect(within(modal).getByLabelText('Split fixo (R$)')).toBeInTheDocument();
+    expect(within(modal).getByLabelText('Split fixo por unidade (R$)')).toBeInTheDocument();
     expect(within(modal).getByLabelText('Peso de distribuição (%)')).toBeInTheDocument();
     expect(within(modal).queryByText('Modo Asaas')).not.toBeInTheDocument();
   });
@@ -124,7 +124,7 @@ describe('AdminLaboratories', () => {
     const modal = screen.getByRole('dialog', { name: /novo laboratório/i });
     fireEvent.change(within(modal).getByLabelText('Nome do laboratório'), { target: { value: 'Lab Prime' } });
     fireEvent.change(within(modal).getByLabelText('Wallet Asaas'), { target: { value: 'wallet-1' } });
-    fireEvent.change(within(modal).getByLabelText('Split fixo (R$)'), { target: { value: '175,00' } });
+    fireEvent.change(within(modal).getByLabelText('Split fixo por unidade (R$)'), { target: { value: '175,00' } });
     fireEvent.change(within(modal).getByLabelText('Peso de distribuição (%)'), { target: { value: '50' } });
     fireEvent.click(within(modal).getByRole('button', { name: /cadastrar laboratório/i }));
 
@@ -148,7 +148,7 @@ describe('AdminLaboratories', () => {
     await screen.findByText('Lab Prime');
     fireEvent.click(screen.getByRole('button', { name: /editar lab prime/i }));
     const modal = screen.getByRole('dialog', { name: /editar/i });
-    fireEvent.change(within(modal).getByLabelText('Split fixo (R$)'), { target: { value: '200,00' } });
+    fireEvent.change(within(modal).getByLabelText('Split fixo por unidade (R$)'), { target: { value: '200,00' } });
     fireEvent.change(within(modal).getByLabelText(/peso de distribui/i), { target: { value: '75' } });
     fireEvent.click(within(modal).getByRole('button', { name: /salvar/i }));
 
@@ -298,6 +298,10 @@ describe('AdminLaboratories', () => {
     const createdRow = screen.getByText('Lab Created').closest('tr');
     expect(createdRow).not.toBeNull();
     expect(within(createdRow as HTMLTableRowElement).getByRole('button', { name: /enviar teste de split de lab created/i })).toBeDisabled();
+    const approvedRow = screen.getByText('Lab Approved').closest('tr');
+    expect(approvedRow).not.toBeNull();
+    expect(within(approvedRow as HTMLTableRowElement).getByRole('button', { name: /enviar novo teste de split de lab approved/i })).toBeDisabled();
+    expect(within(approvedRow as HTMLTableRowElement).getByRole('button', { name: /consultar resultado do split de lab approved/i })).toBeDisabled();
     expect(screen.getAllByText('50,00%').length).toBeGreaterThanOrEqual(2);
   });
 

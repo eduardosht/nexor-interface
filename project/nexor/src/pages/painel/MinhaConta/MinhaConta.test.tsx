@@ -117,6 +117,16 @@ describe('MinhaConta', () => {
 
 
 
+  it('shows the account deletion card for regular users', async () => {
+    renderPage();
+
+    expect(await screen.findByText(/excluir conta/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /solicitar exclusão da conta/i })).toHaveAttribute(
+      'href',
+      '/?assunto=lgpd#contato'
+    );
+  });
+
   it('keeps LGPD self-service actions on supported routes only', async () => {
     const createObjectURL = vi.fn(() => 'blob:nexor-export');
     const revokeObjectURL = vi.fn();

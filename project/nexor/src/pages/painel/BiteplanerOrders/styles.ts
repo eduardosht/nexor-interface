@@ -11,6 +11,18 @@ export const Header = styled.header`
   gap: 6px;
 `;
 
+export const HeaderRow = styled.div`
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+
+  @media (max-width: 620px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
 export const Title = styled.h1`
   margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -22,6 +34,37 @@ export const Subtitle = styled.p`
   margin: 0;
   max-width: 760px;
   color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+export const CheckoutNotice = styled.aside<{ $tone: 'success' | 'warning' }>`
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid ${({ $tone }) => ($tone === 'success' ? '#bbf7d0' : '#f3d27a')};
+  border-radius: 8px;
+  background: ${({ $tone }) => ($tone === 'success' ? '#f0fdf4' : '#fff8df')};
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  strong {
+    font-size: 15px;
+  }
+
+  span {
+    color: ${({ theme }) => theme.colors.textSecondary};
+    line-height: 1.5;
+  }
+`;
+
+export const CheckoutOrderLink = styled(Link)`
+  justify-self: start;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 export const FilterActions = styled.div`
@@ -270,7 +313,7 @@ export const CardTitle = styled.h2`
 
 export const SummaryTopGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 26px;
 
   > * + * {
@@ -278,11 +321,23 @@ export const SummaryTopGrid = styled.div`
     padding-left: 26px;
   }
 
+  @media (max-width: 760px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > *:nth-child(3) {
+      border-left: 0;
+      border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
+      padding-left: 0;
+      padding-top: 16px;
+    }
+  }
+
   @media (max-width: 520px) {
     grid-template-columns: 1fr;
     gap: 16px;
 
-    > * + * {
+    > * + *,
+    > *:nth-child(3) {
       border-left: 0;
       border-top: 1px solid ${({ theme }) => theme.colors.borderDefault};
       padding-left: 0;

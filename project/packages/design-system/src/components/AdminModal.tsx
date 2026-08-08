@@ -11,6 +11,7 @@ export type AdminModalProps = {
   icon?: ReactNode;
   ariaLabel?: string;
   mobilePlacement?: 'bottom' | 'center';
+  size?: 'default' | 'wide';
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
@@ -23,6 +24,7 @@ export function AdminModal({
   icon,
   ariaLabel,
   mobilePlacement = 'bottom',
+  size = 'default',
   onClose,
   children,
   footer,
@@ -42,7 +44,7 @@ export function AdminModal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <Box $mobilePlacement={mobilePlacement} $tokens={tokens}>
+      <Box $mobilePlacement={mobilePlacement} $size={size} $tokens={tokens}>
         <Header $tokens={tokens}>
           <TitleGroup>
             {icon ? <HeroIcon $tokens={tokens} aria-hidden>{icon}</HeroIcon> : null}
@@ -189,8 +191,8 @@ const Overlay = styled.div<{ $tokens: BrandTokens; $mobilePlacement: 'bottom' | 
   }
 `;
 
-const Box = styled.div<{ $tokens: BrandTokens; $mobilePlacement: 'bottom' | 'center' }>`
-  width: min(900px, 100%);
+const Box = styled.div<{ $tokens: BrandTokens; $mobilePlacement: 'bottom' | 'center'; $size: 'default' | 'wide' }>`
+  width: min(${({ $size }) => ($size === 'wide' ? '1120px' : '900px')}, 100%);
   max-height: calc(100vh - 48px);
   overflow-x: hidden;
   overflow-y: auto;

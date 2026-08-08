@@ -1,5 +1,7 @@
 import { AdminDataTable, AdminFormButton, AdminStatusPill, type AdminDataTableColumn } from '@nexor/design-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { fetchBiteplanerDentistOrders } from '../../../features/commerce/biteplanerDentistOrders.api';
 import type { BiteplanerDentistOrderSummary } from '../../../features/commerce/biteplanerDentistOrders.types';
@@ -46,6 +48,9 @@ function getInitialOrdersDateRange() {
 export function BiteplanerOrders() {
   const { session } = useAuth();
   const token = session?.access_token;
+  const [searchParams] = useSearchParams();
+  const checkoutResult = searchParams.get('checkout');
+  const returnedOrderId = searchParams.get('orderId');
   const initialDateRange = useRef(getInitialOrdersDateRange()).current;
   const [orders, setOrders] = useState<BiteplanerDentistOrderSummary[]>([]);
   const [status, setStatus] = useState('');
@@ -199,7 +204,9 @@ export function BiteplanerOrders() {
         width: '12%',
         align: 'center',
         render: (order) => (
-          <S.DetailLink to={`/painel/biteplaner/ordens/${order.id}`}>Ver detalhes</S.DetailLink>
+          <S.DetailLink to={`/painel/biteplaner/ordens/${order.id}`}>
+            {order.id === returnedOrderId ? 'Ver ordem criada' : 'Ver detalhes'}
+          </S.DetailLink>
         ),
       },
     ],
@@ -208,10 +215,42 @@ export function BiteplanerOrders() {
 
   return (
     <S.PageStack>
-      <S.Header>
-        <S.Title>Ordens Biteplaner</S.Title>
-        <S.Subtitle>Acompanhe as compras Biteplaner feitas pela sua conta Nexor.</S.Subtitle>
-      </S.Header>
+      <S.HeaderRow>
+        <S.Header>
+          <S.Title>Ordens Biteplaner</S.Title>
+          <S.Subtitle>Acompanhe as compras Biteplaner feitas pela sua conta Nexor.</S.Subtitle>
+        </S.Header>
+        <AdminFormButton type="button" variant="secondary" onClick={() => void loadOrders()} disabled={loading}>
+          <RefreshCw size={16} aria-hidden />
+          Atualizar lista
+        </AdminFormButton>
+      </S.HeaderRow>
+
+      {checkoutResult === 'success' ? (
+        <S.CheckoutNotice role="status" $tone="success">
+          <strong>Checkout concluído</strong>
+          <span>
+            O retorno do Asaas foi recebido. A confirmação financeira será exibida quando o webhook atualizar a ordem.
+          </span>
+          {returnedOrderId ? (
+            <S.CheckoutOrderLink to={`/painel/biteplaner/ordens/${returnedOrderId}`}>
+              Ordem criada: {returnedOrderId}
+            </S.CheckoutOrderLink>
+          ) : null}
+        </S.CheckoutNotice>
+      ) : null}
+
+      {checkoutResult === 'cancel' ? (
+        <S.CheckoutNotice role="status" $tone="warning">
+          <strong>Pagamento não concluído</strong>
+          <span>O checkout foi encerrado. A ordem permanece disponível para uma nova tentativa.</span>
+          {returnedOrderId ? (
+            <S.CheckoutOrderLink to={`/painel/biteplaner/ordens/${returnedOrderId}`}>
+              Ver ordem pendente
+            </S.CheckoutOrderLink>
+          ) : null}
+        </S.CheckoutNotice>
+      ) : null}
 
       {filterActions}
 

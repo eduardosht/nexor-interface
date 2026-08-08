@@ -8,6 +8,7 @@ import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
 import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
 import { api } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
+import { env } from '../../../config/env';
 
 const NEXT_STEPS = [
   {
@@ -158,15 +159,15 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
     setError('');
 
     try {
-      const origin = window.location.origin;
+      const origin = env.appUrl ?? window.location.origin;
       const response = await api.post<{ checkoutUrl: string }>(
         '/v1/commerce/biteplaner/checkout',
         {
           model: selectedModel,
           color: selectedColor,
           quantity,
-          successUrl: `${origin}/painel/compra?checkout=success`,
-          cancelUrl: `${origin}/painel/compra?checkout=cancel`,
+          successUrl: `${origin}/painel/biteplaner/ordens?checkout=success`,
+          cancelUrl: `${origin}/painel/biteplaner/ordens?checkout=cancel`,
         },
         session?.access_token
       );

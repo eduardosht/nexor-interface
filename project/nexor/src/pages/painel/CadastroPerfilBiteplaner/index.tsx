@@ -24,6 +24,18 @@ type ApiRole = 'partner' | 'dentist';
 type PartnerType = 'coach_personal' | 'academy';
 type Values = Record<string, string>;
 type FieldChangeEvent = ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>;
+type BillingAddressValues = {
+  postalCode: string;
+  addressLine: string;
+  addressNumber: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  ibgeCityCode?: number;
+  source: 'manual' | 'viacep';
+};
+
 type ClinicValues = {
   id: string;
   name: string;
@@ -119,6 +131,17 @@ const PARTNER_SERVICE_LOCATION_OPTIONS = [
 
 let clinicIdSequence = 0;
 
+const createEmptyBillingAddress = (): BillingAddressValues => ({
+  postalCode: '',
+  addressLine: '',
+  addressNumber: '',
+  complement: '',
+  neighborhood: '',
+  city: '',
+  state: '',
+  source: 'manual',
+});
+
 const createEmptyClinic = (): ClinicValues => ({
   id: `clinic-${clinicIdSequence++}`,
   name: '',
@@ -159,6 +182,14 @@ const formatCnpj = (value: string) => {
   if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
   if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
+const formatBrazilianPhone = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 2) return digits.length > 0 ? `(${digits}` : '';
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 };
 
 const formatCro = (value: string) => {
@@ -225,6 +256,11 @@ const isValidCnpj = (value: string) => {
   return digits === `${digits.slice(0, 12)}${firstDigit}${secondDigit}`;
 };
 
+const isValidBrazilianPhone = (value: string) => {
+  const digits = onlyDigits(value);
+  return [10, 11].includes(digits.length) && !/^(\d)\1+$/.test(digits);
+};
+
 function formatClinicAddress(data: {
   street?: string;
   neighborhood?: string;
@@ -262,6 +298,9 @@ export function CadastroPerfilBiteplaner() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [values, setValues] = useState<Values>({});
   const [clinics, setClinics] = useState<ClinicValues[]>(() => [createEmptyClinic()]);
+  const [billingAddress, setBillingAddress] = useState<BillingAddressValues>(() => createEmptyBillingAddress());
+  const [billingCepLookupError, setBillingCepLookupError] = useState('');
+  const [billingCepLoading, setBillingCepLoading] = useState(false);
   const [consents, setConsents] = useState(CONSENT_DEFAULTS);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -276,6 +315,56 @@ export function CadastroPerfilBiteplaner() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [role]);
+
+  async function lookupBillingCep() {
+    const cep = onlyDigits(billingAddress.postalCode);
+    if (cep.length !== 8) return;
+
+    try {
+      setBillingCepLoading(true);
+      setBillingCepLookupError('');
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      if (!response.ok) throw new Error('CEP lookup failed');
+      const data = await response.json();
+      if (data.erro) throw new Error('CEP not found');
+
+      setBillingAddress((current) => ({
+        ...current,
+        addressLine: data.logradouro ?? current.addressLine,
+        neighborhood: data.bairro ?? current.neighborhood,
+        city: data.localidade ?? current.city,
+        state: data.uf ?? current.state,
+        ibgeCityCode: data.ibge ? Number(data.ibge) : current.ibgeCityCode,
+        source: 'viacep'
+      }));
+    } catch {
+      setBillingCepLookupError('Não foi possível preencher o endereço automaticamente por este CEP.');
+    } finally {
+      setBillingCepLoading(false);
+    }
+  }
+
+  function updateBillingAddress(field: keyof Omit<BillingAddressValues, 'source' | 'ibgeCityCode'>) {
+    return (event: FieldChangeEvent) => {
+      setBillingAddress((current) => ({
+        ...current,
+        [field]: event.target.value,
+        ...(field === 'city' || field === 'state' ? { ibgeCityCode: undefined } : {}),
+        source: 'manual'
+      }));
+    };
+  }
+
+  function updateBillingAddressMasked(field: 'postalCode', formatter: (value: string) => string) {
+    return (event: FieldChangeEvent) => {
+      setBillingAddress((current) => ({
+        ...current,
+        [field]: formatter(event.target.value),
+        ibgeCityCode: undefined,
+        source: 'manual'
+      }));
+    };
+  }
 
   async function lookupClinicCep(clinicId: string) {
     if ((config?.apiRole !== 'dentist' && config?.apiRole !== 'partner') || typeof fetch !== 'function') {
@@ -367,12 +456,19 @@ export function CadastroPerfilBiteplaner() {
       return Boolean(
         isValidCro(values.croNumber ?? '') &&
         isValidCpf(values.cpf ?? '') &&
-        isValidCnpj(values.cnpj ?? '')
+        isValidCnpj(values.cnpj ?? '') &&
+        isValidBrazilianPhone(values.phone ?? '') &&
+        billingAddress.postalCode.trim() &&
+        billingAddress.addressLine.trim() &&
+        billingAddress.addressNumber.trim() &&
+        billingAddress.neighborhood.trim() &&
+        billingAddress.city.trim() &&
+        billingAddress.state.trim()
       );
     }
 
     return false;
-  }, [clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerServiceLocations.length, partnerType, values]);
+  }, [billingAddress, clinics, config, consents.operationalTerms, consents.privacyPolicy, partnerServiceLocations.length, partnerType, values]);
 
   const missingRequiredFields = getMissingRequiredFields();
   const invalidValidationFields = missingRequiredFields.length === 0 ? getInvalidValidationFields() : [];
@@ -456,6 +552,18 @@ export function CadastroPerfilBiteplaner() {
         croNumber: values.croNumber.trim(),
         cpf: onlyDigits(values.cpf ?? ''),
         cnpj: onlyDigits(values.cnpj ?? ''),
+        phone: onlyDigits(values.phone ?? ''),
+        billingAddress: {
+          postalCode: onlyDigits(billingAddress.postalCode),
+          addressLine: billingAddress.addressLine.trim(),
+          addressNumber: billingAddress.addressNumber.trim(),
+          ...(billingAddress.complement.trim() ? { complement: billingAddress.complement.trim() } : {}),
+          neighborhood: billingAddress.neighborhood.trim(),
+          city: billingAddress.city.trim(),
+          state: billingAddress.state,
+          ...(billingAddress.ibgeCityCode ? { ibgeCityCode: billingAddress.ibgeCityCode } : {}),
+          source: billingAddress.source,
+        },
       };
     }
 
@@ -497,6 +605,13 @@ export function CadastroPerfilBiteplaner() {
       addIfMissing(!values.croNumber?.trim(), 'croNumber', 'CRO');
       addIfMissing(!values.cpf?.trim(), 'cpf', 'CPF');
       addIfMissing(!values.cnpj?.trim(), 'cnpj', 'CNPJ');
+      addIfMissing(!values.phone?.trim(), 'phone', 'Telefone');
+      addIfMissing(onlyDigits(billingAddress.postalCode).length !== 8, 'billingPostalCode', 'CEP de cobrança');
+      addIfMissing(!billingAddress.addressLine.trim(), 'billingAddressLine', 'Endereço de cobrança');
+      addIfMissing(!billingAddress.addressNumber.trim(), 'billingAddressNumber', 'Número do endereço');
+      addIfMissing(!billingAddress.neighborhood.trim(), 'billingNeighborhood', 'Bairro');
+      addIfMissing(!billingAddress.city.trim(), 'billingCity', 'Cidade');
+      addIfMissing(!billingAddress.state.trim(), 'billingState', 'Estado');
     }
 
     addIfMissing(!consents.operationalTerms, 'operationalTerms', 'Aceite dos termos de cadastro operacional');
@@ -530,6 +645,7 @@ export function CadastroPerfilBiteplaner() {
       addIfInvalid(Boolean(values.croNumber?.trim()) && !isValidCro(values.croNumber ?? ''), 'croNumber', 'CRO', 'Informe um CRO válido no formato CRO-UF 00000.');
       addIfInvalid(Boolean(values.cpf?.trim()) && !isValidCpf(values.cpf ?? ''), 'cpf', 'CPF', 'Informe um CPF válido.');
       addIfInvalid(Boolean(values.cnpj?.trim()) && !isValidCnpj(values.cnpj ?? ''), 'cnpj', 'CNPJ', 'Informe um CNPJ válido.');
+      addIfInvalid(Boolean(values.phone?.trim()) && !isValidBrazilianPhone(values.phone ?? ''), 'phone', 'Telefone', 'Informe um telefone válido com DDD.');
     }
     if (config.apiRole === 'partner') {
       clinics.forEach((clinic) => {
@@ -854,12 +970,107 @@ export function CadastroPerfilBiteplaner() {
                     />
                   </S.FullField>
                   <S.FullField>
+                    <Field
+                      label="Telefone"
+                      value={values.phone ?? ''}
+                      required
+                      data-form-validation-key="phone"
+                      inputMode="tel"
+                      maxLength={15}
+                      error={values.phone && !isValidBrazilianPhone(values.phone) ? 'Informe um telefone válido com DDD.' : ''}
+                      hint="Usado para contato operacional e para preencher o checkout de pagamento."
+                      onChange={updateMaskedField('phone', formatBrazilianPhone)}
+                    />
+                  </S.FullField>
+                  <S.FullField>
                     <S.LgpdNotice>
                       <ShieldCheck size={18} strokeWidth={2.2} aria-hidden="true" />
                       <span>
                         <strong>Por que pedimos CPF e CNPJ?</strong> Usamos o CPF para licença futura e contratos de pessoa física,
                         e o CNPJ para pontos fiscais, obrigações operacionais e criação da conta financeira. Esses dados ficam no seu perfil Nexor
                         e são utilizados somente para essas finalidades.
+                      </span>
+                    </S.LgpdNotice>
+                  </S.FullField>
+                  <S.FullField>
+                    <S.ClinicSection>
+                      <S.ClinicSectionHeader>
+                        <div>
+                          <S.ClinicSectionTitle>Endereço para cadastro e cobrança</S.ClinicSectionTitle>
+                          <S.ClinicSectionIntro>
+                            Use seu endereço de cobrança. O CEP preenche os demais campos automaticamente, mas você pode corrigi-los.
+                          </S.ClinicSectionIntro>
+                        </div>
+                      </S.ClinicSectionHeader>
+                      <S.FieldsGrid>
+                        <Field
+                          label="CEP"
+                          value={billingAddress.postalCode}
+                          required
+                          data-form-validation-key="billingPostalCode"
+                          inputMode="numeric"
+                          maxLength={9}
+                          error={billingCepLookupError}
+                          hint={billingCepLoading ? 'Consultando CEP...' : 'Usado para preencher o endereço automaticamente.'}
+                          onChange={updateBillingAddressMasked('postalCode', formatCep)}
+                          onBlur={() => void lookupBillingCep()}
+                        />
+                        <Field
+                          label="Número"
+                          value={billingAddress.addressNumber}
+                          required
+                          data-form-validation-key="billingAddressNumber"
+                          maxLength={30}
+                          hint="Aceita S/N e números com letras."
+                          onChange={updateBillingAddress('addressNumber')}
+                        />
+                        <S.FullField>
+                          <Field
+                            label="Endereço"
+                            value={billingAddress.addressLine}
+                            required
+                            data-form-validation-key="billingAddressLine"
+                            onChange={updateBillingAddress('addressLine')}
+                          />
+                        </S.FullField>
+                        <Field
+                          label="Bairro"
+                          value={billingAddress.neighborhood}
+                          required
+                          data-form-validation-key="billingNeighborhood"
+                          onChange={updateBillingAddress('neighborhood')}
+                        />
+                        <Field
+                          label="Cidade"
+                          value={billingAddress.city}
+                          required
+                          data-form-validation-key="billingCity"
+                          onChange={updateBillingAddress('city')}
+                        />
+                        <S.ValidationTarget data-form-validation-key="billingState">
+                          <Select
+                            label="Estado"
+                            value={billingAddress.state}
+                            required
+                            placeholder="Selecione um estado"
+                            onChange={(value) => setBillingAddress((current) => ({ ...current, state: value, source: 'manual' }))}
+                            options={BRAZILIAN_STATE_OPTIONS}
+                          />
+                        </S.ValidationTarget>
+                        <Field
+                          label="Complemento"
+                          value={billingAddress.complement}
+                          hint="Opcional"
+                          onChange={updateBillingAddress('complement')}
+                        />
+                      </S.FieldsGrid>
+                    </S.ClinicSection>
+                  </S.FullField>
+                  <S.FullField>
+                    <S.LgpdNotice>
+                      <ShieldCheck size={18} strokeWidth={2.2} aria-hidden="true" />
+                      <span>
+                        <strong>Por que pedimos o endereço?</strong> Usamos estes dados para identificar o comprador, preencher o checkout Asaas e cumprir rotinas de pagamento, suporte e obrigações legais. Eles não representam o endereço da clínica e não são usados para marketing.
                       </span>
                     </S.LgpdNotice>
                   </S.FullField>

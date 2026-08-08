@@ -45,13 +45,7 @@ function renderPage() {
     },
   });
   mockUseAdminPortal.mockReturnValue({
-    selectedProduct: {
-      id: "biteplaner",
-      name: "Biteplaner",
-      label: "Biteplaner",
-      description: "",
-      status: "available",
-    },
+    selectedProduct: null,
   });
 
   return render(
@@ -66,6 +60,40 @@ function renderPage() {
 }
 
 describe("AdminDentistLicensing", () => {
+  it("loads the dentist queue without a selected product", async () => {
+    mockApiGet.mockResolvedValueOnce({
+      requests: [
+        {
+          id: "role-pending-no-product",
+          profileId: "profile-dentist-no-product",
+          dentistName: "Dra Sem Produto",
+          croNumber: "CRO-SP 777",
+          status: "pending",
+          workflowStatus: "admin_review_pending",
+          submittedAt: "2026-05-10T10:00:00.000Z",
+        },
+        {
+          id: "role-approved-no-product",
+          profileId: "profile-dentist-approved-no-product",
+          dentistName: "Dr Aprovado",
+          croNumber: "CRO-RJ 888",
+          status: "active",
+          workflowStatus: "approved_pending_payment",
+          submittedAt: "2026-05-11T10:00:00.000Z",
+        },
+      ],
+    });
+
+    renderPage();
+
+    await waitFor(() =>
+      expect(mockApiGet).toHaveBeenCalledWith("/v1/admin/biteplaner/dentist-license-requests", "tok"),
+    );
+    expect(screen.getAllByText(/dra sem produto/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/dr aprovado/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/selecione um produto para continuar/i)).not.toBeInTheDocument();
+  });
+
   beforeEach(() => {
     mockUseAuth.mockReset();
     mockApiGet.mockReset();

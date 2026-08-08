@@ -457,7 +457,7 @@ export function AdminLaboratories() {
   }
 
   async function testSplit(item: Laboratory) {
-    if (!token || !item.active || !hasAsaasWallet(item) || isSplitPending(item)) return;
+    if (!token || !item.active || !hasAsaasWallet(item) || isSplitPending(item) || isSplitApproved(item)) return;
 
     const guardKey = `create-split:${item.id}`;
     if (inflightActions.current.has(guardKey)) return;
@@ -490,7 +490,7 @@ export function AdminLaboratories() {
   }
 
   async function checkSplit(item: Laboratory) {
-    if (!token || !item.active || !hasAsaasWallet(item) || getPersistedSplitTest(item) === null) return;
+    if (!token || !item.active || !hasAsaasWallet(item) || getPersistedSplitTest(item) === null || isSplitApproved(item)) return;
     setError('');
     setMessage('');
     setRowAction({ id: item.id, kind: 'refresh-split' });
@@ -554,7 +554,7 @@ export function AdminLaboratories() {
           ) : (
             <S.Table>
               <thead>
-                <tr><th>Laboratório</th><th>Asaas</th><th>Split fixo (R$)</th><th>Peso (%)</th><th>Status</th><th>Ações</th></tr>
+                      <tr><th>Laboratório</th><th>Asaas</th><th>Split por unidade (R$)</th><th>Peso (%)</th><th>Status</th><th>Ações</th></tr>
               </thead>
               <tbody>
                 {items.map((item) => {
@@ -569,8 +569,8 @@ export function AdminLaboratories() {
                   const integrationPendingValidation = isIntegrationPendingValidation(item);
                   const validatedWalletId = persistedSplitTest?.walletId ?? splitDetails?.walletId ?? null;
                   const actionDisabled = rowAction?.id === item.id;
-                  const consultDisabled = persistedSplitTest === null || rowAction?.id === item.id;
-                  const createDisabled = !item.active || !hasAsaasWallet(item) || isSplitPending(item) || rowAction?.id === item.id;
+                  const consultDisabled = persistedSplitTest === null || splitApproved || rowAction?.id === item.id;
+                  const createDisabled = !item.active || !hasAsaasWallet(item) || isSplitPending(item) || splitApproved || rowAction?.id === item.id;
                   const createdAt = splitDetails?.createdAt ?? null;
                   const verificationDate = splitApproved ? persistedSplitTest?.verifiedAt ?? null : null;
                   const lastWebhookEventAt = splitDetails?.lastWebhookEventAt ?? persistedSplitTest?.lastWebhookEventAt ?? null;
@@ -617,7 +617,7 @@ export function AdminLaboratories() {
                               disabled={createDisabled}
                               onClick={() => void testSplit(item)}
                               aria-label={`${getCreateSplitLabel(item)} de ${item.name}`}
-                              title={isSplitPending(item) ? 'Aguarde a conclusão do teste atual' : getCreateSplitLabel(item)}
+                              title={splitApproved ? 'Teste concluído; laboratório aprovado para split' : isSplitPending(item) ? 'Aguarde a conclusão do teste atual' : getCreateSplitLabel(item)}
                             ><FlaskConical size={15} aria-hidden /></S.IconButton>
                           ) : null}
                           {item.active && hasAsaasWallet(item) ? (
@@ -626,7 +626,7 @@ export function AdminLaboratories() {
                               disabled={consultDisabled}
                               onClick={() => void checkSplit(item)}
                               aria-label={`Consultar resultado do split de ${item.name}`}
-                              title={persistedSplitTest === null ? 'Envie um teste de split primeiro' : 'Consultar resultado do split'}
+                              title={splitApproved ? 'Resultado já confirmado; novo teste não é necessário' : persistedSplitTest === null ? 'Envie um teste de split primeiro' : 'Consultar resultado do split'}
                             ><RefreshCw size={15} aria-hidden /></S.IconButton>
                           ) : null}
                           {canGuaranteeAsaasIntegration(item) ? (
@@ -661,7 +661,7 @@ export function AdminLaboratories() {
           <S.FormGrid>
             <S.FieldWrap><span>Wallet Asaas</span><input required value={form.asaasWalletId} onChange={(event) => change('asaasWalletId', event.target.value)} placeholder="wallet_..." /></S.FieldWrap>
             <S.FieldWrap><span>Nome do laboratório</span><input required value={form.name} onChange={(event) => change('name', event.target.value)} /></S.FieldWrap>
-            <S.FieldWrap><span>Split fixo (R$)</span><input required inputMode="decimal" value={form.splitFixedValue} onChange={(event) => change('splitFixedValue', formatMoneyInput(event.target.value))} placeholder="R$ 0,00" /></S.FieldWrap>
+            <S.FieldWrap><span>Split fixo por unidade (R$)</span><input required inputMode="decimal" value={form.splitFixedValue} onChange={(event) => change('splitFixedValue', formatMoneyInput(event.target.value))} placeholder="R$ 0,00" /></S.FieldWrap>
             <S.FieldWrap><span>Peso de distribuição (%)</span><input required inputMode="decimal" value={form.weight} onChange={(event) => change('weight', sanitizeDecimalInput(event.target.value))} onBlur={() => change('weight', formatPercentageInput(form.weight))} placeholder="50,00%" /></S.FieldWrap>
           </S.FormGrid>
           <S.Actions><AdminFormButton type="submit" variant="primary" leadingIcon={<Plus size={16} aria-hidden />} disabled={saving}>{saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Cadastrar laboratório'}</AdminFormButton><AdminFormButton type="button" variant="secondary" leadingIcon={<Trash2 size={16} aria-hidden />} onClick={reset}>Cancelar</AdminFormButton></S.Actions>

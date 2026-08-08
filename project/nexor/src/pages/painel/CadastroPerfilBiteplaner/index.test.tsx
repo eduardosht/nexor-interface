@@ -88,6 +88,20 @@ function mockCepLookup() {
 }
 
 
+function fillDentistBillingAddress() {
+  fireEvent.change(screen.getByRole('textbox', { name: /^CEP/i }), { target: { value: '01232011' } });
+  fireEvent.change(screen.getByRole('textbox', { name: /N.mero/i }), { target: { value: '123' } });
+  fireEvent.change(screen.getByRole('textbox', { name: /Endere.o/i }), { target: { value: 'Rua Conselheiro Brotero' } });
+  fireEvent.change(screen.getByRole('textbox', { name: /Bairro/i }), { target: { value: 'Santa Cecçlia' } });
+  fireEvent.change(screen.getByRole('textbox', { name: /Cidade/i }), { target: { value: 'São Paulo' } });
+  fireEvent.click(screen.getByRole('button', { name: /Estado/i }));
+  fireEvent.click(screen.getByRole('option', { name: /^SP$/i }));
+}
+
+function fillDentistPhone() {
+  fireEvent.change(screen.getByLabelText(/^Telefone/i), { target: { value: '11999379302' } });
+}
+
 describe('CadastroPerfilBiteplaner', () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
@@ -166,6 +180,8 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
+    fillDentistPhone();
+    fillDentistBillingAddress();
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
 
@@ -185,6 +201,8 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
+    fillDentistPhone();
+    fillDentistBillingAddress();
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/privacidade/i));
 
@@ -215,6 +233,8 @@ describe('CadastroPerfilBiteplaner', () => {
     fireEvent.change(screen.getByLabelText(/^cnpj/i), {
       target: { value: '19131243000197' },
     });
+    fillDentistPhone();
+    fillDentistBillingAddress();
     fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
     fireEvent.click(screen.getByLabelText(/política de privacidade/i));
     fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
@@ -226,6 +246,16 @@ describe('CadastroPerfilBiteplaner', () => {
           croNumber: 'CRO-SP 12345',
           cpf: '52998224725',
           cnpj: '19131243000197',
+          phone: '11999379302',
+          billingAddress: {
+            postalCode: '01232011',
+            addressLine: 'Rua Conselheiro Brotero',
+            addressNumber: '123',
+            neighborhood: 'Santa Cecçlia',
+            city: 'São Paulo',
+            state: 'SP',
+            source: 'manual',
+          },
         },
         'tok'
       );
@@ -235,6 +265,51 @@ describe('CadastroPerfilBiteplaner', () => {
       expect(screen.getByRole('status')).toHaveTextContent(/avaliar seu cro/i);
       expect(mockRefreshBackendUser).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith('/painel/home');
+    });
+  });
+  it('fills the dentist billing address from ViaCEP', async () => {
+    const fetchMock = mockCepLookup();
+    mockApiPost.mockResolvedValueOnce({
+      request: { productKey: 'biteplaner', status: 'pending', croNumber: 'CRO-SP 12345' },
+    });
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/cro/i), { target: { value: 'CRO-SP 12345' } });
+    fireEvent.change(screen.getByLabelText(/^cpf/i), { target: { value: '52998224725' } });
+    fireEvent.change(screen.getByLabelText(/^cnpj/i), { target: { value: '19131243000197' } });
+    fillDentistPhone();
+    fireEvent.change(screen.getByRole('textbox', { name: /^CEP/i }), { target: { value: '01001000' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /N.mero/i }), { target: { value: '123' } });
+    fireEvent.blur(screen.getByRole('textbox', { name: /^CEP/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: /Endere.o/i })).toHaveValue('Praça da Sé');
+      expect(screen.getByRole('textbox', { name: /Bairro/i })).toHaveValue('Sé');
+      expect(screen.getByRole('textbox', { name: /Cidade/i })).toHaveValue('São Paulo');
+      expect(screen.getByRole('button', { name: /Estado/i })).toHaveTextContent('SP');
+    });
+
+    fireEvent.click(screen.getByLabelText(/termos de cadastro operacional/i));
+    fireEvent.click(screen.getByLabelText(/política de privacidade/i));
+    fireEvent.click(screen.getByRole('button', { name: /enviar solicitação/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('https://viacep.com.br/ws/01001000/json/');
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/v1/account/products/biteplaner/dentist-license-requests',
+        expect.objectContaining({
+          billingAddress: expect.objectContaining({
+            postalCode: '01001000',
+            addressLine: 'Praça da Sé',
+            neighborhood: 'Sé',
+            city: 'São Paulo',
+            state: 'SP',
+            ibgeCityCode: 3550308,
+            source: 'viacep',
+          }),
+        }),
+        'tok'
+      );
     });
   });
   it('does not render clinic fields for dentist registration', () => {
@@ -259,6 +334,16 @@ describe('CadastroPerfilBiteplaner', () => {
 
     expect(screen.getByLabelText(/^cpf/i)).toHaveValue('529.982.247-25');
     expect(screen.getByLabelText(/^cnpj/i)).toHaveValue('19.131.243/0001-97');
+  });
+
+  it('masks the dentist phone and requires a valid number', () => {
+    renderPage();
+
+    const submit = screen.getByRole('button', { name: /enviar solicitação/i });
+    fireEvent.change(screen.getByLabelText(/^Telefone/i), { target: { value: '11999379302' } });
+
+    expect(screen.getByLabelText(/^Telefone/i)).toHaveValue('(11) 99937-9302');
+    expect(submit).toBeDisabled();
   });
   it('renders dentist terms with only relevant phrases emphasized', () => {
     renderPage();

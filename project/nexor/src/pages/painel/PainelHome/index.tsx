@@ -121,6 +121,19 @@ export function PainelHome() {
     const status = rolesByKey.get(role)?.status;
     return status === 'active' || status === 'pending';
   });
+  const hasActiveDentistLicense = rolesByKey.get('dentist')?.status === 'active';
+  const biteplanerPrimaryAction = hasActiveDentistLicense
+    ? {
+        label: 'Comprar Biteplaner',
+        path: '/painel/compra',
+        Icon: ShoppingCart,
+      }
+    : {
+        label: 'Solicitar licenciamento',
+        path: '/painel/biteplaner/cadastro/dentista',
+        Icon: UserRound,
+      };
+  const BiteplanerPrimaryActionIcon = biteplanerPrimaryAction.Icon;
 
   useEffect(() => {
     if (!token) {
@@ -131,8 +144,8 @@ export function PainelHome() {
     setRoleError(backendUserResolved && !backendUser ? 'Não foi possível carregar sua conta Nexor.' : '');
   }, [backendUser, backendUserResolved, token]);
 
-  function openBiteplanerPurchase() {
-    navigate('/painel/compra');
+  function openBiteplanerPrimaryAction() {
+    navigate(biteplanerPrimaryAction.path);
   }
 
   function openRoleDashboard(_role: ProductRoleKey) {
@@ -206,11 +219,11 @@ export function PainelHome() {
               type="button"
               disabled={loadingRoles}
               onClick={() => {
-                openBiteplanerPurchase();
+                openBiteplanerPrimaryAction();
               }}
             >
-              <ShoppingCart size={22} strokeWidth={2.2} />
-              Comprar Biteplaner
+              <BiteplanerPrimaryActionIcon size={22} strokeWidth={2.2} />
+              {biteplanerPrimaryAction.label}
               <ArrowRight size={22} strokeWidth={2.2} />
             </S.HeroButton>
             <S.HeroTrustLine aria-label="Compra segura, suporte especializado e atualizações inclusas">

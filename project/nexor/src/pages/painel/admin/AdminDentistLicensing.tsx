@@ -28,11 +28,6 @@ import styled from "styled-components";
 import { SkeletonGrid, SkeletonTable } from "../../../components/Skeleton";
 import { useAuth } from "../../../hooks/useAuth";
 import { useDebouncedValue } from "../../../hooks/useDebouncedValue";
-import { useAdminPortal } from "../../../features/admin/portal";
-import {
-  PortalPageDescription,
-  PortalPageTitle,
-} from "../styles/portalTypography";
 import {
   approveDentistLicenseRequest,
   fetchDentistLicenseRequests,
@@ -41,8 +36,14 @@ import {
   rejectDentistLicenseRequest,
   type DentistLicenseRequest,
 } from "../../../features/demo/biteplanerFlow";
-import { PageStack } from "./styles";
-import { AdminProductGate } from "./AdminProductGate";
+import {
+  FilterBar,
+  PageHeader,
+  PageStack,
+  PageSubtitle,
+  PageTitle,
+  TableSection,
+} from "./styles";
 import {
   AdminMobileActionButton,
   AdminMobileActions,
@@ -109,7 +110,6 @@ function canReviewRequest(request: DentistLicenseRequest) {
 }
 
 export function AdminDentistLicensing() {
-  const { selectedProduct } = useAdminPortal();
   const { session } = useAuth();
   const token = getAuthToken(session);
   const [requests, setRequests] = useState<DentistLicenseRequest[]>([]);
@@ -123,7 +123,7 @@ export function AdminDentistLicensing() {
   const debouncedSearch = useDebouncedValue(search, 300);
 
   async function loadRequests() {
-    if (!selectedProduct || !token) return;
+    if (!token) return;
     setLoading(true);
     try {
       const response = await fetchDentistLicenseRequests(token);
@@ -135,7 +135,7 @@ export function AdminDentistLicensing() {
 
   useEffect(() => {
     void loadRequests();
-  }, [selectedProduct, token]);
+  }, [token]);
 
   const filteredRequests = useMemo(() => {
     const query = debouncedSearch.trim().toLowerCase();
@@ -307,22 +307,13 @@ export function AdminDentistLicensing() {
 
   return (
     <PageStack>
-      <AdminHero>
-        <HeroIcon aria-hidden>
-          <UserRoundCheck size={26} />
-        </HeroIcon>
-        <HeroCopy>
-          <AdminTitle>Dentistas querendo se licenciar</AdminTitle>
-          <AdminSubtitle>
-            Solicitações enviadas por dentistas para análise da Nexor Admin. A aprovação libera a licença necessária para compra do Biteplaner.
-          </AdminSubtitle>
-        </HeroCopy>
-      </AdminHero>
+      <PageHeader>
+        <PageTitle>Dentistas querendo se licenciar</PageTitle>
+        <PageSubtitle>
+          Solicitações enviadas por dentistas para análise da Nexor Admin. A aprovação libera a licença necessária para compra do Biteplaner.
+        </PageSubtitle>
+      </PageHeader>
 
-      <AdminProductGate />
-
-      {selectedProduct ? (
-        <>
           {loading ? (
             <SkeletonGrid cards={4} minCardWidth="180px" />
           ) : (
@@ -343,13 +334,13 @@ export function AdminDentistLicensing() {
             </MetricsGrid>
           )}
 
-          <RequestsPanel>
-            <SearchGroup>
-              <SearchLabel>
-                <Search size={18} aria-hidden />
-                Buscar
-              </SearchLabel>
-              <ToolbarRow>
+          <TableSection padding="lg">
+            <FilterBar>
+              <SearchGroup>
+                <SearchLabel>
+                  <Search size={18} aria-hidden />
+                  Buscar
+                </SearchLabel>
                 <SearchInputWrap>
                   <SearchInput
                     aria-label="Buscar dentistas"
@@ -360,19 +351,19 @@ export function AdminDentistLicensing() {
                     spellCheck={false}
                   />
                 </SearchInputWrap>
-                <FilterSelectWrap>
-                  <CompactFilterSelect
-                    id="admin-dentist-status-filter"
-                    ariaLabel="Filtrar solicitações por status"
-                    placeholder="Filtros"
-                    leadingIcon={<Filter size={16} aria-hidden />}
-                    value={statusFilter}
-                    onChange={updateStatusFilter}
-                    options={statusFilterOptions}
-                  />
-                </FilterSelectWrap>
-              </ToolbarRow>
-            </SearchGroup>
+              </SearchGroup>
+              <FilterSelectWrap>
+                <CompactFilterSelect
+                  id="admin-dentist-status-filter"
+                  ariaLabel="Filtrar solicitações por status"
+                  placeholder="Filtros"
+                  leadingIcon={<Filter size={16} aria-hidden />}
+                  value={statusFilter}
+                  onChange={updateStatusFilter}
+                  options={statusFilterOptions}
+                />
+              </FilterSelectWrap>
+            </FilterBar>
 
             {loading ? (
               <SkeletonTable rows={6} columns={6} />
@@ -442,9 +433,7 @@ export function AdminDentistLicensing() {
                 )}
               />
             )}
-          </RequestsPanel>
-        </>
-      ) : null}
+          </TableSection>
 
       <AdminModal
         open={Boolean(selectedRequest)}
@@ -551,60 +540,6 @@ export function AdminDentistLicensing() {
   );
 }
 
-const AdminHero = styled.header`
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 22px;
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: -28px;
-    width: 88px;
-    height: 112px;
-    opacity: 0.32;
-    background-image: radial-gradient(
-      circle,
-      rgba(21, 128, 61, 0.35) 1.8px,
-      transparent 2px
-    );
-    background-size: 24px 24px;
-    pointer-events: none;
-  }
-
-  @media (max-width: 680px) {
-    gap: 14px;
-  }
-`;
-
-const HeroIcon = styled.div`
-  width: 56px;
-  height: 56px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: ${({ theme }) => theme.colors.green};
-  background:
-    linear-gradient(135deg, rgba(21, 128, 61, 0.12), rgba(21, 128, 61, 0.04)),
-    ${({ theme }) => theme.colors.bgElevated};
-`;
-
-const HeroCopy = styled.div`
-  min-width: 0;
-  max-width: 780px;
-`;
-
-const AdminTitle = PortalPageTitle;
-
-const AdminSubtitle = styled(PortalPageDescription)`
-  margin: 12px 0 0;
-`;
-
 type MetricTone = "success" | "danger";
 
 const MetricsGrid = styled.div`
@@ -697,21 +632,6 @@ const MetricLabel = styled.span<{ $tone: MetricTone }>`
   }
 `;
 
-const RequestsPanel = styled.section`
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 18px;
-  border: 1px solid ${({ theme }) => theme.colors.borderDefault};
-  border-radius: 14px;
-  background: ${({ theme }) => theme.colors.bgElevated};
-  box-shadow: 0 18px 42px rgba(23, 23, 23, 0.05);
-
-  @media (max-width: 680px) {
-    padding: 16px;
-  }
-`;
-
 const SearchGroup = styled.div`
   display: grid;
   gap: 10px;
@@ -725,17 +645,6 @@ const SearchLabel = styled.label`
   font-size: 14px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const ToolbarRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: center;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 const SearchInputWrap = styled.div`

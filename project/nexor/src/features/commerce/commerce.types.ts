@@ -177,13 +177,9 @@ export interface CreateCommerceOrderResponse {
 }
 
 export interface CreateBiteplanerCheckoutResponse {
-  order: CommerceOrderSummary;
-  charge: {
-    id: string;
-    status: string;
-    checkoutSessionId?: string;
-    checkoutUrl?: string;
-  };
+  orderId: string;
+  checkoutId: string;
+  checkoutUrl: string;
 }
 
 export interface UpdateCommerceCatalogVersionInput {

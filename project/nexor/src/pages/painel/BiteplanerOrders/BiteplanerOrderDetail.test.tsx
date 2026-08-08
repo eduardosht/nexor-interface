@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -72,5 +72,20 @@ describe('BiteplanerOrderDetail completion CTA', () => {
 
     expect(await screen.findByRole('link', { name: /revisar complemento/i }))
       .toHaveAttribute('href', '/painel/biteplaner/ordens/order-1/complemento');
+  });
+
+  it('shows the payment status separately and allows a manual refresh', async () => {
+    vi.mocked(fetchBiteplanerDentistOrder).mockResolvedValue({ order: order('awaiting_payment') });
+
+    renderPage();
+
+    expect(await screen.findByText('Status do pagamento')).toBeInTheDocument();
+    expect(screen.getByText('Pago')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /atualizar status/i }));
+
+    await waitFor(() => {
+      expect(fetchBiteplanerDentistOrder).toHaveBeenCalledTimes(2);
+    });
   });
 });

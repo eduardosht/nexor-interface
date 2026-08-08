@@ -107,7 +107,7 @@ const privacySharedCookies: LegalSectionContent = {
 const privacySharedConsent: LegalSectionContent = {
   title: 'Versões e aceite',
   body: [
-    'A Nexor poderá registrar aceite separado para a política geral, aviso específico por perfil, termos aplicáveis e preferências de cookies, incluindo versão, data, status de aceite e evidências técnicas proporcionais. Exemplos de versões: privacy-general-v1.0.0, privacy-dentist-v1.0.0 e terms-dentist-v1.0.0.'
+    'A Nexor poderá registrar aceite separado para a política geral, aviso específico por perfil, termos aplicáveis e preferências de cookies, incluindo versão, data, status de aceite e evidências técnicas proporcionais. Exemplos de versões: privacy-general-v1.0.0, privacy-dentist-v1.1.0 e terms-dentist-v1.1.0.'
   ]
 };
 
@@ -221,7 +221,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
     'licensed-dentist': {
       kind: 'privacy',
       profile: 'licensed-dentist',
-      version: 'privacy-dentist-v1.0.0',
+      version: 'privacy-dentist-v1.1.0',
       title: 'Aviso de Privacidade do Dentista Licenciado',
       subtitle: 'Tratamento de dados do profissional aprovado para atuar no Biteplaner.',
       updatedAt: 'Última atualização: julho de 2026',
@@ -231,7 +231,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           title: 'Dados tratados',
           items: [
             'Dados cadastrais e profissionais: nome profissional, e-mail, telefone, CPF, CNPJ, CRO, resumo profissional, documentos profissionais e cadastrais enviados no onboarding, histórico de aprovação e status do cadastro administrativo.',
-            'Dados de clínica: nome da clínica, CEP, cidade, estado, endereço, complemento, telefone, dias e horários de atendimento, indicação de clínica adaptada e coordenadas obtidas a partir do CEP quando aplicável.',
+            'Endereço de cobrança: CEP, logradouro, número, complemento, bairro, cidade, estado e código IBGE informados no cadastro do dentista.',
             'Dados operacionais: ordens, interações com clientes, pré-consulta, formulários, registros de análise, arquivos de scan da arcada dentária, produção, notificações, logs e auditoria.',
             'Dados financeiros e fiscais: informações necessárias para compra, conciliação, contratos e obrigações fiscais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento.'
           ]
@@ -239,7 +239,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Finalidades',
           items: [
-            'Validar elegibilidade profissional, liberar acesso, exibir clínicas ao usuário e permitir seleção de clínica na jornada.',
+            'Validar elegibilidade profissional e liberar acesso ao Biteplaner conforme a análise administrativa.',
             'Executar ordens Biteplaner, registrar documentação técnica e scan da arcada dentária na plataforma, acompanhar produção externa conduzida pela Nexor e registrar responsabilidades técnicas.',
             'Registrar compra, conciliação, obrigações fiscais e suporte financeiro conforme o modelo comercial vigente.',
             'Cumprir contrato, obrigações legais, auditoria, prevenção a fraude, segurança e defesa de direitos.'
@@ -248,7 +248,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Compartilhamento específico',
           body: [
-            'Dados do dentista e da clínica podem ser exibidos ao usuário quando necessários ao atendimento. Dados operacionais podem ser compartilhados com administradores Nexor, fornecedores autorizados, autoridades e, quando houver produção externa, fornecedor externo por contato externo conduzido pela Nexor. O scan da arcada dentária deve ser tratado como dado pessoal sensível/de saúde e acessado apenas por perfis autorizados para atendimento, produção, suporte, auditoria ou obrigação legal.'
+            'Dados cadastrais e de cobrança podem ser compartilhados com o Asaas e outros fornecedores autorizados somente quando necessários para checkout, pagamento, suporte, conciliação e obrigação legal.'
           ]
         },
         privacySharedRetention,
@@ -349,7 +349,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
     'licensed-dentist': {
       kind: 'terms',
       profile: 'licensed-dentist',
-      version: 'terms-dentist-v1.0.0',
+      version: 'terms-dentist-v1.1.0',
       title: 'Termos de Uso do Dentista Licenciado',
       subtitle: 'Condições aplicáveis ao profissional aprovado para operar no Biteplaner.',
       updatedAt: 'Última atualização: julho de 2026',
@@ -366,13 +366,19 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           items: [
             'Atuar conforme normas técnicas, éticas, regulatórias e profissionais aplicáveis.',
             'Usar dados de clientes, formulários, ordens e scans somente para finalidades autorizadas no Biteplaner.',
-            'Manter informações profissionais, documentos, clínicas e dados necessários a repasses atualizados.'
+            'Manter informações profissionais, documentos e dados cadastrais e financeiros atualizados.'
           ]
         },
         {
           title: 'Pagamentos e comissões',
           body: [
             'Repasses e comissões podem depender de provedor de pagamento contratado. A Nexor não deve armazenar dados bancários quando o fluxo financeiro for realizado por provedor externo.'
+          ]
+        },
+        {
+          title: 'Endereço de cobrança',
+          body: [
+            'O dentista deve fornecer um endereço de cobrança válido para identificação do comprador, preenchimento do checkout Asaas, conciliação, suporte e cumprimento de obrigações legais. Esse dado não representa clínica de atendimento, não é publicado e não é usado para marketing.'
           ]
         },
         ...termsSharedSections

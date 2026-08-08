@@ -81,6 +81,17 @@ describe('PainelHome', () => {
     vi.stubEnv('DISABLE_BITEPLANER', 'true');
   });
 
+  it('sends an unlicensed account to dentist licensing instead of purchase', async () => {
+    vi.stubEnv('DISABLE_BITEPLANER', 'false');
+
+    renderPage();
+
+    const action = await screen.findByRole('button', { name: /solicitar licenciamento/i });
+    fireEvent.click(action);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/cadastro/dentista');
+  });
+
   it('renders the coming soon hero and licensing heading', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: /em breveno nosso site/i })).toBeInTheDocument();
@@ -117,7 +128,7 @@ describe('PainelHome', () => {
         name: /valor é referente a uma unidade do biteplaner/i,
       })
     ).toBeInTheDocument();
-    expect(await findEnabledHeroDentistPurchaseAction()).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /solicitar licenciamento/i })).toBeInTheDocument();
     const trustLine = screen.getByLabelText(/compra segura, suporte especializado e atualizações inclusas/i);
     expect(within(trustLine).getByText(/compra segura/i)).toBeInTheDocument();
     expect(within(trustLine).getByText(/suporte especializado/i)).toBeInTheDocument();
@@ -131,18 +142,18 @@ describe('PainelHome', () => {
 
     renderPage();
 
-    expect(await findEnabledHeroDentistPurchaseAction()).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /solicitar licenciamento/i })).toBeInTheDocument();
     expect(mockApiGet).not.toHaveBeenCalledWith('/v1/account/product-roles', 'tok');
     expect(mockApiGet).not.toHaveBeenCalledWith('/v1/orders?as=user', 'tok');
 
-    fireEvent.click(await findEnabledHeroDentistPurchaseAction());
+    fireEvent.click(await screen.findByRole('button', { name: /solicitar licenciamento/i }));
 
     expect(mockApiPost).not.toHaveBeenCalledWith(
       '/v1/account/products/biteplaner/roles/customer',
       {},
       'tok'
     );
-    expect(mockNavigate).toHaveBeenCalledWith('/painel/compra');
+    expect(mockNavigate).toHaveBeenCalledWith('/painel/biteplaner/cadastro/dentista');
   });
 
   it('uses the administration dashboard background for the Biteplaner card', () => {
@@ -204,7 +215,10 @@ describe('PainelHome', () => {
 
   it('opens the Nexor Biteplaner purchase flow without creating legacy customer roles', async () => {
     vi.stubEnv('DISABLE_BITEPLANER', 'false');
-    renderPage();
+    renderPage({}, {
+      productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+      orders: [],
+    });
 
     fireEvent.click(await findEnabledHeroDentistPurchaseAction());
 
@@ -217,7 +231,7 @@ describe('PainelHome', () => {
     renderPage(
       {},
       {
-        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
         orders: [],
       }
     );
@@ -237,7 +251,7 @@ describe('PainelHome', () => {
     renderPage(
       {},
       {
-        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
         orders: [{ id: 'BP-TESTE4-001', status: 'registration_started', stage: 'new_user_onboarding' }],
       }
     );
@@ -258,7 +272,7 @@ describe('PainelHome', () => {
     renderPage(
       {},
       {
-        productRoles: [{ productKey: 'biteplaner', role: 'customer', status: 'active' }],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
         orders: [{ id: 'BP-TESTE4-001', status: 'registration_started', stage: 'pre_requisite_pending' }],
       }
     );

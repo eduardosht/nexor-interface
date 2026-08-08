@@ -20,9 +20,9 @@ vi.mock('../../../features/commerce/biteplanerDentistOrders.api', () => ({
   fetchBiteplanerDentistOrder: vi.fn(),
 }));
 
-const renderPage = () => render(
+const renderPage = (initialEntry = '/painel/biteplaner/ordens') => render(
   <ThemeProvider theme={theme}>
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <BiteplanerOrders />
     </MemoryRouter>
   </ThemeProvider>
@@ -101,6 +101,36 @@ describe('BiteplanerOrders', () => {
       '/painel/biteplaner/ordens/order-awaiting',
       '/painel/biteplaner/ordens/order-failed',
     ]);
+  });
+
+  it('explains the checkout return and highlights the created order', async () => {
+    vi.mocked(fetchBiteplanerDentistOrders).mockResolvedValueOnce({
+      orders: [
+        { id: 'order-created', status: 'awaiting_payment', paymentStatus: 'pending', shipmentStatus: null, quantity: 1, productName: 'Biteplaner', productVersionId: 'biteplaner-current', model: 'impacto', color: 'preto', currency: 'BRL', subtotalCents: 137000, totalCents: 137000, totalFormatted: 'R$ 1.370,00', createdAt: '2026-08-08T12:00:00.000Z', updatedAt: '2026-08-08T12:00:00.000Z', lockedAt: null },
+      ],
+    });
+
+    renderPage('/painel/biteplaner/ordens?checkout=success&orderId=order-created');
+
+    expect(await screen.findByText(/checkout concluído/i)).toBeInTheDocument();
+    expect(screen.getByText(/ordem criada: order-created/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /ver ordem criada/i })).toHaveAttribute(
+      'href',
+      '/painel/biteplaner/ordens/order-created'
+    );
+  });
+
+  it('refreshes the order list when the user requests an updated payment status', async () => {
+    vi.mocked(fetchBiteplanerDentistOrders).mockResolvedValue({ orders: [] });
+
+    renderPage();
+
+    await screen.findByText('Nenhuma ordem encontrada.');
+    fireEvent.click(screen.getByRole('button', { name: /atualizar lista/i }));
+
+    await waitFor(() => {
+      expect(fetchBiteplanerDentistOrders).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('shows a loading table while orders are being fetched', () => {
@@ -271,6 +301,7 @@ describe('BiteplanerOrders', () => {
     expect(await screen.findByRole('heading', { name: /detalhe da ordem/i })).toBeInTheDocument();
     expect(screen.getAllByText('R$ 1.000,00').length).toBeGreaterThan(0);
     expect(screen.getByText(/Biteplaner/)).toBeInTheDocument();
+    expect(screen.getByText('Status do pagamento')).toBeInTheDocument();
     expect(screen.getByText(/asaas/i)).toBeInTheDocument();
     expect(screen.getByText(/pix/i)).toBeInTheDocument();
     expect(screen.getByText(/Preparando/i)).toBeInTheDocument();

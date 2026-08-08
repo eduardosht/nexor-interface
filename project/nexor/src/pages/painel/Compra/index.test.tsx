@@ -113,8 +113,8 @@ describe('Compra', () => {
           model: 'impacto',
           color: 'preto',
           quantity: 1,
-          successUrl: 'http://localhost:5173/painel/compra?checkout=success',
-          cancelUrl: 'http://localhost:5173/painel/compra?checkout=cancel',
+          successUrl: 'https://wildland-backed-renewable.ngrok-free.dev/painel/biteplaner/ordens?checkout=success',
+          cancelUrl: 'https://wildland-backed-renewable.ngrok-free.dev/painel/biteplaner/ordens?checkout=cancel',
         },
         'tok'
       );

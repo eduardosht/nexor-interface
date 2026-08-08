@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
 vi.mock('../../hooks/useAuth', () => ({ useAuth: mockUseAuth }));
 
-import { RequireAdmin, RequireAuth, RequireNonAdmin } from './guards';
+import { RequireAdmin, RequireAuth, RequireBiteplanerLicense, RequireNonAdmin } from './guards';
 
 describe('RequireAuth', () => {
   it('renders nothing while loading', () => {
@@ -150,5 +150,44 @@ describe('RequireNonAdmin', () => {
     );
 
     expect(screen.queryByText('user-portal')).not.toBeInTheDocument();
+  });
+});
+
+describe('RequireBiteplanerLicense', () => {
+  it('redirects accounts without an active dentist license to licensing', () => {
+    mockUseAuth.mockReturnValue({
+      loading: false,
+      session: { user: { id: '1' } },
+      backendUserResolved: true,
+      backendUser: { roles: [], productRoles: [] },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/painel/compra']}>
+        <RequireBiteplanerLicense><div>purchase</div></RequireBiteplanerLicense>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByText('purchase')).not.toBeInTheDocument();
+  });
+
+  it('renders licensed dentist routes', () => {
+    mockUseAuth.mockReturnValue({
+      loading: false,
+      session: { user: { id: '1' } },
+      backendUserResolved: true,
+      backendUser: {
+        roles: [],
+        productRoles: [{ productKey: 'biteplaner', role: 'dentist', status: 'active' }],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <RequireBiteplanerLicense><div>purchase</div></RequireBiteplanerLicense>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('purchase')).toBeInTheDocument();
   });
 });

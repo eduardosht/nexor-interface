@@ -1236,26 +1236,26 @@ export function MinhaConta() {
 
       {!isAdmin ? (
         <S.Section
-          id="solicitacoes-lgpd"
+          id="excluir-conta"
           variants={fadeSection}
           initial="hidden"
           animate="visible"
           transition={{ delay: 0.12 } as never}
         >
           <S.SectionTitle>Solicitações LGPD</S.SectionTitle>
-          <S.Card>
+          <S.DangerCard>
             <S.SecurityContent>
-              <S.SecurityTitle>Correção, revogação ou exclusão de dados</S.SecurityTitle>
+              <S.SecurityTitle>Excluir conta</S.SecurityTitle>
               <S.SecurityText>
-                Durante o reset da plataforma, solicitações sensíveis da conta devem ser feitas pelo canal LGPD para análise manual da Nexor.
+                Você pode solicitar a exclusão da sua conta a qualquer momento. O canal LGPD analisará a solicitação e orientará sobre os próximos passos.
               </S.SecurityText>
             </S.SecurityContent>
             <S.FormActions>
-              <S.CancelButton as="a" href="/?assunto=lgpd#contato" target="_blank" rel="noopener noreferrer">
-                Falar com o canal LGPD
-              </S.CancelButton>
+              <S.DangerButton as="a" href="/?assunto=lgpd#contato" target="_blank" rel="noopener noreferrer">
+                Solicitar exclusão da conta
+              </S.DangerButton>
             </S.FormActions>
-          </S.Card>
+          </S.DangerCard>
         </S.Section>
       ) : null}
       {snackbar ? (

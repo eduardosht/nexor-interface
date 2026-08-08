@@ -36,15 +36,17 @@ describe('routes', () => {
 
   it('routes Biteplaner home to its dashboard page instead of purchase', () => {
     expect(routesSource).toContain("const BiteplanerHome = lazy(() => import('../pages/painel/BiteplanerHome')");
-    expect(routesSource).toContain("{ path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHome /></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerHome /></RequireBiteplanerLicense></PainelRoute> }");
     expect(routesSource).not.toContain("{ path: '/painel/biteplaner', element: <Navigate to=\"/painel/compra\" replace /> }");
   });
   it('routes purchase confirmation and the lean admin commerce pages separately', () => {
-    expect(routesSource).toContain("{ path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
-    expect(routesSource).toContain("{ path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement }");
-    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens', element: <PainelRoute><BiteplanerOrders /></PainelRoute> }");
-    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><BiteplanerOrderDetail /></PainelRoute> }");
-    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><BiteplanerOrderCompletion /></PainelRoute> }");
+    expect(routesSource).toContain("import { RequireAdmin, RequireAuth, RequireBiteplanerLicense, RequireNonAdmin } from '../features/auth/guards';");
+    expect(routesSource).toContain('<RequireBiteplanerLicense><Compra /></RequireBiteplanerLicense>');
+    expect(routesSource).toContain("{ path: '/painel/compra', element: <PainelRoute><RequireBiteplanerLicense><Compra /></RequireBiteplanerLicense></PainelRoute>, errorElement: routeErrorElement }");
+    expect(routesSource).toContain("{ path: '/painel/confirmacao-compra', element: <PainelRoute><RequireBiteplanerLicense><Compra /></RequireBiteplanerLicense></PainelRoute>, errorElement: routeErrorElement }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrders /></RequireBiteplanerLicense></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrderDetail /></RequireBiteplanerLicense></PainelRoute> }");
+    expect(routesSource).toContain("{ path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrderCompletion /></RequireBiteplanerLicense></PainelRoute> }");
     expect(routesSource).toContain("{ path: '/painel/admin/home', element: <AdminPainelRoute><AdminHome /></AdminPainelRoute> }");
     expect(routesSource).toContain("{ path: '/painel/admin/ordens', element: <AdminPainelRoute><AdminOrders /></AdminPainelRoute> }");
     expect(routesSource).toContain("{ path: '/painel/admin/dentistas', element: <AdminPainelRoute><AdminDentistLicensing /></AdminPainelRoute> }");

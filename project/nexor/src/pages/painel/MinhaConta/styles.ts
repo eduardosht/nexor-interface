@@ -183,6 +183,10 @@ export const DangerButton = styled.button`
   border-radius: 4px;
   font-size: 13px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   cursor: pointer;
   transition: opacity 150ms ease;
 

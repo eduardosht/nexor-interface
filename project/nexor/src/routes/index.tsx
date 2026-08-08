@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { RequireAdmin, RequireAuth, RequireNonAdmin } from '../features/auth/guards';
+import { RequireAdmin, RequireAuth, RequireBiteplanerLicense, RequireNonAdmin } from '../features/auth/guards';
 import { Layout } from '../Layout';
 import { PortalLayout } from '../components/portal/PortalLayout';
 import { AdminPortalProvider } from '../features/admin/portal';
@@ -142,12 +142,12 @@ export const router = createBrowserRouter([
   { path: '/painel/pre-requisito', element: <Navigate to="/painel/compra" replace /> },
   { path: '/painel/pre-consulta', element: <Navigate to="/painel/compra" replace /> },
   { path: '/painel/consulta-inicial', element: <Navigate to="/painel/compra" replace /> },
-  { path: '/painel/compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
-  { path: '/painel/confirmacao-compra', element: <PainelRoute><Compra /></PainelRoute>, errorElement: routeErrorElement },
-  { path: '/painel/biteplaner', element: <PainelRoute><BiteplanerHome /></PainelRoute> },
-  { path: '/painel/biteplaner/ordens', element: <PainelRoute><BiteplanerOrders /></PainelRoute> },
-  { path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><BiteplanerOrderDetail /></PainelRoute> },
-  { path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><BiteplanerOrderCompletion /></PainelRoute> },
+  { path: '/painel/compra', element: <PainelRoute><RequireBiteplanerLicense><Compra /></RequireBiteplanerLicense></PainelRoute>, errorElement: routeErrorElement },
+  { path: '/painel/confirmacao-compra', element: <PainelRoute><RequireBiteplanerLicense><Compra /></RequireBiteplanerLicense></PainelRoute>, errorElement: routeErrorElement },
+  { path: '/painel/biteplaner', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerHome /></RequireBiteplanerLicense></PainelRoute> },
+  { path: '/painel/biteplaner/ordens', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrders /></RequireBiteplanerLicense></PainelRoute> },
+  { path: '/painel/biteplaner/ordens/:orderId', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrderDetail /></RequireBiteplanerLicense></PainelRoute> },
+  { path: '/painel/biteplaner/ordens/:orderId/complemento', element: <PainelRoute><RequireBiteplanerLicense><BiteplanerOrderCompletion /></RequireBiteplanerLicense></PainelRoute> },
   { path: '/painel/biteplaner/indicar', element: <PainelRoute><PartnerReferralPage /></PainelRoute> },
   { path: '/painel/biteplaner/avaliacoes', element: <Navigate to="/painel/home" replace /> },
   { path: '/painel/biteplaner/jornada', element: <Navigate to="/painel/home" replace /> },

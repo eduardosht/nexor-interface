@@ -1,5 +1,5 @@
 import { AdminFormButton } from '@nexor/design-system';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchBiteplanerDentistOrder } from '../../../features/commerce/biteplanerDentistOrders.api';
@@ -50,6 +50,13 @@ function getStatusTone(status: string) {
   if (['paid', 'ready_for_production', 'delivered', 'completed'].includes(status)) return 'success';
   if (['payment_failed', 'cancelled', 'refunded'].includes(status)) return 'danger';
   if (['awaiting_payment', 'awaiting_order_completion', 'technical_review', 'correction_requested', 'in_production', 'shipped'].includes(status)) return 'warning';
+  return 'neutral';
+}
+
+function getPaymentStatusTone(status: string) {
+  if (['paid', 'received', 'confirmed'].includes(status.toLowerCase())) return 'success';
+  if (['failed', 'cancelled', 'refunded', 'expired'].includes(status.toLowerCase())) return 'danger';
+  if (['pending', 'unpaid'].includes(status.toLowerCase())) return 'warning';
   return 'neutral';
 }
 
@@ -181,13 +188,17 @@ export function BiteplanerOrderDetail() {
       <S.DetailHeader>
         <S.DetailTitle>Detalhe da ordem</S.DetailTitle>
         <S.DetailSubtitle>Pedido {order.id}</S.DetailSubtitle>
-        {canCompleteOrder || canReviewCompletion ? (
-          <S.DetailHeaderActions>
+        <S.DetailHeaderActions>
+          <AdminFormButton type="button" variant="secondary" onClick={() => void loadOrder()} disabled={loading}>
+            <RefreshCw size={16} aria-hidden />
+            Atualizar status
+          </AdminFormButton>
+          {canCompleteOrder || canReviewCompletion ? (
             <S.DetailActionLink as={Link} to={`/painel/biteplaner/ordens/${order.id}/complemento`}>
               {canReviewCompletion ? 'Revisar complemento' : 'Completar ordem'}
             </S.DetailActionLink>
-          </S.DetailHeaderActions>
-        ) : null}
+          ) : null}
+        </S.DetailHeaderActions>
       </S.DetailHeader>
 
       <S.DetailDashboardGrid>
@@ -199,6 +210,13 @@ export function BiteplanerOrderDetail() {
               <S.StatusInline $tone={getStatusTone(order.status)}>
                 <span aria-hidden />
                 {statusLabel(order.status)}
+              </S.StatusInline>
+            </S.SummaryMetric>
+            <S.SummaryMetric>
+              <S.FieldLabel>Status do pagamento</S.FieldLabel>
+              <S.StatusInline $tone={getPaymentStatusTone(order.paymentStatus)}>
+                <span aria-hidden />
+                {statusLabel(order.paymentStatus)}
               </S.StatusInline>
             </S.SummaryMetric>
             <S.SummaryMetric>
