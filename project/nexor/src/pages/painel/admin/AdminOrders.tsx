@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { useAuth } from '../../../hooks/useAuth';
 import { api } from '../../../lib/api';
+import { formatBiteplanerSportCategory } from '../../../features/commerce/biteplanerSportCategory.presenter';
 import * as S from './AdminOrders.styles';
 import {
   FilterBar,
@@ -22,8 +23,9 @@ type CommerceOrder = {
   paymentStatus: string;
   shipmentStatus: string | null;
   quantity: number;
-  model: string;
+  model?: string | null;
   color: string;
+  sportCategory?: string | null;
   totalFormatted: string;
   createdAt: string;
   canStartExternalProduction: boolean;
@@ -201,7 +203,7 @@ export function AdminOrders() {
     if (!term) return orders;
 
     return orders.filter((order) =>
-      `${order.id} ${order.buyerName} ${order.buyerEmail} ${order.model} ${order.color}`
+      `${order.id} ${order.buyerName} ${order.buyerEmail} ${order.sportCategory ?? ''} ${order.model ?? ''} ${order.color}`
         .toLowerCase()
         .includes(term)
     );
@@ -254,7 +256,7 @@ export function AdminOrders() {
           <Field
             as="input"
             label="Buscar"
-            placeholder="Buscar por pedido, dentista, e-mail, modelo ou cor"
+            placeholder="Buscar por pedido, dentista, e-mail, esporte ou cor"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -304,7 +306,10 @@ export function AdminOrders() {
                       <td>{getPaymentStatusLabel(order.paymentStatus)}</td>
                       <td>
                         {order.quantity}x Biteplaner
-                        <span>{[order.model, order.color].filter(Boolean).join(' / ') || 'Configuração não informada'}</span>
+                        <span>{[
+                          formatBiteplanerSportCategory(order.sportCategory) || order.model,
+                          order.color,
+                        ].filter(Boolean).join(' / ') || 'Configuração não informada'}</span>
                       </td>
                       <td>{formatDate(order.createdAt)}</td>
                       <td>

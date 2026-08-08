@@ -24,7 +24,7 @@ vi.mock('../../../features/commerce/biteplanerOrderCompletion.api', () => ({
 
 const slot = (slotKey: BiteplanerCompletionSlotKey, attached = false): BiteplanerCompletionSlot => ({
   slotKey,
-  label: slotKey === 'upper_scan' ? 'Scan superior' : slotKey === 'lower_scan' ? 'Scan inferior' : 'Registro de mordida',
+  label: slotKey === 'two_arches_scan' ? 'Escaneamento 3D das duas arcadas' : slotKey === 'lateral_jig_scan' ? 'Escaneamento 3D lateral com JIG' : 'Imagem da prescrição',
   required: true,
   attachment: attached ? {
     id: `attachment-${slotKey}`,
@@ -45,7 +45,7 @@ const completionResponse = (input: {
   completion: {
     canSubmit: input.canSubmit ?? true,
     correctionMessage: input.correctionMessage ?? null,
-    slots: input.slots ?? [slot('upper_scan'), slot('lower_scan'), slot('bite_registration')],
+    slots: input.slots ?? [slot('two_arches_scan'), slot('lateral_jig_scan'), slot('prescription_image')],
   },
 });
 
@@ -70,7 +70,7 @@ describe('BiteplanerOrderCompletion', () => {
     vi.mocked(fetchBiteplanerOrderCompletion).mockReset();
     vi.mocked(uploadCompletionSlotFile).mockReset();
     vi.mocked(submitBiteplanerOrderCompletion).mockReset();
-    vi.mocked(uploadCompletionSlotFile).mockResolvedValue({ fileRef: { id: 'attachment-1', slotKey: 'upper_scan' } });
+  vi.mocked(uploadCompletionSlotFile).mockResolvedValue({ fileRef: { id: 'attachment-1', slotKey: 'two_arches_scan' } });
     vi.mocked(submitBiteplanerOrderCompletion).mockResolvedValue(completionResponse());
   });
 
@@ -79,15 +79,15 @@ describe('BiteplanerOrderCompletion', () => {
 
     const slots = await screen.findAllByTestId(/completion-slot-/);
     expect(slots.map((slotElement) => within(slotElement).getByRole('heading').textContent)).toEqual([
-      'Scan superior',
-      'Scan inferior',
-      'Registro de mordida',
+      'Escaneamento 3D das duas arcadas',
+      'Escaneamento 3D lateral com JIG',
+      'Imagem da prescrição',
     ]);
     expect(screen.getAllByText(/arraste e solte o\(s\) arquivo\(s\) para enviar/i)).toHaveLength(3);
   });
 
   it('blocks submit until all three slots have files', async () => {
-    renderPage({ slots: [slot('upper_scan', true), slot('lower_scan', false), slot('bite_registration', false)] });
+    renderPage({ slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', false), slot('prescription_image', false)] });
 
     expect(await screen.findByRole('button', { name: /enviar complemento/i })).toBeDisabled();
   });
@@ -101,45 +101,45 @@ describe('BiteplanerOrderCompletion', () => {
   it('respects backend canSubmit when every slot is complete', async () => {
     renderPage({
       canSubmit: false,
-      slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', true)],
+      slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', true)],
     });
 
     expect(await screen.findByRole('button', { name: /enviar complemento/i })).toBeDisabled();
   });
   it('shows attached files inside the upload field and allows removing them locally before replacement', async () => {
     renderPage({
-      slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', true)],
+      slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', true)],
     });
 
-    const upperSlot = await screen.findByTestId('completion-slot-upper_scan');
-    expect(within(upperSlot).getByText('upper_scan.stl')).toBeInTheDocument();
+    const upperSlot = await screen.findByTestId('completion-slot-two_arches_scan');
+    expect(within(upperSlot).getByText('two_arches_scan.stl')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enviar complemento/i })).toBeEnabled();
 
-    fireEvent.click(within(upperSlot).getByRole('button', { name: /remover arquivo upper_scan\.stl/i }));
+    fireEvent.click(within(upperSlot).getByRole('button', { name: /remover arquivo two_arches_scan\.stl/i }));
 
-    expect(within(upperSlot).queryByText('upper_scan.stl')).not.toBeInTheDocument();
+    expect(within(upperSlot).queryByText('two_arches_scan.stl')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enviar complemento/i })).toBeDisabled();
   });
 
   it('shows a slot-level error when an upload fails', async () => {
     vi.mocked(uploadCompletionSlotFile).mockRejectedValueOnce(new Error('s3 failed'));
-    renderPage({ slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', false)] });
+    renderPage({ slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', false)] });
 
     const file = new File(['scan'], 'mordida.stl', { type: 'model/stl' });
-    fireEvent.change(await screen.findByLabelText(/registro de mordida/i), { target: { files: [file] } });
+    fireEvent.change(await screen.findByLabelText(/imagem da prescrição/i), { target: { files: [file] } });
     fireEvent.click(screen.getByRole('button', { name: /enviar complemento/i }));
 
-    expect(await within(screen.getByTestId('completion-slot-bite_registration')).findByText(/não foi possível enviar este arquivo/i)).toBeInTheDocument();
+    expect(await within(screen.getByTestId('completion-slot-prescription_image')).findByText(/não foi possível enviar este arquivo/i)).toBeInTheDocument();
     expect(submitBiteplanerOrderCompletion).not.toHaveBeenCalled();
   });
 
   it('clears selected files when navigating to another order completion', async () => {
     vi.mocked(fetchBiteplanerOrderCompletion)
       .mockResolvedValueOnce(completionResponse({
-        slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', false)],
+        slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', false)],
       }))
       .mockResolvedValueOnce(completionResponse({
-        slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', false)],
+        slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', false)],
       }));
 
     function NavigateToSecondOrder() {
@@ -160,7 +160,7 @@ describe('BiteplanerOrderCompletion', () => {
     );
 
     const file = new File(['scan'], 'mordida.stl', { type: 'model/stl' });
-    fireEvent.change(await screen.findByLabelText(/registro de mordida/i), { target: { files: [file] } });
+    fireEvent.change(await screen.findByLabelText(/imagem da prescrição/i), { target: { files: [file] } });
     expect(screen.getByRole('button', { name: /enviar complemento/i })).toBeEnabled();
 
     fireEvent.click(screen.getByRole('button', { name: /ir para ordem 2/i }));
@@ -171,16 +171,16 @@ describe('BiteplanerOrderCompletion', () => {
     expect(await screen.findByRole('button', { name: /enviar complemento/i })).toBeDisabled();
   });
   it('uploads selected files and submits the completion', async () => {
-    renderPage({ slots: [slot('upper_scan', true), slot('lower_scan', true), slot('bite_registration', false)] });
+    renderPage({ slots: [slot('two_arches_scan', true), slot('lateral_jig_scan', true), slot('prescription_image', false)] });
 
     const file = new File(['scan'], 'mordida.stl', { type: 'model/stl' });
-    fireEvent.change(await screen.findByLabelText(/registro de mordida/i), { target: { files: [file] } });
+    fireEvent.change(await screen.findByLabelText(/imagem da prescrição/i), { target: { files: [file] } });
     fireEvent.click(screen.getByRole('button', { name: /enviar complemento/i }));
 
     await waitFor(() => {
       expect(uploadCompletionSlotFile).toHaveBeenCalledWith({
         orderId: 'order-1',
-        slotKey: 'bite_registration',
+        slotKey: 'prescription_image',
         file,
         token: 'tok',
       });

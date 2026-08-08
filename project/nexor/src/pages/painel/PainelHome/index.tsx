@@ -212,7 +212,7 @@ export function PainelHome() {
                     </S.BpTooltipBubble>
                   </S.BpTooltipTrigger>
                 </S.BpLabelWithTooltip>
-                <S.BpPrice>R$ 1.370,00</S.BpPrice>
+                <S.BpPrice>R$ 1.400,00</S.BpPrice>
               </S.ProductStat>
             </S.ProductStats>
             <S.HeroButton

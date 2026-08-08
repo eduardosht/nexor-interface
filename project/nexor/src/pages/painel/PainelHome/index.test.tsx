@@ -122,7 +122,7 @@ describe('PainelHome', () => {
     expect(screen.getByTestId('biteplaner-product-banner')).toBeInTheDocument();
     expect(screen.getByTestId('biteplaner-product-banner')).toHaveTextContent(/produto nexor para dentistas/i);
     expect(screen.getByTestId('biteplaner-product-banner')).not.toHaveTextContent(/triagem odontol.gica/i);
-    expect(screen.getByText('R$ 1.370,00')).toBeInTheDocument();
+    expect(screen.getByText('R$ 1.400,00')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
         name: /valor é referente a uma unidade do biteplaner/i,

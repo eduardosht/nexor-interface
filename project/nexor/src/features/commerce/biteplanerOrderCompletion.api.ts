@@ -10,6 +10,12 @@ import type {
 
 const completionBasePath = (orderId: string) => `/v1/commerce/biteplaner/orders/${orderId}`;
 
+const completionSlotLabels: Record<BiteplanerCompletionSlotKey, string> = {
+  two_arches_scan: 'Escaneamento 3D das duas arcadas',
+  lateral_jig_scan: 'Escaneamento 3D lateral com JIG',
+  prescription_image: 'Imagem da prescrição',
+};
+
 export const fetchBiteplanerOrderCompletion = (orderId: string, token: string) =>
   api.get<BiteplanerOrderCompletionResponse>(`${completionBasePath(orderId)}/completion`, token);
 
@@ -52,14 +58,20 @@ export async function uploadCompletionSlotFile(input: {
     sizeBytes: input.file.size,
   }, input.token);
 
-  const response = await (input.fetchImpl ?? fetch)(intent.uploadUrl, {
-    method: 'PUT',
-    headers: intent.requiredHeaders,
-    body: input.file,
-  });
+  const uploadErrorMessage = `Não foi possível enviar ${completionSlotLabels[input.slotKey]} para o armazenamento privado.`;
+  let response: Response;
+  try {
+    response = await (input.fetchImpl ?? fetch)(intent.uploadUrl, {
+      method: 'PUT',
+      headers: intent.requiredHeaders,
+      body: input.file,
+    });
+  } catch {
+    throw new Error(uploadErrorMessage);
+  }
 
   if (!response.ok) {
-    throw new Error('Não foi possível enviar o arquivo para o armazenamento privado.');
+    throw new Error(uploadErrorMessage);
   }
 
   return confirmCompletionAttachmentUpload(input.orderId, input.slotKey, {

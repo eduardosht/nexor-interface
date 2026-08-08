@@ -60,7 +60,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Produção',
     stage: 'Fabricação',
     date: '03/05/2026',
-    amount: 'R$ 1.370,00',
+    amount: 'R$ 1.400,00',
   },
   {
     id: 'BP-002',
@@ -70,7 +70,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Avaliação',
     stage: 'Moldagem',
     date: '02/05/2026',
-    amount: 'R$ 1.370,00',
+    amount: 'R$ 1.400,00',
   },
   {
     id: 'BP-003',
@@ -80,7 +80,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Concluído',
     stage: 'Finalizado',
     date: '01/05/2026',
-    amount: 'R$ 1.370,00',
+    amount: 'R$ 1.400,00',
   },
   {
     id: 'BP-004',
@@ -90,7 +90,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Entrega',
     stage: 'Em trânsito',
     date: '30/04/2026',
-    amount: 'R$ 1.370,00',
+    amount: 'R$ 1.400,00',
   },
   {
     id: 'BP-005',
@@ -100,7 +100,7 @@ export const ADMIN_ORDERS: AdminOrderRow[] = [
     status: 'Pendente',
     stage: 'Agendamento',
     date: '29/04/2026',
-    amount: 'R$ 1.370,00',
+    amount: 'R$ 1.400,00',
   },
 ];
 

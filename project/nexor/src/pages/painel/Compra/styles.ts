@@ -7,6 +7,10 @@ export const Page = styled.div`
   width: 100%;
   display: grid;
   gap: 28px;
+
+  @media (max-width: 768px) {
+    gap: 20px;
+  }
 `;
 
 export const SuccessHeader = styled.header`
@@ -76,6 +80,7 @@ export const Layout = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 `;
 
@@ -89,6 +94,7 @@ export const AsideColumn = styled.div`
   display: grid;
   gap: 18px;
   min-width: 0;
+  height: 100%;
 `;
 
 export const Card = styled.section`
@@ -100,6 +106,11 @@ export const Card = styled.section`
   border: 1px solid ${({ theme }) => theme.colors.borderDefault};
   background: ${({ theme }) => theme.colors.bgElevated};
   box-shadow: 0 16px 40px rgba(23, 23, 23, 0.04);
+
+  @media (max-width: 640px) {
+    gap: 14px;
+    padding: 20px 18px;
+  }
 `;
 
 export const SuccessOrderBanner = styled.section`
@@ -268,6 +279,14 @@ export const SuccessStatusPill = styled.span`
 export const SummaryCard = styled(Card)`
   align-self: start;
   gap: 24px;
+  position: sticky;
+  top: 24px;
+  z-index: 2;
+
+  @media (max-width: 768px) {
+    position: static;
+    gap: 18px;
+  }
 `;
 
 export const CardTitle = styled.h2`
@@ -275,6 +294,10 @@ export const CardTitle = styled.h2`
   font-size: 22px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+
+  @media (max-width: 640px) {
+    font-size: 19px;
+  }
 `;
 
 export const Divider = styled.hr`
@@ -428,6 +451,16 @@ export const Total = styled.strong`
   font-size: 28px;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.green};
+
+  @media (max-width: 640px) {
+    font-size: 24px;
+  }
+`;
+
+export const UploadGrid = styled.div`
+  display: grid;
+  gap: 22px;
+  padding-top: 4px;
 `;
 
 export const UnitSuffix = styled.span`
@@ -515,6 +548,11 @@ export const PaymentApprovedBox = styled.div`
   strong {
     color: ${({ theme }) => theme.colors.green};
     font-size: 14px;
+  }
+
+  @media (min-width: 521px) and (max-width: 768px) {
+    width: 100%;
+    min-width: 0;
   }
 `;
 

@@ -1,4 +1,4 @@
-export type BiteplanerCompletionSlotKey = 'upper_scan' | 'lower_scan' | 'bite_registration';
+export type BiteplanerCompletionSlotKey = 'two_arches_scan' | 'lateral_jig_scan' | 'prescription_image';
 
 export interface BiteplanerCompletionAttachment {
   id: string;

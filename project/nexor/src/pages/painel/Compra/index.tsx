@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Select, Snackbar, SnackbarStack } from '@nexor/design-system';
+import { Select, Snackbar, SnackbarStack, UploadField, type UploadFieldFile } from '@nexor/design-system';
 import { CheckCircle2, Clock3, CreditCard, Hourglass, PartyPopper, ShieldCheck } from 'lucide-react';
 import * as S from './styles';
 import { SkeletonCard, SkeletonGrid } from '../../../components/Skeleton';
 import type { DemoOrderSummary } from '../../../features/demo/biteplanerFlow';
 import { JourneyNoticeCard } from '../components/JourneyNoticeCard';
 import { OrderInfoCard, OrderStepHeader } from '../components/OrderStepHeader';
-import { api } from '../../../lib/api';
 import { useAuth } from '../../../hooks/useAuth';
 import { env } from '../../../config/env';
+import { createBiteplanerDraft, startBiteplanerCheckout } from '../../../features/commerce/biteplanerPurchase.api';
+import type { BiteplanerBiologicalSex, BiteplanerSportCategory } from '../../../features/commerce/biteplanerPurchase.types';
+import { uploadCompletionSlotFile } from '../../../features/commerce/biteplanerOrderCompletion.api';
+import type { BiteplanerCompletionSlotKey } from '../../../features/commerce/biteplanerOrderCompletion.types';
 
 const NEXT_STEPS = [
   {
@@ -33,12 +36,47 @@ const BITEPLANER_COLOR_OPTIONS = [
   { value: 'branco', label: 'Branco' },
 ];
 
-const BITEPLANER_MODEL_OPTIONS = [
-  { value: 'impacto', label: 'Linha Impact' },
-  { value: 'esportes', label: 'Linha Strength' },
+const BITEPLANER_UNIT_PRICE_CENTS = 140000;
+
+const BITEPLANER_SPORT_OPTIONS = [
+  { value: 'combat_sports', label: 'Esportes de combate' },
+  { value: 'team_sports', label: 'Esportes coletivos' },
+  { value: 'racket_sports', label: 'Esportes de raquete' },
+  { value: 'running_athletics', label: 'Corrida e atletismo' },
+  { value: 'strength_training', label: 'Força e musculação' },
+  { value: 'cycling', label: 'Ciclismo' },
+  { value: 'water_sports', label: 'Esportes aquáticos' },
+  { value: 'other_sports', label: 'Outros esportes' },
 ];
 
-const BITEPLANER_UNIT_PRICE_CENTS = 137000;
+const BITEPLANER_BIOLOGICAL_SEX_OPTIONS = [
+  { value: 'female', label: 'Feminino' },
+  { value: 'male', label: 'Masculino' },
+  { value: 'intersex', label: 'Intersexo' },
+  { value: 'not_informed', label: 'Prefiro não informar' },
+];
+
+const BITEPLANER_TECHNICAL_UPLOADS: Array<{
+  slotKey: BiteplanerCompletionSlotKey;
+  label: string;
+  hint: string;
+}> = [
+  {
+    slotKey: 'two_arches_scan',
+    label: 'Escaneamento 3D das duas arcadas',
+    hint: 'Anexe o arquivo com as duas arcadas. A validação do formato será definida posteriormente.',
+  },
+  {
+    slotKey: 'lateral_jig_scan',
+    label: 'Escaneamento 3D lateral com JIG',
+    hint: 'Anexe o escaneamento lateral com JIG. A validação do formato será definida posteriormente.',
+  },
+  {
+    slotKey: 'prescription_image',
+    label: 'Imagem da prescrição',
+    hint: 'Envie uma imagem legível da prescrição. A validação do formato será definida posteriormente.',
+  },
+];
 
 const PAYMENT_COMPLETED_STATUSES = new Set([
   'payment_confirmed',
@@ -119,15 +157,27 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
-  const [selectedModel, setSelectedModel] = useState(BITEPLANER_MODEL_OPTIONS[0].value);
   const [selectedColor, setSelectedColor] = useState(BITEPLANER_COLOR_OPTIONS[0].value);
   const [quantity, setQuantity] = useState(1);
+  const [sportCategory, setSportCategory] = useState<BiteplanerSportCategory | ''>('');
+  const [athleteAge, setAthleteAge] = useState('');
+  const [biologicalSex, setBiologicalSex] = useState<BiteplanerBiologicalSex | ''>('');
+  const [selectedFiles, setSelectedFiles] = useState<Partial<Record<BiteplanerCompletionSlotKey, File>>>({});
   const paymentCompleted = isPaymentCompletedStatus(order?.status);
   const purchaseConfirmed = Boolean(order?.purchaseConfiguration || order?.paymentRequest?.status);
   const paymentMessageSent = order?.paymentRequest?.status === 'message_sent';
   const purchaseSteps = getPurchaseSteps(purchaseConfirmed, paymentMessageSent, paymentCompleted);
   const orderConfiguration = order?.purchaseConfiguration ?? order?.dentistRecommendedPurchaseConfiguration ?? null;
   const totalCents = BITEPLANER_UNIT_PRICE_CENTS * quantity;
+  const technicalFormComplete = Boolean(
+    sportCategory &&
+    biologicalSex &&
+    athleteAge.trim() &&
+    Number.isInteger(Number(athleteAge)) &&
+    Number(athleteAge) >= 0 &&
+    Number(athleteAge) <= 120 &&
+    BITEPLANER_TECHNICAL_UPLOADS.every(({ slotKey }) => selectedFiles[slotKey] !== undefined)
+  );
 
   useEffect(() => {
     setOrder(initialOrder);
@@ -139,15 +189,26 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
       return;
     }
 
-    setSelectedModel(orderConfiguration.model);
     setSelectedColor(orderConfiguration.color);
     setQuantity(Math.max(1, Math.min(10, orderConfiguration.quantity)));
   }, [orderConfiguration]);
 
   const ctaDisabled = useMemo(
-    () => submitting || quantity < 1,
-    [order, quantity, submitting]
+    () => submitting || quantity < 1 || !technicalFormComplete,
+    [quantity, submitting, technicalFormComplete]
   );
+
+  function getUploadFieldFiles(slotKey: BiteplanerCompletionSlotKey): UploadFieldFile[] {
+    const file = selectedFiles[slotKey];
+    return file
+      ? [{
+        id: `selected-${slotKey}`,
+        name: file.name,
+        status: 'uploaded',
+        sizeLabel: 'Arquivo selecionado para envio seguro.',
+      }]
+      : [];
+  }
 
   async function handleConfirmPurchase() {
     if (submitting) {
@@ -159,22 +220,42 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
     setError('');
 
     try {
+      if (!session?.access_token || !technicalFormComplete || sportCategory === '' || biologicalSex === '') {
+        throw new Error('Preencha os dados de produção e selecione os três arquivos obrigatórios.');
+      }
+
       const origin = env.appUrl ?? window.location.origin;
-      const response = await api.post<{ checkoutUrl: string }>(
-        '/v1/commerce/biteplaner/checkout',
-        {
-          model: selectedModel,
-          color: selectedColor,
-          quantity,
-          successUrl: `${origin}/painel/biteplaner/ordens?checkout=success`,
-          cancelUrl: `${origin}/painel/biteplaner/ordens?checkout=cancel`,
-        },
-        session?.access_token
-      );
+      const draft = await createBiteplanerDraft({
+        color: selectedColor,
+        quantity,
+        sportCategory,
+        athleteAge: Number(athleteAge),
+        biologicalSex,
+      }, session.access_token);
+
+      for (const { slotKey } of BITEPLANER_TECHNICAL_UPLOADS) {
+        const file = selectedFiles[slotKey];
+        if (file === undefined) {
+          throw new Error('Selecione os três arquivos obrigatórios antes de continuar.');
+        }
+        await uploadCompletionSlotFile({ orderId: draft.orderId, slotKey, file, token: session.access_token });
+      }
+
+      const response = await startBiteplanerCheckout({
+        draftOrderId: draft.orderId,
+        successUrl: `${origin}/painel/biteplaner/ordens?checkout=success`,
+        cancelUrl: `${origin}/painel/biteplaner/ordens?checkout=cancel`,
+      }, session.access_token);
 
       window.location.assign(response.checkoutUrl);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Não foi possível iniciar o checkout Asaas.');
+      const message = error instanceof Error ? error.message : 'Não foi possível iniciar o checkout Asaas.';
+      const requestId = typeof error === 'object' && error !== null && 'requestId' in error
+        ? (error as { requestId?: unknown }).requestId
+        : undefined;
+      setError(typeof requestId === 'string' && requestId.length > 0
+        ? `${message} Referência: ${requestId}`
+        : message);
       setSubmitting(false);
     }
   }
@@ -196,7 +277,7 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
       {!embedded && !paymentCompleted ? (
         <OrderStepHeader
           title="Confirmação de compra"
-          description="Confira modelo, cor e quantidade para sua compra profissional. Ao continuar, você será direcionado ao checkout seguro do Asaas."
+          description="Confira categoria do esporte, cor e quantidade para sua compra profissional. Ao continuar, você será direcionado ao checkout seguro do Asaas."
           currentStep="purchase"
           order={order}
           orderHelpText="Este pedido está na etapa financeira antes da liberação operacional para produção."
@@ -247,6 +328,64 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
               </S.Card>
 
               {!paymentCompleted ? (
+                <S.Card>
+                  <S.CardTitle>Dados para produção</S.CardTitle>
+                  <S.Description>Essas informações e documentos são obrigatórios para o laboratório produzir seu Biteplaner.</S.Description>
+                  <S.ConfigurationGrid>
+                    <Select
+                      label="Categoria do esporte"
+                      value={sportCategory}
+                      options={BITEPLANER_SPORT_OPTIONS}
+                      onChange={(value) => setSportCategory(value as BiteplanerSportCategory)}
+                      placeholder="Selecione a categoria"
+                      required
+                    />
+                    <S.ConfigurationField>
+                      <span>Idade</span>
+                      <input
+                        aria-label="Idade"
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={athleteAge}
+                        onChange={(event) => setAthleteAge(event.target.value)}
+                        required
+                      />
+                    </S.ConfigurationField>
+                    <Select
+                      label="Sexo biológico"
+                      value={biologicalSex}
+                      options={BITEPLANER_BIOLOGICAL_SEX_OPTIONS}
+                      onChange={(value) => setBiologicalSex(value as BiteplanerBiologicalSex)}
+                      placeholder="Selecione uma opção"
+                      required
+                    />
+                  </S.ConfigurationGrid>
+                  <S.UploadGrid>
+                    {BITEPLANER_TECHNICAL_UPLOADS.map(({ slotKey, label, hint }) => (
+                      <UploadField
+                        key={slotKey}
+                        label={label}
+                        hint={hint}
+                        files={getUploadFieldFiles(slotKey)}
+                        onFilesChange={(files) => {
+                          const file = files[0];
+                          if (file) setSelectedFiles((current) => ({ ...current, [slotKey]: file }));
+                        }}
+                        onRemoveFile={() => {
+                          setSelectedFiles((current) => {
+                            const next = { ...current };
+                            delete next[slotKey];
+                            return next;
+                          });
+                        }}
+                      />
+                    ))}
+                  </S.UploadGrid>
+                </S.Card>
+              ) : null}
+
+              {!paymentCompleted ? (
                 <JourneyNoticeCard
                   tone="success"
                   icon={<ShieldCheck size={18} strokeWidth={2.1} />}
@@ -285,12 +424,6 @@ export function Compra({ embedded = false, initialOrder = null }: CompraProps) {
                 </S.PriceNotice>
                 {!paymentCompleted ? (
                   <S.ConfigurationGrid>
-                    <Select
-                      label="Modelo do Biteplaner"
-                      value={selectedModel}
-                      options={BITEPLANER_MODEL_OPTIONS}
-                      onChange={setSelectedModel}
-                    />
                     <Select
                       label="Cor do Biteplaner"
                       value={selectedColor}

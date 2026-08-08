@@ -6,8 +6,11 @@ export interface BiteplanerDentistOrderSummary {
   quantity: number;
   productName: string;
   productVersionId: string | null;
-  model: string;
+  model?: string | null;
   color: string;
+  sportCategory?: string | null;
+  athleteAge?: number | null;
+  biologicalSex?: string | null;
   currency: string;
   subtotalCents?: number | null;
   totalCents?: number | null;
@@ -25,7 +28,7 @@ export interface BiteplanerDentistOrderItem {
   quantity: number;
   unitPriceCents?: number | null;
   totalCents?: number | null;
-  model: string;
+  model?: string | null;
   color: string;
   createdAt: string;
 }

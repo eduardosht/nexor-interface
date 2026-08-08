@@ -35,6 +35,7 @@ const order = {
   quantity: 2,
   model: 'Biteplaner Pro',
   color: 'Transparente',
+  sportCategory: 'racket_sports',
   totalFormatted: 'R$ 1.200,00',
   createdAt: '2026-07-16T12:00:00.000Z',
   canStartExternalProduction: true,
@@ -72,7 +73,7 @@ describe('AdminOrders', () => {
 
     expect(screen.getByText('Dra. Marina')).toBeInTheDocument();
     expect(screen.getByText('2x Biteplaner')).toBeInTheDocument();
-    expect(screen.getByText('Biteplaner Pro / Transparente')).toBeInTheDocument();
+    expect(screen.getByText('Esportes de raquete / Transparente')).toBeInTheDocument();
     expect(screen.getByText('Pendente')).toBeInTheDocument();
   });
 

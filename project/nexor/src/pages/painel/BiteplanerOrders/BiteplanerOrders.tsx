@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { SkeletonTable } from '../../../components/Skeleton';
 import { fetchBiteplanerDentistOrders } from '../../../features/commerce/biteplanerDentistOrders.api';
 import type { BiteplanerDentistOrderSummary } from '../../../features/commerce/biteplanerDentistOrders.types';
+import { formatBiteplanerSportCategory } from '../../../features/commerce/biteplanerSportCategory.presenter';
 import {
   COMMERCE_BACKEND_ORDER_STATUS_OPTIONS,
   getCommerceBackendOrderStatusColor,
@@ -108,7 +109,7 @@ export function BiteplanerOrders() {
     if (!term) return orders;
 
     return orders.filter((order) => (
-      `${order.id} ${order.productName} ${order.model} ${order.color} ${order.status} ${order.paymentStatus}`
+      `${order.id} ${order.productName} ${order.sportCategory ?? ''} ${order.model ?? ''} ${order.color} ${order.status} ${order.paymentStatus}`
         .toLowerCase()
         .includes(term)
     ));
@@ -175,11 +176,14 @@ export function BiteplanerOrders() {
         key: 'product',
         label: 'Produto',
         width: '24%',
-        sortValue: (order) => `${order.productName} ${order.model} ${order.color}`,
+        sortValue: (order) => `${order.productName} ${order.sportCategory ?? order.model ?? ''} ${order.color}`,
         render: (order) => (
           <S.CellStack>
             <strong>{order.quantity}x {order.productName}</strong>
-            <span>{[order.model, order.color].filter(Boolean).join(' / ') || 'Configuração não informada'}</span>
+            <span>{[
+              formatBiteplanerSportCategory(order.sportCategory) || order.model,
+              order.color,
+            ].filter(Boolean).join(' / ') || 'Configuração não informada'}</span>
           </S.CellStack>
         ),
       },
@@ -272,7 +276,7 @@ export function BiteplanerOrders() {
           keyExtractor={(order) => order.id}
           emptyMessage="Nenhuma ordem encontrada."
           searchLabel="Buscar"
-          searchPlaceholder="Buscar por pedido, produto, tipo ou cor"
+          searchPlaceholder="Buscar por pedido, produto, esporte ou cor"
           searchValue={search}
           onSearchChange={setSearch}
           pageSize={10}

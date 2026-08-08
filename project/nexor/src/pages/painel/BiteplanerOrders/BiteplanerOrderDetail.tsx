@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchBiteplanerDentistOrder } from '../../../features/commerce/biteplanerDentistOrders.api';
 import type { BiteplanerDentistOrderDetail as OrderDetail } from '../../../features/commerce/biteplanerDentistOrders.types';
+import { formatBiteplanerSportCategory } from '../../../features/commerce/biteplanerSportCategory.presenter';
 import { getCommerceBackendOrderStatusLabel } from '../../../features/commerce/commerceOrderStatus.presenter';
 import { useAuth } from '../../../hooks/useAuth';
 import { ApiError } from '../../../lib/api';
@@ -82,10 +83,10 @@ function formatChargeDescription(charge: OrderDetail['charges'][number], currenc
   return joinParts(parts);
 }
 
-function formatItemDescription(item: OrderDetail['items'][number], currency: string) {
+function formatItemDescription(item: OrderDetail['items'][number], currency: string, sportCategory?: string | null) {
   return joinParts([
     `${item.quantity} unidade(s)`,
-    item.model || 'tipo não informado',
+    sportCategory ? `esporte: ${formatBiteplanerSportCategory(sportCategory)}` : item.model || 'tipo não informado',
     item.color || 'cor não informada',
     item.productVersionId ? `versão: ${item.productVersionId}` : null,
     `valor unitário: ${formatCents(item.unitPriceCents, currency)}`,
@@ -240,7 +241,7 @@ export function BiteplanerOrderDetail() {
               {order.items.map((item) => (
                 <S.ProductItem key={item.id}>
                   <S.ProductName>{item.name}</S.ProductName>
-                  <S.ProductDescription>{formatItemDescription(item, order.currency)}</S.ProductDescription>
+                  <S.ProductDescription>{formatItemDescription(item, order.currency, order.sportCategory)}</S.ProductDescription>
                 </S.ProductItem>
               ))}
               <S.TotalBox>

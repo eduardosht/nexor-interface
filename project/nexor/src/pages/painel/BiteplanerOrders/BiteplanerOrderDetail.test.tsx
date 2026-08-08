@@ -25,6 +25,7 @@ const order = (status: string) => ({
   productVersionId: 'biteplaner-current',
   model: 'impacto',
   color: 'preto',
+  sportCategory: 'racket_sports',
   currency: 'BRL',
   subtotalCents: 137000,
   totalCents: 137000,

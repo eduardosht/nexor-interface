@@ -20,6 +20,21 @@ const slotStatusLabel = (hasAttachment: boolean, hasSelectedFile: boolean) => {
   return 'Pendente';
 };
 
+const slotUploadConfig: Record<BiteplanerCompletionSlotKey, { accept: string; hint: string }> = {
+  two_arches_scan: {
+    accept: '.stl,.ply,.obj,model/stl,application/octet-stream',
+    hint: 'Anexe 1 arquivo com as duas arcadas. Formatos aceitos: STL, PLY ou OBJ.',
+  },
+  lateral_jig_scan: {
+    accept: '.stl,.ply,.obj,model/stl,application/octet-stream',
+    hint: 'Anexe 1 escaneamento lateral com JIG. Formatos aceitos: STL, PLY ou OBJ.',
+  },
+  prescription_image: {
+    accept: 'image/jpeg,image/png,image/webp',
+    hint: 'Anexe uma imagem legível da prescrição. Formatos aceitos: JPG, PNG ou WEBP.',
+  },
+};
+
 export function BiteplanerOrderCompletion() {
   const { orderId = '' } = useParams();
   const navigate = useNavigate();
@@ -208,7 +223,7 @@ export function BiteplanerOrderCompletion() {
 
       <S.DetailHeader>
         <S.DetailTitle>Complemento da ordem</S.DetailTitle>
-        <S.DetailSubtitle>Anexe os arquivos de scan na ordem solicitada para enviar a ordem à revisão técnica da Nexor.</S.DetailSubtitle>
+        <S.DetailSubtitle>Anexe os documentos técnicos na ordem solicitada para enviar a ordem à revisão técnica da Nexor.</S.DetailSubtitle>
       </S.DetailHeader>
 
       {completion.completion.correctionMessage ? (
@@ -240,8 +255,8 @@ export function BiteplanerOrderCompletion() {
 
               <UploadField
                 label={slot.label}
-                accept=".stl,.ply,.obj,model/stl,application/octet-stream"
-                hint="Anexe 1 arquivo de scan neste slot. Formatos aceitos: STL, PLY ou OBJ."
+                accept={slotUploadConfig[slot.slotKey].accept}
+                hint={slotUploadConfig[slot.slotKey].hint}
                 files={getUploadFieldFiles(slot, selectedFile)}
                 onFilesChange={handleFilesChange(slot.slotKey)}
                 onRemoveFile={handleRemoveSlotFile(slot.slotKey)}
