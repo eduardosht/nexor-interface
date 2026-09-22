@@ -40,7 +40,7 @@ export function Produtos() {
           animate={inView ? 'visible' : 'hidden'}
         >
           <motion.div variants={fadeUp}>
-            <S.Title>Tecnologia feita para<br />atletas e praticantes esportivos<span style={{ color: '#3C7C56' }}>.</span></S.Title>
+            <S.Title>Tecnologia aplicada<br />à performance humana<span style={{ color: '#3C7C56' }}>.</span></S.Title>
           </motion.div>
 
           <motion.div variants={fadeUp}>
@@ -90,7 +90,7 @@ export function Produtos() {
                 </div>
 
                 <S.ProductDesc>
-                  Dispositivo intraoral personalizado desenvolvido com protocolo científico para atletas que exigem o máximo do seu corpo.
+                  Tecnologia personalizada para a interface mandibular durante o treinamento de força, desenvolvida com avaliação profissional, parâmetros técnicos e produção sob protocolo.
                 </S.ProductDesc>
 
                 <S.FeatureList>
@@ -104,7 +104,7 @@ export function Produtos() {
 
                 <S.ProtocolBadge>
                   <S.ProtocolIconWrap><ProtocolSvg /></S.ProtocolIconWrap>
-                  <S.ProtocolText>Desenvolvido com protocolo científico</S.ProtocolText>
+                  <S.ProtocolText>Personalização apoiada por precisão profissional</S.ProtocolText>
                 </S.ProtocolBadge>
 
                 <S.CardFooter>

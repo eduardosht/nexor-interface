@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { Button, Field, Select, sanitizePersonName } from '@nexor/design-system';
-import { env } from '../../config/env';
-import { api } from '../../lib/api';
 import { fadeUp, staggerContainer } from '../../styles/motion';
 import * as S from './styles';
 
@@ -24,14 +22,13 @@ interface FormState {
 }
 
 export function Contato() {
-  const { contactEmail, contactWhatsapp } = env;
+  const contactEmail = import.meta.env.VITE_CONTACT_EMAIL || 'contato@nexoradvance.com.br';
+  const contactWhatsapp = import.meta.env.VITE_CONTACT_WHATSAPP;
   const location = useLocation();
   const ref = useRef<HTMLElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-15%' });
   const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '' });
   const [sent, setSent] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -49,32 +46,19 @@ export function Contato() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const value = e.target.name === 'nome' ? sanitizePersonName(e.target.value) : e.target.value;
-    setSubmitError('');
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid || submitting) {
+    if (!isValid) {
       return;
     }
 
-    setSubmitting(true);
-    setSubmitError('');
-
-    try {
-      await api.post('/v1/contact', {
-        nome: form.nome.trim(),
-        email: form.email.trim(),
-        assunto: form.assunto,
-        mensagem: form.mensagem.trim(),
-      });
-      setSent(true);
-    } catch {
-      setSubmitError('Não foi possível enviar sua mensagem agora. Tente novamente em instantes.');
-    } finally {
-      setSubmitting(false);
-    }
+    const subject = encodeURIComponent(`[Nexor] ${form.assunto}`);
+    const body = encodeURIComponent(`Nome: ${form.nome.trim()}\nE-mail: ${form.email.trim()}\n\n${form.mensagem.trim()}`);
+    window.location.href = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
+    setSent(true);
   };
 
   const isValid = form.nome.trim() && form.email.trim() && form.assunto && form.mensagem.trim();
@@ -155,7 +139,6 @@ export function Contato() {
                 value={form.assunto}
                 placeholder="Selecione um assunto"
                 onChange={(value) => {
-                  setSubmitError('');
                   setForm((prev) => ({ ...prev, assunto: value }));
                 }}
                 options={ASSUNTOS}
@@ -172,10 +155,8 @@ export function Contato() {
                 required
               />
 
-              {submitError && <S.ErrorBanner role="alert">{submitError}</S.ErrorBanner>}
-
-              <Button type="submit" disabled={!isValid || submitting}>
-                {submitting ? 'Enviando…' : 'Enviar mensagem →'}
+              <Button type="submit" disabled={!isValid || !contactEmail}>
+                Enviar por e-mail →
               </Button>
             </S.Form>
           )}

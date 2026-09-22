@@ -39,6 +39,11 @@ describe('Header', () => {
     expect(screen.getByRole('button', { name: /nexor.*início/i })).toBeInTheDocument();
   });
 
+  it('não expõe o acesso ao portal administrativo no site informativo', () => {
+    render(<Header />, { wrapper: Wrapper });
+    expect(screen.queryByRole('link', { name: /entrar no portal/i })).not.toBeInTheDocument();
+  });
+
   it('renderiza bottom bar mobile com a mesma navegação pública', () => {
     const { container } = render(<Header />, { wrapper: Wrapper });
 

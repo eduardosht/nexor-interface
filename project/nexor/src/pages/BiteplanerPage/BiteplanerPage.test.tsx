@@ -36,8 +36,8 @@ describe('BiteplanerPage', () => {
 
   it('positions Biteplaner as a guided athlete eligibility journey', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: /segurança\.\s+conforto\.\s+performance\./i })).toBeInTheDocument();
-    expect(screen.getByText(/dispositivo intraoral personalizado para atletas e praticantes de esportes/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /interface\.\s+precisão\.\s+performance\./i })).toBeInTheDocument();
+    expect(screen.getByText(/tecnologia personalizada para a interface mandibular durante o treinamento de força/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /iniciar elegibilidade/i })).toHaveLength(2);
     expect(screen.getByRole('link', { name: /ver como funciona/i })).toHaveAttribute('href', '#como-funciona');
   });
@@ -124,7 +124,7 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('heading', { name: /esportes de combate/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /força e alta intensidade/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /esportes coletivos/i })).toBeInTheDocument();
-    expect(screen.getByText(/para quem percebe apertamento, tensão mandibular ou dores em treinos de carga/i)).toBeInTheDocument();
+    expect(screen.getByText(/interface personalizada entre mandíbula, movimento e treinos de carga/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /protetores bucais vs biteplaner/i })).toBeInTheDocument();
     expect(screen.getByText(/adequação para treinos e competições de lutas/i)).toBeInTheDocument();
     expect(screen.getAllByText(/^alta$/i).length).toBeGreaterThan(0);
@@ -137,7 +137,7 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('columnheader', { name: /protetor genérico/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /protetor tradicional/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toBeInTheDocument();
-    expect(screen.getByText(/compare e entenda por que o Biteplaner oferece mais proteção/i)).toBeInTheDocument();
+    expect(screen.getByText(/compare abordagens e entenda como o BITEPLANER combina interface individualizada/i)).toBeInTheDocument();
     expect(screen.getAllByTestId('comparison-criterion-icon')).toHaveLength(7);
     expect(screen.getByRole('columnheader', { name: /^biteplaner$/i })).toHaveAttribute('data-highlighted-column', 'true');
     expect(screen.queryByTestId('comparison-status-dot')).not.toBeInTheDocument();
@@ -151,9 +151,9 @@ describe('BiteplanerPage', () => {
     expect(screen.getByText(/processo contínuo de aperfeiçoamento/i)).toBeInTheDocument();
     expect(screen.getByText(/^indireta$/i)).toBeInTheDocument();
     expect(screen.getByText(/parcial \(apenas proteção dental\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/muito alta \(proteção dental e articular\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/altamente relevante pois protege a ATM além dos dentes/i)).toBeInTheDocument();
-    expect(screen.getByText(/limitada, pois não ataca o problema dos traumas na ATM/i)).toBeInTheDocument();
+    expect(screen.getByText(/em processo de validação técnica e científica/i)).toBeInTheDocument();
+    expect(screen.getByText(/relevante para uma solução individualizada e acompanhada/i)).toBeInTheDocument();
+    expect(screen.getByText(/depende do contexto, da adaptação e da avaliação profissional/i)).toBeInTheDocument();
   });
 
   it('wraps the comparison table in a horizontal scroll region for narrow screens', () => {
@@ -168,7 +168,7 @@ describe('BiteplanerPage', () => {
     expect(screen.getByRole('heading', { name: /educação para decidir melhor/i })).toBeInTheDocument();
     expect(screen.getAllByTestId('education-layout-item')).toHaveLength(3);
     expect(screen.getAllByTestId('trust-rail-item')).toHaveLength(4);
-    expect(screen.getByText(/pode auxiliar no conforto e prevenção/i)).toBeInTheDocument();
+    expect(screen.getByText(/a personalização busca uma experiência mais coerente com o corpo/i)).toBeInTheDocument();
     expect(screen.getByText(/não promete resultados imediatos/i)).toBeInTheDocument();
     expect(screen.getByText(/produção sob padrões de excelência/i)).toBeInTheDocument();
     expect(screen.queryByText(/garante proteção/i)).not.toBeInTheDocument();

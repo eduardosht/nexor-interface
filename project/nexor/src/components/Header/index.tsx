@@ -58,7 +58,6 @@ export function Header() {
             </li>
           ))}
         </S.Links>
-        <S.EnterButton to="/entrar">Entrar no portal</S.EnterButton>
       </S.Nav>
       <S.MobileBottomNav aria-label="Navegação principal mobile">
         {NAV_ITEMS.map(({ mobileLabel, hash, Icon }) => (

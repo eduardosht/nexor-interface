@@ -6,7 +6,7 @@ import * as S from './styles';
 const PILLARS = [
   {
     title: 'Pesquisa Aplicada',
-    desc: 'Estudos e validações científicas direcionadas a atletas de alta performance.',
+    desc: 'Estudos e validações técnicas orientados à interação entre corpo, movimento e performance humana.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
         <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />
@@ -14,8 +14,8 @@ const PILLARS = [
     ),
   },
   {
-    title: 'Tecnologia de Ponta',
-    desc: 'Desenvolvimento próprio com máxima precisão e controle de qualidade.',
+    title: 'Tecnologia de Precisão',
+    desc: 'Dados, parâmetros e processos aplicados a soluções personalizadas para o corpo e o movimento.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
         <circle cx="12" cy="12" r="3" />
@@ -24,8 +24,8 @@ const PILLARS = [
     ),
   },
   {
-    title: 'Acompanhamento Especializado',
-    desc: 'Suporte de profissionais especialistas em todas as etapas do processo.',
+    title: 'Aplicação profissional',
+    desc: 'Profissionais e parceiros especializados participam das etapas que exigem avaliação, produção ou acompanhamento.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -36,7 +36,7 @@ const PILLARS = [
   },
   {
     title: 'Evolução Contínua',
-    desc: 'Análise, feedback e melhorias constantes para máxima evolução do atleta ou praticante esportivo.',
+    desc: 'Análise, feedback e melhorias constantes para avançar cada interface entre corpo, movimento e tecnologia.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="28" height="28">
         <polyline points="23 4 23 10 17 10" />
@@ -65,7 +65,7 @@ export function QuemSomos() {
         >
           <div>
             <S.Headline as={motion.h2} variants={fadeUp}>
-              Segurança. Prevenção.
+              Precisão. Personalização.
               <br />
               Performance<S.Dot>.</S.Dot>
             </S.Headline>
@@ -73,14 +73,14 @@ export function QuemSomos() {
 
           <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <S.BodyText>
-              A Nexor nasce da convicção de que o alto desempenho começa com informação precisa, métodos científicos e soluções desenvolvidas para atletas e praticantes esportivos.
+              A NEXOR ADVANCE desenvolve tecnologias de precisão para compreender, personalizar e avançar a performance humana.
             </S.BodyText>
             <S.BodyText>
-              Estamos desenvolvendo uma nova abordagem para prevenção e performance biomecânica durante o treino.
+              Trabalhamos na interface entre corpo, movimento e tecnologia, começando pela aplicação esportiva do BITEPLANER.
             </S.BodyText>
             <S.BodyText>
-              Unimos <S.EmphasisText>pesquisa científica, tecnologia de ponta</S.EmphasisText> e{' '}
-              <S.EmphasisText>acompanhamento especializado</S.EmphasisText> para desenvolver produtos personalizados que elevam a performance com segurança, precisão e resultados reais.
+              Unimos <S.EmphasisText>conhecimento aplicado e personalização</S.EmphasisText> com{' '}
+              <S.EmphasisText>evolução contínua</S.EmphasisText> para transformar necessidades específicas do corpo em soluções de performance.
             </S.BodyText>
           </motion.div>
         </S.HeroCopy>

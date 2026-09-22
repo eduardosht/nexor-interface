@@ -30,16 +30,16 @@ import * as S from './styles';
 
 
 const PILLARS = [
-  { icon: 'P', title: 'Precisão', body: 'Cada produto é desenvolvido com base em dados biométricos e análises individualizadas para máxima eficácia.' },
-  { icon: 'T', title: 'Tecnologia', body: 'Processos digitais integrados com produção externa de alta complexidade e materiais premium.' },
-  { icon: 'A', title: 'Acompanhamento', body: 'Rede de dentistas licenciados e operação Nexor para avaliação, produção externa e monitoramento contínuo dos resultados.' },
+  { icon: 'P', title: 'Precisão', body: 'Transformamos medidas, parâmetros e conhecimento especializado em soluções pensadas para cada contexto de uso.' },
+  { icon: 'T', title: 'Personalização', body: 'Desenvolvemos tecnologias que aproximam dados, corpo e movimento para tornar cada aplicação mais individualizada.' },
+  { icon: 'A', title: 'Evolução', body: 'Pesquisamos, testamos e aprimoramos continuamente a forma como a tecnologia interage com o corpo humano.' },
 ];
 
 const APPROACH = [
-  { title: 'Pesquisa e Desenvolvimento', body: 'Cada produto parte de pesquisa científica rigorosa. Nenhum lançamento chega ao mercado sem evidência de eficácia e segurança.' },
-  { title: 'Personalização Total', body: 'Não existe produto genérico no portfólio Nexor. Cada solução é moldada para o atleta individualmente.' },
-  { title: 'Rede Profissional', body: 'Dentistas licenciados, parceiros credenciados e fornecedores técnicos administrados pela Nexor compõem o ecossistema de entrega.' },
-  { title: 'Acompanhamento Contínuo', body: 'O produto não termina na entrega. Monitoramento profissional garante resultado sustentado no longo prazo.' },
+  { title: 'Conhecimento aplicado', body: 'Partimos de perguntas concretas sobre o corpo, o movimento e a performance para orientar cada desenvolvimento.' },
+  { title: 'Tecnologia de precisão', body: 'Usamos dados, parâmetros técnicos e processos digitais para criar soluções personalizadas, sem depender de uma fórmula genérica.' },
+  { title: 'Aplicação profissional', body: 'Construímos jornadas com profissionais e parceiros especializados quando a solução exige avaliação, produção ou acompanhamento.' },
+  { title: 'Evolução contínua', body: 'Cada produto é uma oportunidade de aprender, validar e avançar a próxima interface entre corpo, movimento e tecnologia.' },
 ];
 
 export function Sobre() {
@@ -61,10 +61,10 @@ export function Sobre() {
         </motion.div>
         <S.Body as={motion.div} variants={staggerContainer} initial="hidden" animate={missionInView ? 'visible' : 'hidden'}>
           <S.Paragraph as={motion.p} variants={fadeUp}>
-            A Nexor é uma empresa-plataforma de produtos de performance. Nossa missão é desenvolver soluções personalizadas que potencializam o desempenho atlético através de pesquisa científica, tecnologia de ponta e acompanhamento profissional especializado.
+            A NEXOR ADVANCE desenvolve tecnologias de precisão para compreender, personalizar e avançar a performance humana. Nosso ponto de partida é a interface entre corpo, movimento e tecnologia.
           </S.Paragraph>
           <S.Paragraph as={motion.p} variants={fadeUp}>
-            Acreditamos que alta performance começa na ciência e termina no resultado. Cada produto que desenvolvemos parte de evidência clínica e passa por validação rigorosa antes de chegar ao atleta.
+            O BITEPLANER é a primeira manifestação concreta dessa tese: uma tecnologia personalizada para a interface mandibular durante o treinamento de força. A partir dele, construímos conhecimento, processos e capacidade para evoluir novas soluções.
           </S.Paragraph>
         </S.Body>
       </S.MissionOuter>
@@ -73,7 +73,7 @@ export function Sobre() {
         <S.PillarsSection ref={pillarsRef}>
           <motion.div variants={staggerContainer} initial="hidden" animate={pillarsInView ? 'visible' : 'hidden'}>
             <S.SectionLabel as={motion.p} variants={fadeUp}>Nossos pilares</S.SectionLabel>
-            <S.Title as={motion.h2} variants={fadeUp}>Tecnologia aplicada<br />à performance esportiva</S.Title>
+            <S.Title as={motion.h2} variants={fadeUp}>Tecnologia aplicada<br />à performance humana</S.Title>
             <S.PillarsGrid as={motion.div} variants={fadeUp}>
               {PILLARS.map((p) => (
                 <Surface key={p.title} tone="subtle" padding="lg">
@@ -107,7 +107,7 @@ export function Sobre() {
       <S.CtaSection ref={ctaRef}>
         <motion.div variants={staggerContainer} initial="hidden" animate={ctaInView ? 'visible' : 'hidden'}>
           <S.CtaTitle as={motion.h2} variants={fadeUp}>Conheça nossos produtos</S.CtaTitle>
-          <S.CtaBody as={motion.p} variants={fadeUp}>Comece pela moldeira Biteplaner — o primeiro produto de alta performance da Nexor.</S.CtaBody>
+          <S.CtaBody as={motion.p} variants={fadeUp}>Conheça o BITEPLANER, a primeira tecnologia da NEXOR ADVANCE aplicada à interface mandibular durante o treinamento de força.</S.CtaBody>
           <S.CtaButtons as={motion.div} variants={fadeUp}>
             <Link to="/biteplaner"><Button>Conhecer Biteplaner</Button></Link>
             <Link to="/"><Button variant="secondary">Voltar ao início</Button></Link>

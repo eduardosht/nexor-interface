@@ -6,6 +6,7 @@ const designSystemPath = fileURLToPath(new URL('../packages/design-system/src/in
 const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
+  base: '/',
   plugins: [react()],
   envPrefix: ['VITE_', 'DISABLE_'],
   resolve: {

@@ -1,18 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
+import { PublicApp } from './publicApp';
 
-async function bootstrap() {
-  if (import.meta.env.VITE_MOCK === 'true') {
-    const { startMockServer } = await import('./mocks/server');
-    startMockServer();
-  }
-
+function bootstrap() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <PublicApp />
     </StrictMode>
   );
 }
 
-void bootstrap();
+bootstrap();

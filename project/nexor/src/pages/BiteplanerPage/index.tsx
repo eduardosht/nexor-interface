@@ -93,7 +93,7 @@ const SPORT_CONTEXT_CARDS = [
   {
     imagePosition: 'center' as const,
     title: 'Força e alta intensidade',
-    body: 'Para quem percebe apertamento, tensão mandibular ou dores em treinos de carga e esforço.',
+    body: 'Para quem busca uma interface personalizada entre mandíbula, movimento e treinos de carga ou esforço.',
   },
   {
     imagePosition: 'right' as const,
@@ -129,24 +129,24 @@ const COMPARISON = [
   },
   {
     icon: Target,
-    criterion: 'Proteção Articular (ATM)',
+    criterion: 'Interface mandibular individualizada',
     generic: 'Não',
     traditional: 'Indireta',
-    biteplaner: 'Direta com redução de carga articular e controle do apertamento',
+    biteplaner: 'Projetada a partir de avaliação e parâmetros individualizados',
   },
   {
     icon: Activity,
-    criterion: 'Prevenção de microtrauma repetitivo',
+    criterion: 'Aplicação durante treinos de força e alta intensidade',
     generic: 'Não',
     traditional: 'Limitada',
-    biteplaner: 'Alta',
+    biteplaner: 'Desenvolvida para esse contexto de uso',
   },
   {
     icon: SlidersHorizontal,
-    criterion: 'Efeito sobre dor cervicofacial crônica',
+    criterion: 'Acompanhamento profissional',
     generic: 'Não',
     traditional: 'Secundário',
-    biteplaner: 'Primário; projetado para reduzir dores relacionadas a DTM induzida por apertamento',
+    biteplaner: 'Presente na avaliação, adaptação e acompanhamento do uso',
   },
   {
     icon: Heart,
@@ -168,7 +168,7 @@ const COMPARISON = [
     generic: 'Durante treinos com risco de impacto',
     traditional: 'Durante competições/jogos e treinos com risco de impacto',
     biteplaner:
-      'Durante competições/jogos e treinos com risco de impacto, treinos de alta intensidade com foco em performance e prevenção',
+      'Durante treinos de força e alta intensidade, conforme avaliação e contexto do usuário',
   },
   {
     icon: SlidersHorizontal,
@@ -187,31 +187,31 @@ const COMPARISON = [
   },
   {
     icon: Star,
-    criterion: 'Eficácia',
+    criterion: 'Estágio de desenvolvimento',
     generic: 'Muito baixa',
     traditional: 'Parcial (apenas proteção dental)',
-    biteplaner: 'Muito alta (proteção dental e articular)',
+    biteplaner: 'Em processo de validação técnica e científica',
   },
   {
     icon: Target,
     criterion: 'Relação custo-benefício em contato pleno',
     generic: 'Ruim',
     traditional: 'Muito favorável (redução de traumas graves)',
-    biteplaner: 'Altamente relevante pois protege a ATM além dos dentes',
+    biteplaner: 'Relevante para uma solução individualizada e acompanhada',
   },
   {
     icon: Dumbbell,
     criterion: 'Relação custo-benefício em atividades de força/intensidade',
     generic: 'Ruim',
     traditional: 'Limitada, pois não ataca o problema dos traumas na ATM',
-    biteplaner: 'Elevada, por atuar diretamente sobre a causa biomecânica da sobrecarga',
+    biteplaner: 'Depende do contexto, da adaptação e da avaliação profissional',
   },
   {
     icon: Trophy,
     criterion: 'Foco em performance a longo prazo',
     generic: 'Baixo',
     traditional: 'Indireto (preserva integridade dentária)',
-    biteplaner: 'Direto (reduz dor, melhora constância e longevidade de treino)',
+    biteplaner: 'Orientado à consistência da experiência de treino, sem promessa clínica',
   },
   {
     icon: Zap,
@@ -225,7 +225,7 @@ const COMPARISON = [
     criterion: 'Integração com plataforma de Dados',
     generic: 'Não',
     traditional: 'Não',
-    biteplaner: 'Concebido como parte de uma plataforma de prevenção, dados e performance',
+    biteplaner: 'Primeira tecnologia da plataforma NEXOR ADVANCE',
   },
 ];
 
@@ -238,7 +238,7 @@ const EDUCATION = [
   {
     icon: Heart,
     title: 'Conforto e consistência',
-    body: 'Um produto que pode auxiliar no conforto e prevenção, trazendo mais segurança e longevidade.',
+    body: 'A personalização busca uma experiência mais coerente com o corpo e o contexto de treino de cada usuário.',
   },
   {
     icon: ShieldCheck,
@@ -336,16 +336,16 @@ export function BiteplanerPage() {
       <S.HeroSection>
         <S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />
         <S.HeroCopy>
-          <S.HeroTitle aria-label="Segurança. Conforto. Performance.">
-            Segurança.
+          <S.HeroTitle aria-label="Interface. Precisão. Performance.">
+            Interface.
             <br />
-            <span style={{ color: '#1c5e3a' }}>Conforto.</span>
+            <span style={{ color: '#1c5e3a' }}>Precisão.</span>
             <br />
             Performance.
           </S.HeroTitle>
           <S.HeroSubtitle>
-            Dispositivo intraoral personalizado para atletas e praticantes de esportes construído através de uma
-            jornada com avaliação odontológica, produção sob protocolo e acompanhamento profissional.
+            Tecnologia personalizada para a interface mandibular durante o treinamento de força, construída por meio de
+            avaliação profissional, escaneamento intraoral, parâmetros técnicos e acompanhamento.
           </S.HeroSubtitle>
           <S.HeroActions>
             <S.PrimaryCta to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
@@ -470,7 +470,7 @@ export function BiteplanerPage() {
           <S.SectionIntro>
             <S.MarketingSectionTitle>Protetores Bucais vs <S.MarketingTitleAccent>Biteplaner</S.MarketingTitleAccent></S.MarketingSectionTitle>
             <S.MarketingSectionLead>
-              Compare e entenda por que o Biteplaner oferece mais proteção, conforto e performance para atletas de alta demanda.
+              Compare abordagens e entenda como o BITEPLANER combina interface individualizada, precisão técnica e aplicação profissional.
             </S.MarketingSectionLead>
           </S.SectionIntro>
           <S.ComparisonProductVisual>
@@ -624,8 +624,7 @@ export function BiteplanerPage() {
           <S.FinalCtaContent>
             <S.MarketingSectionTitle $tone="light">Comece pela elegibilidade</S.MarketingSectionTitle>
             <S.MarketingSectionLead $tone="light">
-              Crie sua conta Nexor, escolha o Biteplaner e avance para a avaliação inicial antes de
-              qualquer pagamento do produto.
+              Conheça o BITEPLANER e avance para a avaliação inicial com um profissional antes de qualquer pagamento do produto.
             </S.MarketingSectionLead>
           </S.FinalCtaContent>
           <S.FinalCtaAction>

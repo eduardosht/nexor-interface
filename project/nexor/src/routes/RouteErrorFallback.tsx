@@ -63,7 +63,7 @@ export function ErrorFallbackView({ error }: { error: unknown }) {
           <PrimaryButton type="button" onClick={() => window.location.reload()}>
             Recarregar aplicação
           </PrimaryButton>
-          <SecondaryLink href="/painel/home">Voltar ao painel</SecondaryLink>
+          <SecondaryLink href="/">Voltar ao início</SecondaryLink>
         </Actions>
       </FallbackCard>
     </FallbackPage>
