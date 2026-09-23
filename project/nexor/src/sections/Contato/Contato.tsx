@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 import { motion, useInView } from 'framer-motion';
 import { Button, Field, Select, sanitizePersonName } from '@nexor/design-system';
 import { fadeUp, staggerContainer } from '../../styles/motion';

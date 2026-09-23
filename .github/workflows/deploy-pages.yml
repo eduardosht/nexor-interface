@@ -26,16 +26,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: project/nexor/package-lock.json
+          cache-dependency-path: |
+            project/package-lock.json
+            project/nexor/package-lock.json
+      - name: Install shared dependencies
+        working-directory: project
+        run: npm ci
       - run: npm ci
       - run: npm run build
-      - name: Preserve BrowserRouter fallback
-        run: cp dist/index.html dist/404.html
       - name: Preserve custom domain
-        run: printf 'nexoradvance.com.br\n' > dist/CNAME
+        run: printf 'nexoradvance.com.br\n' > build/client/CNAME
+      - run: npm run verify:ssg
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: project/nexor/dist
+          path: project/nexor/build/client
 
   deploy:
     needs: build

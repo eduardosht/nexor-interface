@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 import { PublicLayout } from '../PublicLayout';
 import { ErrorBoundary, RouteErrorFallback } from './RouteErrorFallback';
 

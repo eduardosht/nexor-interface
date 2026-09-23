@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { Boxes, Info, Mail, Star, type LucideIcon } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import { getAccessibleScrollBehavior } from '../../lib/accessibility';
 import * as S from './styles';

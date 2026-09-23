@@ -5,7 +5,7 @@ import { initDesignSystem } from '@nexor/design-system';
 import { lightTheme } from './styles/theme';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { AuthProvider } from './hooks/useAuth';
-import { router } from './routes';
+import { router } from './routes/index';
 import { queryClient } from './lib/queryClient';
 
 const { DesignSystemRoot } = initDesignSystem({ brand: 'nexor' });

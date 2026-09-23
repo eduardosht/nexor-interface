@@ -1,4 +1,4 @@
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, RouterProvider } from 'react-router';
 import { render, waitFor } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { describe, expect, it } from 'vitest';

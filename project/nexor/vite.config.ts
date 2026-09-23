@@ -1,13 +1,14 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { reactRouter } from '@react-router/dev/vite';
 
 const designSystemPath = fileURLToPath(new URL('../packages/design-system/src/index.ts', import.meta.url));
 const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   base: '/',
-  plugins: [react()],
+  plugins: [react(), ...(process.env.VITEST ? [] : [reactRouter()])],
   envPrefix: ['VITE_', 'DISABLE_'],
   resolve: {
     dedupe: ['react', 'react-dom', 'styled-components'],
@@ -17,6 +18,9 @@ export default defineConfig({
       'react-dom': fileURLToPath(new URL('./node_modules/react-dom', import.meta.url)),
       'styled-components': fileURLToPath(new URL('./node_modules/styled-components', import.meta.url)),
     },
+  },
+  ssr: {
+    noExternal: true,
   },
   server: {
     port: 5173,
