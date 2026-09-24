@@ -28,4 +28,9 @@ if (!homeHtml.includes('position:fixed') || !homeHtml.includes('aria-label="Cons
   process.exit(1);
 }
 
+if (homeHtml.includes('<!--$!--><template></template><!--/$-->')) {
+  console.error('O HTML pré-renderizado contém um boundary de Suspense não resolvido e pode impedir a hidratação.');
+  process.exit(1);
+}
+
 console.log(`SSG validado: ${routes.length} páginas HTML geradas em ${client}`);
