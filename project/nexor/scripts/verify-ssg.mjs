@@ -18,4 +18,14 @@ if (!homeHtml.includes('<body>') || !homeHtml.includes('Nexor')) {
   process.exit(1);
 }
 
+if (!homeHtml.includes('<style data-styled="true"')) {
+  console.error('O HTML pré-renderizado não contém estilos SSR do styled-components.');
+  process.exit(1);
+}
+
+if (!homeHtml.includes('position:fixed') || !homeHtml.includes('aria-label="Consentimento de cookies"')) {
+  console.error('O HTML pré-renderizado não contém os estilos do banner de cookies.');
+  process.exit(1);
+}
+
 console.log(`SSG validado: ${routes.length} páginas HTML geradas em ${client}`);

@@ -27,6 +27,7 @@
     "@tanstack/react-query": "^5.101.0",
     "@types/leaflet": "^1.9.21",
     "framer-motion": "^11.18.2",
+    "isbot": "^5",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
     "motion": "^12.38.0",
@@ -39,11 +40,12 @@
     "recharts": "^3.8.1",
     "styled-components": "^6.1.13",
     "zod": "^3.23.8",
-    "zustand": "^5.0.14",
-    "isbot": "^5"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
     "@react-router/dev": "^7.18.4",
+    "@rolldown/plugin-babel": "^0.2.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.5.2",
@@ -51,6 +53,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.2",
+    "babel-plugin-styled-components": "^2.3.0",
     "jsdom": "^29.1.1",
     "miragejs": "^0.1.48",
     "playwright": "^1.60.0",

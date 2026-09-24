@@ -2,13 +2,20 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { reactRouter } from '@react-router/dev/vite';
+import babel from '@rolldown/plugin-babel';
 
 const designSystemPath = fileURLToPath(new URL('../packages/design-system/src/index.ts', import.meta.url));
 const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   base: '/',
-  plugins: [react(), ...(process.env.VITEST ? [] : [reactRouter()])],
+  plugins: [
+    react(),
+    babel({
+      plugins: [['babel-plugin-styled-components', { displayName: false, ssr: true }]],
+    }),
+    ...(process.env.VITEST ? [] : [reactRouter()]),
+  ],
   envPrefix: ['VITE_', 'DISABLE_'],
   resolve: {
     dedupe: ['react', 'react-dom', 'styled-components'],
