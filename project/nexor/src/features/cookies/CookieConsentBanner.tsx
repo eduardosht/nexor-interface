@@ -1,4 +1,3 @@
-import { Button } from '@nexor/design-system';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import styled from 'styled-components';
@@ -60,6 +59,42 @@ const ActionRow = styled.div`
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 18px;
+`;
+
+const ActionButton = styled.button<{ $variant?: 'primary' | 'secondary' | 'ghost' }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid ${({ theme, $variant = 'primary' }) => (
+    $variant === 'primary' ? theme.colors.text : $variant === 'secondary' ? theme.colors.borderStrong : 'transparent'
+  )};
+  border-radius: 4px;
+  background: ${({ theme, $variant = 'primary' }) => (
+    $variant === 'primary' ? theme.colors.text : $variant === 'secondary' ? theme.colors.surface2 : 'transparent'
+  )};
+  color: ${({ theme, $variant = 'primary' }) => (
+    $variant === 'primary' ? '#FFFFFF' : $variant === 'secondary' ? theme.colors.accent : theme.colors.textMuted
+  )};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme, $variant = 'primary' }) => ($variant === 'ghost' ? 'transparent' : theme.colors.accent)};
+    color: ${({ theme, $variant = 'primary' }) => ($variant === 'primary' ? '#FFFFFF' : theme.colors.text)};
+    background: ${({ theme, $variant = 'primary' }) => ($variant === 'primary' ? theme.colors.accent : theme.colors.surface2)};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.accent};
+    outline-offset: 2px;
+  }
 `;
 
 const PolicyLink = styled(Link)`
@@ -191,15 +226,15 @@ export function CookieConsentBanner({
 
         {!showPreferences ? (
           <ActionRow>
-            <Button size="sm" onClick={onAcceptAll}>
+            <ActionButton type="button" onClick={onAcceptAll}>
               Aceitar cookies opcionais
-            </Button>
-            <Button size="sm" variant="secondary" onClick={onRejectAll}>
+            </ActionButton>
+            <ActionButton type="button" $variant="secondary" onClick={onRejectAll}>
               Recusar cookies opcionais
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onOpenPreferences}>
+            </ActionButton>
+            <ActionButton type="button" $variant="ghost" onClick={onOpenPreferences}>
               Gerenciar preferências
-            </Button>
+            </ActionButton>
             <PolicyLink to="/cookies">Ler política de cookies</PolicyLink>
           </ActionRow>
         ) : (
@@ -256,19 +291,19 @@ export function CookieConsentBanner({
             </PreferencesGrid>
 
             <ActionRow>
-              <Button size="sm" onClick={() => onSavePreferences(draft)}>
+              <ActionButton type="button" onClick={() => onSavePreferences(draft)}>
                 Salvar preferências
-              </Button>
-              <Button size="sm" variant="secondary" onClick={onRejectAll}>
+              </ActionButton>
+              <ActionButton type="button" $variant="secondary" onClick={onRejectAll}>
                 Recusar cookies opcionais
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onAcceptAll}>
+              </ActionButton>
+              <ActionButton type="button" $variant="ghost" onClick={onAcceptAll}>
                 Aceitar cookies opcionais
-              </Button>
+              </ActionButton>
               {consent ? (
-                <Button size="sm" variant="ghost" onClick={onClosePreferences}>
+                <ActionButton type="button" $variant="ghost" onClick={onClosePreferences}>
                   Fechar
-                </Button>
+                </ActionButton>
               ) : null}
               <PolicyLink to="/cookies">Ler política de cookies</PolicyLink>
             </ActionRow>
