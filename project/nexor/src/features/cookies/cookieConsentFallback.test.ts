@@ -58,13 +58,18 @@ describe('cookie consent fallback', () => {
     expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
   });
 
-  it('leaves clicks to React after hydration is confirmed', () => {
+  it('continues to work when the React ready marker is present', () => {
     document.documentElement.setAttribute(REACT_READY_ATTRIBUTE, 'true');
     installCookieConsentFallback(document);
 
     document.querySelector<HTMLElement>('[data-cookie-action="accept"]')?.click();
 
-    expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
-    expect(document.querySelector('[data-cookie-banner]')).not.toHaveAttribute('hidden');
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}')).toMatchObject({
+      version: 1,
+      necessary: true,
+      preferences: true,
+      analytics: true,
+    });
+    expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
   });
 });

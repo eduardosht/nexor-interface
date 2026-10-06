@@ -45,10 +45,6 @@ export function installCookieConsentFallback(document: Document) {
       return;
     }
 
-    if (document.documentElement.hasAttribute(REACT_READY_ATTRIBUTE)) {
-      return;
-    }
-
     const actionElement = target.closest<HTMLElement>('[data-cookie-action]');
     if (!actionElement) {
       return;
