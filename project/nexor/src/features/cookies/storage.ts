@@ -2,6 +2,7 @@ import { readStorageJson, writeStorageJson } from '../../lib/browser-storage';
 
 export const COOKIE_CONSENT_STORAGE_KEY = 'nexor-cookie-consent';
 export const COOKIE_CONSENT_VERSION = 1;
+export const COOKIE_CONSENT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 
 export type CookieConsentState = {
   version: number;
@@ -46,6 +47,13 @@ export function readCookieConsent(): CookieConsentState | null {
     typeof parsed.analytics !== 'boolean' ||
     typeof parsed.updatedAt !== 'string'
   ) {
+    return null;
+  }
+
+  const updatedAt = Date.parse(parsed.updatedAt);
+  const age = Date.now() - updatedAt;
+
+  if (!Number.isFinite(updatedAt) || age < 0 || age > COOKIE_CONSENT_MAX_AGE_MS) {
     return null;
   }
 

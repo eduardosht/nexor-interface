@@ -2,6 +2,7 @@ import {
   createAcceptedCookieConsent,
   createCustomCookieConsent,
   createRejectedCookieConsent,
+  readCookieConsent,
   saveCookieConsent,
 } from './storage';
 
@@ -37,6 +38,10 @@ export function installCookieConsentFallback(document: Document) {
   }
 
   document.documentElement.setAttribute(INSTALLATION_ATTRIBUTE, 'true');
+
+  if (readCookieConsent()) {
+    hideBanner(banner);
+  }
 
   document.addEventListener('click', (event) => {
     const target = event.target;

@@ -1,4 +1,5 @@
 import { installCookieConsentFallback, REACT_READY_ATTRIBUTE } from './cookieConsentFallback';
+import { createAcceptedCookieConsent, COOKIE_CONSENT_STORAGE_KEY } from './storage';
 
 const STORAGE_KEY = 'nexor-cookie-consent';
 
@@ -23,6 +24,8 @@ function renderStaticBanner() {
 describe('cookie consent fallback', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    document.documentElement.removeAttribute('data-cookie-fallback-installed');
+    document.documentElement.removeAttribute(REACT_READY_ATTRIBUTE);
     renderStaticBanner();
   });
 
@@ -37,6 +40,14 @@ describe('cookie consent fallback', () => {
       preferences: true,
       analytics: true,
     });
+    expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
+  });
+
+  it('hides a server-rendered banner when a valid consent already exists', () => {
+    window.localStorage.setItem(COOKIE_CONSENT_STORAGE_KEY, JSON.stringify(createAcceptedCookieConsent()));
+
+    installCookieConsentFallback(document);
+
     expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
   });
 
