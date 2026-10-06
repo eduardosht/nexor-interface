@@ -72,4 +72,17 @@ describe('cookie consent fallback', () => {
     });
     expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
   });
+
+  it('does not unhide the stale banner for the footer trigger after React is ready', () => {
+    const footerButton = document.createElement('button');
+    footerButton.dataset.cookieAction = 'manage';
+    document.body.appendChild(footerButton);
+    document.querySelector<HTMLElement>('[data-cookie-banner]')?.setAttribute('hidden', '');
+    document.documentElement.setAttribute(REACT_READY_ATTRIBUTE, 'true');
+    installCookieConsentFallback(document);
+
+    footerButton.click();
+
+    expect(document.querySelector('[data-cookie-banner]')).toHaveAttribute('hidden');
+  });
 });

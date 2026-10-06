@@ -50,6 +50,13 @@ export function installCookieConsentFallback(document: Document) {
       return;
     }
 
+    if (
+      document.documentElement.hasAttribute(REACT_READY_ATTRIBUTE)
+      && !actionElement.closest('[data-cookie-banner]')
+    ) {
+      return;
+    }
+
     const action = actionElement.dataset.cookieAction;
     const activeBanner = getBanner(document, actionElement);
 
