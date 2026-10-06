@@ -64,7 +64,7 @@ export function Footer({ onManageCookies }: FooterProps) {
           <S.LegalLinks>
             <S.LegalLinkRouter to="/privacidade">Política de Privacidade</S.LegalLinkRouter>
             <S.LegalLinkRouter to="/termos">Termos de Uso</S.LegalLinkRouter>
-            <Button size="sm" variant="ghost" type="button" onClick={onManageCookies}>
+            <Button size="sm" variant="ghost" type="button" data-cookie-action="manage" onClick={onManageCookies}>
               Preferências de cookies
             </Button>
           </S.LegalLinks>

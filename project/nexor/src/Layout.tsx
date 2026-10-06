@@ -15,6 +15,7 @@ import {
 import { useAuth } from './hooks/useAuth';
 import { api } from './lib/api';
 import { getAccessibleScrollBehavior } from './lib/accessibility';
+import { REACT_READY_ATTRIBUTE } from './features/cookies/cookieConsentFallback';
 
 function ScrollToTop() {
   const { hash, pathname } = useLocation();
@@ -109,6 +110,14 @@ export function Layout() {
   const [cookieConsent, setCookieConsent] = useState<CookieConsentState | null>(() => readCookieConsent());
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const syncedConsentRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute(REACT_READY_ATTRIBUTE, 'true');
+
+    return () => {
+      document.documentElement.removeAttribute(REACT_READY_ATTRIBUTE);
+    };
+  }, []);
 
   useEffect(() => {
     if (!cookieConsent || !session?.access_token) {

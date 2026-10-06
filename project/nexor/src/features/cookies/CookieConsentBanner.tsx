@@ -216,7 +216,7 @@ export function CookieConsentBanner({
 
   return (
     <BannerShell>
-      <BannerCard aria-label="Consentimento de cookies">
+      <BannerCard aria-label="Consentimento de cookies" data-cookie-banner>
         <BannerLabel>Preferências de cookies</BannerLabel>
         <BannerTitle>Seu controle continua com você</BannerTitle>
         <BannerBody>
@@ -224,91 +224,91 @@ export function CookieConsentBanner({
           lembrar preferências e entender o uso do site para melhorar a experiência.
         </BannerBody>
 
-        {!showPreferences ? (
+        <ActionRow data-cookie-actions hidden={showPreferences}>
+          <ActionButton type="button" data-cookie-action="accept" onClick={onAcceptAll}>
+            Aceitar cookies opcionais
+          </ActionButton>
+          <ActionButton type="button" $variant="secondary" data-cookie-action="reject" onClick={onRejectAll}>
+            Recusar cookies opcionais
+          </ActionButton>
+          <ActionButton type="button" $variant="ghost" data-cookie-action="manage" onClick={onOpenPreferences}>
+            Gerenciar preferências
+          </ActionButton>
+          <PolicyLink to="/cookies">Ler política de cookies</PolicyLink>
+        </ActionRow>
+
+        <PreferencesPanel data-cookie-preferences-panel hidden={!showPreferences}>
+          <PreferencesTitle>Escolha quais cookies opcionais podem ser ativados</PreferencesTitle>
+          <PreferencesBody>
+            Os cookies necessários continuam ativos porque sustentam a navegação básica e a segurança da conta.
+          </PreferencesBody>
+
+          <PreferencesGrid>
+            <PreferenceCard $disabled>
+              <Checkbox type="checkbox" checked disabled aria-label="Cookies necessários" />
+              <PreferenceContent>
+                <PreferenceName>Cookies necessários</PreferenceName>
+                <PreferenceDescription>
+                  Mantêm login, segurança e funcionamento essencial do site.
+                </PreferenceDescription>
+              </PreferenceContent>
+            </PreferenceCard>
+
+            <PreferenceCard>
+              <Checkbox
+                type="checkbox"
+                checked={draft.preferences}
+                data-cookie-preference="preferences"
+                aria-label="Cookies de preferências"
+                onChange={() => {
+                  setDraft((current) => ({ ...current, preferences: !current.preferences }));
+                }}
+              />
+              <PreferenceContent>
+                <PreferenceName>Cookies de preferências</PreferenceName>
+                <PreferenceDescription>
+                  Lembram escolhas de navegação para não repetir configurações em cada visita.
+                </PreferenceDescription>
+              </PreferenceContent>
+            </PreferenceCard>
+
+            <PreferenceCard>
+              <Checkbox
+                type="checkbox"
+                checked={draft.analytics}
+                data-cookie-preference="analytics"
+                aria-label="Cookies de analytics"
+                onChange={() => {
+                  setDraft((current) => ({ ...current, analytics: !current.analytics }));
+                }}
+              />
+              <PreferenceContent>
+                <PreferenceName>Cookies de analytics</PreferenceName>
+                <PreferenceDescription>
+                  Medem páginas acessadas e uso geral do site para orientar melhorias.
+                </PreferenceDescription>
+              </PreferenceContent>
+            </PreferenceCard>
+          </PreferencesGrid>
+
           <ActionRow>
-            <ActionButton type="button" onClick={onAcceptAll}>
-              Aceitar cookies opcionais
+            <ActionButton type="button" data-cookie-action="save" onClick={() => onSavePreferences(draft)}>
+              Salvar preferências
             </ActionButton>
-            <ActionButton type="button" $variant="secondary" onClick={onRejectAll}>
+            <ActionButton type="button" $variant="secondary" data-cookie-action="reject" onClick={onRejectAll}>
               Recusar cookies opcionais
             </ActionButton>
-            <ActionButton type="button" $variant="ghost" onClick={onOpenPreferences}>
-              Gerenciar preferências
+            <ActionButton type="button" $variant="ghost" data-cookie-action="accept" onClick={onAcceptAll}>
+              Aceitar cookies opcionais
             </ActionButton>
+            {consent ? (
+              <ActionButton type="button" $variant="ghost" data-cookie-action="close" onClick={onClosePreferences}>
+                Fechar
+              </ActionButton>
+            ) : null}
             <PolicyLink to="/cookies">Ler política de cookies</PolicyLink>
           </ActionRow>
-        ) : (
-          <PreferencesPanel>
-            <PreferencesTitle>Escolha quais cookies opcionais podem ser ativados</PreferencesTitle>
-            <PreferencesBody>
-              Os cookies necessários continuam ativos porque sustentam a navegação básica e a segurança da conta.
-            </PreferencesBody>
-
-            <PreferencesGrid>
-              <PreferenceCard $disabled>
-                <Checkbox type="checkbox" checked disabled aria-label="Cookies necessários" />
-                <PreferenceContent>
-                  <PreferenceName>Cookies necessários</PreferenceName>
-                  <PreferenceDescription>
-                    Mantêm login, segurança e funcionamento essencial do site.
-                  </PreferenceDescription>
-                </PreferenceContent>
-              </PreferenceCard>
-
-              <PreferenceCard>
-                <Checkbox
-                  type="checkbox"
-                  checked={draft.preferences}
-                  aria-label="Cookies de preferências"
-                  onChange={() => {
-                    setDraft((current) => ({ ...current, preferences: !current.preferences }));
-                  }}
-                />
-                <PreferenceContent>
-                  <PreferenceName>Cookies de preferências</PreferenceName>
-                  <PreferenceDescription>
-                    Lembram escolhas de navegação para não repetir configurações em cada visita.
-                  </PreferenceDescription>
-                </PreferenceContent>
-              </PreferenceCard>
-
-              <PreferenceCard>
-                <Checkbox
-                  type="checkbox"
-                  checked={draft.analytics}
-                  aria-label="Cookies de analytics"
-                  onChange={() => {
-                    setDraft((current) => ({ ...current, analytics: !current.analytics }));
-                  }}
-                />
-                <PreferenceContent>
-                  <PreferenceName>Cookies de analytics</PreferenceName>
-                  <PreferenceDescription>
-                    Medem páginas acessadas e uso geral do site para orientar melhorias.
-                  </PreferenceDescription>
-                </PreferenceContent>
-              </PreferenceCard>
-            </PreferencesGrid>
-
-            <ActionRow>
-              <ActionButton type="button" onClick={() => onSavePreferences(draft)}>
-                Salvar preferências
-              </ActionButton>
-              <ActionButton type="button" $variant="secondary" onClick={onRejectAll}>
-                Recusar cookies opcionais
-              </ActionButton>
-              <ActionButton type="button" $variant="ghost" onClick={onAcceptAll}>
-                Aceitar cookies opcionais
-              </ActionButton>
-              {consent ? (
-                <ActionButton type="button" $variant="ghost" onClick={onClosePreferences}>
-                  Fechar
-                </ActionButton>
-              ) : null}
-              <PolicyLink to="/cookies">Ler política de cookies</PolicyLink>
-            </ActionRow>
-          </PreferencesPanel>
-        )}
+        </PreferencesPanel>
       </BannerCard>
     </BannerShell>
   );

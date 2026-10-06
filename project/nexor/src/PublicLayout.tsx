@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
@@ -13,6 +13,7 @@ import {
   type CookieConsentState,
 } from './features/cookies/storage';
 import { getAccessibleScrollBehavior } from './lib/accessibility';
+import { REACT_READY_ATTRIBUTE } from './features/cookies/cookieConsentFallback';
 
 function ScrollManager() {
   const { hash, pathname } = useLocation();
@@ -37,6 +38,14 @@ function ScrollManager() {
 export function PublicLayout() {
   const [cookieConsent, setCookieConsent] = useState<CookieConsentState | null>(() => readCookieConsent());
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.setAttribute(REACT_READY_ATTRIBUTE, 'true');
+
+    return () => {
+      document.documentElement.removeAttribute(REACT_READY_ATTRIBUTE);
+    };
+  }, []);
 
   const persist = (consent: CookieConsentState) => {
     saveCookieConsent(consent);
