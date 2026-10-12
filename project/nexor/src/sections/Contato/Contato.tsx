@@ -6,11 +6,11 @@ import { fadeUp, staggerContainer } from '../../styles/motion';
 import * as S from './styles';
 
 const ASSUNTOS = [
-  { value: 'parceria', label: 'Parceria comercial' },
-  { value: 'produto', label: 'Dúvidas sobre produto' },
-  { value: 'performance', label: 'Consultoria de performance' },
+  { value: 'parceria', label: 'Parcerias' },
+  { value: 'biteplaner', label: 'Dúvidas sobre BITEPLANER' },
+  { value: 'elegibilidade', label: 'Especialista licenciado / Elegibilidade BITEPLANER' },
   { value: 'imprensa', label: 'Imprensa / Mídia' },
-  { value: 'lgpd', label: 'Assuntos sobre LGPD' },
+  { value: 'lgpd', label: 'LGPD' },
   { value: 'outro', label: 'Outro' },
 ];
 
@@ -68,9 +68,7 @@ export function Contato() {
       <S.Section id="contato" ref={ref}>
         <motion.div variants={staggerContainer} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           <S.Title as={motion.h2} variants={fadeUp}>
-            Fale com
-            <br />
-            a Nexor
+            Fale com a Nexor Advance
           </S.Title>
           <S.Subtitle as={motion.p} variants={fadeUp}>
             Entre em contato para parcerias, distribuição ou dúvidas sobre nossos produtos.

@@ -1,5 +1,7 @@
 export { BiteplanerCard } from './BiteplanerCard/BiteplanerCard';
 export { Contato } from './Contato/Contato';
+export { CienciaAplicada } from './CienciaAplicada';
+export { Evolucao } from './Evolucao';
 export { Depoimentos } from './Depoimentos/Depoimentos';
 export { FullBleedBanner } from './FullBleedBanner/FullBleedBanner';
 export { Hero } from './Hero/Hero';

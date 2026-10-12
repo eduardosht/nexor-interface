@@ -16,21 +16,21 @@ export function Hero() {
         <motion.div variants={staggerContainer} initial="hidden" animate="visible">
           <S.Label variants={fadeUp}>
             <S.LabelLine />
-            Nexor · Performance Atlética
+            NEXOR ADVANCE · TECNOLOGIA APLICADA
           </S.Label>
 
           <S.Headline variants={fadeUp}>
-            <S.HeadlinePrimary>Performance através</S.HeadlinePrimary>
-            <S.HeadlineDim>da tecnologia.</S.HeadlineDim>
+            <S.HeadlinePrimary>Tecnologia que avança</S.HeadlinePrimary>
+            <S.HeadlineDim>a performance humana.</S.HeadlineDim>
           </S.Headline>
 
           <S.Tagline variants={fadeUp}>
-            A Nexor é uma plataforma de pesquisa, tecnologia e criação de produtos de alta performance para atletas e praticantes esportivos.
+            Desenvolvemos tecnologias para interfaces entre o corpo, o movimento e a tecnologia, combinando individualização, conhecimento especializado e evolução contínua.
           </S.Tagline>
 
           <S.Ctas variants={fadeUp}>
             <S.CtaPrimary href="/biteplaner">
-              <Button>Conheça o Biteplaner</Button>
+              <Button>Conheça o BITEPLANER</Button>
             </S.CtaPrimary>
             <S.CtaSecondary href="#quem-somos">
               Sobre nós <span>→</span>

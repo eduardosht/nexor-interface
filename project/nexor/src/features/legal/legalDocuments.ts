@@ -30,13 +30,13 @@ export const legalProfiles: Array<{
 }> = [
   {
     key: 'general',
-    title: 'Geral Nexor',
+    title: 'Geral Nexor Advance',
     description: 'Regras gerais aplicáveis à plataforma, conta, privacidade, segurança e canais LGPD.'
   },
   {
     key: 'biteplaner-client',
     title: 'Usuário Biteplaner',
-    description: 'Pessoa relacionada ao uso do Biteplaner; no MVP atual, não compra nem paga pela plataforma. A compra é feita pelo dentista licenciado diretamente com a Nexor.'
+    description: 'Pessoa relacionada ao uso do Biteplaner; no MVP atual, não compra nem paga pela plataforma. A compra é feita pelo dentista licenciado diretamente com a Nexor Advance.'
   },
   {
     key: 'licensed-dentist',
@@ -51,7 +51,7 @@ export const legalProfiles: Array<{
 ];
 
 const companyDescription =
-  'A Nexor é o nome empresarial simplificado de ETHOSME SERVICOS EDUCACIONAIS LTDA, inscrita no CNPJ sob nº 35.434.764/0001-70, com sede na Rua Sebastiao Peranovich, 37, Atibaia Jardim, Atibaia - SP, CEP 12942-260.';
+  'A Nexor Advance é o nome empresarial simplificado de ETHOSME SERVICOS EDUCACIONAIS LTDA, inscrita no CNPJ sob nº 35.434.764/0001-70, com sede na Rua Sebastiao Peranovich, 37, Atibaia Jardim, Atibaia - SP, CEP 12942-260.';
 
 const privacySharedRights: LegalSectionContent = {
   title: 'Direitos do titular',
@@ -64,8 +64,8 @@ const privacySharedRights: LegalSectionContent = {
 const privacySharedSecurity: LegalSectionContent = {
   title: 'Segurança, incidentes e responsabilidade',
   body: [
-    'A Nexor aplica medidas técnicas e organizacionais proporcionais ao risco, incluindo controle de acesso, autenticação, segregação por perfil, logs, revisão de permissões e uso de fornecedores especializados.',
-    'Caso ocorra incidente de segurança confirmado que envolva dados pessoais e possa gerar risco ou dano relevante aos titulares, a Nexor avaliará o evento e comunicará os titulares afetados e a ANPD conforme a LGPD e a regulamentação aplicável.',
+    'A Nexor Advance aplica medidas técnicas e organizacionais proporcionais ao risco, incluindo controle de acesso, autenticação, segregação por perfil, logs, revisão de permissões e uso de fornecedores especializados.',
+    'Caso ocorra incidente de segurança confirmado que envolva dados pessoais e possa gerar risco ou dano relevante aos titulares, a Nexor Advance avaliará o evento e comunicará os titulares afetados e a ANPD conforme a LGPD e a regulamentação aplicável.',
     'Exemplos de situações que podem exigir comunicação incluem acesso indevido a dados clínicos ou scans, exposição de documentos de identificação, vazamento de dados de pagamento, sequestro de dados que impeça acesso a informações necessárias à jornada, ou perda de base contendo dados pessoais não protegidos adequadamente.'
   ]
 };
@@ -85,7 +85,7 @@ const privacySharedRetention: LegalSectionContent = {
 const privacySharedProviders: LegalSectionContent = {
   title: 'Compartilhamento e fornecedores',
   body: [
-    'A Nexor não vende dados pessoais. Dados podem ser compartilhados somente quando necessário para operar a plataforma, prestar serviços, cumprir contrato, processar pagamentos, enviar comunicações, manter infraestrutura, proteger direitos ou atender obrigação legal.',
+    'A Nexor Advance não vende dados pessoais. Dados podem ser compartilhados somente quando necessário para operar a plataforma, prestar serviços, cumprir contrato, processar pagamentos, enviar comunicações, manter infraestrutura, proteger direitos ou atender obrigação legal.',
     'Por recomendação de manutenção e transparência proporcional, a política descreve fornecedores por categoria: hospedagem, infraestrutura, banco de dados, autenticação, armazenamento, e-mail transacional, suporte operacional, pagamento, consultoria, auditoria e autoridades competentes. Fornecedores específicos podem mudar ao longo do tempo sem alteração da finalidade.'
   ]
 };
@@ -93,7 +93,7 @@ const privacySharedProviders: LegalSectionContent = {
 const privacySharedInternationalTransfer: LegalSectionContent = {
   title: 'Transferência internacional',
   body: [
-    'Atualmente a Nexor não realiza transferência internacional intencional de dados como parte do fluxo operacional principal. Caso a operação passe a envolver fornecedores, infraestrutura ou fornecedor externo localizado fora do Brasil, a política será atualizada e a transferência observará as bases legais e salvaguardas exigidas pela LGPD.'
+    'Atualmente a Nexor Advance não realiza transferência internacional intencional de dados como parte do fluxo operacional principal. Caso a operação passe a envolver fornecedores, infraestrutura ou fornecedor externo localizado fora do Brasil, a política será atualizada e a transferência observará as bases legais e salvaguardas exigidas pela LGPD.'
   ]
 };
 
@@ -107,7 +107,7 @@ const privacySharedCookies: LegalSectionContent = {
 const privacySharedConsent: LegalSectionContent = {
   title: 'Versões e aceite',
   body: [
-    'A Nexor poderá registrar aceite separado para a política geral, aviso específico por perfil, termos aplicáveis e preferências de cookies, incluindo versão, data, status de aceite e evidências técnicas proporcionais. Exemplos de versões: privacy-general-v1.0.0, privacy-dentist-v1.1.0 e terms-dentist-v1.1.0.'
+    'A Nexor Advance poderá registrar aceite separado para a política geral, aviso específico por perfil, termos aplicáveis e preferências de cookies, incluindo versão, data, status de aceite e evidências técnicas proporcionais. Exemplos de versões: privacy-general-v1.0.0, privacy-dentist-v1.1.0 e terms-dentist-v1.1.0.'
   ]
 };
 
@@ -138,7 +138,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
       kind: 'privacy',
       profile: 'general',
       version: 'privacy-general-v1.0.0',
-      title: 'Política de Privacidade Geral da Nexor',
+      title: 'Política de Privacidade Geral da Nexor Advance',
       subtitle: 'Regras gerais de privacidade, segurança, direitos LGPD e governança de dados da plataforma.',
       updatedAt: 'Última atualização: julho de 2026',
       pdfFileName: 'politica-privacidade-geral-nexor.pdf',
@@ -147,13 +147,13 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           title: 'Quem somos e papel na LGPD',
           body: [
             companyDescription,
-            'A Nexor atua como controladora dos dados pessoais tratados diretamente na plataforma, na conta Nexor, nos fluxos do Biteplaner e em suas operações administrativas. Em determinados fluxos, fornecedores contratados podem atuar como operadores ou terceiros autorizados, sempre conforme finalidade, contrato e necessidade operacional.'
+            'A Nexor Advance atua como controladora dos dados pessoais tratados diretamente na plataforma, na conta Nexor Advance, nos fluxos do Biteplaner e em suas operações administrativas. Em determinados fluxos, fornecedores contratados podem atuar como operadores ou terceiros autorizados, sempre conforme finalidade, contrato e necessidade operacional.'
           ]
         },
         {
           title: 'Canal de privacidade',
           body: [
-            'A Nexor ainda não possui Encarregado de Dados pessoa física nomeado publicamente. Até essa definição, disponibiliza o Canal de Privacidade Nexor pelo e-mail contato@nexoradvance.com.br, com o assunto LGPD, para exercício de direitos, dúvidas e solicitações relacionadas a dados pessoais.'
+            'A Nexor Advance ainda não possui Encarregado de Dados pessoa física nomeado publicamente. Até essa definição, disponibiliza o Canal de Privacidade Nexor Advance pelo e-mail contato@nexoradvance.com.br, com o assunto LGPD, para exercício de direitos, dúvidas e solicitações relacionadas a dados pessoais.'
           ]
         },
         {
@@ -204,14 +204,14 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           items: [
             'Coletar informações clínicas e operacionais necessárias para atendimento, elegibilidade, adaptação e acompanhamento da jornada.',
             'Permitir acompanhamento da jornada, suporte, comunicações e interação com dentista licenciado quando aplicável ao fluxo vigente.',
-            'Compartilhar dados mínimos necessários com dentistas, parceiros operacionais, administradores Nexor e fornecedores autorizados para execução da jornada. Quando houver produção externa, o compartilhamento com fornecedor externo é conduzido pela Nexor fora da plataforma.',
+            'Compartilhar dados mínimos necessários com dentistas, parceiros operacionais, administradores Nexor Advance e fornecedores autorizados para execução da jornada. Quando houver produção externa, o compartilhamento com fornecedor externo é conduzido pela Nexor Advance fora da plataforma.',
             'Cumprir obrigações legais, fiscais, regulatórias, auditoria, segurança, prevenção a fraude e defesa de direitos.'
           ]
         },
         {
           title: 'Compartilhamento específico',
           body: [
-            'Dados do usuário podem ser acessados por profissionais e operadores autorizados, como dentistas responsáveis, administradores Nexor e fornecedores de infraestrutura, comunicação e pagamento. Quando houver produção externa, dados mínimos podem ser compartilhados com fornecedor externo por contato externo conduzido pela Nexor. O usuário não envia arquivos de scan diretamente; quando houver scan da arcada, o dentista o registra na plataforma para revisão operacional Nexor.'
+            'Dados do usuário podem ser acessados por profissionais e operadores autorizados, como dentistas responsáveis, administradores Nexor Advance e fornecedores de infraestrutura, comunicação e pagamento. Quando houver produção externa, dados mínimos podem ser compartilhados com fornecedor externo por contato externo conduzido pela Nexor Advance. O usuário não envia arquivos de scan diretamente; quando houver scan da arcada, o dentista o registra na plataforma para revisão operacional Nexor Advance.'
           ]
         },
         privacySharedRetention,
@@ -233,14 +233,14 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
             'Dados cadastrais e profissionais: nome profissional, e-mail, telefone, CPF, CNPJ, CRO, resumo profissional, documentos profissionais e cadastrais enviados no onboarding, histórico de aprovação e status do cadastro administrativo.',
             'Endereço de cobrança: CEP, logradouro, número, complemento, bairro, cidade, estado e código IBGE informados no cadastro do dentista.',
             'Dados operacionais: ordens, interações com clientes, pré-consulta, formulários, registros de análise, arquivos de scan da arcada dentária, produção, notificações, logs e auditoria.',
-            'Dados financeiros e fiscais: informações necessárias para compra, conciliação, contratos e obrigações fiscais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento.'
+            'Dados financeiros e fiscais: informações necessárias para compra, conciliação, contratos e obrigações fiscais. Dados bancários não devem ser armazenados pela Nexor Advance quando houver provedor externo de pagamento.'
           ]
         },
         {
           title: 'Finalidades',
           items: [
             'Validar elegibilidade profissional e liberar acesso ao Biteplaner conforme a análise administrativa.',
-            'Executar ordens Biteplaner, registrar documentação técnica e scan da arcada dentária na plataforma, acompanhar produção externa conduzida pela Nexor e registrar responsabilidades técnicas.',
+            'Executar ordens Biteplaner, registrar documentação técnica e scan da arcada dentária na plataforma, acompanhar produção externa conduzida pela Nexor Advance e registrar responsabilidades técnicas.',
             'Registrar compra, conciliação, obrigações fiscais e suporte financeiro conforme o modelo comercial vigente.',
             'Cumprir contrato, obrigações legais, auditoria, prevenção a fraude, segurança e defesa de direitos.'
           ]
@@ -269,7 +269,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
           items: [
             'Dados cadastrais: nome da empresa ou parceiro, CNPJ, tipo de parceiro, endereço quando aplicável, locais de atuação, histórico de aprovação e status do cadastro administrativo.',
             'Dados de indicação: nome do indicado informado pelo parceiro, link ou QR Code de indicação, status operacional, métricas e, quando o parceiro informar, e-mail do indicado para facilitar envio do convite.',
-            'Dados financeiros e fiscais: informações necessárias para comissão, prestação de contas, contratos, conciliação e obrigações legais. Dados bancários não devem ser armazenados pela Nexor quando houver provedor externo de pagamento ou repasse.'
+            'Dados financeiros e fiscais: informações necessárias para comissão, prestação de contas, contratos, conciliação e obrigações legais. Dados bancários não devem ser armazenados pela Nexor Advance quando houver provedor externo de pagamento ou repasse.'
           ]
         },
         {
@@ -283,7 +283,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Compartilhamento específico',
           body: [
-            'Dados do parceiro podem ser compartilhados com administradores Nexor, fornecedores autorizados, áreas financeiras, consultores e autoridades quando necessário. Dados de indicados devem ser usados somente para a finalidade de indicação e comunicação relacionada ao convite.'
+            'Dados do parceiro podem ser compartilhados com administradores Nexor Advance, fornecedores autorizados, áreas financeiras, consultores e autoridades quando necessário. Dados de indicados devem ser usados somente para a finalidade de indicação e comunicação relacionada ao convite.'
           ]
         },
         privacySharedRetention,
@@ -296,15 +296,15 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
       kind: 'terms',
       profile: 'general',
       version: 'terms-general-v1.0.0',
-      title: 'Termos Gerais de Uso da Nexor',
-      subtitle: 'Condições gerais aplicáveis à conta, ao site, ao painel e aos produtos Nexor.',
+      title: 'Termos Gerais de Uso da Nexor Advance',
+      subtitle: 'Condições gerais aplicáveis à conta, ao site, ao painel e aos produtos Nexor Advance.',
       updatedAt: 'Última atualização: julho de 2026',
       pdfFileName: 'termos-gerais-uso-nexor.pdf',
       sections: [
         {
           title: 'Objeto',
           body: [
-            'Estes termos regulam o acesso ao site institucional, à conta Nexor, ao painel e aos produtos do ecossistema Nexor, incluindo fluxos do Biteplaner.'
+            'Estes termos regulam o acesso ao site institucional, à conta Nexor Advance, ao painel e aos produtos do ecossistema Nexor Advance, incluindo fluxos do Biteplaner.'
           ]
         },
         {
@@ -326,7 +326,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Objeto',
           body: [
-            'Estes termos regulam informações clínicas eventualmente relacionadas ao uso do Biteplaner, comunicações e suporte. No MVP atual, a pessoa relacionada ao uso do produto não atua como compradora, pagadora ou operadora de painel; a contratação é feita pelo dentista licenciado diretamente com a Nexor.'
+            'Estes termos regulam informações clínicas eventualmente relacionadas ao uso do Biteplaner, comunicações e suporte. No MVP atual, a pessoa relacionada ao uso do produto não atua como compradora, pagadora ou operadora de painel; a contratação é feita pelo dentista licenciado diretamente com a Nexor Advance.'
           ]
         },
         {
@@ -358,7 +358,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Objeto e elegibilidade',
           body: [
-            'O acesso como dentista depende de aprovação operacional, documentação válida e dados profissionais corretos. No MVP atual, a compra do Biteplaner é feita pelo dentista diretamente com a Nexor.'
+            'O acesso como dentista depende de aprovação operacional, documentação válida e dados profissionais corretos. No MVP atual, a compra do Biteplaner é feita pelo dentista diretamente com a Nexor Advance.'
           ]
         },
         {
@@ -372,7 +372,7 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Pagamentos e comissões',
           body: [
-            'Repasses e comissões podem depender de provedor de pagamento contratado. A Nexor não deve armazenar dados bancários quando o fluxo financeiro for realizado por provedor externo.'
+            'Repasses e comissões podem depender de provedor de pagamento contratado. A Nexor Advance não deve armazenar dados bancários quando o fluxo financeiro for realizado por provedor externo.'
           ]
         },
         {
@@ -396,13 +396,13 @@ export const legalDocuments: Record<LegalDocumentKind, Record<LegalProfileKey, L
         {
           title: 'Objeto',
           body: [
-            'Estes termos regulam o acesso do parceiro a convites, indicações, link ou QR Code, fluxos comerciais, comissões, comunicações e recursos operacionais autorizados pela Nexor.'
+            'Estes termos regulam o acesso do parceiro a convites, indicações, link ou QR Code, fluxos comerciais, comissões, comunicações e recursos operacionais autorizados pela Nexor Advance.'
           ]
         },
         {
           title: 'Conduta e responsabilidades',
           items: [
-            'Apresentar informações verdadeiras e não prometer condições não autorizadas pela Nexor.',
+            'Apresentar informações verdadeiras e não prometer condições não autorizadas pela Nexor Advance.',
             'Usar materiais, marcas, links e dados de indicados apenas conforme autorização.',
             'Respeitar confidencialidade, privacidade, regras comerciais e legislação aplicável.'
           ]

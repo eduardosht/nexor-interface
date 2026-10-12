@@ -1,5 +1,5 @@
 import { Button } from '@nexor/design-system';
-import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import nexorAdvanceLogo from '../../assets/nexor-advance-black-v6.2.png';
 import * as S from './styles';
 
 
@@ -29,8 +29,8 @@ export function Footer({ onManageCookies }: FooterProps) {
         <S.Brand>
           <S.LogoLink href="#top" aria-label="Nexor — início">
             <S.LogoImg
-              src={publicOptimizedImages.shared.nexorLogo.webp}
-              alt="Nexor"
+              src={nexorAdvanceLogo}
+              alt="Nexor Advance"
               width={260}
               height={83}
               loading="lazy"
@@ -38,7 +38,7 @@ export function Footer({ onManageCookies }: FooterProps) {
             />
           </S.LogoLink>
           <S.Tagline>
-            Plataforma de pesquisa, tecnologia e criação de produtos de alta performance para atletas e praticantes esportivos.
+            Tecnologia para interfaces entre corpo, movimento e performance humana.
           </S.Tagline>
         </S.Brand>
 
@@ -60,7 +60,7 @@ export function Footer({ onManageCookies }: FooterProps) {
 
       <div>
         <S.Bottom>
-          <S.Copyright>© {year} Nexor. Todos os direitos reservados.</S.Copyright>
+          <S.Copyright>© {year} Nexor Advance. Todos os direitos reservados.</S.Copyright>
           <S.LegalLinks>
             <S.LegalLinkRouter to="/privacidade">Política de Privacidade</S.LegalLinkRouter>
             <S.LegalLinkRouter to="/termos">Termos de Uso</S.LegalLinkRouter>

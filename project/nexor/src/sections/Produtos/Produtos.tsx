@@ -2,13 +2,14 @@ import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { fadeUp, staggerContainer } from '../../styles/motion';
 import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import unbrandedProductImage from '../../assets/backgrounds/biteplaner-unbranded.webp';
 import * as S from './styles';
 
 const FEATURES = [
-  'Avaliação odontológica completa com especialistas licenciados',
-  'Produção personalizada conduzida pela operação Nexor',
+  'Avaliação e planejamento com especialista licenciado',
+  'Produção personalizada direcionada pela Nexor Advance',
   'Ajuste fino de oclusão e adaptação individual',
-  'Acompanhamento e retornos periódicos para máxima performance',
+  'Acompanhamento e retornos periódicos para máxima função e performance',
 ];
 
 function CheckSvg() {
@@ -46,27 +47,9 @@ export function Produtos() {
           <motion.div variants={fadeUp}>
             <S.ProductGrid>
               <S.ImageCol>
-                <source
-                  media="(max-width: 900px)"
-                  srcSet={publicOptimizedImages.home.product.mobile.avif}
-                  type="image/avif"
-                />
-                <source
-                  media="(max-width: 900px)"
-                  srcSet={publicOptimizedImages.home.product.mobile.webp}
-                  type="image/webp"
-                />
-                <source
-                  srcSet={publicOptimizedImages.home.product.desktop.avif}
-                  type="image/avif"
-                />
-                <source
-                  srcSet={publicOptimizedImages.home.product.desktop.webp}
-                  type="image/webp"
-                />
                 <S.ProductImage
-                  src={publicOptimizedImages.home.product.desktop.webp}
-                  alt=""
+                  src={unbrandedProductImage}
+                  alt="Dois dispositivos esportivos individualizados em preto e branco, sem marcas."
                   width={759}
                   height={502}
                   loading="lazy"
@@ -90,7 +73,7 @@ export function Produtos() {
                 </div>
 
                 <S.ProductDesc>
-                  Tecnologia personalizada para a interface mandibular durante o treinamento de força, desenvolvida com avaliação profissional, parâmetros técnicos e produção sob protocolo.
+                  Tecnologia aplicada e evolução contínua. Um dispositivo esportivo individualizado desenvolvido para acompanhar as demandas funcionais da região mandibular, considerando adaptação, biomecânica e proteção da região oral.
                 </S.ProductDesc>
 
                 <S.FeatureList>
@@ -104,7 +87,7 @@ export function Produtos() {
 
                 <S.ProtocolBadge>
                   <S.ProtocolIconWrap><ProtocolSvg /></S.ProtocolIconWrap>
-                  <S.ProtocolText>Personalização apoiada por precisão profissional</S.ProtocolText>
+                  <S.ProtocolText>Personalização apoiada por precisão digital e acompanhamento profissional</S.ProtocolText>
                 </S.ProtocolBadge>
 
                 <S.CardFooter>
@@ -112,7 +95,7 @@ export function Produtos() {
                     <S.Badge>Precision Fit</S.Badge>
                     <S.Badge>Performance</S.Badge>
                   </S.Badges>
-                  <S.CtaLink to="/biteplaner">Saiba mais →</S.CtaLink>
+                  <S.CtaLink to="/biteplaner">Conheça o BITEPLANER →</S.CtaLink>
                 </S.CardFooter>
               </S.InfoCol>
             </S.ProductGrid>

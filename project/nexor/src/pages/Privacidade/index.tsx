@@ -5,7 +5,7 @@ export function Privacidade() {
     <LegalDocumentPage
       kind="privacy"
       heading="Políticas de Privacidade"
-      intro="Selecione o perfil que melhor representa sua relação com a Nexor para consultar o aviso de privacidade específico."
+      intro="Selecione o perfil que melhor representa sua relação com a Nexor Advance para consultar o aviso de privacidade específico."
     />
   );
 }

@@ -1,5 +1,7 @@
 import {
   Contato,
+  CienciaAplicada,
+  Evolucao,
   Depoimentos,
   Hero,
   Legal,
@@ -13,7 +15,9 @@ export function Home() {
     <main id="main-content" tabIndex={-1}>
       <Hero />
       <QuemSomos />
+      <CienciaAplicada />
       <Produtos />
+      <Evolucao />
       <ParceirosTeaserSection />
       <Depoimentos />
       <Legal />

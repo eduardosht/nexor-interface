@@ -69,6 +69,19 @@ export const Headline = styled(motion.h1)`
   letter-spacing: 0;
   line-height: 1.05;
   margin: 0 0 16px;
+
+  @media (max-width: 640px) {
+    font-size: clamp(1.875rem, 7.5vw, 2.25rem);
+    line-height: 1.08;
+
+    span {
+      display: inline;
+    }
+
+    span:first-child::after {
+      content: ' ';
+    }
+  }
 `;
 
 export const HeadlinePrimary = styled.span`

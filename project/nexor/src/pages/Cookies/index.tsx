@@ -20,7 +20,7 @@ export function Cookies() {
           <LegalSectionTitle>1. O que são cookies e storage local</LegalSectionTitle>
           <LegalBody>
             Cookies são pequenos arquivos de texto usados para lembrar informações do navegador durante e após a visita. Além
-            de cookies, a Nexor também pode usar localStorage e sessionStorage para preservar preferências técnicas, consentimentos
+            de cookies, a Nexor Advance também pode usar localStorage e sessionStorage para preservar preferências técnicas, consentimentos
             e dados temporários necessários ao funcionamento da plataforma.
           </LegalBody>
           <LegalBody>
@@ -60,7 +60,7 @@ export function Cookies() {
             <li>Tokens e dados de autenticação podem ser mantidos por provedores de autenticação e infraestrutura para manter sessão, segurança e auditoria.</li>
           </LegalList>
           <LegalBody>
-            O conteúdo desses mecanismos deve ser proporcional à finalidade. A Nexor não utiliza cookies opcionais para impedir
+            O conteúdo desses mecanismos deve ser proporcional à finalidade. A Nexor Advance não utiliza cookies opcionais para impedir
             acesso ao conteúdo institucional quando você os recusa.
           </LegalBody>
         </LegalSection>
@@ -74,7 +74,7 @@ export function Cookies() {
           </LegalBody>
           <LegalBody>
             Depois da primeira escolha, você pode reabrir essas preferências pelo rodapé do site e atualizar sua decisão a
-            qualquer momento. Quando você estiver autenticado, a Nexor também poderá registrar a preferência escolhida na sua
+            qualquer momento. Quando você estiver autenticado, a Nexor Advance também poderá registrar a preferência escolhida na sua
             conta para manter histórico de consentimento e revogação.
           </LegalBody>
         </LegalSection>

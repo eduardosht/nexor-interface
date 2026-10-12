@@ -65,22 +65,21 @@ export function QuemSomos() {
         >
           <div>
             <S.Headline as={motion.h2} variants={fadeUp}>
-              Precisão. Personalização.
+              Tecnologia. Performance.
               <br />
-              Performance<S.Dot>.</S.Dot>
+              Evolução<S.Dot>.</S.Dot>
             </S.Headline>
           </div>
 
           <motion.div variants={fadeUp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <S.BodyText>
-              A NEXOR ADVANCE desenvolve tecnologias de precisão para compreender, personalizar e avançar a performance humana.
+              A NEXOR ADVANCE desenvolve tecnologias orientadas à interação entre características individuais do usuário, movimento e demandas específicas de utilização. O primeiro desenvolvimento é o BITEPLANER.
             </S.BodyText>
             <S.BodyText>
-              Trabalhamos na interface entre corpo, movimento e tecnologia, começando pela aplicação esportiva do BITEPLANER.
+              Combinamos individualização, conhecimento especializado e evolução contínua para transformar necessidades específicas em soluções funcionais.
             </S.BodyText>
             <S.BodyText>
-              Unimos <S.EmphasisText>conhecimento aplicado e personalização</S.EmphasisText> com{' '}
-              <S.EmphasisText>evolução contínua</S.EmphasisText> para transformar necessidades específicas do corpo em soluções de performance.
+              Desenvolvemos cada etapa com <S.EmphasisText>atenção à função, biomecânica e contexto de uso</S.EmphasisText>.
             </S.BodyText>
           </motion.div>
         </S.HeroCopy>

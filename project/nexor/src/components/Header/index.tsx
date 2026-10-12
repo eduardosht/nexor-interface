@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { Boxes, Info, Mail, Star, type LucideIcon } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
-import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import nexorAdvanceLogo from '../../assets/nexor-advance-black-v6.2.png';
 import { getAccessibleScrollBehavior } from '../../lib/accessibility';
 import * as S from './styles';
 
@@ -48,8 +48,8 @@ export function Header() {
         }}
         aria-label="Navegação principal"
       >
-        <S.Brand type="button" onClick={goHome} aria-label="Nexor — início">
-          <S.LogoImg src={publicOptimizedImages.shared.nexorLogo.webp} alt="Nexor" width={260} height={83} />
+        <S.Brand type="button" onClick={goHome} aria-label="Nexor Advance — início">
+          <S.LogoImg src={nexorAdvanceLogo} alt="Nexor Advance" width={260} height={83} />
         </S.Brand>
         <S.Links>
           {NAV_ITEMS.map(({ label, hash }) => (

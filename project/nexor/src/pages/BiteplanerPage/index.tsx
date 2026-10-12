@@ -1,29 +1,18 @@
 import {
   Activity,
-  BadgeCheck,
   Box,
   ClipboardList,
-  CreditCard,
-  Dumbbell,
   Heart,
   Quote,
   ShieldCheck,
   SlidersHorizontal,
   Star,
-  Target,
   TrendingUp,
-  Trophy,
   UserRound,
-  Zap,
 } from 'lucide-react';
-import { useState } from 'react';
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
-import heroSectionProductMobile from '../../assets/backgrounds/hero-section-product-mobile.png';
-import heroSectionProduct from '../../assets/backgrounds/hero-section-product.png';
-import heroBiteplanerVideo from '../../assets/backgrounds/hero-biteplaner-video.mp4';
-import heroSectionItem from '../../assets/backgrounds/hero-section-item-1.png';
-import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
+import { Contato } from '../../sections/Contato/Contato';
 import * as S from './styles';
 
 const cardVariants: Variants = {
@@ -41,191 +30,27 @@ const cardVariants: Variants = {
 };
 
 const JOURNEY_STEPS = [
-  {
-    n: 1,
-    icon: UserRound,
-    label: 'Orientação',
-    title: 'Dentista licenciado',
-    body: 'Procure um dentista licenciado Nexor para iniciar a avaliação e entender se o Biteplaner faz sentido para seu caso.',
-  },
-  {
-    n: 2,
-    icon: ClipboardList,
-    label: 'Avaliação',
-    title: 'Elegibilidade clínica',
-    body: 'O dentista avalia esporte, rotina, histórico, sintomas e condições bucais antes de indicar o dispositivo.',
-  },
-  {
-    n: 3,
-    icon: ShieldCheck,
-    label: 'Licenciamento',
-    title: 'Pedido do dentista',
-    body: 'Com a indicação confirmada, o dentista licenciado realiza a compra diretamente com a Nexor.',
-  },
-  {
-    n: 4,
-    icon: CreditCard,
-    label: 'Dados técnicos',
-    title: 'Documentação clínica',
-    body: 'O dentista registra os dados técnicos e anexos necessários para revisão operacional da Nexor.',
-  },
-  {
-    n: 5,
-    icon: Box,
-    label: 'Produção externa',
-    title: 'Produção personalizada',
-    body: 'A Nexor conduz o contato externo com o fornecedor de produção após revisar a documentação do pedido.',
-  },
-  {
-    n: 6,
-    icon: TrendingUp,
-    label: 'Uso real',
-    title: 'Adaptação e acompanhamento',
-    body: 'O produto físico é enviado ao dentista, que realiza a instalação inicial, ajustes e retornos de acompanhamento.',
-  },
+  { n: 1, icon: UserRound, label: 'Avaliação / Elegibilidade', title: 'Especialista licenciado', body: 'Especialista licenciado Nexor Advance avalia contexto, esporte, rotina e histórico para verificar a elegibilidade e solicitar a elaboração.' },
+  { n: 2, icon: ClipboardList, label: 'Escaneamento', title: 'Documentação', body: 'Escaneamento intraoral digital seguindo metodologia específica e envio da documentação à Nexor Advance.' },
+  { n: 3, icon: SlidersHorizontal, label: 'Planejamento', title: 'Nexor Advance', body: 'Análise, definição de parâmetros e elaboração de projeto individualizado.' },
+  { n: 4, icon: Box, label: 'Produção', title: 'Parceiro credenciado', body: 'Produção direcionada conforme o projeto individualizado e envio ao especialista responsável.' },
+  { n: 5, icon: TrendingUp, label: 'Ajuste final / uso real', title: 'Especialista licenciado', body: 'Entrega ao usuário, ajustes, validação final e acompanhamento.' },
 ];
 const SPORT_CONTEXT_CARDS = [
   {
     imagePosition: 'left' as const,
     title: 'Esportes de combate',
-    body: 'Para atletas de Jiu-Jitsu, MMA, boxe e kickboxing que vivem contato, pressão e repetição de impacto nos treinos.',
+    body: 'Para praticantes de Jiu-Jitsu, MMA, Boxe, Kickboxing e esportes com contato, apertamento mandibular e repetição de impactos.',
   },
   {
     imagePosition: 'center' as const,
     title: 'Força e alta intensidade',
-    body: 'Para quem busca uma interface personalizada entre mandíbula, movimento e treinos de carga ou esforço.',
+    body: 'Para praticantes de musculação, força, Cross Training, alta intensidade, atletismo e ciclismo que buscam uma interface personalizada com as demandas do movimento.',
   },
   {
     imagePosition: 'right' as const,
-    title: 'Esportes coletivos',
-    body: 'Para atletas com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
-  },
-];
-
-const INITIAL_COMPARISON_ROWS = 7;
-
-const COMPARISON = [
-  {
-    icon: ShieldCheck,
-    criterion: 'Adequação para Treinos e Competições de Lutas, esportes de contato e alto risco de colisão facial',
-    generic: 'Baixa',
-    traditional: 'Alta',
-    biteplaner: 'Alta',
-  },
-  {
-    icon: Dumbbell,
-    criterion:
-      'Adequação para Treinos de força, Musculação, Alta intensidade, Cross training, Competições e Todos os esportes, atividades e cenários que ocorra Apertamento Mandibular',
-    generic: 'Não',
-    traditional: 'Não',
-    biteplaner: 'Total',
-  },
-  {
-    icon: BadgeCheck,
-    criterion: 'Proteção dental contra impactos',
-    generic: 'Parcial',
-    traditional: 'Sim',
-    biteplaner: 'Sim',
-  },
-  {
-    icon: Target,
-    criterion: 'Interface mandibular individualizada',
-    generic: 'Não',
-    traditional: 'Indireta',
-    biteplaner: 'Projetada a partir de avaliação e parâmetros individualizados',
-  },
-  {
-    icon: Activity,
-    criterion: 'Aplicação durante treinos de força e alta intensidade',
-    generic: 'Não',
-    traditional: 'Limitada',
-    biteplaner: 'Desenvolvida para esse contexto de uso',
-  },
-  {
-    icon: SlidersHorizontal,
-    criterion: 'Acompanhamento profissional',
-    generic: 'Não',
-    traditional: 'Secundário',
-    biteplaner: 'Presente na avaliação, adaptação e acompanhamento do uso',
-  },
-  {
-    icon: Heart,
-    criterion: 'Conforto em uso prolongado',
-    generic: 'Não',
-    traditional: 'Parcial',
-    biteplaner: 'Projetado para maior conforto e adaptação individualizada',
-  },
-  {
-    icon: Zap,
-    criterion: 'Interferência na fala',
-    generic: 'Alta',
-    traditional: 'Moderada',
-    biteplaner: 'Geralmente menor',
-  },
-  {
-    icon: Trophy,
-    criterion: 'Momento típico de uso no Esporte',
-    generic: 'Durante treinos com risco de impacto',
-    traditional: 'Durante competições/jogos e treinos com risco de impacto',
-    biteplaner:
-      'Durante treinos de força e alta intensidade, conforme avaliação e contexto do usuário',
-  },
-  {
-    icon: SlidersHorizontal,
-    criterion: 'Personalização',
-    generic: 'Baixa (“Boil and bite”)',
-    traditional: 'Sob medida',
-    biteplaner:
-      'Totalmente Individualizado com ajustes tecnológicos precisos de acordo com os esportes, atividades e contexto do usuário',
-  },
-  {
-    icon: BadgeCheck,
-    criterion: 'Qualidade da Matéria-prima',
-    generic: 'Muito Baixa',
-    traditional: 'Moderada',
-    biteplaner: 'Alta',
-  },
-  {
-    icon: Star,
-    criterion: 'Estágio de desenvolvimento',
-    generic: 'Muito baixa',
-    traditional: 'Parcial (apenas proteção dental)',
-    biteplaner: 'Em processo de validação técnica e científica',
-  },
-  {
-    icon: Target,
-    criterion: 'Relação custo-benefício em contato pleno',
-    generic: 'Ruim',
-    traditional: 'Muito favorável (redução de traumas graves)',
-    biteplaner: 'Relevante para uma solução individualizada e acompanhada',
-  },
-  {
-    icon: Dumbbell,
-    criterion: 'Relação custo-benefício em atividades de força/intensidade',
-    generic: 'Ruim',
-    traditional: 'Limitada, pois não ataca o problema dos traumas na ATM',
-    biteplaner: 'Depende do contexto, da adaptação e da avaliação profissional',
-  },
-  {
-    icon: Trophy,
-    criterion: 'Foco em performance a longo prazo',
-    generic: 'Baixo',
-    traditional: 'Indireto (preserva integridade dentária)',
-    biteplaner: 'Orientado à consistência da experiência de treino, sem promessa clínica',
-  },
-  {
-    icon: Zap,
-    criterion: 'Tecnologia e Aperfeiçoamento Científico Contínuo',
-    generic: 'Não',
-    traditional: 'Não',
-    biteplaner: 'O BITEPLANER encontra-se em processo contínuo de aperfeiçoamento, validação técnica e científica',
-  },
-  {
-    icon: Activity,
-    criterion: 'Integração com plataforma de Dados',
-    generic: 'Não',
-    traditional: 'Não',
-    biteplaner: 'Primeira tecnologia da plataforma NEXOR ADVANCE',
+    title: 'Esportes de contato',
+    body: 'Para praticantes de Handebol, Futebol, Rugby e esportes com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
   },
 ];
 
@@ -290,7 +115,7 @@ const CUSTOMER_COMMENTS = [
 const FAQ = [
   {
     q: 'O que é Biteplaner?',
-    a: 'O Biteplaner é um dispositivo bucal personalizado para atletas, com avaliação odontológica, produção sob protocolo e acompanhamento profissional.',
+    a: 'O BITEPLANER é uma tecnologia esportiva individualizada para acompanhar demandas funcionais da região mandibular. A jornada inclui avaliação especializada, configuração individual e acompanhamento profissional.',
   },
   {
     q: 'Por que preciso passar por avaliação odontológica?',
@@ -306,62 +131,59 @@ const FAQ = [
   },
   {
     q: 'Para quais esportes o Biteplaner é indicado?',
-    a: 'O Biteplaner é indicado para TODOS esportes, principalmente para praticantes expostos a contato, impacto repetido ou treinos intensos.',
+    a: 'Foi desenvolvido para diferentes demandas esportivas, incluindo atividades com esforço intenso, apertamento mandibular, contato ou impacto oral. A aplicação depende da avaliação individual por especialista licenciado.',
   },
 ];
 
 export function BiteplanerPage() {
-  const [comparisonExpanded, setComparisonExpanded] = useState(false);
-  const visibleComparisonRows = comparisonExpanded ? COMPARISON : COMPARISON.slice(0, INITIAL_COMPARISON_ROWS);
 
   return (
     <S.Page id="main-content" tabIndex={-1}>
-      <S.ProductImageHero aria-label="Biteplaner em destaque">
-        <S.ProductHeroVideo
-          autoPlay
-          muted
-          playsInline
-          preload="metadata"
-          poster={heroSectionProduct}
-          aria-hidden="true"
-        >
-          <source src={heroBiteplanerVideo} type="video/mp4" media="(min-width: 721px)" />
-        </S.ProductHeroVideo>
-        <S.ProductHeroPicture>
-          <source media="(max-width: 720px)" srcSet={heroSectionProductMobile} />
-          <S.ProductHeroImage src={heroSectionProduct} alt="Biteplaner" />
-        </S.ProductHeroPicture>
-      </S.ProductImageHero>
-
       <S.HeroSection>
-        <S.HeroForegroundItem src={heroSectionItem} alt="" aria-hidden="true" />
         <S.HeroCopy>
-          <S.HeroTitle aria-label="Interface. Precisão. Performance.">
+          <S.HeroTitle aria-label="Interface. Personalização. Performance.">
             Interface.
             <br />
-            <span style={{ color: '#1c5e3a' }}>Precisão.</span>
-            <br />
-            Performance.
+            <S.MarketingTitleAccent>Personalização.</S.MarketingTitleAccent>
+            <br />Performance.
           </S.HeroTitle>
           <S.HeroSubtitle>
-            Tecnologia personalizada para a interface mandibular durante o treinamento de força, construída por meio de
-            avaliação profissional, escaneamento intraoral, parâmetros técnicos e acompanhamento.
+            Tecnologia individualizada para acompanhar as demandas funcionais da região mandibular durante a prática esportiva.
           </S.HeroSubtitle>
           <S.HeroActions>
-            <S.PrimaryCta to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
-              Iniciar elegibilidade <span aria-hidden="true">→</span>
+            <S.PrimaryCta to="/biteplaner#biteplaner-contato" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+              Quero saber mais <span aria-hidden="true">→</span>
             </S.PrimaryCta>
-            <S.SecondaryCta href="#como-funciona">Ver como funciona</S.SecondaryCta>
+            <S.SecondaryCta href="#como-funciona">Conheça a tecnologia</S.SecondaryCta>
           </S.HeroActions>
         </S.HeroCopy>
       </S.HeroSection>
 
+      <S.ApproachSection aria-labelledby="biteplaner-approach-title">
+        <S.SectionIntro>
+          <S.MarketingSectionTitle id="biteplaner-approach-title">Uma nova abordagem para a interface entre função mandibular e esporte.</S.MarketingSectionTitle>
+          <S.MarketingSectionLead>
+            O BITEPLANER parte da individualização da função mandibular e da relação do dispositivo com as demandas específicas do usuário e da atividade. Sua arquitetura combina configuração individualizada, adaptação, fundamentos biomecânicos e recursos de proteção da região oral.
+          </S.MarketingSectionLead>
+        </S.SectionIntro>
+        <S.ApproachGrid>
+          <S.ApproachCard><h3>Função mandibular individualizada</h3><p>Configuração orientada às características do usuário e às demandas da atividade.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Biomecânica mandibular</h3><p>O desenvolvimento considera a relação entre posição mandibular, contatos oclusais, musculatura e demandas articulares.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Potencial relação com desempenho</h3><p>A literatura investiga efeitos de dispositivos oclusais sobre força, potência e desempenho. Esse campo integra o racional tecnológico do BITEPLANER.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Controle postural e estabilidade</h3><p>A relação entre dispositivos oclusais, equilíbrio e controle postural faz parte do campo científico considerado no desenvolvimento.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Demandas articulares</h3><p>Estudos experimentais apontam que aparelhos e designs distintos podem modificar pressão intra-articular, espaço articular e atividade muscular. Esse princípio orienta a abordagem individualizada.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Proteção da região oral</h3><p>Recursos destinados à proteção dos dentes e da região oral em atividades sujeitas a contato ou impacto.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Adaptação e conforto</h3><p>O planejamento individualizado busca adequada adaptação e integração à prática esportiva.</p></S.ApproachCard>
+          <S.ApproachCard><h3>Evolução técnica e científica</h3><p>Desenvolvimento, validação, documentação e aperfeiçoamento contínuos.</p></S.ApproachCard>
+        </S.ApproachGrid>
+      </S.ApproachSection>
+
       <S.TrustOuter>
         <S.TrustHero>
           <S.TrustIntro>
-            <S.MarketingSectionTitle>Educação para decidir <S.MarketingTitleAccent>melhor</S.MarketingTitleAccent></S.MarketingSectionTitle>
+            <S.MarketingSectionTitle $size="feature">Biomecânica mandibular: por que a configuração importa</S.MarketingSectionTitle>
             <S.MarketingSectionLead>
-              Informações e tecnologia para transformar performance em decisões mais inteligentes.
+              A relação entre mandíbula, contatos oclusais, musculatura e ATM é biomecanicamente complexa. Estudos com aparelhos interoclusais ajudam a fundamentar o desenvolvimento; não representam ensaios clínicos do BITEPLANER.
             </S.MarketingSectionLead>
           </S.TrustIntro>
         </S.TrustHero>
@@ -402,8 +224,7 @@ export function BiteplanerPage() {
           <S.SectionIntro>
             <S.MarketingSectionTitle>Da elegibilidade ao acompanhamento</S.MarketingSectionTitle>
             <S.MarketingSectionLead>
-              A jornada foi desenhada para que o atleta entenda o passo a passo e possa adquirir o dispositivo
-              após avaliação do dentista.
+              A jornada foi desenhada para que o usuário entenda o passo a passo e possa adquirir dispositivo mediante avaliação de especialista licenciado
             </S.MarketingSectionLead>
           </S.SectionIntro>
           <S.JourneyGrid data-testid="biteplaner-process-journey">
@@ -431,27 +252,16 @@ export function BiteplanerPage() {
               </S.StepCard>
             ))}
           </S.JourneyGrid>
-          <S.ProcessAssurance>
-            <S.ProcessAssuranceIcon aria-hidden="true">
-              <ShieldCheck size={48} strokeWidth={1.45} />
-            </S.ProcessAssuranceIcon>
-            <div>
-              <strong>Transparência em cada etapa</strong>
-              <p>Você sempre saberá em que etapa está e o que vem a seguir.</p>
-            </div>
-          </S.ProcessAssurance>
         </S.SplitSection>
       </S.ProcessOuter>
 
       <S.RealRoutineSection>
         <S.RealRoutineContent>
           <S.MarketingSectionTitle $size="feature">
-            Feito para a rotina real de <span>treinos e competições</span>
+            Desenvolvido para <span>diferentes demandas esportivas</span>
           </S.MarketingSectionTitle>
           <S.MarketingSectionLead $size="feature">
-            Nos esportes individuais ou coletivos de combate, força e alta intensidade, durante treinos e competições,
-            muitos atletas absorvem contato, apertam a mandíbula ou acumulam tensão sem perceber. O Biteplaner® modula
-            as sobrecargas através de um processo tecnológico e avaliações periódicas.
+            Pode ser aplicado em contextos nos quais demandas mandibulares, apertamento, estabilidade funcional ou contato e impacto oral façam parte da atividade. O BITEPLANER considera uma interface tecnológica individualizada, avaliações periódicas e evolução contínua.
           </S.MarketingSectionLead>
         </S.RealRoutineContent>
         <S.RealRoutineVisual>
@@ -464,113 +274,6 @@ export function BiteplanerPage() {
           ))}
         </S.RealRoutineVisual>
       </S.RealRoutineSection>
-
-      <S.ComparisonSection>
-        <S.ComparisonHeader>
-          <S.SectionIntro>
-            <S.MarketingSectionTitle>Protetores Bucais vs <S.MarketingTitleAccent>Biteplaner</S.MarketingTitleAccent></S.MarketingSectionTitle>
-            <S.MarketingSectionLead>
-              Compare abordagens e entenda como o BITEPLANER combina interface individualizada, precisão técnica e aplicação profissional.
-            </S.MarketingSectionLead>
-          </S.SectionIntro>
-          <S.ComparisonProductVisual>
-            <picture>
-              <source srcSet={publicOptimizedImages.biteplaner.faqProduct.avif} type="image/avif" />
-              <img
-                src={publicOptimizedImages.biteplaner.faqProduct.webp}
-                alt="Dispositivo Biteplaner na comparação"
-                loading="lazy"
-              />
-            </picture>
-          </S.ComparisonProductVisual>
-        </S.ComparisonHeader>
-        <S.ComparisonTableViewport
-          role="region"
-          aria-label="Tabela comparativa com rolagem horizontal"
-          tabIndex={0}
-        >
-          <S.ComparisonTable>
-            <thead>
-              <tr>
-                <th>Critério</th>
-                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Genérico</S.ColumnHeaderContent></th>
-                <th><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.5} />Protetor Tradicional</S.ColumnHeaderContent></th>
-                <th data-highlighted-column="true" style={{ fontSize: 18 }}><S.ColumnHeaderContent><ShieldCheck aria-hidden="true" size={25} strokeWidth={1.7} />BITEPLANER</S.ColumnHeaderContent></th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
-                <tr key={row.criterion}>
-                  <td>
-                    <S.CriterionContent>
-                      <S.CriterionIcon data-testid="comparison-criterion-icon">
-                        <Icon aria-hidden="true" size={32} strokeWidth={1.7} />
-                      </S.CriterionIcon>
-                      <span>{row.criterion}</span>
-                    </S.CriterionContent>
-                  </td>
-                  <td><S.ComparisonValue>{row.generic}</S.ComparisonValue></td>
-                  <td><S.ComparisonValue>{row.traditional}</S.ComparisonValue></td>
-                  <td data-highlighted-cell="true"><S.ComparisonValue>{row.biteplaner}</S.ComparisonValue></td>
-                </tr>
-              ))}
-            </tbody>
-          </S.ComparisonTable>
-        </S.ComparisonTableViewport>
-        <S.MobileComparisonLayout aria-label="Comparação entre protetores bucais e Biteplaner">
-          <S.MobileComparisonLegend aria-hidden="true">
-            <S.MobileComparisonLegendItem>
-              <ShieldCheck size={34} strokeWidth={1.5} />
-              <span>Protetor genérico</span>
-            </S.MobileComparisonLegendItem>
-            <S.MobileComparisonLegendItem>
-              <ShieldCheck size={34} strokeWidth={1.5} />
-              <span>Protetor tradicional</span>
-            </S.MobileComparisonLegendItem>
-            <S.MobileComparisonLegendItem $highlighted>
-              <ShieldCheck size={34} strokeWidth={1.6} />
-              <span>Biteplaner</span>
-            </S.MobileComparisonLegendItem>
-          </S.MobileComparisonLegend>
-
-          <S.MobileComparisonCards>
-            {visibleComparisonRows.map(({ icon: Icon, ...row }) => (
-              <S.MobileComparisonCard
-                key={`mobile-${row.criterion}`}
-                aria-label={`${row.criterion}: protetor genérico ${row.generic}, protetor tradicional ${row.traditional}, Biteplaner ${row.biteplaner}`}
-              >
-                <S.MobileComparisonCriterion>
-                  <S.MobileComparisonCriterionIcon aria-hidden="true">
-                    <Icon size={34} strokeWidth={1.7} />
-                  </S.MobileComparisonCriterionIcon>
-                  <h3 aria-label={row.criterion} data-label={row.criterion} />
-                </S.MobileComparisonCriterion>
-
-                <S.MobileComparisonValueRow>
-                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
-                  <strong aria-label="Protetor genérico" data-label="Protetor genérico" />
-                  <span aria-label={row.generic} data-value={row.generic} />
-                </S.MobileComparisonValueRow>
-                <S.MobileComparisonValueRow>
-                  <ShieldCheck size={24} strokeWidth={1.5} aria-hidden="true" />
-                  <strong aria-label="Protetor tradicional" data-label="Protetor tradicional" />
-                  <span aria-label={row.traditional} data-value={row.traditional} />
-                </S.MobileComparisonValueRow>
-                <S.MobileComparisonValueRow $highlighted>
-                  <ShieldCheck size={24} strokeWidth={1.6} aria-hidden="true" />
-                  <strong aria-label="Biteplaner" data-label="Biteplaner" />
-                  <span aria-label={row.biteplaner} data-value={row.biteplaner} />
-                </S.MobileComparisonValueRow>
-              </S.MobileComparisonCard>
-            ))}
-          </S.MobileComparisonCards>
-        </S.MobileComparisonLayout>
-        {!comparisonExpanded ? (
-          <S.ComparisonToggleButton type="button" onClick={() => setComparisonExpanded(true)}>
-            Mostrar comparação completa
-          </S.ComparisonToggleButton>
-        ) : null}
-      </S.ComparisonSection>
 
       <S.CommentsSection aria-labelledby="biteplaner-comments-title">
         <S.SectionIntro>
@@ -624,16 +327,17 @@ export function BiteplanerPage() {
           <S.FinalCtaContent>
             <S.MarketingSectionTitle $tone="light">Comece pela elegibilidade</S.MarketingSectionTitle>
             <S.MarketingSectionLead $tone="light">
-              Conheça o BITEPLANER e avance para a avaliação inicial com um profissional antes de qualquer pagamento do produto.
+              Conheça o BITEPLANER e avance para a avaliação inicial com um profissional.
             </S.MarketingSectionLead>
           </S.FinalCtaContent>
           <S.FinalCtaAction>
-            <S.FinalButton to="/cadastro" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
-              Iniciar elegibilidade <span aria-hidden="true">→</span>
+            <S.FinalButton to="/biteplaner#biteplaner-contato" whileHover={{ y: -2, scale: 1.015 }} whileTap={{ scale: 0.98 }}>
+              Entrar em contato <span aria-hidden="true">→</span>
             </S.FinalButton>
           </S.FinalCtaAction>
         </S.FinalCtaInner>
       </S.FinalCtaOuter>
+      <div id="biteplaner-contato"><Contato /></div>
     </S.Page>
   );
 }

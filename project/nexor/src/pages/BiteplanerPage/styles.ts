@@ -101,6 +101,39 @@ export const Page = styled.main`
   }
 `;
 
+export const ApproachSection = styled.section`
+  ${fullBleedSection}
+  ${pageContainer}
+  padding-top: 92px;
+  padding-bottom: 92px;
+  background: #f4f7f5;
+
+  @media (max-width: 900px) {
+    padding-top: 54px;
+    padding-bottom: 54px;
+  }
+`;
+
+export const ApproachGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 36px;
+
+  @media (max-width: 900px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 560px) { grid-template-columns: 1fr; }
+`;
+
+export const ApproachCard = styled.article`
+  min-height: 185px;
+  padding: 24px;
+  border: 1px solid #dfe7e2;
+  border-radius: 10px;
+  background: #fff;
+  h3 { margin: 0 0 12px; color: #1c5e3a; font-size: 16px; }
+  p { margin: 0; color: #4b5563; font-size: 14px; line-height: 1.65; }
+`;
+
 export const ProductImageHero = styled.section`
   padding-top: var(--public-header-height);
 `;
@@ -192,7 +225,7 @@ export const HeroTitle = styled.h1`
   text-transform: uppercase;
 
   @media (max-width: 640px) {
-    font-size: ${typeScale.heroTitleMobile};
+    font-size: clamp(25px, 8.5vw, 34px);
     line-height: 1;
   }
 `;

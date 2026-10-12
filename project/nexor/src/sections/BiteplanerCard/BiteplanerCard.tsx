@@ -2,9 +2,10 @@ import { publicOptimizedImages } from '../../assets/publicOptimizedImages';
 import * as S from './styles';
 
 const FEATURES = [
-  'Avaliação odontológica completa com profissionais licenciados',
-  'Produção externa personalizada coordenada pela Nexor',
-  'Acompanhamento profissional durante todo o ciclo de uso',
+  'Avaliação com especialista licenciado',
+  'Produção personalizada direcionada pela Nexor Advance',
+  'Personalização apoiada por precisão digital',
+  'Acompanhamento e retornos periódicos para máxima função e performance',
 ];
 
 export function BiteplanerCard() {
@@ -21,7 +22,7 @@ export function BiteplanerCard() {
           decoding="async"
         />
         <S.Tagline>
-          Protetor bucal personalizado desenvolvido com avaliação odontológica profissional e produção externa coordenada pela Nexor.
+          Tecnologia aplicada e evolução contínua. Um dispositivo esportivo individualizado desenvolvido para acompanhar as demandas funcionais da região mandibular, considerando adaptação, biomecânica e proteção da região oral.
         </S.Tagline>
       </S.CardHero>
 
@@ -37,7 +38,7 @@ export function BiteplanerCard() {
             <S.Badge>Premium</S.Badge>
             <S.Badge>Biteplaner · 2026</S.Badge>
           </S.Badges>
-          <S.Cta>Saiba mais → </S.Cta>
+          <S.Cta>Conheça o BITEPLANER → </S.Cta>
         </S.CardFooter>
       </S.CardBody>
     </S.Card>
