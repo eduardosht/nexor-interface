@@ -104,34 +104,226 @@ export const Page = styled.main`
 export const ApproachSection = styled.section`
   ${fullBleedSection}
   ${pageContainer}
-  padding-top: 92px;
-  padding-bottom: 92px;
-  background: #f4f7f5;
+  position: relative;
+  padding-top: 62px;
+  padding-bottom: 24px;
+  overflow: hidden;
+  &::before { content: ''; position: absolute; z-index: 0; top: -228px; right: 5%; width: 540px; aspect-ratio: 1; border: 1px solid rgba(28, 94, 58, 0.08); border-radius: 50%; box-shadow: 0 0 0 62px rgba(28, 94, 58, 0.025), 0 0 0 124px rgba(28, 94, 58, 0.018); pointer-events: none; }
+  > * { position: relative; z-index: 1; }
+  @media (max-width: 900px) { padding-top: 46px; padding-bottom: 18px; }
+`;
 
-  @media (max-width: 900px) {
-    padding-top: 54px;
-    padding-bottom: 54px;
-  }
+export const ApproachTop = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(300px, 0.9fr) 94px;
+  gap: 28px;
+  align-items: center;
+  min-height: 286px;
+  @media (max-width: 1000px) { grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr); gap: 18px; }
+  @media (max-width: 700px) { grid-template-columns: 1fr; min-height: 0; gap: 16px; }
+`;
+
+export const ApproachCopy = styled.div`
+  max-width: 720px;
+  ${MarketingSectionTitle} { max-width: 760px; color: #0a101d; font-size: clamp(42px, 3.7vw, 56px); line-height: 0.99; letter-spacing: -0.045em; font-weight: 800; text-transform: none; }
+  ${MarketingSectionLead} { max-width: 700px; margin-top: 18px; color: #414958; font-size: 15px; line-height: 1.62; }
+  @media (max-width: 700px) { ${MarketingSectionTitle} { font-size: clamp(34px, 8.8vw, 48px); line-height: 1.02; } ${MarketingSectionLead} { margin-top: 14px; font-size: 14px; } }
+`;
+
+export const ApproachEyebrow = styled.div`
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  color: ${bp.accentStrong}; font-family: ${({ theme }) => theme.fonts.display}; font-size: 10px; font-weight: 800; letter-spacing: 0.24em; text-transform: uppercase;
+  &::before { content: ''; width: 24px; height: 1px; background: ${bp.accentStrong}; }
+`;
+
+export const ApproachImage = styled.img`
+  display: block; width: min(100%, 520px); height: auto; border-radius: 18px; object-fit: contain; box-shadow: 0 22px 48px rgba(8, 19, 15, 0.18);
+  @media (max-width: 700px) { width: min(100%, 450px); }
 `;
 
 export const ApproachGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  margin-top: 36px;
+  margin-top: 20px;
 
   @media (max-width: 900px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   @media (max-width: 560px) { grid-template-columns: 1fr; }
 `;
 
 export const ApproachCard = styled.article`
-  min-height: 185px;
-  padding: 24px;
+  min-height: 276px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 24px 25px 17px;
   border: 1px solid #dfe7e2;
-  border-radius: 10px;
-  background: #fff;
-  h3 { margin: 0 0 12px; color: #1c5e3a; font-size: 16px; }
-  p { margin: 0; color: #4b5563; font-size: 14px; line-height: 1.65; }
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.9);
+  h3 { margin: 12px 0 10px; color: #0b1220; font-size: 17px; line-height: 1.22; font-weight: 750; letter-spacing: -0.02em; }
+  p { margin: 0; color: #4b5362; font-size: 14px; line-height: 1.55; }
+  @media (max-width: 900px) { min-height: 238px; padding: 19px; }
+  @media (max-width: 560px) { min-height: 0; padding: 20px; }
+`;
+
+export const ApproachCardIndex = styled.div`
+  display: flex; align-items: center; gap: 14px; color: ${bp.accentStrong}; font-size: 14px; font-weight: 700;
+  span { display: block; width: 28px; height: 1px; background: ${bp.accentStrong}; }
+`;
+
+export const ApproachCardMeta = styled.div`
+  width: 100%; margin-top: auto; padding-top: 12px; border-top: 1px solid #dfe4e1;
+  color: #4b5362; font-family: ${({ theme }) => theme.fonts.display}; font-size: 9px; font-weight: 700; letter-spacing: 0.22em; line-height: 1.3; text-transform: uppercase;
+`;
+
+export const ScienceSection = styled.section`
+  ${fullBleedSection}
+  ${pageContainer}
+  position: relative;
+  isolation: isolate;
+  padding-top: 70px;
+  padding-bottom: 76px;
+  overflow: hidden;
+  background: linear-gradient(120deg, #fbfcfb 0%, #ffffff 54%, #f8faf9 100%);
+
+  &::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: -320px;
+    right: -70px;
+    width: min(48vw, 620px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(28, 94, 58, 0.055);
+    border-radius: 50%;
+    box-shadow: 0 0 0 68px rgba(28, 94, 58, 0.022), 0 0 0 138px rgba(28, 94, 58, 0.016);
+    pointer-events: none;
+  }
+
+  @media (max-width: 900px) {
+    padding-top: 50px;
+    padding-bottom: 54px;
+    &::before { width: 440px; right: -250px; top: -230px; }
+  }
+`;
+
+export const ScienceIntro = styled.div`
+  max-width: 940px;
+  margin-bottom: 32px;
+
+  ${MarketingSectionTitle} {
+    max-width: 850px;
+    color: #0a101d;
+    font-size: clamp(42px, 5vw, 70px);
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+    font-weight: 800;
+    text-transform: none;
+  }
+
+  ${MarketingSectionLead} {
+    max-width: 930px;
+    margin-top: 18px;
+    color: #687184;
+    font-size: clamp(16px, 1.55vw, 19px);
+    line-height: 1.55;
+  }
+
+  @media (max-width: 700px) {
+    margin-bottom: 24px;
+    ${MarketingSectionTitle} { font-size: clamp(36px, 9vw, 50px); line-height: 1.04; }
+    ${MarketingSectionLead} { margin-top: 14px; font-size: 15px; }
+  }
+`;
+
+export const ScienceGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; gap: 16px; }
+`;
+
+export const ScienceCard = styled.article`
+  min-width: 0;
+  min-height: 760px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 27px 0;
+  border: 1px solid #e0e7e4;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.88);
+
+  @media (max-width: 1100px) { min-height: 800px; padding-inline: 21px; }
+  @media (max-width: 900px) { min-height: 0; padding: 24px 24px 0; }
+  @media (max-width: 560px) { padding: 21px 19px 0; }
+`;
+
+export const ScienceCategory = styled.div`
+  margin-bottom: 22px;
+  color: #717a8b;
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 1.35;
+  text-transform: uppercase;
+`;
+
+export const ScienceCardTitle = styled.h3`
+  margin: 0 0 18px;
+  color: #0a101d;
+  font-size: clamp(22px, 2.15vw, 30px);
+  font-weight: 750;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+
+  @media (max-width: 900px) { font-size: 27px; }
+  @media (max-width: 560px) { font-size: 24px; }
+`;
+
+export const ScienceCallout = styled.p`
+  margin: 0 0 20px;
+  padding: 18px 20px;
+  border-radius: 7px;
+  background: linear-gradient(110deg, #f0f5f2, #f6f8f7);
+  color: #172033;
+  font-size: 15px;
+  font-weight: 550;
+  line-height: 1.55;
+
+  @media (max-width: 560px) { padding: 15px 16px; font-size: 14px; }
+`;
+
+export const ScienceBody = styled.p`
+  margin: 0;
+  color: #697386;
+  font-size: 15px;
+  line-height: 1.62;
+
+  @media (max-width: 560px) { font-size: 14px; }
+`;
+
+export const ScienceImageFrame = styled.div`
+  width: calc(100% + 54px);
+  max-height: 330px;
+  aspect-ratio: 1.08;
+  display: block;
+  margin: auto -27px 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 72%, rgba(0, 0, 0, 0.65) 88%, transparent 100%);
+
+  @media (max-width: 1100px) { width: calc(100% + 42px); margin-inline: -21px; }
+  @media (max-width: 900px) { width: calc(100% + 48px); max-height: 350px; margin-inline: -24px; }
+  @media (max-width: 560px) { width: calc(100% + 38px); margin-inline: -19px; }
+`;
+
+export const ScienceSpriteImage = styled.img<{ $index: number }>`
+  display: block;
+  width: 300%;
+  max-width: none;
+  height: auto;
+  transform: translateX(${({ $index }) => -$index * 33.333333}%);
 `;
 
 export const ProductImageHero = styled.section`
@@ -1459,8 +1651,6 @@ export const TrustHero = styled.div`
 `;
 
 export const TrustIntro = styled.div`
-  max-width: 680px;
-
   ${MarketingEyebrow} {
     position: relative;
     margin-bottom: 36px;

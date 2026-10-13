@@ -1,6 +1,5 @@
 import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
 import { reactRouter } from '@react-router/dev/vite';
 import babel from '@rolldown/plugin-babel';
 
@@ -10,7 +9,6 @@ const projectRootPath = fileURLToPath(new URL('../..', import.meta.url));
 export default defineConfig({
   base: '/',
   plugins: [
-    react(),
     babel({
       plugins: [['babel-plugin-styled-components', { displayName: false, ssr: true }]],
     }),
@@ -21,18 +19,23 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'styled-components'],
     alias: {
       '@nexor/design-system': designSystemPath,
-      react: fileURLToPath(new URL('./node_modules/react', import.meta.url)),
-      'react-dom': fileURLToPath(new URL('./node_modules/react-dom', import.meta.url)),
       'styled-components': fileURLToPath(new URL('./node_modules/styled-components', import.meta.url)),
     },
   },
   ssr: {
-    noExternal: true,
+    noExternal: ['styled-components'],
   },
   server: {
-    port: 5173,
+    host: '0.0.0.0',
+    port: 4174,
+    strictPort: true,
     fs: {
       allow: [projectRootPath],
     },
+  },
+  preview: {
+    host: '0.0.0.0',
+    port: 4175,
+    strictPort: true,
   },
 });

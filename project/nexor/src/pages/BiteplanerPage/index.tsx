@@ -13,6 +13,7 @@ import {
 import type { Variants } from 'motion/react';
 import { Collapse } from '@nexor/design-system';
 import { Contato } from '../../sections/Contato/Contato';
+import scienceIllustrations from '../../assets/science-illustrations-triptych.webp';
 import * as S from './styles';
 
 const cardVariants: Variants = {
@@ -51,6 +52,40 @@ const SPORT_CONTEXT_CARDS = [
     imagePosition: 'right' as const,
     title: 'Esportes de contato',
     body: 'Para praticantes de Handebol, Futebol, Rugby e esportes com contato, disputas físicas, cabeçadas ou choques frequentes em quadra, campo ou pista.',
+  },
+];
+
+const DIFFERENTIALS = [
+  { title: 'Função mandibular individualizada', body: 'Configuração orientada às características do usuário e às demandas da atividade.', meta: 'Usuário no centro' },
+  { title: 'Biomecânica mandibular', body: 'O desenvolvimento considera a relação entre posição mandibular, contatos oclusais, musculatura e demandas articulares.', meta: 'Base científica' },
+  { title: 'Potencial relação com desempenho', body: 'A literatura investiga efeitos de dispositivos oclusais sobre força, potência e desempenho. Esse campo integra o racional tecnológico do BITEPLANER.', meta: 'Ciência e performance' },
+  { title: 'Controle postural e estabilidade', body: 'A relação entre dispositivos oclusais, equilíbrio e controle postural faz parte do campo científico considerado no desenvolvimento.', meta: 'Estabilidade em foco' },
+  { title: 'Demandas articulares', body: 'Estudos experimentais apontam que aparelhos e designs distintos podem modificar pressão intra-articular, espaço articular e atividade muscular. Esse princípio orienta a abordagem individualizada.', meta: 'Articulação em equilíbrio' },
+  { title: 'Proteção da região oral', body: 'Recursos destinados à proteção dos dentes e da região oral em atividades sujeitas a contato ou impacto.', meta: 'Segurança na prática' },
+  { title: 'Adaptação e conforto', body: 'O planejamento individualizado busca adequada adaptação e integração à prática esportiva.', meta: 'Uso contínuo' },
+  { title: 'Evolução técnica e científica', body: 'Desenvolvimento, validação, documentação e aperfeiçoamento contínuos.', meta: 'Inovação constante' },
+];
+
+const SCIENCE_CARDS = [
+  {
+    category: 'Biomecânica e ATM',
+    title: 'Biomecânica mandibular: por que a configuração importa',
+    body: 'A relação entre mandíbula, contatos oclusais, musculatura e ATM (Articulação Temporomandibular) é biomecanicamente complexa. Estudos experimentais demonstram que aparelhos interoclusais podem modificar pressão intra-articular e que design e espessura podem alterar distribuição de cargas e atividade muscular. No BITEPLANER, esse conhecimento integra o racional de desenvolvimento e a definição individualizada dos parâmetros.',
+    imageAlt: 'Ilustração anatômica lateral da mandíbula, articulação temporomandibular e músculos da mastigação.',
+  },
+  {
+    category: 'Desempenho',
+    title: 'Função mandibular e desempenho',
+    callout: 'Desenvolvido considerando a relação entre função mandibular, controle neuromuscular e demandas de desempenho.',
+    body: 'A estabilidade mandibular pode influenciar padrões de ativação muscular, eficiência de movimentos e tolerância a cargas em diferentes modalidades esportivas. O BITEPLANER busca contribuir para um sistema mais estável, integrado e preparado para a performance.',
+    imageAlt: 'Ilustração médica de perfil da musculatura facial e mandibular.',
+  },
+  {
+    category: 'Equilíbrio e postura',
+    title: 'Controle postural e estabilidade',
+    callout: 'A relação entre função mandibular e controle postural é parte do campo científico considerado no desenvolvimento do BITEPLANER.',
+    body: 'Estudos apontam que alterações na oclusão podem influenciar o equilíbrio, a ativação muscular e o controle postural. O BITEPLANER considera essa integração para promover maior estabilidade funcional, especialmente em atividades que exigem coordenação, precisão e resposta rápida.',
+    imageAlt: 'Ilustração anatômica posterior do tronco, com coluna cervical e torácica em destaque.',
   },
 ];
 
@@ -160,33 +195,62 @@ export function BiteplanerPage() {
       </S.HeroSection>
 
       <S.ApproachSection aria-labelledby="biteplaner-approach-title">
-        <S.SectionIntro>
-          <S.MarketingSectionTitle id="biteplaner-approach-title">Uma nova abordagem para a interface entre função mandibular e esporte.</S.MarketingSectionTitle>
-          <S.MarketingSectionLead>
-            O BITEPLANER parte da individualização da função mandibular e da relação do dispositivo com as demandas específicas do usuário e da atividade. Sua arquitetura combina configuração individualizada, adaptação, fundamentos biomecânicos e recursos de proteção da região oral.
-          </S.MarketingSectionLead>
-        </S.SectionIntro>
+        <S.ApproachTop>
+          <S.ApproachCopy>
+            <S.ApproachEyebrow>Diferenciais</S.ApproachEyebrow>
+            <S.MarketingSectionTitle id="biteplaner-approach-title">Uma nova abordagem para a interface entre função mandibular e esporte.</S.MarketingSectionTitle>
+            <S.MarketingSectionLead>
+              O BITEPLANER parte da individualização da função mandibular e da relação do dispositivo com as demandas específicas do usuário e da atividade. Sua arquitetura combina configuração individualizada, adaptação, fundamentos biomecânicos e recursos de proteção da região oral.
+            </S.MarketingSectionLead>
+          </S.ApproachCopy>
+        </S.ApproachTop>
         <S.ApproachGrid>
-          <S.ApproachCard><h3>Função mandibular individualizada</h3><p>Configuração orientada às características do usuário e às demandas da atividade.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Biomecânica mandibular</h3><p>O desenvolvimento considera a relação entre posição mandibular, contatos oclusais, musculatura e demandas articulares.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Potencial relação com desempenho</h3><p>A literatura investiga efeitos de dispositivos oclusais sobre força, potência e desempenho. Esse campo integra o racional tecnológico do BITEPLANER.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Controle postural e estabilidade</h3><p>A relação entre dispositivos oclusais, equilíbrio e controle postural faz parte do campo científico considerado no desenvolvimento.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Demandas articulares</h3><p>Estudos experimentais apontam que aparelhos e designs distintos podem modificar pressão intra-articular, espaço articular e atividade muscular. Esse princípio orienta a abordagem individualizada.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Proteção da região oral</h3><p>Recursos destinados à proteção dos dentes e da região oral em atividades sujeitas a contato ou impacto.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Adaptação e conforto</h3><p>O planejamento individualizado busca adequada adaptação e integração à prática esportiva.</p></S.ApproachCard>
-          <S.ApproachCard><h3>Evolução técnica e científica</h3><p>Desenvolvimento, validação, documentação e aperfeiçoamento contínuos.</p></S.ApproachCard>
+          {DIFFERENTIALS.map(({ title, body, meta }, index) => (
+            <S.ApproachCard key={title}>
+              <S.ApproachCardIndex>{String(index + 1).padStart(2, '0')}<span aria-hidden="true" /></S.ApproachCardIndex>
+              <h3>{title}</h3><p>{body}</p>
+              <S.ApproachCardMeta>{meta}</S.ApproachCardMeta>
+            </S.ApproachCard>
+          ))}
         </S.ApproachGrid>
       </S.ApproachSection>
 
+      <S.ScienceSection aria-labelledby="biteplaner-science-title">
+        <S.ScienceIntro>
+          <S.MarketingSectionTitle id="biteplaner-science-title">Ciência aplicada à performance real.</S.MarketingSectionTitle>
+          <S.MarketingSectionLead>
+            O BITEPLANER é desenvolvido com base em evidências científicas que relacionam a função mandibular, a biomecânica e o desempenho físico. Cada aspecto do projeto considera a complexidade do sistema estomatognático e sua integração com o corpo como um todo.
+          </S.MarketingSectionLead>
+        </S.ScienceIntro>
+        <S.ScienceGrid>
+          {SCIENCE_CARDS.map(({ category, title, callout, body, imageAlt }, index) => (
+            <S.ScienceCard key={title}>
+              <S.ScienceCategory>{category}</S.ScienceCategory>
+              <S.ScienceCardTitle>{title}</S.ScienceCardTitle>
+              {callout && <S.ScienceCallout>{callout}</S.ScienceCallout>}
+              <S.ScienceBody>{body}</S.ScienceBody>
+              <S.ScienceImageFrame>
+                <S.ScienceSpriteImage
+                  src={scienceIllustrations}
+                  alt={imageAlt}
+                  $index={index}
+                />
+              </S.ScienceImageFrame>
+            </S.ScienceCard>
+          ))}
+        </S.ScienceGrid>
+      </S.ScienceSection>
+
       <S.TrustOuter>
-        <S.TrustHero>
-          <S.TrustIntro>
-            <S.MarketingSectionTitle $size="feature">Biomecânica mandibular: por que a configuração importa</S.MarketingSectionTitle>
-            <S.MarketingSectionLead>
-              A relação entre mandíbula, contatos oclusais, musculatura e ATM é biomecanicamente complexa. Estudos com aparelhos interoclusais ajudam a fundamentar o desenvolvimento; não representam ensaios clínicos do BITEPLANER.
-            </S.MarketingSectionLead>
-          </S.TrustIntro>
-        </S.TrustHero>
+        <S.SplitSection style={{
+          gap: 0,
+          padding: 0
+        }}>
+          <S.MarketingSectionTitle $size="feature">Biomecânica mandibular: por que a configuração importa</S.MarketingSectionTitle>
+          <S.MarketingSectionLead>
+            A relação entre mandíbula, contatos oclusais, musculatura e ATM é biomecanicamente complexa. Estudos com aparelhos interoclusais ajudam a fundamentar o desenvolvimento; não representam ensaios clínicos do BITEPLANER.
+          </S.MarketingSectionLead>
+        </S.SplitSection>
 
         <S.EducationRail>
           {EDUCATION.map(({ icon: Icon, title, body }, index) => (
