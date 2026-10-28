@@ -25,7 +25,7 @@ export function Hero() {
           </S.Headline>
 
           <S.Tagline variants={fadeUp}>
-            Desenvolvemos tecnologias para interfaces entre o corpo, o movimento e a tecnologia, combinando individualização, conhecimento especializado e evolução contínua.
+            Desenvolvemos tecnologias para interfaces entre corpo, movimento e tecnologia, combinando individualização, conhecimento especializado e evolução contínua.
           </S.Tagline>
 
           <S.Ctas variants={fadeUp}>

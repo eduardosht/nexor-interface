@@ -27,7 +27,7 @@ export function ParceirosTeaserSection() {
       <S.Section id="parceiros-teaser" ref={ref}>
         <motion.div variants={staggerContainer} initial="hidden" animate={inView ? 'visible' : 'hidden'}>
           <S.SectionLabel as={motion.p} variants={fadeUp}>Ecossistema</S.SectionLabel>
-          <S.Title as={motion.h2} variants={fadeUp}>Faça parte da rede Nexor</S.Title>
+          <S.Title as={motion.h2} variants={fadeUp}>Faça parte da rede Nexor Advance</S.Title>
 
           <S.Grid as={motion.div} variants={fadeUp}>
             {PARTNERS.map((p) => (
@@ -39,7 +39,7 @@ export function ParceirosTeaserSection() {
           </S.Grid>
 
           <S.CtaRow as={motion.div} variants={fadeUp}>
-            <S.CtaLink to="/parceiros">Conheça a rede Nexor</S.CtaLink>
+            <S.CtaLink to="/#contato">Conheça a rede Nexor</S.CtaLink>
           </S.CtaRow>
         </motion.div>
       </S.Section>

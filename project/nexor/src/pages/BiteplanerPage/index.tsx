@@ -158,11 +158,11 @@ const FAQ = [
   },
   {
     q: 'Eu pago antes da avaliação?',
-    a: 'Não. A compra é feita através da plataforma Nexor, na primeira consulta com o dentista, após a confirmação de sua aptidão clínica.',
+    a: 'Não. O pagamento é feito através do profissional licenciado, após confirmação de sua aptidão clínica.',
   },
   {
     q: 'E se eu não for considerado apto?',
-    a: 'A jornada é encerrada sem cobrança do produto. O dentista também pode indicar algum tratamento necessário antes de aprovar a aptidão.',
+    a: 'A jornada é encerrada sem cobrança da tecnologia Nexor Advance. O dentista também pode indicar algum tratamento necessário antes de aprovar a aptidão.',
   },
   {
     q: 'Para quais esportes o Biteplaner é indicado?',
@@ -219,7 +219,7 @@ export function BiteplanerPage() {
         <S.ScienceIntro>
           <S.MarketingSectionTitle id="biteplaner-science-title">Ciência aplicada à performance real.</S.MarketingSectionTitle>
           <S.MarketingSectionLead>
-            O BITEPLANER é desenvolvido com base em evidências científicas que relacionam a função mandibular, a biomecânica e o desempenho físico. Cada aspecto do projeto considera a complexidade do sistema estomatognático e sua integração com o corpo como um todo.
+            O BITEPLANER é desenvolvido com base em evidências científicas que relacionam função mandibular, biomecânica e desempenho físico. Cada aspecto do projeto considera a complexidade do sistema estomatognático e sua integração com o corpo como um todo.
           </S.MarketingSectionLead>
         </S.ScienceIntro>
         <S.ScienceGrid>

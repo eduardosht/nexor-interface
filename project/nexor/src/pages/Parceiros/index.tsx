@@ -28,7 +28,7 @@ const TRACKS = [
     anchor: 'dentistas',
     label: 'Dentistas licenciados',
     title: 'Dentista Licenciado',
-    desc: 'Licenciamento para avaliação clínica, registro odontológico e acompanhamento dos atletas que adquirem o dispositivo Biteplaner. Faça parte da rede de dentistas licenciados da Nexor.',
+    desc: 'Licenciamento para avaliação clínica, registro odontológico e acompanhamento dos atletas que adquirem o dispositivo Biteplaner. Faça parte da rede de dentistas licenciados da Nexor Advance.',
     tipo: 'dentista',
     steps: [
       { title: 'Licenciamento', body: 'Cadastro, validação do CRO e aprovação operacional para atuar no protocolo Biteplaner.' },
