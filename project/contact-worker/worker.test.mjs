@@ -66,3 +66,23 @@ test('preflight allows only POST and JSON for the Nexor origin', async () => {
   assert.equal(response.status, 204);
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://nexoradvance.com.br');
 });
+
+for (const [assunto, label] of [
+  ['biteplaner', 'Dúvidas sobre a Tecnologia Biteplaner'],
+  ['cadastro_biteplaner', 'Cadastro de usuário para acesso à Tecnologia Biteplaner'],
+  ['parceria', 'Dúvidas sobre Parcerias'],
+  ['cadastro_parceria', 'Cadastro para acesso à Parcerias'],
+  ['geral', 'Dúvidas Gerais'],
+  ['imprensa', 'Imprensa/Mídia'],
+  ['lgpd', 'LGPD'],
+  ['outro', 'Outro'],
+]) test(`accepts contact subject ${assunto} and sends its approved label`, async () => {
+  let message;
+  const response = await worker.fetch(request({ ...payload, assunto }), env, undefined, async (_url, init) => {
+    message = JSON.parse(init.body);
+    return Response.json({ id: 'accepted-subject' });
+  });
+  assert.equal(response.status, 200);
+  assert.equal(message.subject, `[Nexor] ${label}`);
+  assert.ok(message.text.includes(`Assunto: ${label}`));
+});

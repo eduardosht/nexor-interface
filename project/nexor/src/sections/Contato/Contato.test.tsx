@@ -28,9 +28,24 @@ describe('Contato', () => {
     fireEvent.change(screen.getByLabelText(/nome/i), { target: { name: 'nome', value: 'Maria Cliente' } });
     fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { name: 'email', value: 'maria@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
-    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^Dúvidas sobre Parcerias$/i }));
     fireEvent.change(screen.getByLabelText(/mensagem/i), { target: { name: 'mensagem', value: 'Mensagem para a Nexor Advance.' } });
   }
+
+  it('oferece os oito assuntos aprovados na ordem solicitada', () => {
+    renderContato();
+    fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
+    expect(screen.getAllByRole('option').map((option) => option.textContent?.trim())).toEqual([
+      'Dúvidas sobre a Tecnologia Biteplaner',
+      'Cadastro de usuário para acesso à Tecnologia Biteplaner',
+      'Dúvidas sobre Parcerias',
+      'Cadastro para acesso à Parcerias',
+      'Dúvidas Gerais',
+      'Imprensa/Mídia',
+      'LGPD',
+      'Outro',
+    ]);
+  });
 
   it.each([
     ['11987654321', '(11) 9 8765-4321'],
@@ -141,7 +156,7 @@ describe('Contato', () => {
       target: { name: 'email', value: 'maria@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
-    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^Dúvidas sobre Parcerias$/i }));
     fireEvent.change(screen.getByLabelText(/mensagem/i), {
       target: { name: 'mensagem', value: 'Gostaria de falar sobre parceria.' },
     });
@@ -170,7 +185,7 @@ describe('Contato', () => {
       target: { name: 'email', value: 'maria@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
-    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^Dúvidas sobre Parcerias$/i }));
     fireEvent.change(screen.getByLabelText(/mensagem/i), {
       target: { name: 'mensagem', value: 'Gostaria de falar sobre parceria.' },
     });

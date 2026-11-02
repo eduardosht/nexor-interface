@@ -38,3 +38,18 @@ em `../nexor/src/sections/Contato/Contato.test.tsx`.
 
 Uma resposta `{ "ok": true }` indica aceitação pelo Resend, não confirmação de
 entrega na caixa final. Erros preservam o formulário para nova tentativa.
+
+## Assuntos do formulário
+
+- Dúvidas sobre a Tecnologia Biteplaner
+- Cadastro de usuário para acesso à Tecnologia Biteplaner
+- Dúvidas sobre Parcerias
+- Cadastro para acesso à Parcerias
+- Dúvidas Gerais
+- Imprensa/Mídia
+- LGPD
+- Outro
+
+Os identificadores enviados pelo frontend são validados no Worker. O rótulo
+correspondente aparece no assunto e no corpo do e-mail. O identificador antigo
+`elegibilidade` permanece aceito para formulários carregados antes da atualização.

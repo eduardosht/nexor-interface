@@ -6,10 +6,12 @@ import { fadeUp, staggerContainer } from '../../styles/motion';
 import * as S from './styles';
 
 const ASSUNTOS = [
-  { value: 'parceria', label: 'Parcerias' },
-  { value: 'biteplaner', label: 'Dúvidas sobre BITEPLANER' },
-  { value: 'elegibilidade', label: 'Especialista licenciado / Elegibilidade BITEPLANER' },
-  { value: 'imprensa', label: 'Imprensa / Mídia' },
+  { value: 'biteplaner', label: 'Dúvidas sobre a Tecnologia Biteplaner' },
+  { value: 'cadastro_biteplaner', label: 'Cadastro de usuário para acesso à Tecnologia Biteplaner' },
+  { value: 'parceria', label: 'Dúvidas sobre Parcerias' },
+  { value: 'cadastro_parceria', label: 'Cadastro para acesso à Parcerias' },
+  { value: 'geral', label: 'Dúvidas Gerais' },
+  { value: 'imprensa', label: 'Imprensa/Mídia' },
   { value: 'lgpd', label: 'LGPD' },
   { value: 'outro', label: 'Outro' },
 ];

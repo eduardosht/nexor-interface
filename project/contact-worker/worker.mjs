@@ -1,5 +1,16 @@
 const origins = new Set(['https://nexoradvance.com.br', 'https://www.nexoradvance.com.br']);
-const subjects = { parceria: 'Parcerias', biteplaner: 'Dúvidas sobre BITEPLANER', elegibilidade: 'Elegibilidade BITEPLANER', imprensa: 'Imprensa / Mídia', lgpd: 'LGPD', outro: 'Outro' };
+const subjects = {
+  biteplaner: 'Dúvidas sobre a Tecnologia Biteplaner',
+  cadastro_biteplaner: 'Cadastro de usuário para acesso à Tecnologia Biteplaner',
+  parceria: 'Dúvidas sobre Parcerias',
+  cadastro_parceria: 'Cadastro para acesso à Parcerias',
+  geral: 'Dúvidas Gerais',
+  imprensa: 'Imprensa/Mídia',
+  lgpd: 'LGPD',
+  outro: 'Outro',
+  // Accept submissions from older cached versions of the public form.
+  elegibilidade: 'Elegibilidade BITEPLANER',
+};
 
 export default {
   async fetch(request, env, _ctx, fetcher = fetch) {
