@@ -20,6 +20,23 @@ test('sends to the fixed inbox and uses visitor email only as reply-to', async (
   assert.equal(message.reply_to, 'maria@example.com');
   assert.match(message.subject, /LGPD/);
 });
+for (const telefone of ['(11) 9 8765-4321', '(11) 3456-7890']) {
+  test(`includes optional Brazilian phone ${telefone} in email`, async () => {
+    let text;
+    const response = await worker.fetch(request({ ...payload, telefone }), env, undefined, async (_url, init) => {
+      text = JSON.parse(init.body).text;
+      return Response.json({ id: 'accepted-phone' });
+    });
+    assert.equal(response.status, 200);
+    assert.ok(text.includes(`Telefone: ${telefone}`));
+  });
+}
+for (const telefone of ['(11) 987', 'invalid', '11987654321\nBcc: attacker@example.com', 11987654321]) {
+  test(`rejects invalid optional phone ${JSON.stringify(telefone)}`, async () => {
+    const response = await worker.fetch(request({ ...payload, telefone }), env, undefined, async () => Response.json({ id: 'must-not-send' }));
+    assert.equal(response.status, 400);
+  });
+}
 for (const [label, body, origin, status] of [
   ['invalid email', { ...payload, email: 'bad' }, 'https://nexoradvance.com.br', 400],
   ['unknown subject', { ...payload, assunto: 'injected' }, 'https://nexoradvance.com.br', 400],

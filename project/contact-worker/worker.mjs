@@ -38,19 +38,20 @@ export default {
       let body;
       try { body = JSON.parse(new TextDecoder().decode(bytes)); } catch { return reply(400, { error: 'invalid_payload' }); }
       if (!body || Array.isArray(body) || typeof body !== 'object') return reply(400, { error: 'invalid_payload' });
-      const { nome, email, assunto, mensagem, website } = body;
+      const { nome, email, assunto, mensagem, website, telefone } = body;
       if (typeof nome !== 'string' || nome.trim().length < 2 || nome.length > 120 || /[\r\n]/.test(nome) ||
           typeof email !== 'string' || email.length > 160 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
           typeof assunto !== 'string' || !Object.hasOwn(subjects, assunto) ||
           typeof mensagem !== 'string' || mensagem.trim().length < 10 || mensagem.length > 2000 ||
-          (website !== undefined && website !== '')) return reply(400, { error: 'invalid_payload' });
+          (website !== undefined && website !== '') ||
+          (telefone !== undefined && telefone !== '' && (typeof telefone !== 'string' || !/^\([1-9]\d\) (?:9 \d{4}-\d{4}|[2-5]\d{3}-\d{4})$/.test(telefone)))) return reply(400, { error: 'invalid_payload' });
       const response = await fetcher('https://api.resend.com/emails', {
         method: 'POST', signal: AbortSignal.timeout(10000),
         headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from: 'Nexor Advance <contato@nexoradvance.com.br>', to: 'contato@nexoradvance.com.br',
           reply_to: email.trim().toLowerCase(), subject: `[Nexor] ${subjects[assunto]}`,
-          text: `Novo contato pelo site Nexor Advance.\n\nNome: ${nome.trim()}\nE-mail: ${email.trim()}\nAssunto: ${subjects[assunto]}\n\n${mensagem.trim()}`
+          text: `Novo contato pelo site Nexor Advance.\n\nNome: ${nome.trim()}\nE-mail: ${email.trim()}\n${telefone ? `Telefone: ${telefone}\n` : ''}Assunto: ${subjects[assunto]}\n\n${mensagem.trim()}`
         })
       });
       if (!response.ok) return reply(502, { error: 'email_unavailable' });

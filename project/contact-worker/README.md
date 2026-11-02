@@ -21,6 +21,8 @@ Sem chave ou binding de limite de envios, a função responde 503 e não envia.
 O endpoint aceita somente os domínios públicos Nexor, JSON de até 16 KB,
 nome de 2–120 caracteres, e-mail até 160 caracteres, assunto conhecido e mensagem
 de 10–2000 caracteres. O campo `website` é uma armadilha antispam e deve ficar vazio.
+O campo opcional `telefone` aceita celular como `(11) 9 8765-4321` ou fixo como
+`(11) 3456-7890` e é incluído no corpo do e-mail apenas quando preenchido.
 As origens permitidas são uma restrição de navegador; o limite de envios também
 é necessário porque clientes externos podem forjar o cabeçalho Origin.
 

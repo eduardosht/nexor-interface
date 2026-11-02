@@ -139,7 +139,7 @@ Limites:
 
 ## Perguntas em aberto para decisão
 
-- O canal operacional de contato é `contato@nexoradvance.com.br`, com recebimento na Hostinger. O formulário do site estático utiliza um Cloudflare Worker dedicado e Resend para envio, sem depender da API principal Nexor. O visitante fornece nome, e-mail, assunto e mensagem; o formulário orienta a não incluir documentos ou dados de saúde.
+- O canal operacional de contato é `contato@nexoradvance.com.br`, com recebimento na Hostinger. O formulário do site estático utiliza um Cloudflare Worker dedicado e Resend para envio, sem depender da API principal Nexor. O visitante fornece nome, e-mail, assunto e mensagem, com telefone brasileiro opcional para retorno; o formulário orienta a não incluir documentos ou dados de saúde.
 - Quais depoimentos, provas sociais ou cases estão aprovados para uso público?
 - O lancamento institucional exigira versão em mais de um idioma?
 - Novos produtos terão página própria ou apenas apresentação institucional resumida?

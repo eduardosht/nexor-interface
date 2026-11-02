@@ -19,7 +19,21 @@ interface FormState {
   email: string;
   assunto: string;
   mensagem: string;
+  telefone: string;
 }
+
+function formatContactPhone(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (!digits) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  const number = digits.slice(2);
+  const local = number.startsWith('9')
+    ? `${number[0]}${number.length > 1 ? ` ${number.slice(1, 5)}` : ''}${number.length > 5 ? `-${number.slice(5)}` : ''}`
+    : `${number.slice(0, 4)}${number.length > 4 ? `-${number.slice(4)}` : ''}`;
+  return `(${digits.slice(0, 2)}) ${local}`;
+}
+
+const brazilianPhonePattern = /^\([1-9]\d\) (?:9 \d{4}-\d{4}|[2-5]\d{3}-\d{4})$/;
 
 export function Contato() {
   const contactEmail = import.meta.env.VITE_CONTACT_EMAIL || 'contato@nexoradvance.com.br';
@@ -27,7 +41,7 @@ export function Contato() {
   const location = useLocation();
   const ref = useRef<HTMLElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-15%' });
-  const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '' });
+  const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '', telefone: '' });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +63,8 @@ export function Contato() {
   }, [location.hash, location.search]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const value = e.target.name === 'nome' ? sanitizePersonName(e.target.value) : e.target.value;
+    const value = e.target.name === 'nome' ? sanitizePersonName(e.target.value)
+      : e.target.name === 'telefone' ? formatContactPhone(e.target.value) : e.target.value;
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
   };
 
@@ -67,7 +82,7 @@ export function Contato() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(15000),
-        body: JSON.stringify({ nome: form.nome.trim(), email: form.email.trim(), assunto: form.assunto, mensagem: form.mensagem.trim(), website }),
+        body: JSON.stringify({ nome: form.nome.trim(), email: form.email.trim(), assunto: form.assunto, mensagem: form.mensagem.trim(), website, ...(form.telefone ? { telefone: form.telefone } : {}) }),
       });
       const result = await response.json();
       if (!response.ok || result?.ok !== true) {
@@ -84,7 +99,8 @@ export function Contato() {
     }
   };
 
-  const isValid = form.nome.trim().length >= 2 && form.nome.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && form.email.length <= 160 && ASSUNTOS.some((item) => item.value === form.assunto) && form.mensagem.trim().length >= 10 && form.mensagem.length <= 2000;
+  const phoneValid = !form.telefone || brazilianPhonePattern.test(form.telefone);
+  const isValid = phoneValid && form.nome.trim().length >= 2 && form.nome.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && form.email.length <= 160 && ASSUNTOS.some((item) => item.value === form.assunto) && form.mensagem.trim().length >= 10 && form.mensagem.length <= 2000;
 
   return (
     <S.SectionOuter>
@@ -154,6 +170,21 @@ export function Contato() {
                   required
                 />
               </S.Row>
+
+              <Field
+                as="input"
+                id="telefone"
+                name="telefone"
+                label="Telefone (Opcional)"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
+                placeholder="(99) 9 9999-9999"
+                maxLength={16}
+                value={form.telefone}
+                onChange={handleChange}
+              />
+              {!phoneValid && <S.SelectIntro>Informe o DDD e o número completo ou deixe o campo vazio.</S.SelectIntro>}
 
               <S.SelectIntro>
                 Selecione o tema principal para direcionarmos a resposta com mais rapidez.

@@ -32,6 +32,37 @@ describe('Contato', () => {
     fireEvent.change(screen.getByLabelText(/mensagem/i), { target: { name: 'mensagem', value: 'Mensagem para a Nexor Advance.' } });
   }
 
+  it.each([
+    ['11987654321', '(11) 9 8765-4321'],
+    ['1134567890', '(11) 3456-7890'],
+    ['(21) 9 8765-4321', '(21) 9 8765-4321'],
+  ])('aplica máscara brasileira ao telefone %s', (input, expected) => {
+    renderContato();
+    const phone = screen.getByRole('textbox', { name: 'Telefone (Opcional)' });
+    expect(phone).not.toBeRequired();
+    fireEvent.change(phone, { target: { value: input } });
+    expect(phone).toHaveValue(expected);
+  });
+
+  it('envia o telefone opcional na mensagem de contato', async () => {
+    renderContato();
+    fillContact();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Telefone (Opcional)' }), { target: { value: '11987654321' } });
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensagem/i }));
+    expect(await screen.findByText(/mensagem enviada/i)).toBeInTheDocument();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).telefone).toBe('(11) 9 8765-4321');
+  });
+
+  it('impede envio com telefone incompleto e permite limpar o campo opcional', () => {
+    renderContato();
+    fillContact();
+    const phone = screen.getByRole('textbox', { name: 'Telefone (Opcional)' });
+    fireEvent.change(phone, { target: { value: '11987' } });
+    expect(screen.getByRole('button', { name: /enviar mensagem/i })).toBeDisabled();
+    fireEvent.change(phone, { target: { value: '' } });
+    expect(screen.getByRole('button', { name: /enviar mensagem/i })).toBeEnabled();
+  });
+
   it('aguarda confirmação de envio e bloqueia cliques repetidos', async () => {
     let resolve!: (response: Response) => void;
     fetchMock.mockImplementationOnce(() => new Promise<Response>((done) => { resolve = done; }));
