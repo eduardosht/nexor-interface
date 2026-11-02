@@ -29,6 +29,10 @@ export function Contato() {
   const inView = useInView(ref, { once: true, margin: '-15%' });
   const [form, setForm] = useState<FormState>({ nome: '', email: '', assunto: '', mensagem: '' });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const sendingRef = useRef(false);
+  const [website, setWebsite] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -51,17 +55,36 @@ export function Contato() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValid) {
+    if (!isValid || sendingRef.current) {
       return;
     }
 
-    const subject = encodeURIComponent(`[Nexor] ${form.assunto}`);
-    const body = encodeURIComponent(`Nome: ${form.nome.trim()}\nE-mail: ${form.email.trim()}\n\n${form.mensagem.trim()}`);
-    window.location.href = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
-    setSent(true);
+    sendingRef.current = true;
+    setSending(true);
+    setError('');
+    try {
+      const response = await fetch('https://nexor-contact.eduardoshoitifujiwara.workers.dev/v1/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({ nome: form.nome.trim(), email: form.email.trim(), assunto: form.assunto, mensagem: form.mensagem.trim(), website }),
+      });
+      const result = await response.json();
+      if (!response.ok || result?.ok !== true) {
+        throw new Error(response.status === 429 ? 'rate_limit' : 'send_failed');
+      }
+      setSent(true);
+    } catch (failure) {
+      setError(failure instanceof Error && failure.message === 'rate_limit'
+        ? 'Muitas tentativas. Aguarde um minuto e tente novamente.'
+        : 'Não foi possível enviar sua mensagem. Tente novamente ou use o e-mail de contato.');
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
+    }
   };
 
-  const isValid = form.nome.trim() && form.email.trim() && form.assunto && form.mensagem.trim();
+  const isValid = form.nome.trim().length >= 2 && form.nome.length <= 120 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && form.email.length <= 160 && ASSUNTOS.some((item) => item.value === form.assunto) && form.mensagem.trim().length >= 10 && form.mensagem.length <= 2000;
 
   return (
     <S.SectionOuter>
@@ -102,7 +125,11 @@ export function Contato() {
               </S.SuccessBanner>
             </motion.div>
           ) : (
-            <S.Form onSubmit={handleSubmit} noValidate>
+            <S.Form onSubmit={handleSubmit} noValidate aria-busy={sending}>
+              <S.Honeypot aria-hidden="true">
+                <label htmlFor="contact-website">Website</label>
+                <input id="contact-website" name="website" tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} />
+              </S.Honeypot>
               <S.Row>
                 <Field
                   as="input"
@@ -153,8 +180,10 @@ export function Contato() {
                 required
               />
 
-              <Button type="submit" disabled={!isValid || !contactEmail}>
-                Enviar por e-mail →
+              <S.SelectIntro>Não inclua dados de saúde ou documentos nesta mensagem.</S.SelectIntro>
+              {error && <S.ErrorBanner role="alert">{error}</S.ErrorBanner>}
+              <Button type="submit" disabled={!isValid || sending}>
+                {sending ? 'Enviando...' : 'Enviar mensagem →'}
               </Button>
             </S.Form>
           )}

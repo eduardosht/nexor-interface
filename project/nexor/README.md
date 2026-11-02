@@ -1,5 +1,7 @@
 # Nexor Frontend
 
+O formulário institucional utiliza o Cloudflare Worker documentado em `../contact-worker/README.md` e não depende do backend principal.
+
 Aplicacao React + Vite do portal Nexor. O frontend consome o backend Nexor por `VITE_API_URL` e nunca deve receber chaves privadas do Supabase.
 
 ## Stack

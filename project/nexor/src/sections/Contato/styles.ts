@@ -109,3 +109,11 @@ export const ErrorBanner = styled.p`
   font-size: 13px;
   line-height: 1.5;
 `;
+
+export const Honeypot = styled.div`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+`;

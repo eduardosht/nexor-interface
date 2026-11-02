@@ -1,23 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { ThemeProvider } from 'styled-components';
 import { Contato } from './Contato';
 import { lightTheme } from '../../styles/theme';
 
-const apiPost = vi.hoisted(() => vi.fn());
-
-vi.mock('../../lib/api', () => ({
-  api: {
-    post: apiPost,
-  },
-}));
-
-vi.mock('../../config/env', () => ({
-  env: {
-    contactEmail: 'contato@nexoradvance.com.br',
-    contactWhatsapp: 'https://wa.me/5511999999999',
-  },
-}));
+const fetchMock = vi.hoisted(() => vi.fn());
 
 function renderContato(initialEntry = '/') {
   return render(
@@ -29,8 +16,45 @@ function renderContato(initialEntry = '/') {
 
 describe('Contato', () => {
   beforeEach(() => {
-    apiPost.mockReset();
-    apiPost.mockResolvedValue({ ok: true });
+    vi.stubEnv('VITE_CONTACT_EMAIL', 'contato@nexoradvance.com.br');
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+  });
+
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+
+  function fillContact() {
+    fireEvent.change(screen.getByLabelText(/nome/i), { target: { name: 'nome', value: 'Maria Cliente' } });
+    fireEvent.change(screen.getByLabelText(/e-mail/i), { target: { name: 'email', value: 'maria@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
+    fireEvent.change(screen.getByLabelText(/mensagem/i), { target: { name: 'mensagem', value: 'Mensagem para a Nexor Advance.' } });
+  }
+
+  it('aguarda confirmação de envio e bloqueia cliques repetidos', async () => {
+    let resolve!: (response: Response) => void;
+    fetchMock.mockImplementationOnce(() => new Promise<Response>((done) => { resolve = done; }));
+    renderContato();
+    fillContact();
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensagem/i }));
+    expect(screen.getByRole('button', { name: /enviando/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /enviando/i }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/mensagem enviada/i)).not.toBeInTheDocument();
+    resolve(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    expect(await screen.findByText(/mensagem enviada/i)).toBeInTheDocument();
+  });
+
+  it.each([200, 429])('não mostra sucesso para resposta sem confirmação (%s)', async (status) => {
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status }));
+    renderContato();
+    fillContact();
+    fireEvent.click(screen.getByRole('button', { name: /enviar mensagem/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.queryByText(/mensagem enviada/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enviar mensagem/i })).toBeEnabled();
+    expect(screen.getByLabelText(/mensagem/i)).toHaveValue('Mensagem para a Nexor Advance.');
   });
 
   it('renderiza heading', () => {
@@ -51,7 +75,7 @@ describe('Contato', () => {
   it('preseleciona o assunto LGPD quando a home abre na ancora de contato com query', () => {
     renderContato('/?assunto=lgpd#contato');
 
-    expect(screen.getByText('Assuntos sobre LGPD')).toBeInTheDocument();
+    expect(screen.getByText('LGPD', { exact: true })).toBeInTheDocument();
   });
 
   it('rola para a secao do formulario quando a home abre na ancora de contato', () => {
@@ -86,7 +110,7 @@ describe('Contato', () => {
       target: { name: 'email', value: 'maria@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
-    fireEvent.click(screen.getByRole('option', { name: /parceria comercial/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
     fireEvent.change(screen.getByLabelText(/mensagem/i), {
       target: { name: 'mensagem', value: 'Gostaria de falar sobre parceria.' },
     });
@@ -94,16 +118,18 @@ describe('Contato', () => {
     fireEvent.click(screen.getByRole('button', { name: /enviar mensagem/i }));
 
     expect(await screen.findByText(/mensagem enviada/i)).toBeInTheDocument();
-    expect(apiPost).toHaveBeenCalledWith('/v1/contact', {
+    expect(fetchMock).toHaveBeenCalledWith('https://nexor-contact.eduardoshoitifujiwara.workers.dev/v1/contact', expect.objectContaining({ method: 'POST' }));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
       nome: 'Maria Cliente',
       email: 'maria@example.com',
       assunto: 'parceria',
       mensagem: 'Gostaria de falar sobre parceria.',
+      website: '',
     });
   });
 
   it('mostra erro quando a API de contato falha', async () => {
-    apiPost.mockRejectedValueOnce(new Error('Falha'));
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 502 }));
     renderContato();
 
     fireEvent.change(screen.getByLabelText(/nome/i), {
@@ -113,7 +139,7 @@ describe('Contato', () => {
       target: { name: 'email', value: 'maria@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: /assunto/i }));
-    fireEvent.click(screen.getByRole('option', { name: /parceria comercial/i }));
+    fireEvent.click(screen.getByRole('option', { name: /^parcerias$/i }));
     fireEvent.change(screen.getByLabelText(/mensagem/i), {
       target: { name: 'mensagem', value: 'Gostaria de falar sobre parceria.' },
     });
